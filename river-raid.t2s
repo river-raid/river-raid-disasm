@@ -1,0 +1,13 @@
+; tap2sna.py file for River Raid. Run:
+;
+;   $ tap2sna.py @river-raid.t2s
+;
+; to create a Z80 snapshot.
+
+https://zxaaa.net/DENIED/River%20Raid%20%281984%29%28Activision%29.tzx
+--tape-sum a68093f12a92c450297a18575c741893
+--ram sysvars
+--ram poke=23611,8 # FLAGS (Set keyboard mode to L)
+--ram poke=23612,0 # TV-FLAG
+--ram poke=23693,0 # ATTR-P
+--ram poke=23624,7 # BORDCR
