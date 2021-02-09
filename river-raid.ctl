@@ -336,7 +336,30 @@ c $6A4F
   $6AAF Point #REGhl to the element of #R$8063 with the index defined by #R$5F77.
   $6AB3 Next byte
   $6ABA If it's the last byte, advance to the next row.
-  $6ABF,6 Point #REGhl to byte of the current terrain row defined by #R$5F7D.
+  $6ABF Point #REGhl to byte of the current terrain row defined by #R$5F7D.
+  $6AC5 Load the value of the current terrain row offset into #REGb. The value loaded into #REGc is unused.
+  $6AC9 Load the value of the current terrain profile byte into #REGa.
+  $6ACA Jump to handling special cases.
+  $6ACF,1 Now #REGa contains the coordinate of the left terrain edge.
+  $6AD3 For some reason, subtract 16 from the coordinate of the left terrain edge.
+  $6AD5,1 Store the result in #REGd to reuse it in multiple operations with #REGa.
+  $6ADA Point #REGhl to #R$89F2.
+  $6ADD Restore the coordinate of the left terrain edge into #REGa.
+  $6ADE Use only the lowest three bits of the coordinate.
+  $6AE0 Shift the remaining bits right and left effectively discarding the lowest bit and store the result into #REGc. Why not just make AND 6 instead of AND 7 above?
+  $6AE5 Restore the coordinate of the left terrain edge into #REGa.
+  $6AE6 Point #REGhl to the element of #R$89F2 defined by #REGc.
+  $6AE7 Temporarily store the pointer in #REGde.
+  $6AE8 Copy the coordinate of the left terrain edge into #REGc.
+  $6AE9,3 Point #REGhl screen address of the beginning of the terrain line being currently rendered.
+  $6AEE Calculate the number of full tiles corresponding to the coordinate of the left terrain edge.
+  $6AF4 Calculate the address where the terrain edge needs to be rendered.
+  $6AF5 Now #REGhl points to the element of #R$89F2 to be rendered, and #REGde contains the address of the screen where it needs to be rendered.
+  $6AF6 Why on earth is the edge represented by two bytes?
+  $6AF9 Copy the bytes. The 0th element of #R$89F2 contains a 10px sprite, the 1th one contains a 12px sprite and so on. So effectively by extracting 16 from the edge coordinate earlier and adding 10 later we are rendering the terrain edge of the size 6px less than defined. Why?
+  $6AFB Restore #REGde back to the screen address of beginning of the edge.
+  $6AFD Copy the coordinate of the left terrain edge into #REGb.
+  $6AFE,6 Again, calculate the number of full tiles corresponding to the coordinate of the left edge.
 @ $6B06 label=fill_terrain_left_loop
 @ $6B4B label=fill_terrain_right_loop
 @ $6B58 label=state_terrain_element_4_eq_1
