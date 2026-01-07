@@ -189,7 +189,8 @@ VIEWPORT_HEIGHT EQU $88
 ; Bit 6 defines object orientation: left (unset) or right (set).
 ; OBJECT_DEFINITION_BIT_TANK_ORIENTATION  = 6,
 ;
-; Bit 7 is unused.
+; Bit 7 is an activation flag used by operate_viewport_objects to track
+; whether an object has been activated on its first frame.
 
 @org
 @equ=KEYBOARD=$02BF
@@ -4519,86 +4520,124 @@ c$706C LD B,$00      ;
  $708A CALL $8B1E    ;
  $708D RET           ;
 
-; Routine at 708E
+; Main viewport object processing loop.
 ;
 ; Used by the routines at #R$5DA6, #R$5F91, #R$6D17, #R$7113, #R$7158, #R$71A2,
 ; #R$7224, #R$724C, #R$7259, #R$7296, #R$7302, #R$7358, #R$74EE, #R$754C,
 ; #R$75D0, #R$762E, #R$7649, #R$76AC and #R$76DA.
+;
+; .
+;
+; Iterates through the viewport_objects array, processing each active object.
+; Each object slot is a 3-byte structure: [X position, Y position,
+; OBJECT_DEFINITION byte].
+; .
+; .
+; .
+; The routine performs the following steps for each object:
+; .
+; 1. Skip empty slots (SET_MARKER_EMPTY_SLOT) and reset to the beginning when
+; reaching the end marker (SET_MARKER_END_OF_SET).
+; .
+; 2. Advance the object's Y position (move it down the screen).
+; .
+; 3. Remove objects that have moved beyond the viewport boundary
+; (VIEWPORT_HEIGHT).
+; .
+; 4. Render missiles for advanced helicopters (OBJECT_HELICOPTER_ADV).
+; .
+; 5. Skip further processing if in INTERACTION_MODE_01.
+; .
+; 6. Activate objects on their first frame using an interrupt counter and
+; activation mask (sets bit 7 of the OBJECT_DEFINITION byte).
+; .
+; 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHTER,
+; OBJECT_BALLOON, OBJECT_FUEL, OBJECT_TANK, or ships/helicopters (other types).
 @label=operate_viewport_objects
 @isub=LD A,OTHER_MODE_00
-c$708E LD A,$00      ;
- $7090 LD ($5EF5),A  ;
- $7093 LD HL,($5F60) ;
- $7096 LD C,(HL)     ;
- $7097 INC HL        ;
- $7098 LD B,(HL)     ;
- $7099 INC HL        ;
- $709A LD D,(HL)     ;
- $709B INC HL        ;
- $709C LD ($5F60),HL ;
- $709F LD A,C        ;
+c$708E LD A,$00      ; {Reset state_other_mode to OTHER_MODE_00.
+ $7090 LD ($5EF5),A  ; }
+ $7093 LD HL,($5F60) ; Load the current viewport_ptr into HL.
+ $7096 LD C,(HL)     ; Load the first byte of the object slot (X position) into
+                     ; C.
+ $7097 INC HL        ; Advance HL to the next byte.
+ $7098 LD B,(HL)     ; Load the second byte of the object slot (Y position)
+                     ; into B.
+ $7099 INC HL        ; Advance HL to the next byte.
+ $709A LD D,(HL)     ; Load the third byte of the object slot (object
+                     ; definition) into D.
+ $709B INC HL        ; Advance HL to point to the next slot.
+ $709C LD ($5F60),HL ; Update viewport_ptr to point to the next slot.
+ $709F LD A,C        ; Copy the X position (C) into A for comparison.
 @isub=CP SET_MARKER_EMPTY_SLOT
- $70A0 CP $00        ;
- $70A2 JP Z,$708E    ;
+ $70A0 CP $00        ; Check if this slot is empty.
+ $70A2 JP Z,$708E    ; If empty, skip this slot and process the next one.
 @isub=CP SET_MARKER_END_OF_SET
- $70A5 CP $FF        ;
- $70A7 JP Z,$7627    ;
- $70AA CALL $62DA    ;
- $70AD DEC HL        ;
- $70AE DEC HL        ;
- $70AF LD (HL),B     ;
- $70B0 LD A,B        ;
+ $70A5 CP $FF        ; Check if we've reached the end of the viewport objects
+                     ; list.
+ $70A7 JP Z,$7627    ; If end of list, reset viewport_ptr to the beginning.
+ $70AA CALL $62DA    ; Advance the object's Y position (move it down the
+                     ; screen).
+ $70AD DEC HL        ; {Move HL back to point to the Y position byte of the
+ $70AE DEC HL        ; current slot.}
+ $70AF LD (HL),B     ; Store the updated Y position (B) back into the slot.
+ $70B0 LD A,B        ; Copy the Y position into A for boundary checking.
 @isub=AND VIEWPORT_HEIGHT
- $70B1 AND $88       ;
+ $70B1 AND $88       ; Mask the Y position with VIEWPORT_HEIGHT.
 @isub=CP VIEWPORT_HEIGHT
- $70B3 CP $88        ;
- $70B5 JP Z,$762E    ;
- $70B8 LD A,D        ;
+ $70B3 CP $88        ; Check if the object has moved beyond the viewport
+                     ; boundary.
+ $70B5 JP Z,$762E    ; If beyond boundary, remove the object from the viewport.
+ $70B8 LD A,D        ; Copy the object definition (D) into A.
 @isub=AND SLOT_MASK_OBJECT_TYPE
- $70B9 AND $07       ;
+ $70B9 AND $07       ; Extract the object type (bits 0-2) from the definition.
 @isub=CP OBJECT_HELICOPTER_ADV
- $70BB CP $03        ;
- $70BD PUSH DE       ;
+ $70BB CP $03        ; Check if this is an advanced helicopter.
+ $70BD PUSH DE       ; {Preserve DE, HL, BC registers for the potential call.
  $70BE PUSH HL       ;
- $70BF PUSH BC       ;
- $70C0 CALL Z,$73DD  ;
- $70C3 POP BC        ;
+ $70BF PUSH BC       ; }
+ $70C0 CALL Z,$73DD  ; If it's an advanced helicopter, render its missile.
+ $70C3 POP BC        ; {Restore BC, HL, DE registers.
  $70C4 POP HL        ;
- $70C5 POP DE        ;
- $70C6 LD A,($5F68)  ;
+ $70C5 POP DE        ; }
+ $70C6 LD A,($5F68)  ; Load the current interaction mode.
 @isub=CP INTERACTION_MODE_01
- $70C9 CP $01        ;
- $70CB JP Z,$708E    ;
- $70CE BIT 7,D       ;
- $70D0 JP NZ,$70E8   ;
- $70D3 LD A,($5F5F)  ;
- $70D6 LD E,A        ;
- $70D7 LD A,($5C78)  ;
- $70DA AND E         ;
- $70DB CP $00        ;
- $70DD JP NZ,$7224   ;
- $70E0 SET 7,D       ;
- $70E2 INC HL        ;
- $70E3 LD (HL),D     ;
- $70E4 LD HL,$5C78   ;
- $70E7 INC (HL)      ;
-*$70E8 LD A,D        ;
+ $70C9 CP $01        ; Check if interaction mode is INTERACTION_MODE_01.
+ $70CB JP Z,$708E    ; If so, skip to the next object without further
+                     ; processing.
+ $70CE BIT 7,D       ; Check bit 7 of the object definition (activation flag).
+ $70D0 JP NZ,$70E8   ; If bit 7 is set, the object is already activated, skip
+                     ; to operation dispatch.
+ $70D3 LD A,($5F5F)  ; Load the activation mask from L5F5F.
+ $70D6 LD E,A        ; Copy the mask into E.
+ $70D7 LD A,($5C78)  ; Load the interrupt counter.
+ $70DA AND E         ; AND the counter with the mask to check if it's time to
+                     ; activate.
+ $70DB CP $00        ; Compare with zero.
+ $70DD JP NZ,$7224   ; If not zero, skip activation and jump to L7224.
+ $70E0 SET 7,D       ; Set bit 7 of D to mark the object as activated.
+ $70E2 INC HL        ; Move HL forward to point to the object definition byte.
+ $70E3 LD (HL),D     ; Store the updated definition (with bit 7 set) back to
+                     ; the slot.
+ $70E4 LD HL,$5C78   ; Point HL to the interrupt counter.
+ $70E7 INC (HL)      ; Increment the interrupt counter.
+*$70E8 LD A,D        ; Copy the object definition into A for type dispatch.
 @isub=AND SLOT_MASK_OBJECT_TYPE
- $70E9 AND $07       ;
+ $70E9 AND $07       ; Extract the object type (bits 0-2).
 @isub=CP OBJECT_FIGHTER
- $70EB CP $05        ;
- $70ED JP Z,$7158    ;
+ $70EB CP $05        ; Check if this is a fighter.
+ $70ED JP Z,$7158    ; If fighter, jump to operate_fighter.
 @isub=CP OBJECT_BALLOON
- $70F0 CP $06        ;
- $70F2 JP Z,$7649    ;
+ $70F0 CP $06        ; Check if this is a balloon.
+ $70F2 JP Z,$7649    ; If balloon, jump to operate_baloon.
 @isub=CP OBJECT_FUEL
- $70F5 CP $07        ;
- $70F7 JP Z,$754C    ;
+ $70F5 CP $07        ; Check if this is a fuel station.
+ $70F7 JP Z,$754C    ; If fuel, jump to operate_fuel.
 @isub=CP OBJECT_TANK
- $70FA CP $04        ;
- $70FC JP Z,$7296    ;
- $70FF CP $00        ;
- $7101 JP Z,$71A2    ;
+ $70FA CP $04        ; Check if this is a tank.
+ $70FC JP Z,$7296    ; If tank, jump to operate_tank.
+ $70FF CP $00        ; Check if object type is 0 (no object or special case).
+ $7101 JP Z,$71A2    ; If type is 0, jump to L71A2.
 
 ; Ship or helicopter operation routine.
 ;

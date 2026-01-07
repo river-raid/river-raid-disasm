@@ -187,7 +187,8 @@ VIEWPORT_HEIGHT EQU $88
 ; Bit 6 defines object orientation: left (unset) or right (set).
 ; OBJECT_DEFINITION_BIT_TANK_ORIENTATION  = 6,
 ;
-; Bit 7 is unused.
+; Bit 7 is an activation flag used by operate_viewport_objects to track
+; whether an object has been activated on its first frame.
 
 KEYBOARD EQU $02BF
 BEEPER EQU $03B5
@@ -4474,7 +4475,7 @@ render_balloon:
   CALL render_sprite
   RET
 
-; Routine at 708E
+; Main viewport object processing loop.
 ;
 ; Used by the routines at play, main_loop, demo,
 ; ship_or_helicopter_left_advance, operate_fighter, L71A2, L7224,
@@ -4482,69 +4483,113 @@ render_balloon:
 ; L7358, L74EE, operate_fuel, handle_object_proximity,
 ; remove_object_from_viewport, operate_baloon, jp_operate_viewport_objects and
 ; L76DA.
+;
+; Iterates through the viewport_objects array, processing each active object.
+; Each object slot is a 3-byte structure: [X position, Y position,
+; OBJECT_DEFINITION byte].
+;
+; The routine performs the following steps for each object:
+;
+; 1. Skip empty slots (SET_MARKER_EMPTY_SLOT) and reset to the beginning when
+; reaching the end marker (SET_MARKER_END_OF_SET).
+;
+; 2. Advance the object's Y position (move it down the screen).
+;
+; 3. Remove objects that have moved beyond the viewport boundary
+; (VIEWPORT_HEIGHT).
+;
+; 4. Render missiles for advanced helicopters (OBJECT_HELICOPTER_ADV).
+;
+; 5. Skip further processing if in INTERACTION_MODE_01.
+;
+; 6. Activate objects on their first frame using an interrupt counter and
+; activation mask (sets bit 7 of the OBJECT_DEFINITION byte).
+;
+; 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHTER,
+; OBJECT_BALLOON, OBJECT_FUEL, OBJECT_TANK, or ships/helicopters (other types).
 operate_viewport_objects:
-  LD A,OTHER_MODE_00
-  LD (state_other_mode),A
-  LD HL,(viewport_ptr)
-  LD C,(HL)
-  INC HL
-  LD B,(HL)
-  INC HL
-  LD D,(HL)
-  INC HL
-  LD (viewport_ptr),HL
-  LD A,C
-  CP SET_MARKER_EMPTY_SLOT
-  JP Z,operate_viewport_objects
-  CP SET_MARKER_END_OF_SET
-  JP Z,init_viewport_ptr
-  CALL advance_object
-  DEC HL
-  DEC HL
-  LD (HL),B
-  LD A,B
-  AND VIEWPORT_HEIGHT
-  CP VIEWPORT_HEIGHT
-  JP Z,remove_object_from_viewport
-  LD A,D
-  AND SLOT_MASK_OBJECT_TYPE
-  CP OBJECT_HELICOPTER_ADV
-  PUSH DE
-  PUSH HL
-  PUSH BC
-  CALL Z,render_helicopter_missile
-  POP BC
-  POP HL
-  POP DE
-  LD A,(state_interaction_mode_5F68)
-  CP INTERACTION_MODE_01
-  JP Z,operate_viewport_objects
-  BIT 7,D
-  JP NZ,operate_viewport_objects_0
-  LD A,(L5F5F)
-  LD E,A
-  LD A,(int_counter)
-  AND E
-  CP $00
-  JP NZ,L7224
-  SET 7,D
-  INC HL
-  LD (HL),D
-  LD HL,int_counter
-  INC (HL)
+  LD A,OTHER_MODE_00      ; Reset state_other_mode to OTHER_MODE_00.
+  LD (state_other_mode),A ;
+  LD HL,(viewport_ptr)    ; Load the current viewport_ptr into HL.
+  LD C,(HL)               ; Load the first byte of the object slot (X position)
+                          ; into C.
+  INC HL                  ; Advance HL to the next byte.
+  LD B,(HL)               ; Load the second byte of the object slot (Y
+                          ; position) into B.
+  INC HL                  ; Advance HL to the next byte.
+  LD D,(HL)               ; Load the third byte of the object slot (object
+                          ; definition) into D.
+  INC HL                  ; Advance HL to point to the next slot.
+  LD (viewport_ptr),HL    ; Update viewport_ptr to point to the next slot.
+  LD A,C                  ; Copy the X position (C) into A for comparison.
+  CP SET_MARKER_EMPTY_SLOT ; Check if this slot is empty.
+  JP Z,operate_viewport_objects ; If empty, skip this slot and process the next
+                                ; one.
+  CP SET_MARKER_END_OF_SET ; Check if we've reached the end of the viewport
+                           ; objects list.
+  JP Z,init_viewport_ptr  ; If end of list, reset viewport_ptr to the
+                          ; beginning.
+  CALL advance_object     ; Advance the object's Y position (move it down the
+                          ; screen).
+  DEC HL                  ; Move HL back to point to the Y position byte of the
+  DEC HL                  ; current slot.
+  LD (HL),B               ; Store the updated Y position (B) back into the
+                          ; slot.
+  LD A,B                  ; Copy the Y position into A for boundary checking.
+  AND VIEWPORT_HEIGHT     ; Mask the Y position with VIEWPORT_HEIGHT.
+  CP VIEWPORT_HEIGHT      ; Check if the object has moved beyond the viewport
+                          ; boundary.
+  JP Z,remove_object_from_viewport ; If beyond boundary, remove the object from
+                                   ; the viewport.
+  LD A,D                  ; Copy the object definition (D) into A.
+  AND SLOT_MASK_OBJECT_TYPE ; Extract the object type (bits 0-2) from the
+                            ; definition.
+  CP OBJECT_HELICOPTER_ADV ; Check if this is an advanced helicopter.
+  PUSH DE                 ; Preserve DE, HL, BC registers for the potential
+  PUSH HL                 ; call.
+  PUSH BC                 ;
+  CALL Z,render_helicopter_missile ; If it's an advanced helicopter, render its
+                                   ; missile.
+  POP BC                  ; Restore BC, HL, DE registers.
+  POP HL                  ;
+  POP DE                  ;
+  LD A,(state_interaction_mode_5F68) ; Load the current interaction mode.
+  CP INTERACTION_MODE_01  ; Check if interaction mode is INTERACTION_MODE_01.
+  JP Z,operate_viewport_objects ; If so, skip to the next object without
+                                ; further processing.
+  BIT 7,D                 ; Check bit 7 of the object definition (activation
+                          ; flag).
+  JP NZ,operate_viewport_objects_0 ; If bit 7 is set, the object is already
+                                   ; activated, skip to operation dispatch.
+  LD A,(L5F5F)            ; Load the activation mask from L5F5F.
+  LD E,A                  ; Copy the mask into E.
+  LD A,(int_counter)      ; Load the interrupt counter.
+  AND E                   ; AND the counter with the mask to check if it's time
+                          ; to activate.
+  CP $00                  ; Compare with zero.
+  JP NZ,L7224             ; If not zero, skip activation and jump to L7224.
+  SET 7,D                 ; Set bit 7 of D to mark the object as activated.
+  INC HL                  ; Move HL forward to point to the object definition
+                          ; byte.
+  LD (HL),D               ; Store the updated definition (with bit 7 set) back
+                          ; to the slot.
+  LD HL,int_counter       ; Point HL to the interrupt counter.
+  INC (HL)                ; Increment the interrupt counter.
 operate_viewport_objects_0:
-  LD A,D
-  AND SLOT_MASK_OBJECT_TYPE
-  CP OBJECT_FIGHTER
-  JP Z,operate_fighter
-  CP OBJECT_BALLOON
-  JP Z,operate_baloon
-  CP OBJECT_FUEL
-  JP Z,operate_fuel
-  CP OBJECT_TANK
-  JP Z,operate_tank
-  CP $00
-  JP Z,L71A2
+  LD A,D                  ; Copy the object definition into A for type
+                          ; dispatch.
+  AND SLOT_MASK_OBJECT_TYPE ; Extract the object type (bits 0-2).
+  CP OBJECT_FIGHTER       ; Check if this is a fighter.
+  JP Z,operate_fighter    ; If fighter, jump to operate_fighter.
+  CP OBJECT_BALLOON       ; Check if this is a balloon.
+  JP Z,operate_baloon     ; If balloon, jump to operate_baloon.
+  CP OBJECT_FUEL          ; Check if this is a fuel station.
+  JP Z,operate_fuel       ; If fuel, jump to operate_fuel.
+  CP OBJECT_TANK          ; Check if this is a tank.
+  JP Z,operate_tank       ; If tank, jump to operate_tank.
+  CP $00                  ; Check if object type is 0 (no object or special
+                          ; case).
+  JP Z,L71A2              ; If type is 0, jump to L71A2.
 
 ; Ship or helicopter operation routine.
 ;

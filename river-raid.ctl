@@ -189,7 +189,8 @@
 > $4000 ; Bit 6 defines object orientation: left (unset) or right (set).
 > $4000 ; OBJECT_DEFINITION_BIT_TANK_ORIENTATION  = 6,
 > $4000 ;
-> $4000 ; Bit 7 is unused.
+> $4000 ; Bit 7 is an activation flag used by operate_viewport_objects to track
+> $4000 ; whether an object has been activated on its first frame.
 @ $4000 org
 @ $4000 equ=KEYBOARD=$02BF
 @ $4000 equ=BEEPER=$03B5
@@ -854,19 +855,84 @@ R $706C I:E X position
 @ $7087 isub=LD DE,SPRITE_BALLOON_HEIGHT_PIXELS<<8|SPRITE_BALLOON_ATTRIBUTES
 @ $708E label=operate_viewport_objects
 @ $708E isub=LD A,OTHER_MODE_00
-c $708E
+c $708E Main viewport object processing loop.
+N $708E Iterates through the viewport_objects array, processing each active object. Each object slot is a 3-byte structure: [X position, Y position, OBJECT_DEFINITION byte].
+N $708E .
+N $708E The routine performs the following steps for each object:
+N $708E 1. Skip empty slots (SET_MARKER_EMPTY_SLOT) and reset to the beginning when reaching the end marker (SET_MARKER_END_OF_SET).
+N $708E 2. Advance the object's Y position (move it down the screen).
+N $708E 3. Remove objects that have moved beyond the viewport boundary (VIEWPORT_HEIGHT).
+N $708E 4. Render missiles for advanced helicopters (OBJECT_HELICOPTER_ADV).
+N $708E 5. Skip further processing if in INTERACTION_MODE_01.
+N $708E 6. Activate objects on their first frame using an interrupt counter and activation mask (sets bit 7 of the OBJECT_DEFINITION byte).
+N $708E 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHTER, OBJECT_BALLOON, OBJECT_FUEL, OBJECT_TANK, or ships/helicopters (other types).
+  $708E Reset state_other_mode to OTHER_MODE_00.
+  $7093 Load the current viewport_ptr into HL.
+  $7096 Load the first byte of the object slot (X position) into C.
+  $7097 Advance HL to the next byte.
+  $7098 Load the second byte of the object slot (Y position) into B.
+  $7099 Advance HL to the next byte.
+  $709A Load the third byte of the object slot (object definition) into D.
+  $709B Advance HL to point to the next slot.
+  $709C Update viewport_ptr to point to the next slot.
+  $709F Copy the X position (C) into A for comparison.
 @ $70A0 isub=CP SET_MARKER_EMPTY_SLOT
+  $70A0 Check if this slot is empty.
+  $70A2 If empty, skip this slot and process the next one.
 @ $70A5 isub=CP SET_MARKER_END_OF_SET
+  $70A5 Check if we've reached the end of the viewport objects list.
+  $70A7 If end of list, reset viewport_ptr to the beginning.
+  $70AA Advance the object's Y position (move it down the screen).
+  $70AD Move HL back to point to the Y position byte of the current slot.
+  $70AF Store the updated Y position (B) back into the slot.
+  $70B0 Copy the Y position into A for boundary checking.
 @ $70B1 isub=AND VIEWPORT_HEIGHT
+  $70B1 Mask the Y position with VIEWPORT_HEIGHT.
 @ $70B3 isub=CP VIEWPORT_HEIGHT
+  $70B3 Check if the object has moved beyond the viewport boundary.
+  $70B5 If beyond boundary, remove the object from the viewport.
+  $70B8 Copy the object definition (D) into A.
 @ $70B9 isub=AND SLOT_MASK_OBJECT_TYPE
+  $70B9 Extract the object type (bits 0-2) from the definition.
 @ $70BB isub=CP OBJECT_HELICOPTER_ADV
+  $70BB Check if this is an advanced helicopter.
+  $70BD Preserve DE, HL, BC registers for the potential call.
+  $70C0 If it's an advanced helicopter, render its missile.
+  $70C3 Restore BC, HL, DE registers.
+  $70C6 Load the current interaction mode.
 @ $70C9 isub=CP INTERACTION_MODE_01
+  $70C9 Check if interaction mode is INTERACTION_MODE_01.
+  $70CB If so, skip to the next object without further processing.
+  $70CE Check bit 7 of the object definition (activation flag).
+  $70D0 If bit 7 is set, the object is already activated, skip to operation dispatch.
+  $70D3 Load the activation mask from L5F5F.
+  $70D6 Copy the mask into E.
+  $70D7 Load the interrupt counter.
+  $70DA AND the counter with the mask to check if it's time to activate.
+  $70DB Compare with zero.
+  $70DD If not zero, skip activation and jump to L7224.
+  $70E0 Set bit 7 of D to mark the object as activated.
+  $70E2 Move HL forward to point to the object definition byte.
+  $70E3 Store the updated definition (with bit 7 set) back to the slot.
+  $70E4 Point HL to the interrupt counter.
+  $70E7 Increment the interrupt counter.
+  $70E8 Copy the object definition into A for type dispatch.
 @ $70E9 isub=AND SLOT_MASK_OBJECT_TYPE
+  $70E9 Extract the object type (bits 0-2).
 @ $70EB isub=CP OBJECT_FIGHTER
+  $70EB Check if this is a fighter.
+  $70ED If fighter, jump to operate_fighter.
 @ $70F0 isub=CP OBJECT_BALLOON
+  $70F0 Check if this is a balloon.
+  $70F2 If balloon, jump to operate_baloon.
 @ $70F5 isub=CP OBJECT_FUEL
+  $70F5 Check if this is a fuel station.
+  $70F7 If fuel, jump to operate_fuel.
 @ $70FA isub=CP OBJECT_TANK
+  $70FA Check if this is a tank.
+  $70FC If tank, jump to operate_tank.
+  $70FF Check if object type is 0 (no object or special case).
+  $7101,3 If type is 0, jump to L71A2.
 @ $7104 label=operate_ship_or_helicopter
 c $7104 Ship or helicopter operation routine.
 N $7104 Animates the helicopter rotor on each other metronome tick. Advances the object by 2 pixels on each metrinome tick until it approaches the bank closer than 16 pixels, then inverts the object orientation.
