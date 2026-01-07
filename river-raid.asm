@@ -148,10 +148,17 @@ METRONOME_INTERVAL_CONSUME_FUEL EQU $01
 METRONOME_INTERVAL_ANIMATE_FUEL EQU $04
 METRONOME_INTERVAL_1            EQU $01
 
-INTERACTION_MODE_00   EQU $00
-INTERACTION_MODE_01   EQU $01
-INTERACTION_MODE_02   EQU $02
-INTERACTION_MODE_FUEL EQU $06
+; Player is actively playing: plane is rendered, objects can be interacted with.
+GAMEPLAY_MODE_NORMAL    EQU $00
+; Initial level scroll-in at start of play: plane is not rendered, objects
+; don't activate. Runs for $28 iterations with SPEED_FAST before switching
+; to GAMEPLAY_MODE_NORMAL.
+GAMEPLAY_MODE_SCROLL_IN EQU $01
+; Demo mode: plane is not rendered, objects don't activate, auto-scrolls
+; through levels. Set by init_state and used by the demo routine.
+GAMEPLAY_MODE_DEMO      EQU $02
+; Player is refueling at a fuel station.
+GAMEPLAY_MODE_REFUEL    EQU $06
 
 OTHER_MODE_00             EQU $00
 OTHER_MODE_FUEL           EQU $01
@@ -1233,7 +1240,7 @@ init_state:
   LD (state_terrain_element_23),BC
   LD A,$02
   LD (state_terrain_profile_number),A
-  LD (state_interaction_mode_5F68),A
+  LD (state_gameplay_mode),A
   LD (state_speed),A
   LD (L5F6D),A
   LD HL,$3030
@@ -1337,7 +1344,7 @@ play:
   CALL CHAN_OPEN
   LD A,$01
   LD (state_level_fragment_number),A
-  LD (state_interaction_mode_5F68),A
+  LD (state_gameplay_mode),A
   LD (L5F6D),A
   LD A,$68
   LD (LAST_K),A
@@ -1364,7 +1371,7 @@ play_0:
   DJNZ play_0
   LD A,$00
   LD (state_controls),A
-  LD (state_interaction_mode_5F68),A
+  LD (state_gameplay_mode),A
   CALL L6682
   LD A,$0D
   LD (LAST_K),A
@@ -1531,9 +1538,9 @@ state_fuel:
 state_input_interface:
   DEFB $00
 
-; Game status buffer entry at 5F68
-state_interaction_mode_5F68:
-  DEFB $00
+; Current gameplay mode (NORMAL, SCROLL_IN, DEMO, or REFUEL)
+state_gameplay_mode:
+  DEFB GAMEPLAY_MODE_NORMAL
 
 ; Game status buffer entry at 5F69
 L5F69:
@@ -1783,8 +1790,8 @@ scan_keyboard:
 ;
 ; Used by the routines at play, main_loop and demo.
 L60A5:
-  LD A,(state_interaction_mode_5F68)
-  CP INTERACTION_MODE_00
+  LD A,(state_gameplay_mode)
+  CP GAMEPLAY_MODE_NORMAL
   JP NZ,L60A5_0
   LD A,OTHER_MODE_00
   LD (state_other_mode),A
@@ -2022,8 +2029,8 @@ L6253:
 ;
 ; Used by the routine at L6136.
 fuel:
-  LD A,INTERACTION_MODE_FUEL
-  LD (state_interaction_mode_5F68),A
+  LD A,GAMEPLAY_MODE_REFUEL
+  LD (state_gameplay_mode),A
   LD B,$80
   LD A,(state_x)
   LD C,A
@@ -2155,8 +2162,8 @@ interact_with_something2:
   JP Z,interact_with_something2
   CP SET_MARKER_END_OF_SET
   JP Z,interact_with_something2_0
-  LD A,(state_interaction_mode_5F68)
-  CP INTERACTION_MODE_FUEL
+  LD A,(state_gameplay_mode)
+  CP GAMEPLAY_MODE_REFUEL
   CALL Z,advance_object
   LD DE,(state_plane_missile_coordinates)
   LD A,D
@@ -2221,8 +2228,8 @@ interact_with_something2:
   LD D,$00
   SBC HL,DE
   JP M,interact_with_something2
-  LD A,(state_interaction_mode_5F68)
-  CP INTERACTION_MODE_FUEL
+  LD A,(state_gameplay_mode)
+  CP GAMEPLAY_MODE_REFUEL
   CALL Z,retract_object
   LD (L5F8B),BC
   LD HL,(viewport_ptr)
@@ -2282,8 +2289,8 @@ interact_with_something2_1:
 ;
 ; Used by the routines at interact_with_something2 and L64A1.
 L63FC:
-  LD A,INTERACTION_MODE_00
-  LD (state_interaction_mode_5F68),A
+  LD A,GAMEPLAY_MODE_NORMAL
+  LD (state_gameplay_mode),A
 ; This entry point is used by the routine at handle_other_mode_xor.
 L63FC_0:
   LD A,OTHER_MODE_00
@@ -2362,8 +2369,8 @@ hit_balloon:
 ;
 ; Used by the routine at interact_with_something2.
 interact_with_fuel:
-  LD A,(state_interaction_mode_5F68)
-  CP INTERACTION_MODE_FUEL
+  LD A,(state_gameplay_mode)
+  CP GAMEPLAY_MODE_REFUEL
   JP Z,L64A1
   LD A,POINTS_FUEL
   CALL add_points
@@ -2681,8 +2688,8 @@ handle_left:
 ;
 ; Used by the routines at play and L683B.
 L6682:
-  LD A,(state_interaction_mode_5F68)
-  CP INTERACTION_MODE_00
+  LD A,(state_gameplay_mode)
+  CP GAMEPLAY_MODE_NORMAL
   RET NZ
   LD A,(state_x)
   LD HL,(state_plane_missile_coordinates)
@@ -2857,8 +2864,8 @@ L678E:
 L6794:
   LD BC,(state_plane_missile_coordinates)
   CALL blenging_mode_or_or
-  LD A,(state_interaction_mode_5F68)
-  CP INTERACTION_MODE_FUEL
+  LD A,(state_gameplay_mode)
+  CP GAMEPLAY_MODE_REFUEL
   JP Z,handle_no_fuel
   LD A,OTHER_MODE_00
   LD (state_other_mode),A
@@ -4500,7 +4507,7 @@ render_balloon:
 ;
 ; 4. Render missiles for advanced helicopters (OBJECT_HELICOPTER_ADV).
 ;
-; 5. Skip further processing if in INTERACTION_MODE_01.
+; 5. Skip further processing if in GAMEPLAY_MODE_SCROLL_IN.
 ;
 ; 6. Activate objects on their first frame using an interrupt counter and
 ; activation mask (sets bit 7 of the OBJECT_DEFINITION byte).
@@ -4553,8 +4560,9 @@ operate_viewport_objects:
   POP BC                  ; Restore BC, HL, DE registers.
   POP HL                  ;
   POP DE                  ;
-  LD A,(state_interaction_mode_5F68) ; Load the current interaction mode.
-  CP INTERACTION_MODE_01  ; Check if interaction mode is INTERACTION_MODE_01.
+  LD A,(state_gameplay_mode) ; Load the current gameplay mode.
+  CP GAMEPLAY_MODE_SCROLL_IN ; Check if gameplay mode is
+                             ; GAMEPLAY_MODE_SCROLL_IN.
   JP Z,operate_viewport_objects ; If so, skip to the next object without
                                 ; further processing.
   BIT 7,D                 ; Check bit 7 of the object definition (activation
@@ -5137,8 +5145,8 @@ L73D8:
 ;
 ; Used by the routine at operate_viewport_objects.
 render_helicopter_missile:
-  LD A,(state_interaction_mode_5F68)
-  CP INTERACTION_MODE_01
+  LD A,(state_gameplay_mode)
+  CP GAMEPLAY_MODE_SCROLL_IN
   RET Z
   LD BC,(helicopter_missile_coordinates_ptr)
   LD A,B

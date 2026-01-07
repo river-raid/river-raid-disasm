@@ -150,10 +150,17 @@ METRONOME_INTERVAL_CONSUME_FUEL EQU $01
 METRONOME_INTERVAL_ANIMATE_FUEL EQU $04
 METRONOME_INTERVAL_1            EQU $01
 
-INTERACTION_MODE_00   EQU $00
-INTERACTION_MODE_01   EQU $01
-INTERACTION_MODE_02   EQU $02
-INTERACTION_MODE_FUEL EQU $06
+; Player is actively playing: plane is rendered, objects can be interacted with.
+GAMEPLAY_MODE_NORMAL    EQU $00
+; Initial level scroll-in at start of play: plane is not rendered, objects
+; don't activate. Runs for $28 iterations with SPEED_FAST before switching
+; to GAMEPLAY_MODE_NORMAL.
+GAMEPLAY_MODE_SCROLL_IN EQU $01
+; Demo mode: plane is not rendered, objects don't activate, auto-scrolls
+; through levels. Set by init_state and used by the demo routine.
+GAMEPLAY_MODE_DEMO      EQU $02
+; Player is refueling at a fuel station.
+GAMEPLAY_MODE_REFUEL    EQU $06
 
 OTHER_MODE_00             EQU $00
 OTHER_MODE_FUEL           EQU $01
@@ -1540,8 +1547,9 @@ g$5F66 DEFB $00
 @label=state_input_interface
 g$5F67 DEFB $00
 
-; Game status buffer entry at 5F68
-@label=state_interaction_mode_5F68
+; Current gameplay mode (NORMAL, SCROLL_IN, DEMO, or REFUEL)
+@label=state_gameplay_mode
+@isub=DEFB GAMEPLAY_MODE_NORMAL
 g$5F68 DEFB $00
 
 ; Game status buffer entry at 5F69
@@ -1791,7 +1799,7 @@ c$6068 LD A,$DF      ; {Scan "O" (LEFT)
 ;
 ; Used by the routines at #R$5DA6, #R$5F91 and #R$6D17.
 c$60A5 LD A,($5F68)  ;
-@isub=CP INTERACTION_MODE_00
+@isub=CP GAMEPLAY_MODE_NORMAL
  $60A8 CP $00        ;
  $60AA JP NZ,$60E5   ;
 @isub=LD A,OTHER_MODE_00
@@ -2036,7 +2044,7 @@ u$6253 DEFB $3E,$00,$C9
 ;
 ; Used by the routine at #R$6136.
 @label=fuel
-@isub=LD A,INTERACTION_MODE_FUEL
+@isub=LD A,GAMEPLAY_MODE_REFUEL
 c$6256 LD A,$06      ;
  $6258 LD ($5F68),A  ;
  $625B LD B,$80      ;
@@ -2171,7 +2179,7 @@ c$62E8 LD HL,($5F60) ;
  $62F9 CP $FF        ;
  $62FB JP Z,$63B9    ;
  $62FE LD A,($5F68)  ;
-@isub=CP INTERACTION_MODE_FUEL
+@isub=CP GAMEPLAY_MODE_REFUEL
  $6301 CP $06        ;
  $6303 CALL Z,$62DA  ;
  $6306 LD DE,($5EF3) ;
@@ -2243,7 +2251,7 @@ c$62E8 LD HL,($5F60) ;
  $6378 SBC HL,DE     ;
  $637A JP M,$62E8    ;
  $637D LD A,($5F68)  ;
-@isub=CP INTERACTION_MODE_FUEL
+@isub=CP GAMEPLAY_MODE_REFUEL
  $6380 CP $06        ;
  $6382 CALL Z,$62E0  ;
  $6385 LD ($5F8B),BC ;
@@ -2307,7 +2315,7 @@ c$62E8 LD HL,($5F60) ;
 ; Routine at 63FC
 ;
 ; Used by the routines at #R$62E8 and #R$64A1.
-@isub=LD A,INTERACTION_MODE_00
+@isub=LD A,GAMEPLAY_MODE_NORMAL
 c$63FC LD A,$00      ;
  $63FE LD ($5F68),A  ;
 ; This entry point is used by the routine at #R$615E.
@@ -2394,7 +2402,7 @@ c$6462 LD A,$06      ;
 ; Used by the routine at #R$62E8.
 @label=interact_with_fuel
 c$6478 LD A,($5F68)  ;
-@isub=CP INTERACTION_MODE_FUEL
+@isub=CP GAMEPLAY_MODE_REFUEL
  $647B CP $06        ;
  $647D JP Z,$64A1    ;
 @isub=LD A,POINTS_FUEL
@@ -2718,7 +2726,7 @@ c$6642 LD A,($5F72)  ;
 ;
 ; Used by the routines at #R$5DA6 and #R$683B.
 c$6682 LD A,($5F68)  ;
-@isub=CP INTERACTION_MODE_00
+@isub=CP GAMEPLAY_MODE_NORMAL
  $6685 CP $00        ;
  $6687 RET NZ        ;
  $6688 LD A,($5F72)  ;
@@ -2905,7 +2913,7 @@ c$678E LD HL,$6BB0   ;
 c$6794 LD BC,($5EF3) ;
  $6798 CALL $72EF    ;
  $679B LD A,($5F68)  ;
-@isub=CP INTERACTION_MODE_FUEL
+@isub=CP GAMEPLAY_MODE_REFUEL
  $679E CP $06        ;
  $67A0 JP Z,$650A    ;
 @isub=LD A,OTHER_MODE_00
@@ -4546,7 +4554,7 @@ c$706C LD B,$00      ;
 ; .
 ; 4. Render missiles for advanced helicopters (OBJECT_HELICOPTER_ADV).
 ; .
-; 5. Skip further processing if in INTERACTION_MODE_01.
+; 5. Skip further processing if in GAMEPLAY_MODE_SCROLL_IN.
 ; .
 ; 6. Activate objects on their first frame using an interrupt counter and
 ; activation mask (sets bit 7 of the OBJECT_DEFINITION byte).
@@ -4600,9 +4608,9 @@ c$708E LD A,$00      ; {Reset state_other_mode to OTHER_MODE_00.
  $70C3 POP BC        ; {Restore BC, HL, DE registers.
  $70C4 POP HL        ;
  $70C5 POP DE        ; }
- $70C6 LD A,($5F68)  ; Load the current interaction mode.
-@isub=CP INTERACTION_MODE_01
- $70C9 CP $01        ; Check if interaction mode is INTERACTION_MODE_01.
+ $70C6 LD A,($5F68)  ; Load the current gameplay mode.
+@isub=CP GAMEPLAY_MODE_SCROLL_IN
+ $70C9 CP $01        ; Check if gameplay mode is GAMEPLAY_MODE_SCROLL_IN.
  $70CB JP Z,$708E    ; If so, skip to the next object without further
                      ; processing.
  $70CE BIT 7,D       ; Check bit 7 of the object definition (activation flag).
@@ -5243,7 +5251,7 @@ c$73D8 LD A,C        ;
 ; Used by the routine at #R$708E.
 @label=render_helicopter_missile
 c$73DD LD A,($5F68)  ;
-@isub=CP INTERACTION_MODE_01
+@isub=CP GAMEPLAY_MODE_SCROLL_IN
  $73E0 CP $01        ;
  $73E2 RET Z         ;
  $73E3 LD BC,($5F73) ;

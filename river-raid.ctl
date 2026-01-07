@@ -150,10 +150,17 @@
 > $4000 METRONOME_INTERVAL_ANIMATE_FUEL EQU $04
 > $4000 METRONOME_INTERVAL_1            EQU $01
 > $4000
-> $4000 INTERACTION_MODE_00   EQU $00
-> $4000 INTERACTION_MODE_01   EQU $01
-> $4000 INTERACTION_MODE_02   EQU $02
-> $4000 INTERACTION_MODE_FUEL EQU $06
+> $4000 ; Player is actively playing: plane is rendered, objects can be interacted with.
+> $4000 GAMEPLAY_MODE_NORMAL    EQU $00
+> $4000 ; Initial level scroll-in at start of play: plane is not rendered, objects
+> $4000 ; don't activate. Runs for $28 iterations with SPEED_FAST before switching
+> $4000 ; to GAMEPLAY_MODE_NORMAL.
+> $4000 GAMEPLAY_MODE_SCROLL_IN EQU $01
+> $4000 ; Demo mode: plane is not rendered, objects don't activate, auto-scrolls
+> $4000 ; through levels. Set by init_state and used by the demo routine.
+> $4000 GAMEPLAY_MODE_DEMO      EQU $02
+> $4000 ; Player is refueling at a fuel station.
+> $4000 GAMEPLAY_MODE_REFUEL    EQU $06
 > $4000
 > $4000 OTHER_MODE_00             EQU $00
 > $4000 OTHER_MODE_FUEL           EQU $01
@@ -297,8 +304,9 @@ g $5F65
 g $5F66 Fuel level
 @ $5F67 label=state_input_interface
 g $5F67 Control type ($00 - Keyboard, $01 - Sinclair, $02 - Kempston, Other - Cursor)
-@ $5F68 label=state_interaction_mode_5F68
-g $5F68
+@ $5F68 label=state_gameplay_mode
+@ $5F68 isub=DEFB GAMEPLAY_MODE_NORMAL
+g $5F68 Current gameplay mode (NORMAL, SCROLL_IN, DEMO, or REFUEL)
 @ $5F69 label=L5F69
 g $5F69
 @ $5F6A label=state_bridge_player_1
@@ -380,7 +388,7 @@ C $6083 Scan "W" (DOWN)
 C $608C Scan lower row right (FIRE)
 C $6097 Scan lower row left (FIRE)
 c $60A5
-@ $60A8 isub=CP INTERACTION_MODE_00
+@ $60A8 isub=CP GAMEPLAY_MODE_NORMAL
 @ $60AD isub=LD A,OTHER_MODE_00
 c $6124
 @ $6136 label=L6136
@@ -404,7 +412,7 @@ c $61BB
 c $6249
 u $6253
 @ $6256 label=fuel
-@ $6256 isub=LD A,INTERACTION_MODE_FUEL
+@ $6256 isub=LD A,GAMEPLAY_MODE_REFUEL
 c $6256
 @ $6268 label=hit_terrain
 c $6268 Fighter hits terrain
@@ -425,20 +433,20 @@ R $62E0 O:B New coordinate
 c $62E8 Interact with something
 @ $62F4 isub=CP SET_MARKER_EMPTY_SLOT
 @ $62F9 isub=CP SET_MARKER_END_OF_SET
-@ $6301 isub=CP INTERACTION_MODE_FUEL
+@ $6301 isub=CP GAMEPLAY_MODE_REFUEL
 @ $6324 isub=AND SLOT_MASK_OBJECT_TYPE
 @ $6326 isub=CP OBJECT_BALLOON
 @ $632B isub=CP OBJECT_FUEL
 @ $6361 isub=AND SLOT_MASK_OBJECT_TYPE
 @ $6363 isub=CP OBJECT_SHIP
-@ $6380 isub=CP INTERACTION_MODE_FUEL
+@ $6380 isub=CP GAMEPLAY_MODE_REFUEL
 @ $639B isub=CP OBJECT_HELICOPTER_REG
 @ $63A0 isub=CP OBJECT_SHIP
 @ $63A5 isub=CP OBJECT_HELICOPTER_ADV
 @ $63AA isub=CP OBJECT_FIGHTER
 @ $63AF isub=CP OBJECT_BALLOON
 @ $63B4 isub=CP OBJECT_FUEL
-@ $63FC isub=LD A,INTERACTION_MODE_00
+@ $63FC isub=LD A,GAMEPLAY_MODE_NORMAL
 c $63FC
 @ $6401 isub=LD A,OTHER_MODE_00
 @ $6414 label=hit_helicopter_reg
@@ -458,7 +466,7 @@ c $6453 Hit fighter
 c $6462
 @ $6478 label=interact_with_fuel
 c $6478
-@ $647B isub=CP INTERACTION_MODE_FUEL
+@ $647B isub=CP GAMEPLAY_MODE_REFUEL
 @ $6480 isub=LD A,POINTS_FUEL
 c $649E
 c $64A1
@@ -511,7 +519,7 @@ c $6642
 @ $6675 isub=LD D,SPRITE_PLANE_HEIGHT_PIXELS
 @ $6677 isub=LD A,SPRITE_PLANE_WIDTH_TILES
 c $6682
-@ $6685 isub=CP INTERACTION_MODE_00
+@ $6685 isub=CP GAMEPLAY_MODE_NORMAL
 @ $6694 isub=LD A,OTHER_MODE_FUEL
 @ $66A4 isub=LD BC,SPRITE_PLANE_FRAME_SIZE
 @ $66AD isub=LD E,SPRITE_PLANE_ATTRIBUTES
@@ -551,7 +559,7 @@ c $673D
 c $678E
   $6791,2 Reset CONTROLS_BIT_FIRE
 c $6794
-@ $679E isub=CP INTERACTION_MODE_FUEL
+@ $679E isub=CP GAMEPLAY_MODE_REFUEL
 @ $67A3 isub=LD A,OTHER_MODE_00
   $67E1,2 Reset CONTROLS_BIT_SPEED_DECREASED
 c $6831
@@ -863,7 +871,7 @@ N $708E 1. Skip empty slots (SET_MARKER_EMPTY_SLOT) and reset to the beginning w
 N $708E 2. Advance the object's Y position (move it down the screen).
 N $708E 3. Remove objects that have moved beyond the viewport boundary (VIEWPORT_HEIGHT).
 N $708E 4. Render missiles for advanced helicopters (OBJECT_HELICOPTER_ADV).
-N $708E 5. Skip further processing if in INTERACTION_MODE_01.
+N $708E 5. Skip further processing if in GAMEPLAY_MODE_SCROLL_IN.
 N $708E 6. Activate objects on their first frame using an interrupt counter and activation mask (sets bit 7 of the OBJECT_DEFINITION byte).
 N $708E 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHTER, OBJECT_BALLOON, OBJECT_FUEL, OBJECT_TANK, or ships/helicopters (other types).
   $708E Reset state_other_mode to OTHER_MODE_00.
@@ -899,9 +907,9 @@ N $708E 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHT
   $70BD Preserve DE, HL, BC registers for the potential call.
   $70C0 If it's an advanced helicopter, render its missile.
   $70C3 Restore BC, HL, DE registers.
-  $70C6 Load the current interaction mode.
-@ $70C9 isub=CP INTERACTION_MODE_01
-  $70C9 Check if interaction mode is INTERACTION_MODE_01.
+  $70C6 Load the current gameplay mode.
+@ $70C9 isub=CP GAMEPLAY_MODE_SCROLL_IN
+  $70C9 Check if gameplay mode is GAMEPLAY_MODE_SCROLL_IN.
   $70CB If so, skip to the next object without further processing.
   $70CE Check bit 7 of the object definition (activation flag).
   $70D0 If bit 7 is set, the object is already activated, skip to operation dispatch.
@@ -1076,7 +1084,7 @@ c $73D0 Removes helicopter missile.
 c $73D8
 @ $73DD label=render_helicopter_missile
 c $73DD
-@ $73E0 isub=CP INTERACTION_MODE_01
+@ $73E0 isub=CP GAMEPLAY_MODE_SCROLL_IN
 @ $7415 label=handle_other_mode_helicopter_missile
 c $7415
 @ $7441 label=operate_tank_shell
