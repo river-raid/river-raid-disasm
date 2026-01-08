@@ -10,6 +10,10 @@
 > $4000 COLOR_YELLOW  EQU $06
 > $4000 COLOR_WHITE   EQU $07
 > $4000
+> $4000 EXT_ATTR_INK   EQU $10
+> $4000 EXT_ATTR_PAPER EQU $11
+> $4000 EXT_ATTR_AT    EQU $16
+> $4000
 > $4000 INPUT_INTERFACE_KEYBOARD EQU $00
 > $4000 INPUT_INTERFACE_SINCLAIR EQU $01
 > $4000 INPUT_INTERFACE_KEMPSTON EQU $02
@@ -239,11 +243,17 @@ c $5D44
 c $5D9F Decrease player 2 lives
 @ $5DA6 label=play
 c $5DA6
-C $5DB4,2 PAPER 1; INK 4
+@ $5DB4 isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
+C $5DB4,2 PAPER BLUE; INK GREEN
 @ $5DBF isub=LD BC,status_line_2 - status_line_1
 @ $5DD0 isub=LD BC,status_line_3 - status_line_2
 @ $5DF1 isub=LD A,FUEL_LEVEL_FULL
 @ $5E0B isub=LD (HL),SET_MARKER_END_OF_SET
+@ $5E20 isub=LD A,EXT_ATTR_AT
+  $5E20 AT 1,5
+@ $5E29 isub=LD A,EXT_ATTR_INK
+  $5E29,6 INK YELLOW
+@ $5E2C isub=LD A,COLOR_YELLOW
 @ $5E32 isub=LD BC,state_score_player_2 - state_score_player_1
 @ $5E40 isub=LD BC,L805F - status_line_4
 @ $5E76 isub=LD A,SPEED_FAST
@@ -474,9 +484,15 @@ u $64B4
 @ $64BC label=print_bridge
 c $64BC
 @ $64BF isub=CP PLAYER_2
+@ $64C4 isub=LD A,EXT_ATTR_INK
+  $64C4,6 INK YELLOW
+@ $64C7 isub=LD A,COLOR_YELLOW
 @ $64CD isub=LD BC,status_line_4 - status_line_3
 @ $64E5 label=print_bridge_player_2
+@ $64E5 isub=LD A,EXT_ATTR_INK
 c $64E5 Print current bridge for player 2
+  $64E5,6 INK CYAN
+@ $64E8 isub=LD A,COLOR_CYAN
 @ $64EE isub=LD BC,status_line_4 - status_line_3
 @ $64F1 label=print_bridge_no_player_2
 c $64F1 Print current bridge number for player 2
@@ -492,6 +508,11 @@ c $656F
 c $6577 Game Over
 c $6587
 @ $658A isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
+@ $6595 isub=LD A,EXT_ATTR_INK
+  $6595 INK CYAN
+@ $6598 isub=LD A,COLOR_CYAN
+@ $659B isub=LD A,EXT_ATTR_AT
+  $659B,6 AT 20,...
 @ $65A1 ofix=LD DE,$8052
 @ $65A4 ofix=LD BC,$0008
 c $65AB
@@ -713,9 +734,18 @@ c $6CD6
 c $6CF4 Render the low fuel signal
 @ $6D17 label=demo
 c $6D17
-C $6D23,2 PAPER 1; INK 4
+@ $6D23 isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
+C $6D23,2 PAPER BLUE; INK GREEN
 @ $6D2E isub=LD BC,status_line_2 - status_line_1
 @ $6D48 isub=LD BC,L805F - status_line_4
+@ $6DB2 isub=LD A,EXT_ATTR_INK
+  $6DB2 INK BLACK
+@ $6DB5 isub=LD A,COLOR_BLACK
+@ $6DB8 isub=LD A,EXT_ATTR_PAPER
+  $6DB8 PAPER BLACK
+@ $6DBB isub=LD A,COLOR_BLACK
+@ $6DBE isub=LD A,EXT_ATTR_AT
+  $6DBE,9 AT 1,31
 c $6DDD
 @ $6DEB label=init_starting_bridge
 c $6DEB
@@ -1170,54 +1200,96 @@ b $7801 Demo mode flag ($00 - No, $01 - Yes)
 w $7802 Stores the number of remaining iterations before the control choice dialog switches to demo mode
 @ $7804 label=clear_and_setup
 c $7804
-C $7808,2 PAPER 0; INK 7
+@ $7808 isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
+C $7808,2 PAPER BLACK; INK WHITE
 @ $7810 label=setup_sp
 w $7810 Temporary stack pointer used by the control choice dialog
 @ $7812 label=msg_keyboard_config
+@ $7812 isub=DEFM EXT_ATTR_INK,COLOR_RED
 t $7812 Keyboard configuration;
   $7812 INK RED
+@ $7814 isub=DEFM EXT_ATTR_AT,$00,$08
   $7814,3 AT 0,8
+@ $7824 isub=DEFM EXT_ATTR_INK,COLOR_MAGENTA
   $7824 INK MAGENTA
+@ $7826 isub=DEFM EXT_ATTR_AT,$02,$08
   $7826,3 AT 2,8
-  $7836,2 INK YELLOW
-  $7839,2 AT 4,8
+@ $7836 isub=DEFM EXT_ATTR_INK,COLOR_YELLOW
+  $7836 INK YELLOW
+@ $7838 isub=DEFM EXT_ATTR_AT,$04,$08
+  $7838,3 AT 4,8
+@ $7848 isub=DEFM EXT_ATTR_INK,COLOR_GREEN
   $7848 INK GREEN
+@ $784A isub=DEFM EXT_ATTR_AT,$06,$08
   $784A,3 AT 6,8
+@ $785A isub=DEFM EXT_ATTR_INK,COLOR_CYAN
   $785A INK CYAN
+@ $785C isub=DEFM EXT_ATTR_AT,$08,$08
   $785C,3 AT 8,8
+@ $786F isub=DEFM EXT_ATTR_AT,$09,$08
   $786F,3 AT 9,8
+@ $7880 isub=DEFM EXT_ATTR_INK,COLOR_WHITE
   $7880 INK WHITE
 @ $7882 label=msg_instructions
+@ $7882 isub=DEFM EXT_ATTR_AT,$0B,$07
   $7882,3 AT 11,7
+@ $7895 isub=DEFM EXT_ATTR_AT,$0D,$06
   $7895,3 AT 13,6
+@ $78AB isub=DEFM EXT_ATTR_AT,$0F,$04
   $78AB,3 AT 15,4
+@ $78C6 isub=DEFM EXT_ATTR_AT,$10,$03
   $78C6,3 AT 16,3
+@ $78E3 isub=DEFM EXT_ATTR_AT,$11,$09
   $78E3,3 AT 17,9
+@ $78F1 isub=DEFM EXT_ATTR_AT,$13,$00
   $78F1,3 AT 19,0
+@ $7914 isub=DEFM EXT_ATTR_AT,$14,$05
   $7914,3 AT 20,5
 @ $792A label=msg_game_mode
+@ $792A isub=DEFM EXT_ATTR_INK,COLOR_WHITE
 T $792A,2 INK WHITE
+@ $792C isub=DEFM EXT_ATTR_PAPER,COLOR_BLACK
 T $792C,2 PAPER BLACK
+@ $792E isub=DEFM EXT_ATTR_AT,$02,$03
 T $792E,3 AT 2,3
+@ $794B isub=DEFM EXT_ATTR_AT,$03,$0A
 T $794B,3 AT 3,10
+@ $7959 isub=DEFM EXT_ATTR_AT,$06,$06
 T $7959,3 AT 6,6
+@ $7974 isub=DEFM EXT_ATTR_AT,$07,$06
 T $7974,3 AT 7,6
+@ $798E isub=DEFM EXT_ATTR_AT,$09,$09
 T $798E,3 AT 9,9
+@ $79A2 isub=DEFM EXT_ATTR_AT,$0A,$09
 T $79A2,3 AT 10,9
+@ $79B6 isub=DEFM EXT_ATTR_AT,$0C,$09
 T $79B6,3 AT 12,9
+@ $79CA isub=DEFM EXT_ATTR_AT,$0D,$09
 T $79CA,3 AT 13,7
+@ $79DE isub=DEFM EXT_ATTR_AT,$0F,$09
 T $79DE,3 AT 15,9
+@ $79F2 isub=DEFM EXT_ATTR_AT,$10,$09
 T $79F2,3 AT 16,9
+@ $7A06 isub=DEFM EXT_ATTR_AT,$12,$09
 T $7A06,3 AT 18,9
+@ $7A1A isub=DEFM EXT_ATTR_AT,$13,$09
 T $7A1A,3 AT 19,9
 @ $7A2E label=msg_control_types
+@ $7A2E isub=DEFM EXT_ATTR_INK,COLOR_WHITE
 T $7A2E,2 INK WHITE
+@ $7A30 isub=DEFM EXT_ATTR_PAPER,COLOR_BLACK
 T $7A30,2 PAPER BLACK
+@ $7A32 isub=DEFM EXT_ATTR_AT,$03,$03
 T $7A32,3 AT 3,3
+@ $7A4F isub=DEFM EXT_ATTR_AT,$04,$0A
 T $7A4F,3 AT 4,10
+@ $7A5D isub=DEFM EXT_ATTR_AT,$08,$06
 T $7A5D,3 AT 8,6
+@ $7A73 isub=DEFM EXT_ATTR_AT,$0A,$06
 T $7A73,3 AT 10,6
+@ $7A8B isub=DEFM EXT_ATTR_AT,$0C,$06
 T $7A8B,3 AT 12,6
+@ $7AA3 isub=DEFM EXT_ATTR_AT,$0E,$06
 T $7AA3,3 AT 14,6
 @ $7AB9 label=setup
 c $7AB9 Initial game setup
@@ -1235,7 +1307,8 @@ c $7ACD Wait until the user chooses a valid control type or switch to the demo m
   $7AE9,2 Repeat if a valid key was not pressed.
 @ $7AED label=game_mode_print
   $7AED The purpose of this block is really unclear
-  $7AF4,2 PAPER 0; INK 7
+@ $7AF4 isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
+  $7AF4,2 PAPER BLACK; INK WHITE
   $7AF9,9 Print game mode dialog
 @ $7B07 label=game_mode_input
 c $7B07 Wait until the user chooses a valid game mode.
@@ -1243,7 +1316,8 @@ c $7B07 Wait until the user chooses a valid game mode.
   $7B0E,2 Subtract $31 from the pressed key ASCII code, effectively mapping the "1" key to 0, "2" to 1, etc.
   $7B13 Validate the pressed key by making sure that none of the bits older than the first three are set, effectively allowing values 0 through 7.
   $7B17 Repeat if a valid key was not pressed.
-  $7B1A,2 PAPER 0; INK 7
+@ $7B1A isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
+  $7B1A,2 PAPER BLACK; INK WHITE
   $7B27,9 Print keyboard configuration
 @ $7B30 label=instructions_print
 @ $7B3E label=instructions_input
@@ -1254,37 +1328,51 @@ c $7B07 Wait until the user chooses a valid game mode.
 c $7B57
 u $7B61
 @ $8000 label=status_line_1
+@ $8000 isub=DEFM EXT_ATTR_PAPER,COLOR_BLACK
 t $8000
-T $8000 PAPER 0
-T $8002 INK 7
+T $8000 PAPER BLACK
+@ $8002 isub=DEFM EXT_ATTR_INK,COLOR_WHITE
+T $8002 INK WHITE
+@ $8004 isub=DEFM EXT_ATTR_AT,$13,$02
 T $8004 AT 19,2
 T $8007
 B $8011 One half UDG
 T $8012
+@ $8016 isub=DEFM EXT_ATTR_AT,$14,$08
 T $8016 AT 20,8
 B $8019 Fuel gauge scale UDG
+@ $8022 isub=DEFM EXT_ATTR_AT,$15,$08
 T $8022 AT 21,8
-T $8025 INK 3
+@ $8025 isub=DEFM EXT_ATTR_INK,COLOR_MAGENTA
+T $8025 INK MAGENTA
 B $8027 Fuel gauge reading UDG
-T $802F INK 6
+@ $802F isub=DEFM EXT_ATTR_INK,COLOR_YELLOW
+T $802F INK YELLOW
 @ $8031 label=status_line_2
+@ $8031 isub=DEFM EXT_ATTR_AT,$01,$02
 t $8031
 T $8031 AT 1,2
-T $8034 INK 6
+@ $8034 isub=DEFM EXT_ATTR_INK,COLOR_YELLOW
+T $8034 INK YELLOW
 T $8036
-T $8040 INK 7
+@ $8040 isub=DEFM EXT_ATTR_INK,COLOR_WHITE
+T $8040 INK WHITE
+@ $8042 isub=DEFM EXT_ATTR_AT,$01,$12
 T $8042 AT 1,18
 T $8045
 @ $804F label=status_line_3
+@ $804F isub=DEFM EXT_ATTR_AT,$13,$12
 t $804F
 T $804F AT 19,18
 @ $8052 label=status_line_3_text
 t $8052
 T $8052
 @ $805A label=status_line_4
+@ $805A isub=DEFM EXT_ATTR_AT,$14,$04
 t $805A
 T $805A AT 20,4
-T $805D INK 7
+@ $805D isub=DEFM EXT_ATTR_INK,COLOR_WHITE
+T $805D INK WHITE
 u $805F
 @ $8063 label=data_terrain_profiles
 b $8063 Array [15] of terrain element definitions (16 bytes each).
@@ -1595,8 +1683,13 @@ R $913B I:C Offset of the digit to increase.
 R $913B O:D Offset of the digit to increase.
   $9145,2 Check for digit overflow (the value got beyond the 0-9 ASCII range).
 @ $914B label=print_player_1_score_digit
+@ $914B isub=LD A,EXT_ATTR_INK
   $914B INK YELLOW
+@ $914E isub=LD A,COLOR_YELLOW
+@ $9151 isub=LD A,EXT_ATTR_PAPER
   $9151 PAPER BLACK
+@ $9154 isub=LD A,COLOR_BLACK
+@ $9157 isub=LD A,EXT_ATTR_AT
   $9157,6 AT 1,...
 @ $9169 label=inc_player_2_score_digit
 c $9169 Increase a digit in the player 2's score.
@@ -1604,7 +1697,10 @@ R $9169 I:C Offset of the digit to increase.
 R $9169 O:D Offset of the digit to increase.
   $9173,2 Check for digit overflow (the value got beyond the 0-9 ASCII range).
 @ $9179 label=print_player_2_score_digit
+@ $9179 isub=LD A,EXT_ATTR_INK
   $9179 INK CYAN
+@ $917C isub=LD A,COLOR_CYAN
+@ $917F isub=LD A,EXT_ATTR_AT
   $917F,6 AT 1,...
 @ $9191 label=carry_player_1_score_digit
 c $9191 Carry
@@ -1620,15 +1716,25 @@ c $91A9 Carry
 R $91A9 I:D Offset of the digit to carry.
 R $91A9 I:HL Pointer to the digit.
 @ $91C1 label=print_score_player_2
+@ $91C1 isub=LD A,EXT_ATTR_INK
 c $91C1
   $91C1 INK CYAN
+@ $91C4 isub=LD A,COLOR_CYAN
 @ $91C7 isub=LD BC,L90C8 - state_score_player_2
   $91C7 Print score.
   $91D0 "0"
+@ $91D3 isub=LD A,EXT_ATTR_AT
   $91D3 AT 1,18
   $91DC,6 "P2"
 c $91E8
+@ $91ED isub=LD A,EXT_ATTR_AT
+  $91ED,9 AT 1,21
 @ $91F9 isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
+@ $91FE isub=LD A,EXT_ATTR_INK
+  $91FE,6 INK WHITE
+@ $9201 isub=LD A,COLOR_WHITE
+@ $9225 isub=LD A,EXT_ATTR_AT
+  $9225,9 AT 1,18
 @ $923A label=state_game_mode
 b $923A The game mode storing the number of players in the first bit and the starting bridge in the next two.
   $923A,1
@@ -1641,19 +1747,24 @@ b $923D Current player
 @ $923E label=print_lives
 c $923E Print lives.
 @ $9241 isub=CP PLAYER_2
+@ $9246 isub=LD A,EXT_ATTR_INK
   $9246,6 INK YELLOW
+@ $9249 isub=LD A,COLOR_YELLOW
 @ $924F label=print_lives_continue
 c $924F Continue printing lives after the value has been loaded into #REGa.
 R $924F I:A Number of lives.
+@ $9250 isub=LD A,EXT_ATTR_AT
   $9250,9 AT 20,18
 @ $925F label=print_lives_loop
   $925F,3 Print the ✈ UDG symbol
 @ $9264 label=print_lives_padding
 c $9264 Print six spaces
 @ $9277 label=print_lives_player_2
+@ $9277 isub=LD A,EXT_ATTR_INK
 c $9277 The player 2 branch of the #R$923E routine.
 R $9277 O:A Number of lives.
   $9277,6 INK CYAN
+@ $927A isub=LD A,COLOR_CYAN
 @ $9283 label=ptr_state_controls
 g $9283 Pointer to #R$6BB0
 W $9283 Pointer to #R$6BB0

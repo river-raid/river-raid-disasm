@@ -10,6 +10,10 @@ COLOR_CYAN    EQU $05
 COLOR_YELLOW  EQU $06
 COLOR_WHITE   EQU $07
 
+EXT_ATTR_INK   EQU $10
+EXT_ATTR_PAPER EQU $11
+EXT_ATTR_AT    EQU $16
+
 INPUT_INTERFACE_KEYBOARD EQU $00
 INPUT_INTERFACE_SINCLAIR EQU $01
 INPUT_INTERFACE_KEMPSTON EQU $02
@@ -1279,7 +1283,8 @@ c$5DA6 LD A,$10      ;
  $5DAB LD A,$1F      ;
  $5DAD LD ($5F5F),A  ;
  $5DB0 LD SP,($5F83) ;
- $5DB4 LD D,$0C      ; PAPER 1; INK 4
+@isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
+ $5DB4 LD D,$0C      ; PAPER BLUE; INK GREEN
  $5DB6 CALL $940A    ;
  $5DB9 CALL $8A33    ;
  $5DBC LD DE,$8000   ;
@@ -1322,16 +1327,19 @@ c$5DA6 LD A,$10      ;
  $5E18 CALL $923E    ;
  $5E1B LD A,$01      ;
  $5E1D CALL $1601    ;
- $5E20 LD A,$16      ;
+@isub=LD A,EXT_ATTR_AT
+ $5E20 LD A,$16      ; {AT 1,5
  $5E22 RST $10       ;
  $5E23 LD A,$01      ;
  $5E25 RST $10       ;
  $5E26 LD A,$05      ;
- $5E28 RST $10       ;
- $5E29 LD A,$10      ;
+ $5E28 RST $10       ; }
+@isub=LD A,EXT_ATTR_INK
+ $5E29 LD A,$10      ; {INK YELLOW
  $5E2B RST $10       ;
+@isub=LD A,COLOR_YELLOW
  $5E2C LD A,$06      ;
- $5E2E RST $10       ;
+ $5E2E RST $10       ; }
  $5E2F LD DE,$90BC   ;
 @isub=LD BC,state_score_player_2 - state_score_player_1
  $5E32 LD BC,$0006   ;
@@ -2446,10 +2454,12 @@ c$64BC LD A,($923D)  ;
 @isub=CP PLAYER_2
  $64BF CP $02        ;
  $64C1 JP Z,$64E5    ;
- $64C4 LD A,$10      ;
+@isub=LD A,EXT_ATTR_INK
+ $64C4 LD A,$10      ; {INK YELLOW
  $64C6 RST $10       ;
+@isub=LD A,COLOR_YELLOW
  $64C7 LD A,$06      ;
- $64C9 RST $10       ;
+ $64C9 RST $10       ; }
  $64CA LD DE,$804F   ;
 @isub=LD BC,status_line_4 - status_line_3
  $64CD LD BC,$000B   ;
@@ -2467,10 +2477,12 @@ c$64BC LD A,($923D)  ;
 ;
 ; Used by the routine at #R$64BC.
 @label=print_bridge_player_2
-c$64E5 LD A,$10      ;
+@isub=LD A,EXT_ATTR_INK
+c$64E5 LD A,$10      ; {INK CYAN
  $64E7 RST $10       ;
+@isub=LD A,COLOR_CYAN
  $64E8 LD A,$05      ;
- $64EA RST $10       ;
+ $64EA RST $10       ; }
  $64EB LD DE,$804F   ;
 @isub=LD BC,status_line_4 - status_line_3
  $64EE LD BC,$000B   ;
@@ -2580,14 +2592,17 @@ c$6587 LD A,($923A)  ;
  $658D LD A,$01      ;
  $658F LD ($923D),A  ;
  $6592 CALL $64BC    ;
- $6595 LD A,$10      ;
+@isub=LD A,EXT_ATTR_INK
+ $6595 LD A,$10      ; {INK CYAN
  $6597 RST $10       ;
+@isub=LD A,COLOR_CYAN
  $6598 LD A,$05      ;
- $659A RST $10       ;
- $659B LD A,$16      ;
+ $659A RST $10       ; }
+@isub=LD A,EXT_ATTR_AT
+ $659B LD A,$16      ; {AT 20,...
  $659D RST $10       ;
  $659E LD A,$14      ;
- $65A0 RST $10       ;
+ $65A0 RST $10       ; }
 @ofix=LD DE,$8052
  $65A1 LD DE,$8051   ;
 @ofix=LD BC,$0008
@@ -3877,7 +3892,8 @@ c$6D17 LD BC,$0010   ;
  $6D1A LD ($5F70),BC ;
  $6D1E LD A,$10      ;
  $6D20 LD ($5EFD),A  ;
- $6D23 LD D,$0C      ; PAPER 1; INK 4
+@isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
+ $6D23 LD D,$0C      ; PAPER BLUE; INK GREEN
  $6D25 CALL $940A    ;
  $6D28 CALL $8A33    ;
  $6D2B LD DE,$8000   ;
@@ -3936,20 +3952,25 @@ c$6D17 LD BC,$0010   ;
  $6DAA JP NZ,$6D64   ;
  $6DAD LD A,$01      ;
  $6DAF CALL $1601    ;
- $6DB2 LD A,$10      ;
+@isub=LD A,EXT_ATTR_INK
+ $6DB2 LD A,$10      ; {INK BLACK
  $6DB4 RST $10       ;
+@isub=LD A,COLOR_BLACK
  $6DB5 LD A,$00      ;
- $6DB7 RST $10       ;
- $6DB8 LD A,$11      ;
+ $6DB7 RST $10       ; }
+@isub=LD A,EXT_ATTR_PAPER
+ $6DB8 LD A,$11      ; {PAPER BLACK
  $6DBA RST $10       ;
+@isub=LD A,COLOR_BLACK
  $6DBB LD A,$00      ;
- $6DBD RST $10       ;
- $6DBE LD A,$16      ;
+ $6DBD RST $10       ; }
+@isub=LD A,EXT_ATTR_AT
+ $6DBE LD A,$16      ; {AT 1,31
  $6DC0 RST $10       ;
  $6DC1 LD A,$01      ;
  $6DC3 RST $10       ;
  $6DC4 LD A,$1F      ;
- $6DC6 RST $10       ;
+ $6DC6 RST $10       ; }
  $6DC7 LD HL,($5F7E) ;
  $6DCA INC HL        ;
  $6DCB LD ($5F7E),HL ;
@@ -5841,7 +5862,8 @@ w$7802 DEFW $0000
 ; Used by the routine at #R$5CD2.
 @label=clear_and_setup
 c$7804 LD ($7810),SP ;
- $7808 LD D,$07      ; PAPER 0; INK 7
+@isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
+ $7808 LD D,$07      ; PAPER BLACK; INK WHITE
  $780A CALL $940A    ;
  $780D JP $7AB9      ;
 
@@ -5851,80 +5873,120 @@ w$7810 DEFW $0000
 
 ; Keyboard configuration;
 @label=msg_keyboard_config
+@isub=DEFM EXT_ATTR_INK,COLOR_RED
 t$7812 DEFM $10,$02                            ; INK RED
+@isub=DEFM EXT_ATTR_AT,$00,$08
  $7814 DEFM $16,$00,$08                        ; AT 0,8
  $7817 DEFM "LEFT........O"
+@isub=DEFM EXT_ATTR_INK,COLOR_MAGENTA
  $7824 DEFM $10,$03                            ; INK MAGENTA
+@isub=DEFM EXT_ATTR_AT,$02,$08
  $7826 DEFM $16,$02,$08                        ; AT 2,8
  $7829 DEFM "RIGHT.......P"
+@isub=DEFM EXT_ATTR_INK,COLOR_YELLOW
  $7836 DEFM $10,$06                            ; INK YELLOW
- $7838 DEFM $16
- $7839 DEFM $04,$08                            ; AT 4,8
+@isub=DEFM EXT_ATTR_AT,$04,$08
+ $7838 DEFM $16,$04,$08                        ; AT 4,8
  $783B DEFM "FASTER......2"
+@isub=DEFM EXT_ATTR_INK,COLOR_GREEN
  $7848 DEFM $10,$04                            ; INK GREEN
+@isub=DEFM EXT_ATTR_AT,$06,$08
  $784A DEFM $16,$06,$08                        ; AT 6,8
  $784D DEFM "SLOWER......W"
+@isub=DEFM EXT_ATTR_INK,COLOR_CYAN
  $785A DEFM $10,$05                            ; INK CYAN
+@isub=DEFM EXT_ATTR_AT,$08,$08
  $785C DEFM $16,$08,$08                        ; AT 8,8
  $785F DEFM "FIRE......Bottom"
+@isub=DEFM EXT_ATTR_AT,$09,$08
  $786F DEFM $16,$09,$08                        ; AT 9,8
  $7872 DEFM "           row"
+@isub=DEFM EXT_ATTR_INK,COLOR_WHITE
  $7880 DEFM $10,$07                            ; INK WHITE
 @label=msg_instructions
+@isub=DEFM EXT_ATTR_AT,$0B,$07
  $7882 DEFM $16,$0B,$07                        ; AT 11,7
  $7885 DEFM "Press H to pause"
+@isub=DEFM EXT_ATTR_AT,$0D,$06
  $7895 DEFM $16,$0D,$06                        ; AT 13,6
  $7898 DEFM "Press ENTER to play"
+@isub=DEFM EXT_ATTR_AT,$0F,$04
  $78AB DEFM $16,$0F,$04                        ; AT 15,4
  $78AE DEFM "Press CAPS SHIFT & ENTER"
+@isub=DEFM EXT_ATTR_AT,$10,$03
  $78C6 DEFM $16,$10,$03                        ; AT 16,3
  $78C9 DEFM "to reset the game you have"
+@isub=DEFM EXT_ATTR_AT,$11,$09
  $78E3 DEFM $16,$11,$09                        ; AT 17,9
  $78E6 DEFM "just played"
+@isub=DEFM EXT_ATTR_AT,$13,$00
  $78F1 DEFM $16,$13,$00                        ; AT 19,0
  $78F4 DEFM "Press SYM SHIFT & ENTER to reset"
+@isub=DEFM EXT_ATTR_AT,$14,$05
  $7914 DEFM $16,$14,$05                        ; AT 20,5
  $7917 DEFM "the menu selections"
 @label=msg_game_mode
+@isub=DEFM EXT_ATTR_INK,COLOR_WHITE
  $792A DEFM $10,$07                            ; INK WHITE
+@isub=DEFM EXT_ATTR_PAPER,COLOR_BLACK
  $792C DEFM $11,$00                            ; PAPER BLACK
+@isub=DEFM EXT_ATTR_AT,$02,$03
  $792E DEFM $16,$02,$03                        ; AT 2,3
  $7931 DEFM "Press corresponding number"
+@isub=DEFM EXT_ATTR_AT,$03,$0A
  $794B DEFM $16,$03,$0A                        ; AT 3,10
  $794E DEFM "on keyboard"
+@isub=DEFM EXT_ATTR_AT,$06,$06
  $7959 DEFM $16,$06,$06                        ; AT 6,6
  $795C DEFM " Game    No of  Starting"
+@isub=DEFM EXT_ATTR_AT,$07,$06
  $7974 DEFM $16,$07,$06                        ; AT 7,6
  $7977 DEFM "Number  Players  Bridge"
+@isub=DEFM EXT_ATTR_AT,$09,$09
  $798E DEFM $16,$09,$09                        ; AT 9,9
  $7991 DEFM "1       1       1"
+@isub=DEFM EXT_ATTR_AT,$0A,$09
  $79A2 DEFM $16,$0A,$09                        ; AT 10,9
  $79A5 DEFM "2       2       1"
+@isub=DEFM EXT_ATTR_AT,$0C,$09
  $79B6 DEFM $16,$0C,$09                        ; AT 12,9
  $79B9 DEFM "3       1       5"
+@isub=DEFM EXT_ATTR_AT,$0D,$09
  $79CA DEFM $16,$0D,$09                        ; AT 13,7
  $79CD DEFM "4       2       5"
+@isub=DEFM EXT_ATTR_AT,$0F,$09
  $79DE DEFM $16,$0F,$09                        ; AT 15,9
  $79E1 DEFM "5       1      20"
+@isub=DEFM EXT_ATTR_AT,$10,$09
  $79F2 DEFM $16,$10,$09                        ; AT 16,9
  $79F5 DEFM "6       2      20"
+@isub=DEFM EXT_ATTR_AT,$12,$09
  $7A06 DEFM $16,$12,$09                        ; AT 18,9
  $7A09 DEFM "7       1      30"
+@isub=DEFM EXT_ATTR_AT,$13,$09
  $7A1A DEFM $16,$13,$09                        ; AT 19,9
  $7A1D DEFM "8       2      30"
 @label=msg_control_types
+@isub=DEFM EXT_ATTR_INK,COLOR_WHITE
  $7A2E DEFM $10,$07                            ; INK WHITE
+@isub=DEFM EXT_ATTR_PAPER,COLOR_BLACK
  $7A30 DEFM $11,$00                            ; PAPER BLACK
+@isub=DEFM EXT_ATTR_AT,$03,$03
  $7A32 DEFM $16,$03,$03                        ; AT 3,3
  $7A35 DEFM "Press corresponding number"
+@isub=DEFM EXT_ATTR_AT,$04,$0A
  $7A4F DEFM $16,$04,$0A                        ; AT 4,10
  $7A52 DEFM "on keyboard"
+@isub=DEFM EXT_ATTR_AT,$08,$06
  $7A5D DEFM $16,$08,$06                        ; AT 8,6
  $7A60 DEFM "1. KEYBOARD CONTROL"
+@isub=DEFM EXT_ATTR_AT,$0A,$06
  $7A73 DEFM $16,$0A,$06                        ; AT 10,6
  $7A76 DEFM "2. SINCLAIR INTERFACE"
+@isub=DEFM EXT_ATTR_AT,$0C,$06
  $7A8B DEFM $16,$0C,$06                        ; AT 12,6
  $7A8E DEFM "3. KEMPSTON INTERFACE"
+@isub=DEFM EXT_ATTR_AT,$0E,$06
  $7AA3 DEFM $16,$0E,$06                        ; AT 14,6
  $7AA6 DEFM "4. CURSOR INTERFACE"
 
@@ -5968,7 +6030,8 @@ c$7ACD LD HL,($7802) ; {Decrease timer
 *$7AEF DJNZ $7AEF    ;
  $7AF1 DEC A         ;
  $7AF2 JR NZ,$7AED   ; }
- $7AF4 LD D,$07      ; PAPER 0; INK 7
+@isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
+ $7AF4 LD D,$07      ; PAPER BLACK; INK WHITE
  $7AF6 CALL $940A    ;
  $7AF9 LD DE,$792A   ; {Print game mode dialog
  $7AFC LD BC,$0104   ;
@@ -5988,7 +6051,8 @@ c$7B07 LD A,($5C08)  ;
  $7B15 CP $00        ; the bits older than the first three are set, effectively
                      ; allowing values 0 through 7.}
  $7B17 JP NZ,$7B07   ; Repeat if a valid key was not pressed.
- $7B1A LD D,$07      ; PAPER 0; INK 7
+@isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
+ $7B1A LD D,$07      ; PAPER BLACK; INK WHITE
  $7B1C CALL $940A    ;
  $7B1F LD A,($7800)  ;
  $7B22 CP $00        ;
@@ -6175,31 +6239,43 @@ u$7B61 DEFB $C3,$90,$EA,$00,$00,$00,$00,$00
 
 ; Message at 8000
 @label=status_line_1
-t$8000 DEFM $11,$00                         ; PAPER 0
- $8002 DEFM $10,$07                         ; INK 7
+@isub=DEFM EXT_ATTR_PAPER,COLOR_BLACK
+t$8000 DEFM $11,$00                         ; PAPER BLACK
+@isub=DEFM EXT_ATTR_INK,COLOR_WHITE
+ $8002 DEFM $10,$07                         ; INK WHITE
+@isub=DEFM EXT_ATTR_AT,$13,$02
  $8004 DEFM $16,$13,$02                     ; AT 19,2
  $8007 DEFM "GAME  E   "
  $8011 DEFB $93                             ; One half UDG
  $8012 DEFM "   F"
+@isub=DEFM EXT_ATTR_AT,$14,$08
  $8016 DEFM $16,$14,$08                     ; AT 20,8
  $8019 DEFB $91,$90,$90,$90,$91,$90,$90,$90 ; {Fuel gauge scale UDG
  $8021 DEFB $92                             ; }
+@isub=DEFM EXT_ATTR_AT,$15,$08
  $8022 DEFM $16,$15,$08                     ; AT 21,8
- $8025 DEFM $10,$03                         ; INK 3
+@isub=DEFM EXT_ATTR_INK,COLOR_MAGENTA
+ $8025 DEFM $10,$03                         ; INK MAGENTA
  $8027 DEFB $8F,$8F,$8F,$8F,$8F,$8F,$8F,$8F ; Fuel gauge reading UDG
- $802F DEFM $10,$06                         ; INK 6
+@isub=DEFM EXT_ATTR_INK,COLOR_YELLOW
+ $802F DEFM $10,$06                         ; INK YELLOW
 
 ; Message at 8031
 @label=status_line_2
+@isub=DEFM EXT_ATTR_AT,$01,$02
 t$8031 DEFM $16,$01,$02  ; AT 1,2
- $8034 DEFM $10,$06      ; INK 6
+@isub=DEFM EXT_ATTR_INK,COLOR_YELLOW
+ $8034 DEFM $10,$06      ; INK YELLOW
  $8036 DEFM "P1 0000000"
- $8040 DEFM $10,$07      ; INK 7
+@isub=DEFM EXT_ATTR_INK,COLOR_WHITE
+ $8040 DEFM $10,$07      ; INK WHITE
+@isub=DEFM EXT_ATTR_AT,$01,$12
  $8042 DEFM $16,$01,$12  ; AT 1,18
  $8045 DEFM "HI 0000000"
 
 ; Message at 804F
 @label=status_line_3
+@isub=DEFM EXT_ATTR_AT,$13,$12
 t$804F DEFM $16,$13,$12 ; AT 19,18
 
 ; Message at 8052
@@ -6208,8 +6284,10 @@ t$8052 DEFM "BRIDGE  "
 
 ; Message at 805A
 @label=status_line_4
+@isub=DEFM EXT_ATTR_AT,$14,$04
 t$805A DEFM $16,$14,$04 ; AT 20,4
- $805D DEFM $10,$07     ; INK 7
+@isub=DEFM EXT_ATTR_INK,COLOR_WHITE
+ $805D DEFM $10,$07     ; INK WHITE
 
 ; Unused
 u$805F DEFB $01,$05,$0A,$0F
@@ -7914,14 +7992,19 @@ c$913B LD HL,$90BC   ;
  $914A LD (HL),A     ;
 ; This entry point is used by the routine at #R$9191.
 @label=print_player_1_score_digit
+@isub=LD A,EXT_ATTR_INK
 *$914B LD A,$10      ; {INK YELLOW
  $914D RST $10       ;
+@isub=LD A,COLOR_YELLOW
  $914E LD A,$06      ;
  $9150 RST $10       ; }
+@isub=LD A,EXT_ATTR_PAPER
  $9151 LD A,$11      ; {PAPER BLACK
  $9153 RST $10       ;
+@isub=LD A,COLOR_BLACK
  $9154 LD A,$00      ;
  $9156 RST $10       ; }
+@isub=LD A,EXT_ATTR_AT
  $9157 LD A,$16      ; {AT 1,...
  $9159 RST $10       ;
  $915A LD A,$01      ;
@@ -7955,10 +8038,13 @@ c$9169 LD HL,$90C2   ;
  $9178 LD (HL),A     ;
 ; This entry point is used by the routine at #R$91A9.
 @label=print_player_2_score_digit
+@isub=LD A,EXT_ATTR_INK
 *$9179 LD A,$10      ; {INK CYAN
  $917B RST $10       ;
+@isub=LD A,COLOR_CYAN
  $917C LD A,$05      ;
  $917E RST $10       ; }
+@isub=LD A,EXT_ATTR_AT
  $917F LD A,$16      ; {AT 1,...
  $9181 RST $10       ;
  $9182 LD A,$01      ;
@@ -8022,8 +8108,10 @@ c$91A9 LD (HL),$30   ;
 ;
 ; Used by the routine at #R$91E8.
 @label=print_score_player_2
+@isub=LD A,EXT_ATTR_INK
 c$91C1 LD A,$10      ; {INK CYAN
  $91C3 RST $10       ;
+@isub=LD A,COLOR_CYAN
  $91C4 LD A,$05      ;
  $91C6 RST $10       ; }
 @isub=LD BC,L90C8 - state_score_player_2
@@ -8032,6 +8120,7 @@ c$91C1 LD A,$10      ; {INK CYAN
  $91CD CALL $203C    ; }
  $91D0 LD A,$30      ; {"0"
  $91D2 RST $10       ; }
+@isub=LD A,EXT_ATTR_AT
  $91D3 LD A,$16      ; {AT 1,18
  $91D5 RST $10       ;
  $91D6 LD A,$01      ;
@@ -8051,20 +8140,23 @@ c$91C1 LD A,$10      ; {INK CYAN
 ; Used by the routine at #R$5DA6.
 c$91E8 LD A,$01      ;
  $91EA CALL $1601    ;
- $91ED LD A,$16      ;
+@isub=LD A,EXT_ATTR_AT
+ $91ED LD A,$16      ; {AT 1,21
  $91EF RST $10       ;
  $91F0 LD A,$01      ;
  $91F2 RST $10       ;
  $91F3 LD A,$15      ;
- $91F5 RST $10       ;
+ $91F5 RST $10       ; }
  $91F6 LD A,($923A)  ;
 @isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
  $91F9 BIT 0,A       ;
  $91FB JP NZ,$91C1   ;
- $91FE LD A,$10      ;
+@isub=LD A,EXT_ATTR_INK
+ $91FE LD A,$10      ; {INK WHITE
  $9200 RST $10       ;
+@isub=LD A,COLOR_WHITE
  $9201 LD A,$07      ;
- $9203 RST $10       ;
+ $9203 RST $10       ; }
  $9204 LD BC,$0006   ;
  $9207 LD HL,$90C8   ;
  $920A LD A,($923A)  ;
@@ -8082,12 +8174,13 @@ c$91E8 LD A,$01      ;
  $921F CALL $203C    ;
  $9222 LD A,$30      ;
  $9224 RST $10       ;
- $9225 LD A,$16      ;
+@isub=LD A,EXT_ATTR_AT
+ $9225 LD A,$16      ; {AT 1,18
  $9227 RST $10       ;
  $9228 LD A,$01      ;
  $922A RST $10       ;
  $922B LD A,$12      ;
- $922D RST $10       ;
+ $922D RST $10       ; }
  $922E LD A,$48      ;
  $9230 RST $10       ;
  $9231 LD A,$49      ;
@@ -8121,8 +8214,10 @@ c$923E LD A,($923D)  ;
 @isub=CP PLAYER_2
  $9241 CP $02        ;
  $9243 JP Z,$9277    ;
+@isub=LD A,EXT_ATTR_INK
  $9246 LD A,$10      ; {INK YELLOW
  $9248 RST $10       ;
+@isub=LD A,COLOR_YELLOW
  $9249 LD A,$06      ;
  $924B RST $10       ; }
  $924C LD A,($923B)  ;
@@ -8134,6 +8229,7 @@ c$923E LD A,($923D)  ;
 ; I:A Number of lives.
 @label=print_lives_continue
 c$924F LD B,A        ;
+@isub=LD A,EXT_ATTR_AT
  $9250 LD A,$16      ; {AT 20,18
  $9252 RST $10       ;
  $9253 LD A,$14      ;
@@ -8172,8 +8268,10 @@ c$9264 LD A,$20      ;
 ;
 ; O:A Number of lives.
 @label=print_lives_player_2
+@isub=LD A,EXT_ATTR_INK
 c$9277 LD A,$10      ; {INK CYAN
  $9279 RST $10       ;
+@isub=LD A,COLOR_CYAN
  $927A LD A,$05      ;
  $927C RST $10       ; }
  $927D LD A,($923C)  ;
