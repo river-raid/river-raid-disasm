@@ -25,8 +25,8 @@
 > $4000 INPUT_INTERFACE_KEMPSTON EQU $02
 > $4000 INPUT_INTERFACE_CURSOR   EQU $03
 > $4000
-> $4000 DEMO_MODE_OFF EQU $00
-> $4000 DEMO_MODE_ON  EQU $01
+> $4000 OVERVIEW_MODE_OFF EQU $00
+> $4000 OVERVIEW_MODE_ON  EQU $01
 > $4000
 > $4000 GAME_MODE_BIT_TWO_PLAYERS EQU 0
 > $4000
@@ -166,9 +166,9 @@
 > $4000 ; don't activate. Runs for $28 iterations with SPEED_FAST before switching
 > $4000 ; to GAMEPLAY_MODE_NORMAL.
 > $4000 GAMEPLAY_MODE_SCROLL_IN EQU $01
-> $4000 ; Demo mode: plane is not rendered, objects don't activate, auto-scrolls
-> $4000 ; through levels. Set by init_state and used by the demo routine.
-> $4000 GAMEPLAY_MODE_DEMO      EQU $02
+> $4000 ; Overview mode: plane is not rendered, objects don't activate, auto-scrolls
+> $4000 ; through levels. Set by init_state and used by the overview routine.
+> $4000 GAMEPLAY_MODE_OVERVIEW  EQU $02
 > $4000 ; Player is refueling at a fuel station.
 > $4000 GAMEPLAY_MODE_REFUEL    EQU $06
 > $4000
@@ -231,7 +231,7 @@ c $5CD2 The entry point invoked from the BASIC loader
 @ $5CD8 nowarn
 @ $5CE3 nowarn
 c $5D10
-@ $5D20 isub=CP DEMO_MODE_ON
+@ $5D20 isub=CP OVERVIEW_MODE_ON
 c $5D2B
 @ $5D35 label=restart
 c $5D35 Restart the game
@@ -322,7 +322,7 @@ g $5F66 Fuel level
 g $5F67 Control type ($00 - Keyboard, $01 - Sinclair, $02 - Kempston, Other - Cursor)
 @ $5F68 label=state_gameplay_mode
 @ $5F68 isub=DEFB GAMEPLAY_MODE_NORMAL
-g $5F68 Current gameplay mode (NORMAL, SCROLL_IN, DEMO, or REFUEL)
+g $5F68 Current gameplay mode (NORMAL, SCROLL_IN, OVERVIEW, or REFUEL)
 @ $5F69 label=L5F69
 g $5F69
 @ $5F6A label=state_bridge_player_1
@@ -738,7 +738,7 @@ c $6CB8
 c $6CD6
 @ $6CF4 label=do_low_fuel
 c $6CF4 Render the low fuel signal
-@ $6D17 label=demo
+@ $6D17 label=overview
 c $6D17
 @ $6D23 isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
 C $6D23,2 PAPER BLUE; INK GREEN
@@ -1200,10 +1200,10 @@ c $76DA
 u $7727
 @ $7800 label=tmp_control_type
 b $7800 Control type chosen from the dialog before the validation
-@ $7801 label=state_demo_mode
-b $7801 Demo mode flag ($00 - No, $01 - Yes)
+@ $7801 label=state_overview_mode
+b $7801 Overview mode flag ($00 - No, $01 - Yes)
 @ $7802 label=controls_timer
-w $7802 Stores the number of remaining iterations before the control choice dialog switches to demo mode
+w $7802 Stores the number of remaining iterations before the control choice dialog switches to overview mode
 @ $7804 label=clear_and_setup
 c $7804
 @ $7808 isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
@@ -1304,7 +1304,7 @@ R $7AB9 Sets the stack pointer to #R$7810 and returns using that stack.
 C $7AB9,9 Print control types dialog
 C $7AC2,6 Initialize timer
 @ $7ACD label=controls_input
-c $7ACD Wait until the user chooses a valid control type or switch to the demo mode on timeout.
+c $7ACD Wait until the user chooses a valid control type or switch to the overview mode on timeout.
   $7ACD Decrease timer
   $7AD4,5 Check if the time is up
   $7ADC Scan keyboard
@@ -1329,8 +1329,8 @@ c $7B07 Wait until the user chooses a valid game mode.
 @ $7B3E label=instructions_input
   $7B41,4 Scan keyboard
   $7B48 Loop until Enter is pressed
-  $7B4D,5 Switch to the non-demo mode
-@ $7B57 label=switch_to_demo_mode
+  $7B4D,5 Switch to the non-overview mode
+@ $7B57 label=switch_to_overview_mode
 c $7B57
 u $7B61
 @ $8000 label=status_line_1

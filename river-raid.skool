@@ -25,8 +25,8 @@ INPUT_INTERFACE_SINCLAIR EQU $01
 INPUT_INTERFACE_KEMPSTON EQU $02
 INPUT_INTERFACE_CURSOR   EQU $03
 
-DEMO_MODE_OFF EQU $00
-DEMO_MODE_ON  EQU $01
+OVERVIEW_MODE_OFF EQU $00
+OVERVIEW_MODE_ON  EQU $01
 
 GAME_MODE_BIT_TWO_PLAYERS EQU 0
 
@@ -166,9 +166,9 @@ GAMEPLAY_MODE_NORMAL    EQU $00
 ; don't activate. Runs for $28 iterations with SPEED_FAST before switching
 ; to GAMEPLAY_MODE_NORMAL.
 GAMEPLAY_MODE_SCROLL_IN EQU $01
-; Demo mode: plane is not rendered, objects don't activate, auto-scrolls
-; through levels. Set by init_state and used by the demo routine.
-GAMEPLAY_MODE_DEMO      EQU $02
+; Overview mode: plane is not rendered, objects don't activate, auto-scrolls
+; through levels. Set by init_state and used by the overview routine.
+GAMEPLAY_MODE_OVERVIEW  EQU $02
 ; Player is refueling at a fuel station.
 GAMEPLAY_MODE_REFUEL    EQU $06
 
@@ -1198,7 +1198,7 @@ c$5D10 LD A,$FC      ;
  $5D17 LD A,($7800)  ;
  $5D1A LD ($5F67),A  ;
  $5D1D LD A,($7801)  ;
-@isub=CP DEMO_MODE_ON
+@isub=CP OVERVIEW_MODE_ON
  $5D20 CP $01        ;
  $5D22 JP Z,$5D2B    ;
  $5D25 CALL $5D44    ;
@@ -1561,7 +1561,7 @@ g$5F66 DEFB $00
 @label=state_input_interface
 g$5F67 DEFB $00
 
-; Current gameplay mode (NORMAL, SCROLL_IN, DEMO, or REFUEL)
+; Current gameplay mode (NORMAL, SCROLL_IN, OVERVIEW, or REFUEL)
 @label=state_gameplay_mode
 @isub=DEFB GAMEPLAY_MODE_NORMAL
 g$5F68 DEFB $00
@@ -3893,7 +3893,7 @@ c$6CF4 LD C,$03      ;
 ; Routine at 6D17
 ;
 ; Used by the routine at #R$5D2B.
-@label=demo
+@label=overview
 c$6D17 LD BC,$0010   ;
  $6D1A LD ($5F70),BC ;
  $6D1E LD A,$10      ;
@@ -5854,12 +5854,12 @@ u$7727 DEFB $C3,$90,$EA,$0D,$00,$05,$1F,$00
 @label=tmp_control_type
 b$7800 DEFB $00
 
-; Demo mode flag ($00 - No, $01 - Yes)
-@label=state_demo_mode
+; Overview mode flag ($00 - No, $01 - Yes)
+@label=state_overview_mode
 b$7801 DEFB $00
 
 ; Stores the number of remaining iterations before the control choice dialog
-; switches to demo mode
+; switches to overview mode
 @label=controls_timer
 w$7802 DEFW $0000
 
@@ -6011,8 +6011,8 @@ c$7AB9 LD DE,$7A2E   ; {Print control types dialog
  $7AC8 LD A,$0D      ;
  $7ACA LD ($5C08),A  ;
 
-; Wait until the user chooses a valid control type or switch to the demo mode
-; on timeout.
+; Wait until the user chooses a valid control type or switch to the overview
+; mode on timeout.
 @label=controls_input
 c$7ACD LD HL,($7802) ; {Decrease timer
  $7AD0 DEC HL        ;
@@ -6079,7 +6079,7 @@ c$7B07 LD A,($5C08)  ;
  $7B45 LD A,($5C08)  ;
  $7B48 CP $0D        ; {Loop until Enter is pressed
  $7B4A JP NZ,$7B3E   ; }
- $7B4D LD A,$00      ; {Switch to the non-demo mode
+ $7B4D LD A,$00      ; {Switch to the non-overview mode
  $7B4F LD ($7801),A  ; }
  $7B52 LD SP,($7810) ;
  $7B56 RET           ;
@@ -6087,7 +6087,7 @@ c$7B07 LD A,($5C08)  ;
 ; Routine at 7B57
 ;
 ; Used by the routine at #R$7ACD.
-@label=switch_to_demo_mode
+@label=switch_to_overview_mode
 c$7B57 LD A,$01      ;
  $7B59 LD ($7801),A  ;
  $7B5C LD SP,($7810) ;

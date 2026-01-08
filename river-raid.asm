@@ -23,8 +23,8 @@ INPUT_INTERFACE_SINCLAIR EQU $01
 INPUT_INTERFACE_KEMPSTON EQU $02
 INPUT_INTERFACE_CURSOR   EQU $03
 
-DEMO_MODE_OFF EQU $00
-DEMO_MODE_ON  EQU $01
+OVERVIEW_MODE_OFF EQU $00
+OVERVIEW_MODE_ON  EQU $01
 
 GAME_MODE_BIT_TWO_PLAYERS EQU 0
 
@@ -164,9 +164,9 @@ GAMEPLAY_MODE_NORMAL    EQU $00
 ; don't activate. Runs for $28 iterations with SPEED_FAST before switching
 ; to GAMEPLAY_MODE_NORMAL.
 GAMEPLAY_MODE_SCROLL_IN EQU $01
-; Demo mode: plane is not rendered, objects don't activate, auto-scrolls
-; through levels. Set by init_state and used by the demo routine.
-GAMEPLAY_MODE_DEMO      EQU $02
+; Overview mode: plane is not rendered, objects don't activate, auto-scrolls
+; through levels. Set by init_state and used by the overview routine.
+GAMEPLAY_MODE_OVERVIEW  EQU $02
 ; Player is refueling at a fuel station.
 GAMEPLAY_MODE_REFUEL    EQU $06
 
@@ -1180,7 +1180,7 @@ init_0:
   EI
   LD HL,msg_credits
   LD (ptr_scroller),HL
-; This entry point is used by the routines at select_controls and demo.
+; This entry point is used by the routines at select_controls and overview.
 init_1:
   LD A,$3F
   LD I,A
@@ -1196,8 +1196,8 @@ L5D10:
   EI
   LD A,(tmp_control_type)
   LD (state_input_interface),A
-  LD A,(state_demo_mode)
-  CP DEMO_MODE_ON
+  LD A,(state_overview_mode)
+  CP OVERVIEW_MODE_ON
   JP Z,L5D2B
   CALL init_state
   JP play
@@ -1208,7 +1208,7 @@ L5D10:
 L5D2B:
   LD SP,(sp_5F83)
   CALL init_state
-  JP demo
+  JP overview
 
 ; Restart the game
 ;
@@ -1278,7 +1278,7 @@ decrease_lives_player_2:
 
 ; Routine at 5DA6
 ;
-; Used by the routines at L5D10, restart, handle_no_fuel and demo.
+; Used by the routines at L5D10, restart, handle_no_fuel and overview.
 play:
   LD A,$10
   LD (state_island_line_idx),A
@@ -1548,7 +1548,7 @@ state_fuel:
 state_input_interface:
   DEFB $00
 
-; Current gameplay mode (NORMAL, SCROLL_IN, DEMO, or REFUEL)
+; Current gameplay mode (NORMAL, SCROLL_IN, OVERVIEW, or REFUEL)
 state_gameplay_mode:
   DEFB GAMEPLAY_MODE_NORMAL
 
@@ -1798,7 +1798,7 @@ scan_keyboard:
 
 ; Routine at 60A5
 ;
-; Used by the routines at play, main_loop and demo.
+; Used by the routines at play, main_loop and overview.
 L60A5:
   LD A,(state_gameplay_mode)
   CP GAMEPLAY_MODE_NORMAL
@@ -2420,7 +2420,7 @@ L64B4:
 ; Routine at 64BC
 ;
 ; Used by the routines at play, interact_with_something, next_bridge_player_2,
-; L6587 and demo.
+; L6587 and overview.
 print_bridge:
   LD A,(state_player)
   CP PLAYER_2
@@ -2552,7 +2552,7 @@ game_over:
 
 ; Routine at 6587
 ;
-; Used by the routine at demo.
+; Used by the routine at overview.
 L6587:
   LD A,(state_game_mode)
   BIT GAME_MODE_BIT_TWO_PLAYERS,A
@@ -2737,7 +2737,7 @@ ld_sprite_plane_banked:
 ; Increase state_y by the value of state_speed, set state_speed to the default
 ; value and do something with the state_controls bits.
 ;
-; Used by the routines at play, main_loop and demo.
+; Used by the routines at play, main_loop and overview.
 advance:
   LD BC,(state_y)
   LD H,$00
@@ -3071,7 +3071,7 @@ L68C5_1:
 
 ; Routine at 68E9
 ;
-; Used by the routines at play and demo.
+; Used by the routines at play and overview.
 init_current_bridge:
   LD HL,screen_attributes
   LD B,$20
@@ -3613,7 +3613,7 @@ pause:
 
 ; Handle the Enter key pressed
 ;
-; Used by the routines at main_loop and demo.
+; Used by the routines at main_loop and overview.
 handle_enter:
   LD A,$FE                ; Scan Caps Shift
   IN A,($FE)              ;
@@ -3881,7 +3881,7 @@ do_low_fuel_2:
 ; Routine at 6D17
 ;
 ; Used by the routine at L5D2B.
-demo:
+overview:
   LD BC,$0010
   LD (state_y),BC
   LD A,$10
@@ -3911,7 +3911,7 @@ demo:
   LD A,(state_bridge_index)
   LD (L5D43),A
 ; This entry point is used by the routine at L6DDD.
-demo_0:
+overview_0:
   LD A,$BF
   IN A,($FE)
   BIT 0,A
@@ -3941,7 +3941,7 @@ demo_0:
   LD A,(L5F81)
   AND $03
   CP $00
-  JP NZ,demo_0
+  JP NZ,overview_0
   LD A,$01
   CALL CHAN_OPEN
   LD A,EXT_ATTR_INK       ; INK BLACK
@@ -3967,22 +3967,22 @@ demo_0:
   RST $10
   LD A,$02
   CALL CHAN_OPEN
-  JP demo_0
+  JP overview_0
 
 ; Routine at 6DDD
 ;
-; Used by the routine at demo.
+; Used by the routine at overview.
 L6DDD:
   LD HL,msg_credits
   LD (ptr_scroller),HL
   LD A,$00
   LD (L5F6D),A
-  JP demo_0
+  JP overview_0
 
 ; Initializes the starting bridge based on the value of state_game_mode using
 ; starting_bridges for the lookup.
 ;
-; Used by the routines at init_state and demo.
+; Used by the routines at init_state and overview.
 init_starting_bridge:
   LD A,(state_game_mode)
   SRL A                   ; Shift the game mode right discarding the bit
@@ -4494,7 +4494,7 @@ render_balloon:
 
 ; Main viewport object processing loop.
 ;
-; Used by the routines at play, main_loop, demo,
+; Used by the routines at play, main_loop, overview,
 ; ship_or_helicopter_left_advance, operate_fighter, L71A2, L7224,
 ; animate_object, animate_helicopter, operate_tank, operate_tank_on_bank,
 ; L7358, L74EE, operate_fuel, handle_object_proximity,
@@ -5105,7 +5105,7 @@ invert_helicopter_missle_offset:
 
 ; Operates helicopter missile.
 ;
-; Used by the routines at main_loop and demo.
+; Used by the routines at main_loop and overview.
 operate_helicopter_missile:
   LD BC,(helicopter_missile_coordinates_ptr)
   LD A,B
@@ -5216,7 +5216,7 @@ handle_other_mode_helicopter_missile_0:
 
 ; Routine at 7441
 ;
-; Used by the routines at main_loop and demo.
+; Used by the routines at main_loop and overview.
 operate_tank_shell:
   LD A,(tank_shell_state)
   BIT TANK_SHELL_BIT_FLYING,A
@@ -5709,12 +5709,12 @@ L7727:
 tmp_control_type:
   DEFB $00
 
-; Demo mode flag ($00 - No, $01 - Yes)
-state_demo_mode:
+; Overview mode flag ($00 - No, $01 - Yes)
+state_overview_mode:
   DEFB $00
 
 ; Stores the number of remaining iterations before the control choice dialog
-; switches to demo mode
+; switches to overview mode
 controls_timer:
   DEFW $0000
 
@@ -5813,7 +5813,7 @@ msg_control_types:
 ;
 ; Used by the routine at clear_and_setup.
 ;
-; Initializes tmp_control_type, state_demo_mode and state_game_mode.
+; Initializes tmp_control_type, state_overview_mode and state_game_mode.
 ; Sets the stack pointer to setup_sp and returns using that stack.
 setup:
   LD DE,msg_control_types ; Print control types dialog
@@ -5824,15 +5824,15 @@ setup:
   LD A,$0D
   LD (LAST_K),A
 
-; Wait until the user chooses a valid control type or switch to the demo mode
-; on timeout.
+; Wait until the user chooses a valid control type or switch to the overview
+; mode on timeout.
 controls_input:
   LD HL,(controls_timer)  ; Decrease timer
   DEC HL                  ;
   LD (controls_timer),HL  ;
-  LD A,H                   ; Check if the time is up
-  OR L                     ;
-  JP Z,switch_to_demo_mode ;
+  LD A,H                       ; Check if the time is up
+  OR L                         ;
+  JP Z,switch_to_overview_mode ;
   LD A,(LAST_K)
   CALL KEYBOARD           ; Scan keyboard
   EI                      ;
@@ -5893,17 +5893,17 @@ instructions_input:
   LD A,(LAST_K)
   CP $0D                   ; Loop until Enter is pressed
   JP NZ,instructions_input ;
-  LD A,$00                ; Switch to the non-demo mode
-  LD (state_demo_mode),A  ;
+  LD A,$00                   ; Switch to the non-overview mode
+  LD (state_overview_mode),A ;
   LD SP,(setup_sp)
   RET
 
 ; Routine at 7B57
 ;
 ; Used by the routine at controls_input.
-switch_to_demo_mode:
+switch_to_overview_mode:
   LD A,$01
-  LD (state_demo_mode),A
+  LD (state_overview_mode),A
   LD SP,(setup_sp)
   RET
 
@@ -6902,7 +6902,7 @@ do_fire_1:
 
 ; Routine at 8A1B
 ;
-; Used by the routine at demo.
+; Used by the routine at overview.
 L8A1B:
   LD HL,$57FF
   LD C,$08
@@ -6922,7 +6922,7 @@ L8A1B_1:
 
 ; Routine at 8A33
 ;
-; Used by the routines at play and demo.
+; Used by the routines at play and overview.
 ;
 ; Sets BORDER to BLACK, sets screen attributes to WHITE-on-BLACK and copies
 ;      udg_data to the UDG area.
@@ -8206,7 +8206,7 @@ L93F2:
 ; Clear the screen by setting all pixel bytes to $00 and all attributes to the
 ; value set in D.
 ;
-; Used by the routines at play, demo, clear_and_setup, controls_input and
+; Used by the routines at play, overview, clear_and_setup, controls_input and
 ; game_mode_input.
 ;
 ; I:D Attribute value.
