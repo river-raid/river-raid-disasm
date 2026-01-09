@@ -1156,37 +1156,63 @@ L5C79:
   DEFB $50,$80,$00,$01,$5C,$1A,$EA,$0D
   DEFB $80
 
-; The entry point invoked from the BASIC loader
+; Game initialization and interrupt setup
+;
+; This is the main entry point invoked by the BASIC loader. It performs
+; one-time initialization of the game engine, including setting up the custom
+; interrupt handler (IM 2 mode) and initializing global pointers.
 init:
-  LD HL,state_controls
-  LD (ptr_state_controls),HL
-  LD HL,L6136
+  LD HL,state_controls    ; Initialize ptr_state_controls to point to
+                          ; state_controls.
+  LD (ptr_state_controls),HL ; Initialize L6136_ptr to point to L6136 (the
+  LD HL,L6136                ; state dispatcher routine).
   LD (L6136_ptr),HL
-  LD A,$C3
-  LD ($FEFE),A
-  LD HL,int_handler
-  LD ($FEFF),HL
-  LD HL,$FC00
-  LD B,$00
-init_0:
-  LD (HL),$FE
-  INC HL
-  DJNZ init_0
-  LD (HL),$FE
-  LD A,$FC
-  LD I,A
-  LD (sp_5F83),SP
-  IM 2
-  EI
-  LD HL,msg_credits
-  LD (ptr_scroller),HL
-; This entry point is used by the routines at select_controls and overview.
-init_1:
-  LD A,$3F
-  LD I,A
-  IM 1
-  EI
-  CALL clear_and_setup
+  LD A,$C3                ; Load $C3 (JP instruction opcode) into A.
+  LD ($FEFE),A            ; Write the JP opcode to $FEFE (interrupt vector
+                          ; table entry).
+  LD HL,int_handler       ; Load the address of int_handler into HL.
+  LD ($FEFF),HL           ; Write the interrupt handler address to $FEFF
+                          ; (completing the JP instruction).
+  LD HL,$FC00             ; Point HL to $FC00 (start of interrupt vector
+                          ; table).
+  LD B,$00                ; Set B to 0 (loop 256 times).
+int_vector_table_write_loop:
+  LD (HL),$FE             ; Write $FE to the current vector table entry.
+  INC HL                  ; Advance HL to the next entry.
+  DJNZ int_vector_table_write_loop ; Decrement B and loop until all 256 entries
+                                   ; are filled.
+  LD (HL),$FE             ; Write $FE to the final (257th) entry at $FD00.
+  LD A,$FC                ; Load $FC into A (high byte of interrupt vector
+                          ; table address).
+  LD I,A                  ; Set the I register to $FC (enabling IM 2 mode with
+                          ; vector table at $FC00).
+  LD (sp_5F83),SP         ; Save the current stack pointer to sp_5F83.
+  IM 2                    ; Set interrupt mode 2 (vectored interrupts).
+  EI                      ; Enable interrupts.
+  LD HL,msg_credits       ; Load the address of msg_credits into HL.
+  LD (ptr_scroller),HL    ; Store it in ptr_scroller (initialize the scroller
+                          ; message).
+
+; Control selection and game setup entry point
+;
+; Used by the routines at select_controls and overview.
+;
+; This entry point is used when returning to the control selection dialog from
+; the game (via select_controls) or from the overview mode. It switches back to
+; the standard ZX Spectrum interrupt mode (IM 1), then calls clear_and_setup to
+; display the control selection dialog.
+;
+; After the user selects controls and game mode, execution continues at L5D10.
+L5D06:
+  LD A,$3F                ; Load $3F into A (high byte of ROM address for IM
+                          ; 1).
+  LD I,A                  ; Set the I register to $3F (standard ZX Spectrum IM
+                          ; 1 mode).
+  IM 1                    ; Set interrupt mode 1 (standard ZX Spectrum
+                          ; interrupts).
+  EI                      ; Enable interrupts.
+  CALL clear_and_setup    ; Call clear_and_setup to display the control
+                          ; selection dialog.
 
 ; Routine at 5D10
 L5D10:
@@ -3631,7 +3657,7 @@ handle_enter:
 select_controls:
   LD HL,msg_credits
   LD (ptr_scroller),HL
-  JP init_1
+  JP L5D06
 
 ; Non-maskable interrupt handler
 int_handler:
@@ -3921,7 +3947,7 @@ overview_0:
   LD A,(state_bridge_index)
   SUB B
   CP $05
-  JP Z,init_1
+  JP Z,L5D06
   CALL L8A1B
   CALL L60A5
   LD HL,state_metronome
@@ -5720,7 +5746,7 @@ controls_timer:
 
 ; Routine at 7804
 ;
-; Used by the routine at init.
+; Used by the routine at L5D06.
 clear_and_setup:
   LD (setup_sp),SP
   LD D,COLOR_BLACK<<3|COLOR_WHITE ; PAPER BLACK; INK WHITE

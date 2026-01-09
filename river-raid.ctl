@@ -227,9 +227,39 @@ b $5B00
 g $5C78 Interrupt counter
 u $5C79
 @ $5CD2 label=init
-c $5CD2 The entry point invoked from the BASIC loader
+c $5CD2 Game initialization and interrupt setup
+N $5CD2 This is the main entry point invoked by the BASIC loader. It performs one-time initialization of the game engine, including setting up the custom interrupt handler (IM 2 mode) and initializing global pointers.
+  $5CD2 Initialize ptr_state_controls to point to state_controls.
+  $5CD5,6 Initialize L6136_ptr to point to L6136 (the state dispatcher routine).
 @ $5CD8 nowarn
+  $5CDE Load $C3 (JP instruction opcode) into A.
+  $5CE0 Write the JP opcode to $FEFE (interrupt vector table entry).
 @ $5CE3 nowarn
+  $5CE3 Load the address of int_handler into HL.
+  $5CE6 Write the interrupt handler address to $FEFF (completing the JP instruction).
+  $5CE9 Point HL to $FC00 (start of interrupt vector table).
+  $5CEC Set B to 0 (loop 256 times).
+@ $5CEE label=int_vector_table_write_loop
+  $5CEE Write $FE to the current vector table entry.
+  $5CF0 Advance HL to the next entry.
+  $5CF1 Decrement B and loop until all 256 entries are filled.
+  $5CF3 Write $FE to the final (257th) entry at $FD00.
+  $5CF5 Load $FC into A (high byte of interrupt vector table address).
+  $5CF7 Set the I register to $FC (enabling IM 2 mode with vector table at $FC00).
+  $5CF9 Save the current stack pointer to sp_5F83.
+  $5CFD Set interrupt mode 2 (vectored interrupts).
+  $5CFF Enable interrupts.
+  $5D00 Load the address of msg_credits into HL.
+  $5D03 Store it in #R$5F7E (initialize the scroller message).
+c $5D06 Control selection and game setup entry point
+N $5D06 This entry point is used when returning to the control selection dialog from the game (via #R$6BD2) or from the overview mode. It switches back to the standard ZX Spectrum interrupt mode (IM 1), then calls clear_and_setup to display the control selection dialog.
+N $5D06 .
+N $5D06 After the user selects controls and game mode, execution continues at L5D10.
+  $5D06 Load $3F into A (high byte of ROM address for IM 1).
+  $5D08 Set the I register to $3F (standard ZX Spectrum IM 1 mode).
+  $5D0A Set interrupt mode 1 (standard ZX Spectrum interrupts).
+  $5D0C Enable interrupts.
+  $5D0D,3 Call clear_and_setup to display the control selection dialog.
 c $5D10
 @ $5D20 isub=CP OVERVIEW_MODE_ON
 c $5D2B

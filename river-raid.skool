@@ -1158,37 +1158,67 @@ u$5C79 DEFB $00,$00,$58,$FF,$00,$00,$21,$00
  $5CC9 DEFB $50,$80,$00,$01,$5C,$1A,$EA,$0D
  $5CD1 DEFB $80
 
-; The entry point invoked from the BASIC loader
+; Game initialization and interrupt setup
+;
+; .
+;
+; .
+;
+; This is the main entry point invoked by the BASIC loader. It performs
+; one-time initialization of the game engine, including setting up the custom
+; interrupt handler (IM 2 mode) and initializing global pointers.
 @label=init
-c$5CD2 LD HL,$6BB0   ;
- $5CD5 LD ($9283),HL ;
+c$5CD2 LD HL,$6BB0   ; Initialize ptr_state_controls to point to
+                     ; state_controls.
+ $5CD5 LD ($9283),HL ; {Initialize L6136_ptr to point to L6136 (the state
 @nowarn
- $5CD8 LD HL,$6136   ;
+ $5CD8 LD HL,$6136   ; dispatcher routine).}
  $5CDB LD ($8B08),HL ;
- $5CDE LD A,$C3      ;
- $5CE0 LD ($FEFE),A  ;
+ $5CDE LD A,$C3      ; Load $C3 (JP instruction opcode) into A.
+ $5CE0 LD ($FEFE),A  ; Write the JP opcode to $FEFE (interrupt vector table
+                     ; entry).
 @nowarn
- $5CE3 LD HL,$6BDB   ;
- $5CE6 LD ($FEFF),HL ;
- $5CE9 LD HL,$FC00   ;
- $5CEC LD B,$00      ;
-*$5CEE LD (HL),$FE   ;
- $5CF0 INC HL        ;
- $5CF1 DJNZ $5CEE    ;
- $5CF3 LD (HL),$FE   ;
- $5CF5 LD A,$FC      ;
- $5CF7 LD I,A        ;
- $5CF9 LD ($5F83),SP ;
- $5CFD IM 2          ;
- $5CFF EI            ;
- $5D00 LD HL,$8182   ;
- $5D03 LD ($5F7E),HL ;
-; This entry point is used by the routines at #R$6BD2 and #R$6D17.
-*$5D06 LD A,$3F      ;
- $5D08 LD I,A        ;
- $5D0A IM 1          ;
- $5D0C EI            ;
- $5D0D CALL $7804    ;
+ $5CE3 LD HL,$6BDB   ; Load the address of int_handler into HL.
+ $5CE6 LD ($FEFF),HL ; Write the interrupt handler address to $FEFF (completing
+                     ; the JP instruction).
+ $5CE9 LD HL,$FC00   ; Point HL to $FC00 (start of interrupt vector table).
+ $5CEC LD B,$00      ; Set B to 0 (loop 256 times).
+@label=int_vector_table_write_loop
+*$5CEE LD (HL),$FE   ; Write $FE to the current vector table entry.
+ $5CF0 INC HL        ; Advance HL to the next entry.
+ $5CF1 DJNZ $5CEE    ; Decrement B and loop until all 256 entries are filled.
+ $5CF3 LD (HL),$FE   ; Write $FE to the final (257th) entry at $FD00.
+ $5CF5 LD A,$FC      ; Load $FC into A (high byte of interrupt vector table
+                     ; address).
+ $5CF7 LD I,A        ; Set the I register to $FC (enabling IM 2 mode with
+                     ; vector table at $FC00).
+ $5CF9 LD ($5F83),SP ; Save the current stack pointer to sp_5F83.
+ $5CFD IM 2          ; Set interrupt mode 2 (vectored interrupts).
+ $5CFF EI            ; Enable interrupts.
+ $5D00 LD HL,$8182   ; Load the address of msg_credits into HL.
+ $5D03 LD ($5F7E),HL ; Store it in #R$5F7E (initialize the scroller message).
+
+; Control selection and game setup entry point
+;
+; Used by the routines at #R$6BD2 and #R$6D17.
+;
+; .
+;
+; This entry point is used when returning to the control selection dialog from
+; the game (via #R$6BD2) or from the overview mode. It switches back to the
+; standard ZX Spectrum interrupt mode (IM 1), then calls clear_and_setup to
+; display the control selection dialog.
+; .
+; .
+; .
+; After the user selects controls and game mode, execution continues at L5D10.
+c$5D06 LD A,$3F      ; Load $3F into A (high byte of ROM address for IM 1).
+ $5D08 LD I,A        ; Set the I register to $3F (standard ZX Spectrum IM 1
+                     ; mode).
+ $5D0A IM 1          ; Set interrupt mode 1 (standard ZX Spectrum interrupts).
+ $5D0C EI            ; Enable interrupts.
+ $5D0D CALL $7804    ; Call clear_and_setup to display the control selection
+                     ; dialog.
 
 ; Routine at 5D10
 c$5D10 LD A,$FC      ;
@@ -5865,7 +5895,7 @@ w$7802 DEFW $0000
 
 ; Routine at 7804
 ;
-; Used by the routine at #R$5CD2.
+; Used by the routine at #R$5D06.
 @label=clear_and_setup
 c$7804 LD ($7810),SP ;
 @isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
