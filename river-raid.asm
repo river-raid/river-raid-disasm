@@ -176,8 +176,8 @@ OTHER_MODE_HIT            EQU $02
 OTHER_MODE_XOR            EQU $03
 OTHER_MODE_HELICOPTER_ADV EQU $04
 
-TODO_L5EF2_00 EQU $00
-TODO_L5EF2_01 EQU $01
+TANK_SHELL_INACTIVE EQU $00
+TANK_SHELL_ACTIVE   EQU $01
 
 VIEWPORT_HEIGHT EQU $88
 
@@ -1256,42 +1256,62 @@ starting_bridges:
 L5D43:
   DEFB $00
 
-; Routine at 5D44
+; Initialize game state for overview/demo mode.
 ;
 ; Used by the routines at L5D10, L5D2B and restart.
+;
+; This routine sets up the initial game state used by the overview (attract
+; mode) routine. It initializes player positions, scores, lives, terrain state,
+; and sets the gameplay mode to GAMEPLAY_MODE_OVERVIEW.
 init_state:
   LD A,$78                ; Initialize state_x. Why isn't it $80?
   LD (state_x),A          ;
-  CALL init_starting_bridge
-  LD HL,viewport_objects
-  LD (viewport_ptr),HL
-  LD (HL),SET_MARKER_END_OF_SET
-  LD A,$1F
-  LD (L5F5F),A
-  LD A,$00
-  OUT ($FE),A
-  LD (L5EF2),A
-  LD (state_controls),A
-  LD BC,$4C83
-  LD (state_terrain_element_23),BC
-  LD A,$02
-  LD (state_terrain_profile_number),A
-  LD (state_gameplay_mode),A
-  LD (state_speed),A
-  LD (L5F6D),A
-  LD HL,$3030
-  LD (state_score_player_1),HL
-  LD (L90BE),HL
-  LD (L90C0),HL
-  LD (state_score_player_2),HL
-  LD (L90C4),HL
-  LD (L90C6),HL
-  LD A,$01
-  LD (state_level_fragment_number),A
-  LD (state_terrain_position),A
-  LD HL,$0404
-  LD (state_lives_player_1),HL
-  LD (state_player),A
+  CALL init_starting_bridge ; Call init_starting_bridge to set starting bridge
+                            ; for both players based on game mode.
+  LD HL,viewport_objects  ; Load the address of viewport_objects into HL.
+  LD (viewport_ptr),HL    ; Store the viewport_objects address in viewport_ptr.
+  LD (HL),SET_MARKER_END_OF_SET ; Mark the viewport objects list as empty
+                                ; (SET_MARKER_END_OF_SET).
+  LD A,$1F                ; Load $1F (31 decimal) into A.
+  LD (state_activation_mask),A ; Store $1F to state_activation_mask (normal
+                               ; activation timing).
+  LD A,$00                ; Load $00 into A.
+  OUT ($FE),A             ; Set border to black and disable sound (OUT to ULA
+                          ; port $FE).
+  LD (state_tank_shell),A ; Clear state_tank_shell (set to
+                          ; TANK_SHELL_INACTIVE).
+  LD (state_controls),A   ; Clear state_bridge_index (set to $00).
+  LD BC,$4C83             ; Load $4C83 into BC (terrain element value).
+  LD (state_terrain_element_23),BC ; Store BC to state_terrain_element_23.
+  LD A,$02                ; Load $02 into A (GAMEPLAY_MODE_OVERVIEW and
+                          ; SPEED_NORMAL).
+  LD (state_terrain_profile_number),A ; Set state_terrain_profile_number to
+                                      ; $02.
+  LD (state_gameplay_mode),A ; Set state_gameplay_mode to
+                             ; GAMEPLAY_MODE_OVERVIEW.
+  LD (state_speed),A      ; Set state_speed to SPEED_NORMAL.
+  LD (state_bridge_destroyed),A ; Store $02 to state_bridge_destroyed (unclear
+                                ; why $02 is used here).
+  LD HL,$3030             ; Load $3030 into HL (ASCII "00").
+  LD (state_score_player_1_low),HL ; Initialize state_score_player_1 low bytes
+                                   ; to "00".
+  LD (state_score_player_1_mid),HL ; Initialize state_score_player_1_mid bytes
+                                   ; to "00".
+  LD (state_score_player_1_high),HL ; Initialize state_score_player_1_high
+                                    ; bytes to "00".
+  LD (state_score_player_2_low),HL ; Initialize state_score_player_2 low bytes
+                                   ; to "00".
+  LD (state_score_player_2_mid),HL ; Initialize state_score_player_2_mid bytes
+                                   ; to "00".
+  LD (state_score_player_2_high),HL ; Initialize state_score_player_2_high
+                                    ; bytes to "00".
+  LD A,$01                ; Load $01 into A (PLAYER_1).
+  LD (state_level_fragment_number),A ; Set state_level_fragment_number to $01.
+  LD (state_terrain_position),A ; Set state_terrain_position to $01.
+  LD HL,$0404             ; Load $0404 into HL (4 lives for both players).
+  LD (state_lives_player_1),HL ; Store $0404 to state_lives_player_1 (sets both
+                               ; player lives to 4).
+  LD (state_player),A     ; Set state_player to PLAYER_1.
   RET
 
 ; Decrease player 2 lives
@@ -1309,7 +1329,7 @@ play:
   LD A,$10
   LD (state_island_line_idx),A
   LD A,$1F
-  LD (L5F5F),A
+  LD (state_activation_mask),A
   LD SP,(sp_5F83)
   LD D,COLOR_BLUE<<3|COLOR_GREEN ; PAPER BLUE; INK GREEN
   CALL clear_screen
@@ -1360,8 +1380,8 @@ play:
   RST $10                 ;
   LD A,COLOR_YELLOW       ;
   RST $10                 ;
-  LD DE,state_score_player_1
-  LD BC,state_score_player_2 - state_score_player_1
+  LD DE,state_score_player_1_low
+  LD BC,state_score_player_2_low - state_score_player_1_low
   CALL PR_STRING
   LD A,$02
   CALL CHAN_OPEN
@@ -1381,12 +1401,12 @@ play:
   LD A,$01
   LD (state_level_fragment_number),A
   LD (state_gameplay_mode),A
-  LD (L5F6D),A
+  LD (state_bridge_destroyed),A
   LD A,$68
   LD (LAST_K),A
   LD A,$00
   LD (state_controls),A
-  LD (L5EF2),A
+  LD (state_tank_shell),A
   LD A,SPEED_FAST
   LD (state_speed),A
   LD BC,$4C83
@@ -1434,8 +1454,8 @@ play_2:
   JP Z,play_2
 play_3:
   LD A,$00
-  LD (L5F6D),A
-  LD (L5F6E),A
+  LD (state_bridge_destroyed),A
+  LD (state_bridge_y_position),A
   LD A,$02
   LD (state_speed),A
   LD (state_metronome),A
@@ -1458,8 +1478,9 @@ state_bridge_index:
 state_input_readings:
   DEFB $00
 
-; Game status buffer entry at 5EF2
-L5EF2:
+; Tank shell state: $00 when no tank is in firing position, $01 when a tank is
+; at screen center ($80) and can fire.
+state_tank_shell:
   DEFB $00
 
 ; Game status buffer entry at 5EF3
@@ -1546,8 +1567,9 @@ exploding_fragments:
   DEFB $20,$20,$20
   DEFB $20
 
-; Game status buffer entry at 5F5F
-L5F5F:
+; Object activation mask ANDed with interrupt counter to control activation
+; timing. Set to $1F normally, $0F after bridge destruction.
+state_activation_mask:
   DEFB $04
 
 ; Pointer to a slot from viewport_objects
@@ -1594,12 +1616,13 @@ state_bridge_player_2:
 L5F6C:
   DEFB $00
 
-; Game status buffer entry at 5F6D
-L5F6D:
+; Bridge destruction flag: $00 = no bridge destroyed, $01 = bridge destroyed.
+state_bridge_destroyed:
   DEFB $00
 
-; Game status buffer entry at 5F6E
-L5F6E:
+; Y-position of the destroyed bridge section (used for rendering explosion
+; fragments).
+state_bridge_y_position:
   DEFB $00
 
 ; Game status buffer entry at 5F6F
@@ -1985,7 +2008,7 @@ handle_other_mode_xor:
 ; Used by the routines at L6136 and fuel.
 interact_with_something:
   LD BC,(state_plane_missile_coordinates)
-  LD A,(L5F6E)
+  LD A,(state_bridge_y_position)
   CP $00
   JP Z,interact_with_something2
   LD D,A
@@ -1998,14 +2021,14 @@ interact_with_something:
   LD A,POINTS_BRIDGE
   CALL add_points
   LD A,$0F
-  LD (L5F5F),A
+  LD (state_activation_mask),A
   POP DE
   POP DE
   POP DE
   POP BC
   LD A,D
   LD (L5EF6),A
-  LD A,(L5F6E)
+  LD A,(state_bridge_y_position)
   SUB $04
   LD B,A
   LD C,$70
@@ -2034,9 +2057,9 @@ interact_with_something:
   LD HL,$4100
   CALL Z,handle_special_terrain_fragment_0
   LD A,$00
-  LD (L5F6E),A
+  LD (state_bridge_y_position),A
   LD A,$01
-  LD (L5F6D),A
+  LD (state_bridge_destroyed),A
   LD BC,(L5F8D)
   LD (state_plane_missile_coordinates),BC
   LD A,(state_player)
@@ -2783,7 +2806,7 @@ advance:
 ;
 ; Used by the routine at advance.
 L66EE:
-  LD A,(L5F6E)
+  LD A,(state_bridge_y_position)
   CP $00
   RET Z
   LD B,A
@@ -2792,7 +2815,7 @@ L66EE:
   CP VIEWPORT_HEIGHT
   LD A,B
   CALL Z,L6704
-  LD (L5F6E),A
+  LD (state_bridge_y_position),A
   RET
 
 ; Routine at 6704
@@ -2800,7 +2823,7 @@ L66EE:
 ; Used by the routine at L66EE.
 L6704:
   LD A,$00
-  LD (L5F6D),A
+  LD (state_bridge_destroyed),A
   RET
 
 ; Routine at 670A
@@ -3156,7 +3179,7 @@ L693B:
 ; Used by the routine at render_terrain_row.
 handle_terrain_element_1_eq_3:
   LD A,$01
-  LD (L5F6E),A
+  LD (state_bridge_y_position),A
   LD A,$06
   LD (L5EEE),A
   RET
@@ -3166,7 +3189,7 @@ handle_terrain_element_1_eq_3:
 ; Used by the routine at render_terrain_row.
 handle_terrain_element_1_eq_2:
   LD A,$00
-  LD (L5F6D),A
+  LD (state_bridge_destroyed),A
   RET
 
 ; Increase bridge index and handle overflow by resetting to the first bridge.
@@ -3607,7 +3630,7 @@ handle_special_terrain_fragment_continue:
   LD BC,$0020
   LDIR
   LD (L5F6C),A
-  LD A,(L5F6D)
+  LD A,(state_bridge_destroyed)
   CP $00
   RET Z
   LD HL,(screen_ptr)
@@ -4002,7 +4025,7 @@ L6DDD:
   LD HL,msg_credits
   LD (ptr_scroller),HL
   LD A,$00
-  LD (L5F6D),A
+  LD (state_bridge_destroyed),A
   JP overview_0
 
 ; Initializes the starting bridge based on the value of state_game_mode using
@@ -4605,7 +4628,8 @@ operate_viewport_objects:
                           ; flag).
   JP NZ,operate_viewport_objects_0 ; If bit 7 is set, the object is already
                                    ; activated, skip to operation dispatch.
-  LD A,(L5F5F)            ; Load the activation mask from L5F5F.
+  LD A,(state_activation_mask) ; Load the activation mask from
+                               ; state_activation_mask.
   LD E,A                  ; Copy the mask into E.
   LD A,(int_counter)      ; Load the interrupt counter.
   AND E                   ; AND the counter with the mask to check if it's time
@@ -4905,12 +4929,12 @@ L728B:
   INC C
   RET
 
-; Routine at 7290
+; Set tank shell state to active (tank is at firing position)
 ;
 ; Used by the routine at operate_tank.
-ld_L5EF2_1:
-  LD A,TODO_L5EF2_01
-  LD (L5EF2),A
+set_tank_shell_active:
+  LD A,TANK_SHELL_ACTIVE
+  LD (state_tank_shell),A
   RET
 
 ; Routine at 7296
@@ -4930,7 +4954,7 @@ operate_tank:
   JP NZ,operate_tank_on_bank
   POP BC
   POP DE
-  LD A,(L5F6D)
+  LD A,(state_bridge_destroyed)
   CP $00
   JP NZ,L74EE
 ; This entry point is used by the routine at operate_tank_on_bank.
@@ -4941,7 +4965,7 @@ operate_tank_0:
   CALL Z,L728B
   LD A,C
   CP $80
-  CALL Z,ld_L5EF2_1
+  CALL Z,set_tank_shell_active
   LD HL,(viewport_ptr)
   DEC HL
   LD D,(HL)
@@ -5069,8 +5093,8 @@ L7358:
 ;
 ; Used by the routine at init_tank_shell_state.
 L735E:
-  LD A,(L5EF2)
-  CP TODO_L5EF2_01
+  LD A,(state_tank_shell)
+  CP TANK_SHELL_ACTIVE
   JP Z,L7358
   PUSH BC
   LD A,C
@@ -5558,8 +5582,8 @@ remove_object_from_viewport:
   AND SLOT_MASK_OBJECT_TYPE
   CP OBJECT_TANK
   JP NZ,operate_viewport_objects
-  LD A,TODO_L5EF2_00
-  LD (L5EF2),A
+  LD A,TANK_SHELL_INACTIVE
+  LD (state_tank_shell),A
   BIT SLOT_BIT_TANK_ON_BANK,D
   JP Z,operate_viewport_objects
   CALL remove_tank_shell
@@ -7543,27 +7567,27 @@ sprite_tank_shell_explosion:
   DEFB $00,$00            ;
 
 ; Message at 90BC
-state_score_player_1:
+state_score_player_1_low:
   DEFM "00"
 
 ; Message at 90BE
-L90BE:
+state_score_player_1_mid:
   DEFM "00"
 
 ; Message at 90C0
-L90C0:
+state_score_player_1_high:
   DEFM "00"
 
 ; Message at 90C2
-state_score_player_2:
+state_score_player_2_low:
   DEFM "00"
 
 ; Message at 90C4
-L90C4:
+state_score_player_2_mid:
   DEFM "00"
 
 ; Message at 90C6
-L90C6:
+state_score_player_2_high:
   DEFM "00"
 
 ; Message at 90C8
@@ -7653,7 +7677,7 @@ update_score:
 ; I:C Offset of the digit to increase.
 ; O:D Offset of the digit to increase.
 inc_player_1_score_digit:
-  LD HL,state_score_player_1
+  LD HL,state_score_player_1_low
   LD B,$00
   LD A,C
   ADD HL,BC
@@ -7694,7 +7718,7 @@ print_player_1_score_digit:
 ; I:C Offset of the digit to increase.
 ; O:D Offset of the digit to increase.
 inc_player_2_score_digit:
-  LD HL,state_score_player_2
+  LD HL,state_score_player_2_low
   LD B,$00
   LD A,C
   ADD HL,BC
@@ -7778,9 +7802,9 @@ print_score_player_2:
   RST $10                 ;
   LD A,COLOR_PLAYER_2     ;
   RST $10                 ;
-  LD BC,L90C8 - state_score_player_2 ; Print score.
-  LD DE,state_score_player_2         ;
-  CALL PR_STRING                     ;
+  LD BC,L90C8 - state_score_player_2_low ; Print score.
+  LD DE,state_score_player_2_low         ;
+  CALL PR_STRING                         ;
   LD A,$30                ; "0"
   RST $10                 ;
   LD A,EXT_ATTR_AT        ; AT 1,18
@@ -8203,14 +8227,14 @@ L93BE:
   LD E,A
   ADD HL,DE
   EX DE,HL
-  LD HL,state_score_player_1
+  LD HL,state_score_player_1_low
   PUSH DE
   CALL L93A1
   POP DE
   CP $01
   RET NZ
-  LD HL,state_score_player_1
-  LD BC,state_score_player_2 - state_score_player_1
+  LD HL,state_score_player_1_low
+  LD BC,state_score_player_2_low - state_score_player_1_low
   LDIR
   RET
 
@@ -8218,14 +8242,14 @@ L93BE:
 ;
 ; Used by the routine at L93BE.
 L93F2:
-  LD HL,state_score_player_1
-  LD DE,state_score_player_2
+  LD HL,state_score_player_1_low
+  LD DE,state_score_player_2_low
   CALL L93A1
   CP $FF
   RET NZ
-  LD HL,state_score_player_2
-  LD DE,state_score_player_1
-  LD BC,state_score_player_2 - state_score_player_1
+  LD HL,state_score_player_2_low
+  LD DE,state_score_player_1_low
+  LD BC,state_score_player_2_low - state_score_player_1_low
   LDIR
   RET
 

@@ -178,8 +178,8 @@
 > $4000 OTHER_MODE_XOR            EQU $03
 > $4000 OTHER_MODE_HELICOPTER_ADV EQU $04
 > $4000
-> $4000 TODO_L5EF2_00 EQU $00
-> $4000 TODO_L5EF2_01 EQU $01
+> $4000 TANK_SHELL_INACTIVE EQU $00
+> $4000 TANK_SHELL_ACTIVE   EQU $01
 > $4000
 > $4000 VIEWPORT_HEIGHT EQU $88
 > $4000
@@ -229,13 +229,13 @@ u $5C79
 @ $5CD2 label=init
 c $5CD2 Game initialization and interrupt setup
 N $5CD2 This is the main entry point invoked by the BASIC loader. It performs one-time initialization of the game engine, including setting up the custom interrupt handler (IM 2 mode) and initializing global pointers.
-  $5CD2 Initialize ptr_state_controls to point to state_controls.
-  $5CD5,6 Initialize L6136_ptr to point to L6136 (the state dispatcher routine).
+  $5CD2 Initialize #R$9283 to point to #R$6BB0.
+  $5CD5,6 Initialize #R$8B08 to point to #R$6136 (the state dispatcher routine).
 @ $5CD8 nowarn
   $5CDE Load $C3 (JP instruction opcode) into A.
   $5CE0 Write the JP opcode to $FEFE (interrupt vector table entry).
 @ $5CE3 nowarn
-  $5CE3 Load the address of int_handler into HL.
+  $5CE3 Load the address of #R$6BDB into HL.
   $5CE6 Write the interrupt handler address to $FEFF (completing the JP instruction).
   $5CE9 Point HL to $FC00 (start of interrupt vector table).
   $5CEC Set B to 0 (loop 256 times).
@@ -246,20 +246,20 @@ N $5CD2 This is the main entry point invoked by the BASIC loader. It performs on
   $5CF3 Write $FE to the final (257th) entry at $FD00.
   $5CF5 Load $FC into A (high byte of interrupt vector table address).
   $5CF7 Set the I register to $FC (enabling IM 2 mode with vector table at $FC00).
-  $5CF9 Save the current stack pointer to sp_5F83.
+  $5CF9 Save the current stack pointer to #R$5F83.
   $5CFD Set interrupt mode 2 (vectored interrupts).
   $5CFF Enable interrupts.
-  $5D00 Load the address of msg_credits into HL.
+  $5D00 Load the address of #R$8182 into HL.
   $5D03 Store it in #R$5F7E (initialize the scroller message).
 c $5D06 Control selection and game setup entry point
 N $5D06 This entry point is used when returning to the control selection dialog from the game (via #R$6BD2) or from the overview mode. It switches back to the standard ZX Spectrum interrupt mode (IM 1), then calls clear_and_setup to display the control selection dialog.
 N $5D06 .
-N $5D06 After the user selects controls and game mode, execution continues at L5D10.
+N $5D06 After the user selects controls and game mode, execution continues at #R$5D10.
   $5D06 Load $3F into A (high byte of ROM address for IM 1).
   $5D08 Set the I register to $3F (standard ZX Spectrum IM 1 mode).
   $5D0A Set interrupt mode 1 (standard ZX Spectrum interrupts).
   $5D0C Enable interrupts.
-  $5D0D,3 Call clear_and_setup to display the control selection dialog.
+  $5D0D,3 Call #R$7804 to display the control selection dialog.
 c $5D10
 @ $5D20 isub=CP OVERVIEW_MODE_ON
 c $5D2B
@@ -272,9 +272,44 @@ R $5D3F The values correspond to the dialog rendered as #R$792A.
 @ $5D43 label=L5D43
 g $5D43
 @ $5D44 label=init_state
-c $5D44
-  $5D44,5 Initialize #R$5F72. Why isn't it $80?
+c $5D44 Initialize game state for overview/demo mode.
+N $5D44 This routine sets up the initial game state used by the overview (attract mode) routine. It initializes player positions, scores, lives, terrain state, and sets the gameplay mode to GAMEPLAY_MODE_OVERVIEW.
+  $5D44 Initialize #R$5F72. Why isn't it $80?
+  $5D49 Call init_starting_bridge to set starting bridge for both players based on game mode.
+  $5D4C Load the address of viewport_objects into HL.
+  $5D4F Store the viewport_objects address in viewport_ptr.
 @ $5D52 isub=LD (HL),SET_MARKER_END_OF_SET
+  $5D52 Mark the viewport objects list as empty (SET_MARKER_END_OF_SET).
+  $5D54 Load $1F (31 decimal) into A.
+@ $5D56 isub=LD (state_activation_mask),A
+  $5D56 Store $1F to #R$5F5F (normal activation timing).
+  $5D59 Load $00 into A.
+  $5D5B Set border to black and disable sound (OUT to ULA port $FE).
+@ $5D5D isub=LD (state_tank_shell),A
+  $5D5D Clear #R$5EF2 (set to TANK_SHELL_INACTIVE).
+  $5D60 Clear #R$5EF0 (set to $00).
+@ $5D63 ignoreua=$4C83
+  $5D63 Load $4C83 into BC (terrain element value).
+  $5D66 Store BC to state_terrain_element_23.
+  $5D6A Load $02 into A (GAMEPLAY_MODE_OVERVIEW and SPEED_NORMAL).
+  $5D6C Set state_terrain_profile_number to $02.
+  $5D6F Set state_gameplay_mode to GAMEPLAY_MODE_OVERVIEW.
+  $5D72 Set #R$5F64 to SPEED_NORMAL.
+@ $5D75 isub=LD (state_bridge_destroyed),A
+  $5D75 Store $02 to #R$5F6D (unclear why $02 is used here).
+  $5D78 Load $3030 into HL (ASCII "00").
+  $5D7B Initialize state_score_player_1 low bytes to "00".
+  $5D7E Initialize state_score_player_1_mid bytes to "00".
+  $5D81 Initialize state_score_player_1_high bytes to "00".
+  $5D84 Initialize state_score_player_2 low bytes to "00".
+  $5D87 Initialize state_score_player_2_mid bytes to "00".
+  $5D8A Initialize state_score_player_2_high bytes to "00".
+  $5D8D Load $01 into A (PLAYER_1).
+  $5D8F Set state_level_fragment_number to $01.
+  $5D92 Set state_terrain_position to $01.
+  $5D95 Load $0404 into HL (4 lives for both players).
+  $5D98 Store $0404 to state_lives_player_1 (sets both player lives to 4).
+  $5D9B,3 Set state_player to PLAYER_1.
 @ $5D9F label=decrease_lives_player_2
 c $5D9F Decrease player 2 lives
 @ $5DA6 label=play
@@ -290,7 +325,7 @@ C $5DB4,2 PAPER BLUE; INK GREEN
 @ $5E29 isub=LD A,EXT_ATTR_INK
   $5E29,6 INK YELLOW
 @ $5E2C isub=LD A,COLOR_YELLOW
-@ $5E32 isub=LD BC,state_score_player_2 - state_score_player_1
+@ $5E32 isub=LD BC,state_score_player_2_low - state_score_player_1_low
 @ $5E40 isub=LD BC,L805F - status_line_4
 @ $5E76 isub=LD A,SPEED_FAST
 @ $5E98 isub=LD A,SPEED_FAST
@@ -304,8 +339,8 @@ g $5EEF
 g $5EF0 Current player's current bridge modulo 48 (the total number of bridges).
 @ $5EF1 label=state_input_readings
 g $5EF1 Contains the current readings of the input port (Sinclair, Kempston, Cursor, etc.).
-@ $5EF2 label=L5EF2
-g $5EF2
+@ $5EF2 label=state_tank_shell
+g $5EF2 Tank shell state: $00 when no tank is in firing position, $01 when a tank is at screen center ($80) and can fire.
 @ $5EF3 label=state_plane_missile_coordinates
 g $5EF3
 @ $5EF4 label=state_plane_missile_x
@@ -334,8 +369,8 @@ B $5F00,46,3
 @ $5F2E label=exploding_fragments
 g $5F2E
 B $5F2E,49,3
-@ $5F5F label=L5F5F
-g $5F5F
+@ $5F5F label=state_activation_mask
+g $5F5F Object activation mask ANDed with interrupt counter to control activation timing. Set to $1F normally, $0F after bridge destruction.
 @ $5F60 label=viewport_ptr
 g $5F60 Pointer to a slot from #R$5F00
 W $5F60
@@ -361,9 +396,11 @@ g $5F6A Current bridge of player 1
 g $5F6B Current bridge of player 2
 @ $5F6C label=L5F6C
 g $5F6C
-@ $5F6D label=L5F6D
-g $5F6D
-g $5F6E
+@ $5F6D label=state_bridge_destroyed
+g $5F6D Bridge destruction flag: $00 = no bridge destroyed, $01 = bridge destroyed.
+@ $5F6E label=state_bridge_y_position
+g $5F6E Y-position of the destroyed bridge section (used for rendering explosion fragments).
+@ $5F6F label=L5F6F
 g $5F6F
 @ $5F70 label=state_y
 g $5F70 Current Y coordinate
@@ -979,7 +1016,8 @@ N $708E 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHT
   $70CB If so, skip to the next object without further processing.
   $70CE Check bit 7 of the object definition (activation flag).
   $70D0 If bit 7 is set, the object is already activated, skip to operation dispatch.
-  $70D3 Load the activation mask from L5F5F.
+@ $70D3 isub=LD A,(state_activation_mask)
+  $70D3 Load the activation mask from #R$5F5F.
   $70D6 Copy the mask into E.
   $70D7 Load the interrupt counter.
   $70DA AND the counter with the mask to check if it's time to activate.
@@ -1073,9 +1111,9 @@ c $7259
 @ $7280 isub=LD BC,SPRITE_ROTOR_FRAME_SIZE
 @ $7283 isub=LD A,SPRITE_ROTOR_WIDTH_TILES
 c $728B
-@ $7290 isub=LD A,TODO_L5EF2_01
-@ $7290 label=ld_L5EF2_1
-c $7290
+@ $7290 isub=LD A,TANK_SHELL_ACTIVE
+@ $7290 label=set_tank_shell_active
+c $7290 Set tank shell state to active (tank is at firing position)
 @ $7296 label=operate_tank
 c $7296
 R $7296 I:D OBJECT_DEFINITION
@@ -1122,7 +1160,7 @@ R $7343 O:A Shell state with the speed and orientation bits initialized.
   $7353,1 Make sure the speed is never zero.
 c $7358
 c $735E
-@ $7361 isub=CP TODO_L5EF2_01
+@ $7361 isub=CP TANK_SHELL_ACTIVE
 c $7380
 @ $7383 label=tank_shell_state
 g $7383
@@ -1215,7 +1253,7 @@ c $762E
 @ $762F isub=LD (HL),SET_MARKER_EMPTY_SLOT
 @ $7632 isub=AND SLOT_MASK_OBJECT_TYPE
 @ $7634 isub=CP OBJECT_TANK
-@ $7639 isub=LD A,TODO_L5EF2_00
+@ $7639 isub=LD A,TANK_SHELL_INACTIVE
 @ $763E isub=BIT SLOT_BIT_TANK_ON_BANK,D
 @ $7649 label=operate_baloon
 c $7649
@@ -1692,13 +1730,17 @@ b $8FFC
   $905C,32,2 Frame 4
   $907C,32,2 Frame 5
   $909C,32,2 Frame 6
-@ $90BC label=state_score_player_1
+@ $90BC label=state_score_player_1_low
 t $90BC
+@ $90BE label=state_score_player_1_mid
 t $90BE
+@ $90C0 label=state_score_player_1_high
 t $90C0
-@ $90C2 label=state_score_player_2
+@ $90C2 label=state_score_player_2_low
 t $90C2
+@ $90C4 label=state_score_player_2_mid
 t $90C4
+@ $90C6 label=state_score_player_2_high
 t $90C6
 t $90C8
 t $90CE
@@ -1756,7 +1798,7 @@ R $91A9 I:HL Pointer to the digit.
 c $91C1
   $91C1 INK of Player 2 color
 @ $91C4 isub=LD A,COLOR_PLAYER_2
-@ $91C7 isub=LD BC,L90C8 - state_score_player_2
+@ $91C7 isub=LD BC,L90C8 - state_score_player_2_low
   $91C7 Print score.
   $91D0 "0"
 @ $91D3 isub=LD A,EXT_ATTR_AT
@@ -1827,9 +1869,9 @@ c $93B8
 c $93BB
 c $93BE
 @ $93C1 isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
-@ $93EC isub=LD BC,state_score_player_2 - state_score_player_1
+@ $93EC isub=LD BC,state_score_player_2_low - state_score_player_1_low
 c $93F2
-@ $9404 isub=LD BC,state_score_player_2 - state_score_player_1
+@ $9404 isub=LD BC,state_score_player_2_low - state_score_player_1_low
 @ $940A label=clear_screen
 c $940A Clear the screen by setting all pixel bytes to $00 and all attributes to the value set in #REGd.
 R $940A I:D Attribute value.
