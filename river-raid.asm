@@ -1193,7 +1193,7 @@ int_vector_table_write_loop:
   LD (ptr_scroller),HL    ; Store it in ptr_scroller (initialize the scroller
                           ; message).
 
-; Control selection and game setup entry point
+; Return to control selection dialog
 ;
 ; Used by the routines at select_controls and overview.
 ;
@@ -1203,7 +1203,7 @@ int_vector_table_write_loop:
 ; display the control selection dialog.
 ;
 ; After the user selects controls and game mode, execution continues at L5D10.
-L5D06:
+return_to_control_selection:
   LD A,$3F                ; Load $3F into A (high byte of ROM address for IM
                           ; 1).
   LD I,A                  ; Set the I register to $3F (standard ZX Spectrum IM
@@ -3680,7 +3680,7 @@ handle_enter:
 select_controls:
   LD HL,msg_credits
   LD (ptr_scroller),HL
-  JP L5D06
+  JP return_to_control_selection
 
 ; Non-maskable interrupt handler
 int_handler:
@@ -3970,7 +3970,7 @@ overview_0:
   LD A,(state_bridge_index)
   SUB B
   CP $05
-  JP Z,L5D06
+  JP Z,return_to_control_selection
   CALL L8A1B
   CALL L60A5
   LD HL,state_metronome
@@ -5770,7 +5770,7 @@ controls_timer:
 
 ; Routine at 7804
 ;
-; Used by the routine at L5D06.
+; Used by the routine at return_to_control_selection.
 clear_and_setup:
   LD (setup_sp),SP
   LD D,COLOR_BLACK<<3|COLOR_WHITE ; PAPER BLACK; INK WHITE

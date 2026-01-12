@@ -251,7 +251,8 @@ N $5CD2 This is the main entry point invoked by the BASIC loader. It performs on
   $5CFF Enable interrupts.
   $5D00 Load the address of #R$8182 into HL.
   $5D03 Store it in #R$5F7E (initialize the scroller message).
-c $5D06 Control selection and game setup entry point
+@ $5D06 label=return_to_control_selection
+c $5D06 Return to control selection dialog
 N $5D06 This entry point is used when returning to the control selection dialog from the game (via #R$6BD2) or from the overview mode. It switches back to the standard ZX Spectrum interrupt mode (IM 1), then calls clear_and_setup to display the control selection dialog.
 N $5D06 .
 N $5D06 After the user selects controls and game mode, execution continues at #R$5D10.
