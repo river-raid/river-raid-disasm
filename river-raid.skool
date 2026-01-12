@@ -1220,31 +1220,54 @@ c$5D06 LD A,$3F      ; Load $3F into A (high byte of ROM address for IM 1).
  $5D0C EI            ; Enable interrupts.
  $5D0D CALL $7804    ; Call #R$7804 to display the control selection dialog.
 
-; Routine at 5D10
-c$5D10 LD A,$FC      ;
- $5D12 LD I,A        ;
- $5D14 IM 2          ;
- $5D16 EI            ;
- $5D17 LD A,($7800)  ;
- $5D1A LD ($5F67),A  ;
- $5D1D LD A,($7801)  ;
+; Start gameplay or overview mode based on user selection
+;
+; .
+;
+; .
+;
+; This routine is called after the user selects controls and game mode from the
+; control selection dialog. It switches back to IM 2 (custom interrupt mode),
+; copies the selected control type to the game state, and then either starts
+; gameplay or overview mode based on the state_overview_mode flag.
+@label=start_gameplay_or_overview
+c$5D10 LD A,$FC      ; Load $FC into A (high byte of interrupt vector table
+                     ; address).
+ $5D12 LD I,A        ; Set the I register to $FC (enabling IM 2 mode with
+                     ; vector table at $FC00).
+ $5D14 IM 2          ; Set interrupt mode 2 (vectored interrupts).
+ $5D16 EI            ; Enable interrupts.
+ $5D17 LD A,($7800)  ; Load the selected control type from #R$7800.
+ $5D1A LD ($5F67),A  ; Store it in #R$5F67 (state_input_interface).
+ $5D1D LD A,($7801)  ; Load the overview mode flag from #R$7801.
 @isub=CP OVERVIEW_MODE_ON
- $5D20 CP $01        ;
- $5D22 JP Z,$5D2B    ;
- $5D25 CALL $5D44    ;
- $5D28 JP $5DA6      ;
+ $5D20 CP $01        ; Check if overview mode is enabled.
+ $5D22 JP Z,$5D2B    ; If overview mode is on, jump to #R$5D2B.
+ $5D25 CALL $5D44    ; Call #R$5D44 to initialize game state.
+ $5D28 JP $5DA6      ; Jump to #R$5DA6 to start gameplay.
 
-; Routine at 5D2B
+; Start overview mode
 ;
 ; Used by the routines at #R$5D10 and #R$6577.
+;
+; .
+;
+; This routine is called when overview mode is selected (either from the
+; control selection dialog or after game over).
+@label=start_overview
 c$5D2B LD SP,($5F83) ;
  $5D2F CALL $5D44    ;
  $5D32 JP $6D17      ;
 
-; Restart the game
+; Start gameplay mode
 ;
 ; Used by the routine at #R$6BBF.
-@label=restart
+;
+; .
+;
+; This routine is called when the player presses Enter during gameplay to
+; restart.
+@label=start_gameplay
 c$5D35 LD SP,($5F83) ;
  $5D39 CALL $5D44    ;
  $5D3C JP $5DA6      ;
@@ -1697,8 +1720,12 @@ g$5F81 DEFB $00
 ; Unused
 u$5F82 DEFB $00
 
-; Game status buffer entry at 5F83
-@label=sp_5F83
+; Main stack pointer saved at startup
+;
+; This stores the stack pointer value saved during game initialization. It is
+; restored whenever the game needs to reset the stack, such as when starting
+; overview mode, restarting the game, or handling game over.
+@label=saved_stack_pointer
 g$5F83 DEFW $0000
 
 ; Game status buffer entry at 5F85

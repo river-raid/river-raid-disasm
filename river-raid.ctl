@@ -260,12 +260,28 @@ N $5D06 After the user selects controls and game mode, execution continues at #R
   $5D08 Set the I register to $3F (standard ZX Spectrum IM 1 mode).
   $5D0A Set interrupt mode 1 (standard ZX Spectrum interrupts).
   $5D0C Enable interrupts.
-  $5D0D,3 Call #R$7804 to display the control selection dialog.
-c $5D10
+  $5D0D Call #R$7804 to display the control selection dialog.
+@ $5D10 label=start_gameplay_or_overview
+c $5D10 Start gameplay or overview mode based on user selection
+N $5D10 This routine is called after the user selects controls and game mode from the control selection dialog. It switches back to IM 2 (custom interrupt mode), copies the selected control type to the game state, and then either starts gameplay or overview mode based on the state_overview_mode flag.
+  $5D10 Load $FC into A (high byte of interrupt vector table address).
+  $5D12 Set the I register to $FC (enabling IM 2 mode with vector table at $FC00).
+  $5D14 Set interrupt mode 2 (vectored interrupts).
+  $5D16 Enable interrupts.
+  $5D17 Load the selected control type from #R$7800.
+  $5D1A Store it in #R$5F67 (state_input_interface).
+  $5D1D Load the overview mode flag from #R$7801.
 @ $5D20 isub=CP OVERVIEW_MODE_ON
-c $5D2B
-@ $5D35 label=restart
-c $5D35 Restart the game
+  $5D20 Check if overview mode is enabled.
+  $5D22 If overview mode is on, jump to #R$5D2B.
+  $5D25 Call #R$5D44 to initialize game state.
+  $5D28 Jump to #R$5DA6 to start gameplay.
+@ $5D2B label=start_overview
+c $5D2B Start overview mode
+N $5D2B This routine is called when overview mode is selected (either from the control selection dialog or after game over).
+@ $5D35 label=start_gameplay
+c $5D35 Start gameplay mode
+N $5D35 This routine is called when the player presses Enter during gameplay to restart.
 @ $5D3F label=starting_bridges
 b $5D3F Array of possible starting bridge values.
 R $5D3F Index of list element is specified by the second and third bits of the #R$923A.
@@ -431,8 +447,9 @@ u $5F80
 @ $5F81 label=L5F81
 g $5F81
 u $5F82
-@ $5F83 label=sp_5F83
-g $5F83
+@ $5F83 label=saved_stack_pointer
+g $5F83 Main stack pointer saved at startup
+D $5F83 This stores the stack pointer value saved during game initialization. It is restored whenever the game needs to reset the stack, such as when starting overview mode, restarting the game, or handling game over.
 W $5F83
 @ $5F85 label=tmp_HL
 g $5F85

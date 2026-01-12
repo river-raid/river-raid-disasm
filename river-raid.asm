@@ -1186,7 +1186,8 @@ int_vector_table_write_loop:
                           ; table address).
   LD I,A                  ; Set the I register to $FC (enabling IM 2 mode with
                           ; vector table at $FC00).
-  LD (sp_5F83),SP         ; Save the current stack pointer to sp_5F83.
+  LD (saved_stack_pointer),SP ; Save the current stack pointer to
+                              ; saved_stack_pointer.
   IM 2                    ; Set interrupt mode 2 (vectored interrupts).
   EI                      ; Enable interrupts.
   LD HL,msg_credits       ; Load the address of msg_credits into HL.
@@ -1202,7 +1203,8 @@ int_vector_table_write_loop:
 ; the standard ZX Spectrum interrupt mode (IM 1), then calls clear_and_setup to
 ; display the control selection dialog.
 ;
-; After the user selects controls and game mode, execution continues at L5D10.
+; After the user selects controls and game mode, execution continues at
+; start_gameplay_or_overview.
 return_to_control_selection:
   LD A,$3F                ; Load $3F into A (high byte of ROM address for IM
                           ; 1).
@@ -1214,33 +1216,49 @@ return_to_control_selection:
   CALL clear_and_setup    ; Call clear_and_setup to display the control
                           ; selection dialog.
 
-; Routine at 5D10
-L5D10:
-  LD A,$FC
-  LD I,A
-  IM 2
-  EI
-  LD A,(tmp_control_type)
-  LD (state_input_interface),A
-  LD A,(state_overview_mode)
-  CP OVERVIEW_MODE_ON
-  JP Z,L5D2B
-  CALL init_state
-  JP play
-
-; Routine at 5D2B
+; Start gameplay or overview mode based on user selection
 ;
-; Used by the routines at L5D10 and game_over.
-L5D2B:
-  LD SP,(sp_5F83)
+; This routine is called after the user selects controls and game mode from the
+; control selection dialog. It switches back to IM 2 (custom interrupt mode),
+; copies the selected control type to the game state, and then either starts
+; gameplay or overview mode based on the state_overview_mode flag.
+start_gameplay_or_overview:
+  LD A,$FC                ; Load $FC into A (high byte of interrupt vector
+                          ; table address).
+  LD I,A                  ; Set the I register to $FC (enabling IM 2 mode with
+                          ; vector table at $FC00).
+  IM 2                    ; Set interrupt mode 2 (vectored interrupts).
+  EI                      ; Enable interrupts.
+  LD A,(tmp_control_type) ; Load the selected control type from
+                          ; tmp_control_type.
+  LD (state_input_interface),A ; Store it in state_input_interface
+                               ; (state_input_interface).
+  LD A,(state_overview_mode) ; Load the overview mode flag from
+                             ; state_overview_mode.
+  CP OVERVIEW_MODE_ON     ; Check if overview mode is enabled.
+  JP Z,start_overview     ; If overview mode is on, jump to start_overview.
+  CALL init_state         ; Call init_state to initialize game state.
+  JP play                 ; Jump to play to start gameplay.
+
+; Start overview mode
+;
+; Used by the routines at start_gameplay_or_overview and game_over.
+;
+; This routine is called when overview mode is selected (either from the
+; control selection dialog or after game over).
+start_overview:
+  LD SP,(saved_stack_pointer)
   CALL init_state
   JP overview
 
-; Restart the game
+; Start gameplay mode
 ;
 ; Used by the routine at handle_enter.
-restart:
-  LD SP,(sp_5F83)
+;
+; This routine is called when the player presses Enter during gameplay to
+; restart.
+start_gameplay:
+  LD SP,(saved_stack_pointer)
   CALL init_state
   JP play
 
@@ -1258,7 +1276,8 @@ L5D43:
 
 ; Initialize game state for overview/demo mode.
 ;
-; Used by the routines at L5D10, L5D2B and restart.
+; Used by the routines at start_gameplay_or_overview, start_overview and
+; start_gameplay.
 ;
 ; This routine sets up the initial game state used by the overview (attract
 ; mode) routine. It initializes player positions, scores, lives, terrain state,
@@ -1324,13 +1343,14 @@ decrease_lives_player_2:
 
 ; Routine at 5DA6
 ;
-; Used by the routines at L5D10, restart, handle_no_fuel and overview.
+; Used by the routines at start_gameplay_or_overview, start_gameplay,
+; handle_no_fuel and overview.
 play:
   LD A,$10
   LD (state_island_line_idx),A
   LD A,$1F
   LD (state_activation_mask),A
-  LD SP,(sp_5F83)
+  LD SP,(saved_stack_pointer)
   LD D,COLOR_BLUE<<3|COLOR_GREEN ; PAPER BLUE; INK GREEN
   CALL clear_screen
   CALL init_udg
@@ -1686,8 +1706,12 @@ L5F81:
 L5F82:
   DEFB $00
 
-; Game status buffer entry at 5F83
-sp_5F83:
+; Main stack pointer saved at startup
+;
+; This stores the stack pointer value saved during game initialization. It is
+; restored whenever the game needs to reset the stack, such as when starting
+; overview mode, restarting the game, or handling game over.
+saved_stack_pointer:
   DEFW $0000
 
 ; Game status buffer entry at 5F85
@@ -2578,7 +2602,7 @@ handle_no_fuel_3:
   JP NZ,L65BB
 ; This entry point is used by the routines at L65AB, L65BB, L65CB and L65DE.
 handle_no_fuel_4:
-  LD SP,(sp_5F83)
+  LD SP,(saved_stack_pointer)
   JP play
 
 ; Routine at 656F
@@ -2596,8 +2620,8 @@ game_over:
   LD HL,msg_game_over
   LD (ptr_scroller),HL
   CALL L93BE
-  LD SP,(sp_5F83)
-  JP L5D2B
+  LD SP,(saved_stack_pointer)
+  JP start_overview
 
 ; Routine at 6587
 ;
@@ -3667,7 +3691,7 @@ handle_enter:
   LD A,$FE                ; Scan Caps Shift
   IN A,($FE)              ;
   BIT 0,A                 ;
-  JP Z,restart            ;
+  JP Z,start_gameplay     ;
   LD A,$7F                ; Scan Symbol Shift
   IN A,($FE)              ;
   BIT 1,A                 ;
@@ -3929,7 +3953,7 @@ do_low_fuel_2:
 
 ; Routine at 6D17
 ;
-; Used by the routine at L5D2B.
+; Used by the routine at start_overview.
 overview:
   LD BC,$0010
   LD (state_y),BC
