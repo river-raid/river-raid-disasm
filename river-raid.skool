@@ -1348,30 +1348,32 @@ c$5D9F LD HL,$923C   ;
  $5DA2 DEC (HL)      ;
  $5DA3 JP $5EBC      ;
 
-; Routine at 5DA6
+; Initialize and start gameplay mode
 ;
-; Used by the routines at #R$5D10, #R$5D35, #R$650A and #R$6D17.
+; This routine initializes the game screen and state for gameplay mode, then
+; enters the main game loop. It is called when starting a new game or
+; restarting after losing a life.
 @label=play
-c$5DA6 LD A,$10      ;
- $5DA8 LD ($5EFD),A  ;
+c$5DA6 LD A,$10      ; {Initialize island rendering state (line index $10,
+ $5DA8 LD ($5EFD),A  ; activation mask $1F) and restore stack pointer.
  $5DAB LD A,$1F      ;
  $5DAD LD ($5F5F),A  ;
- $5DB0 LD SP,($5F83) ;
+ $5DB0 LD SP,($5F83) ; }
 @isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
  $5DB4 LD D,$0C      ; PAPER BLUE; INK GREEN
  $5DB6 CALL $940A    ;
  $5DB9 CALL $8A33    ;
- $5DBC LD DE,$8000   ;
+ $5DBC LD DE,$8000   ; Print status line 1.
 @isub=LD BC,status_line_2 - status_line_1
  $5DBF LD BC,$0031   ;
  $5DC2 CALL $203C    ;
- $5DC5 LD A,$01      ;
- $5DC7 LD ($5EEF),A  ;
- $5DCA CALL $1601    ;
- $5DCD LD DE,$8031   ;
+ $5DC5 LD A,$01      ; {Initialize metronome to $01
+ $5DC7 LD ($5EEF),A  ; }
+ $5DCA CALL $1601    ; {Open channel 1.
+ $5DCD LD DE,$8031   ; }
 @isub=LD BC,status_line_3 - status_line_2
- $5DD0 LD BC,$001E   ;
- $5DD3 CALL $203C    ;
+ $5DD0 LD BC,$001E   ; {Print status line 2, open channel 2, print bridge
+ $5DD3 CALL $203C    ; number, and clear various state variables.
  $5DD6 LD A,$02      ;
  $5DD8 CALL $1601    ;
  $5DDB CALL $64BC    ;
@@ -1381,26 +1383,26 @@ c$5DA6 LD A,$10      ;
  $5DE5 LD ($5F6C),A  ;
  $5DE8 LD ($5F6F),A  ;
  $5DEB LD ($5F7D),A  ;
- $5DEE LD ($5F69),A  ;
+ $5DEE LD ($5F69),A  ; }
 @isub=LD A,FUEL_LEVEL_FULL
- $5DF1 LD A,$FF      ;
- $5DF3 LD ($5F66),A  ;
- $5DF6 LD BC,$0010   ;
- $5DF9 LD ($5F70),BC ;
- $5DFD CALL $68E9    ;
- $5E00 LD A,$78      ;
- $5E02 LD ($5F72),A  ;
+ $5DF1 LD A,$FF      ; {Set fuel level to full.
+ $5DF3 LD ($5F66),A  ; }
+ $5DF6 LD BC,$0010   ; {Set initial player Y position to $0010 and initialize
+ $5DF9 LD ($5F70),BC ; current bridge.
+ $5DFD CALL $68E9    ; }
+ $5E00 LD A,$78      ; {Set player X position to $78 (center of screen) and
+ $5E02 LD ($5F72),A  ; initialize viewport objects list.
  $5E05 LD HL,$5F00   ;
- $5E08 LD ($5F60),HL ;
+ $5E08 LD ($5F60),HL ; }
 @isub=LD (HL),SET_MARKER_END_OF_SET
- $5E0B LD (HL),$FF   ;
+ $5E0B LD (HL),$FF   ; {Initialize exploding fragments list (empty).
  $5E0D LD HL,$5F2E   ;
- $5E10 LD ($5F62),HL ;
- $5E13 LD (HL),$FF   ;
+ $5E10 LD ($5F62),HL ; }
+ $5E13 LD (HL),$FF   ; {Print lives display and open channel 1.
  $5E15 LD BC,$0000   ;
  $5E18 CALL $923E    ;
  $5E1B LD A,$01      ;
- $5E1D CALL $1601    ;
+ $5E1D CALL $1601    ; }
 @isub=LD A,EXT_ATTR_AT
  $5E20 LD A,$16      ; {AT 1,5
  $5E22 RST $10       ;
@@ -1414,44 +1416,45 @@ c$5DA6 LD A,$10      ;
 @isub=LD A,COLOR_YELLOW
  $5E2C LD A,$06      ;
  $5E2E RST $10       ; }
- $5E2F LD DE,$90BC   ;
+ $5E2F LD DE,$90BC   ; {Print player 1 score.
 @isub=LD BC,state_score_player_2_low - state_score_player_1_low
  $5E32 LD BC,$0006   ;
- $5E35 CALL $203C    ;
- $5E38 LD A,$02      ;
- $5E3A CALL $1601    ;
+ $5E35 CALL $203C    ; }
+ $5E38 LD A,$02      ; {Open channel 2, print status line 4, and display game
+ $5E3A CALL $1601    ; mode digit.
  $5E3D LD DE,$805A   ;
-@isub=LD BC,L805F - status_line_4
+@isub=LD BC,data_unused_805F - status_line_4
  $5E40 LD BC,$0005   ;
  $5E43 CALL $203C    ;
- $5E46 LD A,($923A)  ;
- $5E49 ADD A,$31     ;
+ $5E46 LD A,($923A)  ; }
+ $5E49 ADD A,$31     ; {Open channel 1 and set terrain position to $FF.
  $5E4B RST $10       ;
  $5E4C LD A,$01      ;
- $5E4E CALL $1601    ;
- $5E51 LD A,$FF      ;
+ $5E4E CALL $1601    ; }
+ $5E51 LD A,$FF      ; {Set terrain profile number to $02 and open channel 2.
  $5E53 LD ($5F7D),A  ;
- $5E56 LD A,$02      ;
- $5E58 LD ($5F77),A  ;
- $5E5B CALL $1601    ;
+ $5E56 LD A,$02      ; }
+ $5E58 LD ($5F77),A  ; {Initialize gameplay state (level fragment, gameplay
+ $5E5B CALL $1601    ; mode, bridge destroyed flag to $01).
  $5E5E LD A,$01      ;
  $5E60 LD ($5F76),A  ;
  $5E63 LD ($5F68),A  ;
  $5E66 LD ($5F6D),A  ;
  $5E69 LD A,$68      ;
- $5E6B LD ($5C08),A  ;
- $5E6E LD A,$00      ;
+ $5E6B LD ($5C08),A  ; }
+ $5E6E LD A,$00      ; {Set last key to $68 and clear control state.
  $5E70 LD ($6BB0),A  ;
- $5E73 LD ($5EF2),A  ;
+ $5E73 LD ($5EF2),A  ; }
 @isub=LD A,SPEED_FAST
- $5E76 LD A,$04      ;
- $5E78 LD ($5F64),A  ;
- $5E7B LD BC,$4C83   ;
- $5E7E LD ($5F78),BC ;
- $5E82 CALL $91E8    ;
- $5E85 CALL $68E9    ;
- $5E88 LD B,$28      ;
-*$5E8A PUSH BC       ;
+ $5E76 LD A,$04      ; {Set speed to SPEED_FAST.
+ $5E78 LD ($5F64),A  ; }
+@ignoreua=$4C83
+ $5E7B LD BC,$4C83   ; {Initialize terrain element 23 to $4C83.
+ $5E7E LD ($5F78),BC ; }
+ $5E82 CALL $91E8    ; {Print player 2 score area and initialize current
+ $5E85 CALL $68E9    ; bridge.
+ $5E88 LD B,$28      ; }
+*$5E8A PUSH BC       ; {Scroll in the level (loop 40 times at fast speed).
  $5E8B LD HL,$5EEF   ;
  $5E8E INC (HL)      ;
  $5E8F CALL $60A5    ;
@@ -1463,19 +1466,19 @@ c$5DA6 LD A,$10      ;
  $5E9D POP BC        ;
  $5E9E DJNZ $5E8A    ;
  $5EA0 LD A,$00      ;
- $5EA2 LD ($6BB0),A  ;
- $5EA5 LD ($5F68),A  ;
- $5EA8 CALL $6682    ;
- $5EAB LD A,$0D      ;
- $5EAD LD ($5C08),A  ;
- $5EB0 LD A,($923D)  ;
+ $5EA2 LD ($6BB0),A  ; }
+ $5EA5 LD ($5F68),A  ; {Clear control state and gameplay mode, then render
+ $5EA8 CALL $6682    ; player plane.
+ $5EAB LD A,$0D      ; }
+ $5EAD LD ($5C08),A  ; {Set last key to Enter and decrement current player's
+ $5EB0 LD A,($923D)  ; lives.
 @isub=CP PLAYER_2
  $5EB3 CP $02        ;
  $5EB5 JP Z,$5D9F    ;
- $5EB8 LD HL,$923B   ;
- $5EBB DEC (HL)      ;
+ $5EB8 LD HL,$923B   ; }
+ $5EBB DEC (HL)      ; {Print updated lives display and wait for
 ; This entry point is used by the routine at #R$5D9F.
-*$5EBC CALL $923E    ;
+*$5EBC CALL $923E    ; keyboard/joystick input.
 *$5EBF CALL $02BF    ;
  $5EC2 EI            ;
  $5EC3 LD A,($5C08)  ;
@@ -1486,19 +1489,20 @@ c$5DA6 LD A,$10      ;
  $5ECD CP $02        ;
  $5ECF JP NZ,$5EBF   ;
  $5ED2 LD A,$FE      ;
- $5ED4 IN A,($1F)    ;
- $5ED6 CP $00        ;
- $5ED8 JP Z,$5EBF    ;
+ $5ED4 IN A,($1F)    ; }
+ $5ED6 CP $00        ; {Clear bridge destruction state, set speed to normal,
+ $5ED8 JP Z,$5EBF    ; and jump to main game loop.
 *$5EDB LD A,$00      ;
- $5EDD LD ($5F6D),A  ;
+ $5EDD LD ($5F6D),A  ; }
  $5EE0 LD ($5F6E),A  ;
  $5EE3 LD A,$02      ;
  $5EE5 LD ($5F64),A  ;
  $5EE8 LD ($5EEF),A  ;
  $5EEB JP $5F91      ;
 
-; Game status buffer entry at 5EEE
-@label=L5EEE
+; Counter for terrain fragment rendering (incremented each time a fragment is
+; rendered).
+@label=state_terrain_fragment_counter
 g$5EEE DEFB $00
 
 ; Game status buffer entry at 5EEF
@@ -1636,8 +1640,8 @@ g$5F67 DEFB $00
 @isub=DEFB GAMEPLAY_MODE_NORMAL
 g$5F68 DEFB $00
 
-; Game status buffer entry at 5F69
-@label=L5F69
+; Plane sprite bank selector: $00 = normal sprite, $04 = banked sprite.
+@label=state_plane_sprite_bank
 g$5F69 DEFB $00
 
 ; Current bridge of player 1
@@ -1648,8 +1652,9 @@ g$5F6A DEFB $01
 @label=state_bridge_player_2
 g$5F6B DEFB $01
 
-; Game status buffer entry at 5F6C
-@label=L5F6C
+; Bridge section indicator: $02 when rendering special bridge terrain
+; fragments.
+@label=state_bridge_section
 g$5F6C DEFB $00
 
 ; Bridge destruction flag: $00 = no bridge destroyed, $01 = bridge destroyed.
@@ -1661,8 +1666,8 @@ g$5F6D DEFB $00
 @label=state_bridge_y_position
 g$5F6E DEFB $00
 
-; Game status buffer entry at 5F6F
-@label=L5F6F
+; Unused state variable (cleared during initialization).
+@label=state_unused_5F6F
 g$5F6F DEFB $00
 
 ; Current Y coordinate
@@ -1886,9 +1891,10 @@ c$6068 LD A,$DF      ; {Scan "O" (LEFT)
  $609F CALL NZ,$6724 ;
  $60A2 JP $5F91      ; }
 
-; Routine at 60A5
+; Render player plane and terrain fragments
 ;
 ; Used by the routines at #R$5DA6, #R$5F91 and #R$6D17.
+@label=render_plane_and_terrain
 c$60A5 LD A,($5F68)  ;
 @isub=CP GAMEPLAY_MODE_NORMAL
  $60A8 CP $00        ;
@@ -2820,9 +2826,10 @@ c$6642 LD A,($5F72)  ;
  $667C CALL $8B3C    ;
  $667F JP $6630      ;
 
-; Routine at 6682
+; Render player plane sprite
 ;
 ; Used by the routines at #R$5DA6 and #R$683B.
+@label=render_plane
 c$6682 LD A,($5F68)  ;
 @isub=CP GAMEPLAY_MODE_NORMAL
  $6685 CP $00        ;
@@ -3990,7 +3997,7 @@ c$6D17 LD BC,$0010   ;
  $6D40 LD A,$04      ;
  $6D42 LD ($5EEE),A  ;
  $6D45 LD DE,$805A   ;
-@isub=LD BC,L805F - status_line_4
+@isub=LD BC,data_unused_805F - status_line_4
  $6D48 LD BC,$0005   ;
  $6D4B CALL $203C    ;
  $6D4E LD A,($923A)  ;
@@ -6373,7 +6380,8 @@ t$805A DEFM $16,$14,$04 ; AT 20,4
 @isub=DEFM EXT_ATTR_INK,COLOR_WHITE
  $805D DEFM $10,$07     ; INK WHITE
 
-; Unused
+; Unused data bytes
+@label=data_unused_805F
 u$805F DEFB $01,$05,$0A,$0F
 
 ; Array [15] of terrain element definitions (16 bytes each).
@@ -8223,9 +8231,10 @@ c$91C1 LD A,$10      ; {INK of Player 2 color
  $91E4 CALL $1601    ;
  $91E7 RET           ;
 
-; Routine at 91E8
+; Print player 2 score area on status line
 ;
 ; Used by the routine at #R$5DA6.
+@label=print_player_2_score_area
 c$91E8 LD A,$01      ;
  $91EA CALL $1601    ;
 @isub=LD A,EXT_ATTR_AT

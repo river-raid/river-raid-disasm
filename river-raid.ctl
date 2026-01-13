@@ -330,26 +330,54 @@ N $5D44 This routine sets up the initial game state used by the overview (attrac
 @ $5D9F label=decrease_lives_player_2
 c $5D9F Decrease player 2 lives
 @ $5DA6 label=play
-c $5DA6
+c $5DA6 Initialize and start gameplay mode
+D $5DA6 This routine initializes the game screen and state for gameplay mode, then enters the main game loop. It is called when starting a new game or restarting after losing a life.
+  $5DA6 Initialize island rendering state (line index $10, activation mask $1F) and restore stack pointer.
+  $5DB4,11 Clear screen with blue background and initialize UDGs.
 @ $5DB4 isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
 C $5DB4,2 PAPER BLUE; INK GREEN
+  $5DBC Print status line 1.
 @ $5DBF isub=LD BC,status_line_2 - status_line_1
+  $5DC5 Initialize metronome to $01
+  $5DCA Open channel 1.
+  $5DD0 Print status line 2, open channel 2, print bridge number, and clear various state variables.
 @ $5DD0 isub=LD BC,status_line_3 - status_line_2
+  $5DF1 Set fuel level to full.
 @ $5DF1 isub=LD A,FUEL_LEVEL_FULL
+  $5DF6 Set initial player Y position to $0010 and initialize current bridge.
+  $5E00 Set player X position to $78 (center of screen) and initialize viewport objects list.
+  $5E0B Initialize exploding fragments list (empty).
 @ $5E0B isub=LD (HL),SET_MARKER_END_OF_SET
+  $5E13 Print lives display and open channel 1.
+  $5E20,15 Position cursor at row 1, column 5 and set ink color to yellow.
 @ $5E20 isub=LD A,EXT_ATTR_AT
   $5E20 AT 1,5
 @ $5E29 isub=LD A,EXT_ATTR_INK
-  $5E29,6 INK YELLOW
+  $5E29 INK YELLOW
 @ $5E2C isub=LD A,COLOR_YELLOW
+  $5E2F Print player 1 score.
 @ $5E32 isub=LD BC,state_score_player_2_low - state_score_player_1_low
-@ $5E40 isub=LD BC,L805F - status_line_4
+  $5E38 Open channel 2, print status line 4, and display game mode digit.
+@ $5E40 isub=LD BC,data_unused_805F - status_line_4
+  $5E49 Open channel 1 and set terrain position to $FF.
+  $5E51 Set terrain profile number to $02 and open channel 2.
+  $5E58 Initialize gameplay state (level fragment, gameplay mode, bridge destroyed flag to $01).
+  $5E6E Set last key to $68 and clear control state.
+  $5E76 Set speed to SPEED_FAST.
 @ $5E76 isub=LD A,SPEED_FAST
+@ $5E7B ignoreua=$4C83
+  $5E7B Initialize terrain element 23 to $4C83.
+  $5E82 Print player 2 score area and initialize current bridge.
+  $5E8A Scroll in the level (loop 40 times at fast speed).
 @ $5E98 isub=LD A,SPEED_FAST
+  $5EA5 Clear control state and gameplay mode, then render player plane.
+  $5EAD Set last key to Enter and decrement current player's lives.
 @ $5EB3 isub=CP PLAYER_2
+  $5EBB Print updated lives display and wait for keyboard/joystick input.
 @ $5ECD isub=CP INPUT_INTERFACE_KEMPSTON
-@ $5EEE label=L5EEE
-g $5EEE
+  $5ED6,10 Clear bridge destruction state, set speed to normal, and jump to main game loop.
+@ $5EEE label=state_terrain_fragment_counter
+g $5EEE Counter for terrain fragment rendering (incremented each time a fragment is rendered).
 @ $5EEF label=state_metronome
 g $5EEF
 @ $5EF0 label=state_bridge_index
@@ -405,20 +433,20 @@ g $5F67 Control type ($00 - Keyboard, $01 - Sinclair, $02 - Kempston, Other - Cu
 @ $5F68 label=state_gameplay_mode
 @ $5F68 isub=DEFB GAMEPLAY_MODE_NORMAL
 g $5F68 Current gameplay mode (NORMAL, SCROLL_IN, OVERVIEW, or REFUEL)
-@ $5F69 label=L5F69
-g $5F69
+@ $5F69 label=state_plane_sprite_bank
+g $5F69 Plane sprite bank selector: $00 = normal sprite, $04 = banked sprite.
 @ $5F6A label=state_bridge_player_1
 g $5F6A Current bridge of player 1
 @ $5F6B label=state_bridge_player_2
 g $5F6B Current bridge of player 2
-@ $5F6C label=L5F6C
-g $5F6C
+@ $5F6C label=state_bridge_section
+g $5F6C Bridge section indicator: $02 when rendering special bridge terrain fragments.
 @ $5F6D label=state_bridge_destroyed
 g $5F6D Bridge destruction flag: $00 = no bridge destroyed, $01 = bridge destroyed.
 @ $5F6E label=state_bridge_y_position
 g $5F6E Y-position of the destroyed bridge section (used for rendering explosion fragments).
-@ $5F6F label=L5F6F
-g $5F6F
+@ $5F6F label=state_unused_5F6F
+g $5F6F Unused state variable (cleared during initialization).
 @ $5F70 label=state_y
 g $5F70 Current Y coordinate
 @ $5F72 label=state_x
@@ -488,7 +516,8 @@ C $607A Scan "2" (UP)
 C $6083 Scan "W" (DOWN)
 C $608C Scan lower row right (FIRE)
 C $6097 Scan lower row left (FIRE)
-c $60A5
+@ $60A5 label=render_plane_and_terrain
+c $60A5 Render player plane and terrain fragments
 @ $60A8 isub=CP GAMEPLAY_MODE_NORMAL
 @ $60AD isub=LD A,OTHER_MODE_00
 c $6124
@@ -630,7 +659,8 @@ c $6642
   $6670,5 Player 2 and ship use the same attributes
 @ $6675 isub=LD D,SPRITE_PLANE_HEIGHT_PIXELS
 @ $6677 isub=LD A,SPRITE_PLANE_WIDTH_TILES
-c $6682
+@ $6682 label=render_plane
+c $6682 Render player plane sprite
 @ $6685 isub=CP GAMEPLAY_MODE_NORMAL
 @ $6694 isub=LD A,OTHER_MODE_FUEL
 @ $66A4 isub=LD BC,SPRITE_PLANE_FRAME_SIZE
@@ -828,7 +858,7 @@ c $6D17
 @ $6D23 isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
 C $6D23,2 PAPER BLUE; INK GREEN
 @ $6D2E isub=LD BC,status_line_2 - status_line_1
-@ $6D48 isub=LD BC,L805F - status_line_4
+@ $6D48 isub=LD BC,data_unused_805F - status_line_4
 @ $6DB2 isub=LD A,EXT_ATTR_INK
   $6DB2 INK BLACK
 @ $6DB5 isub=LD A,COLOR_BLACK
@@ -1465,7 +1495,8 @@ t $805A
 T $805A AT 20,4
 @ $805D isub=DEFM EXT_ATTR_INK,COLOR_WHITE
 T $805D INK WHITE
-u $805F
+@ $805F label=data_unused_805F
+u $805F Unused data bytes
 @ $8063 label=data_terrain_profiles
 b $8063 Array [15] of terrain element definitions (16 bytes each).
 N $8063 Each byte of the element defines the relative terrain width
@@ -1822,7 +1853,8 @@ c $91C1
 @ $91D3 isub=LD A,EXT_ATTR_AT
   $91D3 AT 1,18
   $91DC,6 "P2"
-c $91E8
+@ $91E8 label=print_player_2_score_area
+c $91E8 Print player 2 score area on status line
 @ $91ED isub=LD A,EXT_ATTR_AT
   $91ED,9 AT 1,21
 @ $91F9 isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A

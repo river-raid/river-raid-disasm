@@ -1299,54 +1299,55 @@ decrease_lives_player_2:
   DEC (HL)
   JP play_1
 
-; Routine at 5DA6
+; Initialize and start gameplay mode
 ;
-; Used by the routines at start_gameplay_or_overview, start_gameplay, handle_no_fuel and overview.
+; This routine initializes the game screen and state for gameplay mode, then enters the main game loop. It is called
+; when starting a new game or restarting after losing a life.
 play:
-  LD A,$10
-  LD (state_island_line_idx),A
-  LD A,$1F
-  LD (state_activation_mask),A
-  LD SP,(saved_stack_pointer)
+  LD A,$10                             ; Initialize island rendering state (line index $10, activation mask $1F) and
+  LD (state_island_line_idx),A         ; restore stack pointer.
+  LD A,$1F                             ;
+  LD (state_activation_mask),A         ;
+  LD SP,(saved_stack_pointer)          ;
   LD D,COLOR_BLUE<<3|COLOR_GREEN       ; PAPER BLUE; INK GREEN
   CALL clear_screen
   CALL init_udg
-  LD DE,status_line_1
+  LD DE,status_line_1                  ; Print status line 1.
   LD BC,status_line_2 - status_line_1
   CALL PR_STRING
-  LD A,$01
-  LD (state_metronome),A
-  CALL CHAN_OPEN
-  LD DE,status_line_2
-  LD BC,status_line_3 - status_line_2
-  CALL PR_STRING
-  LD A,$02
-  CALL CHAN_OPEN
-  CALL print_bridge
-  LD A,$04
-  LD (L5EEE),A
-  LD A,$00
-  LD (L5F6C),A
-  LD (L5F6F),A
-  LD (state_terrain_position),A
-  LD (L5F69),A
-  LD A,FUEL_LEVEL_FULL
-  LD (state_fuel),A
-  LD BC,$0010
-  LD (state_y),BC
-  CALL init_current_bridge
-  LD A,$78
-  LD (state_x),A
-  LD HL,viewport_objects
-  LD (viewport_ptr),HL
-  LD (HL),SET_MARKER_END_OF_SET
-  LD HL,exploding_fragments
-  LD (exploding_fragments_ptr),HL
-  LD (HL),$FF
-  LD BC,$0000
-  CALL print_lives
-  LD A,$01
-  CALL CHAN_OPEN
+  LD A,$01                             ; Initialize metronome to $01
+  LD (state_metronome),A               ;
+  CALL CHAN_OPEN                       ; Open channel 1.
+  LD DE,status_line_2                  ;
+  LD BC,status_line_3 - status_line_2   ; Print status line 2, open channel 2, print bridge number, and clear various
+  CALL PR_STRING                        ; state variables.
+  LD A,$02                              ;
+  CALL CHAN_OPEN                        ;
+  CALL print_bridge                     ;
+  LD A,$04                              ;
+  LD (state_terrain_fragment_counter),A ;
+  LD A,$00                              ;
+  LD (state_bridge_section),A           ;
+  LD (state_unused_5F6F),A              ;
+  LD (state_terrain_position),A         ;
+  LD (state_plane_sprite_bank),A        ;
+  LD A,FUEL_LEVEL_FULL                 ; Set fuel level to full.
+  LD (state_fuel),A                    ;
+  LD BC,$0010                          ; Set initial player Y position to $0010 and initialize current bridge.
+  LD (state_y),BC                      ;
+  CALL init_current_bridge             ;
+  LD A,$78                             ; Set player X position to $78 (center of screen) and initialize viewport objects
+  LD (state_x),A                       ; list.
+  LD HL,viewport_objects               ;
+  LD (viewport_ptr),HL                 ;
+  LD (HL),SET_MARKER_END_OF_SET        ; Initialize exploding fragments list (empty).
+  LD HL,exploding_fragments            ;
+  LD (exploding_fragments_ptr),HL      ;
+  LD (HL),$FF                          ; Print lives display and open channel 1.
+  LD BC,$0000                          ;
+  CALL print_lives                     ;
+  LD A,$01                             ;
+  CALL CHAN_OPEN                       ;
   LD A,EXT_ATTR_AT                     ; AT 1,5
   RST $10                              ;
   LD A,$01                             ;
@@ -1357,65 +1358,65 @@ play:
   RST $10                              ;
   LD A,COLOR_YELLOW                    ;
   RST $10                              ;
-  LD DE,state_score_player_1_low
-  LD BC,state_score_player_2_low - state_score_player_1_low
-  CALL PR_STRING
-  LD A,$02
-  CALL CHAN_OPEN
-  LD DE,status_line_4
-  LD BC,L805F - status_line_4
-  CALL PR_STRING
-  LD A,(state_game_mode)
-  ADD A,$31
-  RST $10
-  LD A,$01
-  CALL CHAN_OPEN
-  LD A,$FF
-  LD (state_terrain_position),A
-  LD A,$02
-  LD (state_terrain_profile_number),A
-  CALL CHAN_OPEN
-  LD A,$01
-  LD (state_level_fragment_number),A
-  LD (state_gameplay_mode),A
-  LD (state_bridge_destroyed),A
-  LD A,$68
-  LD (LAST_K),A
-  LD A,$00
-  LD (state_controls),A
-  LD (state_tank_shell),A
-  LD A,SPEED_FAST
-  LD (state_speed),A
-  LD BC,$4C83
-  LD (state_terrain_element_23),BC
-  CALL L91E8
-  CALL init_current_bridge
-  LD B,$28
+  LD DE,state_score_player_1_low                            ; Print player 1 score.
+  LD BC,state_score_player_2_low - state_score_player_1_low ;
+  CALL PR_STRING                                            ;
+  LD A,$02                               ; Open channel 2, print status line 4, and display game mode digit.
+  CALL CHAN_OPEN                         ;
+  LD DE,status_line_4                    ;
+  LD BC,data_unused_805F - status_line_4 ;
+  CALL PR_STRING                         ;
+  LD A,(state_game_mode)                 ;
+  ADD A,$31                            ; Open channel 1 and set terrain position to $FF.
+  RST $10                              ;
+  LD A,$01                             ;
+  CALL CHAN_OPEN                       ;
+  LD A,$FF                             ; Set terrain profile number to $02 and open channel 2.
+  LD (state_terrain_position),A        ;
+  LD A,$02                             ;
+  LD (state_terrain_profile_number),A  ; Initialize gameplay state (level fragment, gameplay mode, bridge destroyed flag
+  CALL CHAN_OPEN                       ; to $01).
+  LD A,$01                             ;
+  LD (state_level_fragment_number),A   ;
+  LD (state_gameplay_mode),A           ;
+  LD (state_bridge_destroyed),A        ;
+  LD A,$68                             ;
+  LD (LAST_K),A                        ;
+  LD A,$00                             ; Set last key to $68 and clear control state.
+  LD (state_controls),A                ;
+  LD (state_tank_shell),A              ;
+  LD A,SPEED_FAST                      ; Set speed to SPEED_FAST.
+  LD (state_speed),A                   ;
+  LD BC,$4C83                          ; Initialize terrain element 23 to $4C83.
+  LD (state_terrain_element_23),BC     ;
+  CALL print_player_2_score_area       ; Print player 2 score area and initialize current bridge.
+  CALL init_current_bridge             ;
+  LD B,$28                             ;
 play_0:
-  PUSH BC
-  LD HL,state_metronome
-  INC (HL)
-  CALL L60A5
-  CALL operate_viewport_objects
-  CALL advance
-  LD A,SPEED_FAST
-  LD (state_speed),A
-  POP BC
-  DJNZ play_0
-  LD A,$00
-  LD (state_controls),A
-  LD (state_gameplay_mode),A
-  CALL L6682
-  LD A,$0D
-  LD (LAST_K),A
-  LD A,(state_player)
-  CP PLAYER_2
-  JP Z,decrease_lives_player_2
-  LD HL,state_lives_player_1
-  DEC (HL)
+  PUSH BC                              ; Scroll in the level (loop 40 times at fast speed).
+  LD HL,state_metronome                ;
+  INC (HL)                             ;
+  CALL render_plane_and_terrain        ;
+  CALL operate_viewport_objects        ;
+  CALL advance                         ;
+  LD A,SPEED_FAST                      ;
+  LD (state_speed),A                   ;
+  POP BC                               ;
+  DJNZ play_0                          ;
+  LD A,$00                             ;
+  LD (state_controls),A                ;
+  LD (state_gameplay_mode),A           ; Clear control state and gameplay mode, then render player plane.
+  CALL render_plane                    ;
+  LD A,$0D                             ;
+  LD (LAST_K),A                        ; Set last key to Enter and decrement current player's lives.
+  LD A,(state_player)                  ;
+  CP PLAYER_2                          ;
+  JP Z,decrease_lives_player_2         ;
+  LD HL,state_lives_player_1           ;
+  DEC (HL)                             ; Print updated lives display and wait for
 ; This entry point is used by the routine at decrease_lives_player_2.
 play_1:
-  CALL print_lives
+  CALL print_lives                     ; keyboard/joystick input.
 play_2:
   CALL KEYBOARD
   EI
@@ -1426,20 +1427,20 @@ play_2:
   CP INPUT_INTERFACE_KEMPSTON
   JP NZ,play_2
   LD A,$FE
-  IN A,($1F)
-  CP $00
-  JP Z,play_2
+  IN A,($1F)                           ; }
+  CP $00                               ; Clear bridge destruction state, set speed to normal, and jump to main game
+  JP Z,play_2                          ; loop.
 play_3:
-  LD A,$00
-  LD (state_bridge_destroyed),A
+  LD A,$00                             ;
+  LD (state_bridge_destroyed),A        ;
   LD (state_bridge_y_position),A
   LD A,$02
   LD (state_speed),A
   LD (state_metronome),A
   JP main_loop
 
-; Game status buffer entry at 5EEE
-L5EEE:
+; Counter for terrain fragment rendering (incremented each time a fragment is rendered).
+state_terrain_fragment_counter:
   DEFB $00
 
 ; Game status buffer entry at 5EEF
@@ -1575,8 +1576,8 @@ state_input_interface:
 state_gameplay_mode:
   DEFB GAMEPLAY_MODE_NORMAL
 
-; Game status buffer entry at 5F69
-L5F69:
+; Plane sprite bank selector: $00 = normal sprite, $04 = banked sprite.
+state_plane_sprite_bank:
   DEFB $00
 
 ; Current bridge of player 1
@@ -1587,8 +1588,8 @@ state_bridge_player_1:
 state_bridge_player_2:
   DEFB $01
 
-; Game status buffer entry at 5F6C
-L5F6C:
+; Bridge section indicator: $02 when rendering special bridge terrain fragments.
+state_bridge_section:
   DEFB $00
 
 ; Bridge destruction flag: $00 = no bridge destroyed, $01 = bridge destroyed.
@@ -1599,8 +1600,8 @@ state_bridge_destroyed:
 state_bridge_y_position:
   DEFB $00
 
-; Game status buffer entry at 5F6F
-L5F6F:
+; Unused state variable (cleared during initialization).
+state_unused_5F6F:
   DEFB $00
 
 ; Current Y coordinate
@@ -1702,7 +1703,7 @@ main_loop:
   LD HL,state_metronome
   INC (HL)
   CALL render_explosions
-  CALL L60A5
+  CALL render_plane_and_terrain
   CALL operate_viewport_objects
   LD A,$01
   LD (L673C),A
@@ -1715,7 +1716,7 @@ main_loop:
   CALL advance
   CALL consume_fuel
   LD A,$00
-  LD (L5F69),A
+  LD (state_plane_sprite_bank),A
   LD A,(state_input_interface)
   CP INPUT_INTERFACE_KEMPSTON
   JP Z,scan_kempston
@@ -1822,13 +1823,13 @@ scan_keyboard:
   CALL NZ,handle_fire                  ;
   JP main_loop                         ;
 
-; Routine at 60A5
+; Render player plane and terrain fragments
 ;
 ; Used by the routines at play, main_loop and overview.
-L60A5:
+render_plane_and_terrain:
   LD A,(state_gameplay_mode)
   CP GAMEPLAY_MODE_NORMAL
-  JP NZ,L60A5_0
+  JP NZ,render_plane_and_terrain_0
   LD A,OTHER_MODE_00
   LD (state_other_mode),A
   LD A,(state_x)
@@ -1854,23 +1855,23 @@ L60A5:
   LD A,$02
   LD HL,sprite_erasure
   CALL render_object
-L60A5_0:
+render_plane_and_terrain_0:
   CALL L683B
   LD A,(state_speed)
   LD DE,$0100
   LD HL,screen_pixels
   OR A
   SBC HL,DE
-L60A5_1:
+render_plane_and_terrain_1:
   ADD HL,DE
   DEC A
-  JR NZ,L60A5_1
+  JR NZ,render_plane_and_terrain_1
   LD (screen_ptr),HL
   LD A,(state_speed)
   LD B,A
-  LD A,(L5EEE)
+  LD A,(state_terrain_fragment_counter)
   LD C,A
-L60A5_2:
+render_plane_and_terrain_2:
   INC C
   LD A,C
   PUSH BC
@@ -1884,9 +1885,9 @@ L60A5_2:
   SBC HL,DE
   LD (screen_ptr),HL
   POP BC
-  DJNZ L60A5_2
+  DJNZ render_plane_and_terrain_2
   LD A,C
-  LD (L5EEE),A
+  LD (state_terrain_fragment_counter),A
   RET
 
 ; Routine at 6124
@@ -2025,11 +2026,11 @@ interact_with_something:
   CALL explode_fragment
   LD C,$80
   CALL explode_fragment
-  LD A,(L5F6C)
+  LD A,(state_bridge_section)
   CP $02
   LD HL,screen_pixels
   CALL Z,handle_special_terrain_fragment_0
-  LD A,(L5F6C)
+  LD A,(state_bridge_section)
   CP $02
   LD HL,$4100
   CALL Z,handle_special_terrain_fragment_0
@@ -2156,8 +2157,8 @@ L62D7:
 
 ; Increase vertical coordinate of the object by the value of state_speed.
 ;
-; Used by the routines at hit_terrain, interact_with_something2, L6682, L66EE, animate_plane_missile, L6794, L6FEA,
-; operate_viewport_objects, operate_helicopter_missile and operate_tank_shell.
+; Used by the routines at hit_terrain, interact_with_something2, render_plane, L66EE, animate_plane_missile, L6794,
+; L6FEA, operate_viewport_objects, operate_helicopter_missile and operate_tank_shell.
 ;
 ; I:B Current coordinate
 ; O:B New coordinate
@@ -2674,14 +2675,14 @@ handle_right:
   LD A,SPRITE_PLANE_WIDTH_TILES
   LD HL,sprite_plane_banked
   CALL render_object
-; This entry point is used by the routines at handle_left and L6682.
+; This entry point is used by the routines at handle_left and render_plane.
 handle_right_0:
   LD HL,(state_plane_missile_coordinates_backup)
   LD (state_plane_missile_coordinates),HL
   LD HL,(L8B16)
   LD (L5EF7),HL
   LD A,$04
-  LD (L5F69),A
+  LD (state_plane_sprite_bank),A
   RET
 
 ; Routine at 6642
@@ -2715,10 +2716,10 @@ handle_left:
   CALL render_object
   JP handle_right_0
 
-; Routine at 6682
+; Render player plane sprite
 ;
 ; Used by the routines at play and L683B.
-L6682:
+render_plane:
   LD A,(state_gameplay_mode)
   CP GAMEPLAY_MODE_NORMAL
   RET NZ
@@ -2741,7 +2742,7 @@ L6682:
   CALL Z,ld_attributes_ship            ;
   LD D,SPRITE_PLANE_HEIGHT_PIXELS
   LD HL,sprite_plane
-  LD A,(L5F69)
+  LD A,(state_plane_sprite_bank)
   CP $04
   CALL Z,ld_sprite_plane_banked
   LD A,SPRITE_PLANE_WIDTH_TILES
@@ -2750,7 +2751,7 @@ L6682:
 
 ; Routine at 66CC
 ;
-; Used by the routine at L6682.
+; Used by the routine at render_plane.
 ld_sprite_plane_banked:
   LD HL,sprite_plane_banked
   RET
@@ -2981,7 +2982,7 @@ L6836:
 
 ; Routine at 683B
 ;
-; Used by the routine at L60A5.
+; Used by the routine at render_plane_and_terrain.
 L683B:
   LD A,$8F
 L683B_0:
@@ -3032,7 +3033,7 @@ L683B_0:
   CP $00
   JP Z,L68A1
   CP $7F
-  CALL Z,L6682
+  CALL Z,render_plane
   LD A,(L5EF9)
   DEC A
   JP L683B_0
@@ -3057,7 +3058,7 @@ L68A1_1:
 
 ; Routine at 68B7
 ;
-; Used by the routine at L60A5.
+; Used by the routine at render_plane_and_terrain.
 L68B7:
   LD HL,$5A1F
   LD DE,$5A3F
@@ -3070,7 +3071,7 @@ L68C5:
   LD DE,$5820
   LD BC,$0020
   LDIR
-  LD A,(L5F6C)
+  LD A,(state_bridge_section)
   CP $01
   JP Z,L6927
   CP $02
@@ -3135,7 +3136,7 @@ L6927:
   LD BC,$0020
   LDIR
   LD A,$00
-  LD (L5F6C),A
+  LD (state_bridge_section),A
   CALL next_row
   RET
 
@@ -3150,7 +3151,7 @@ handle_terrain_element_1_eq_3:
   LD A,$01
   LD (state_bridge_y_position),A
   LD A,$06
-  LD (L5EEE),A
+  LD (state_terrain_fragment_counter),A
   RET
 
 ; Routine at 6947
@@ -3396,7 +3397,7 @@ locate_level_terrain_fragment:
   POP AF
   AND $03
   LD (state_terrain_extras),A
-; This entry point is used by the routine at L60A5.
+; This entry point is used by the routine at render_plane_and_terrain.
 render_terrain_fragment:
   LD A,(state_terrain_profile_number)
   LD HL,data_terrain_profiles
@@ -3577,7 +3578,7 @@ handle_special_terrain_fragment_continue:
   LD DE,(screen_ptr)
   LD BC,$0020
   LDIR
-  LD (L5F6C),A
+  LD (state_bridge_section),A
   LD A,(state_bridge_destroyed)
   CP $00
   RET Z
@@ -3892,9 +3893,9 @@ overview:
   CALL init_starting_bridge
   CALL init_current_bridge
   LD A,$04
-  LD (L5EEE),A
+  LD (state_terrain_fragment_counter),A
   LD DE,status_line_4
-  LD BC,L805F - status_line_4
+  LD BC,data_unused_805F - status_line_4
   CALL PR_STRING
   LD A,(state_game_mode)
   ADD A,$31
@@ -3918,7 +3919,7 @@ overview_0:
   CP $05
   JP Z,return_to_control_selection
   CALL L8A1B
-  CALL L60A5
+  CALL render_plane_and_terrain
   LD HL,state_metronome
   INC (HL)
   CALL operate_viewport_objects
@@ -4032,7 +4033,7 @@ consume_fuel_0:
 ;
 ; Used by the routine at L64A1.
 add_fuel:
-  LD A,(L5F69)
+  LD A,(state_plane_sprite_bank)
   CP $04
   RET Z
   LD A,(state_fuel)
@@ -4404,7 +4405,7 @@ render_enemy:
 
 ; Load ship screen attributes.
 ;
-; Used by the routines at handle_right, handle_left, L6682, render_enemy, ship_or_helicopter_left_advance and
+; Used by the routines at handle_right, handle_left, render_plane, render_enemy, ship_or_helicopter_left_advance and
 ; handle_object_proximity.
 ;
 ; O:E Attributes
@@ -6045,8 +6046,8 @@ status_line_4:
   DEFM EXT_ATTR_AT,$14,$04             ; AT 20,4
   DEFM EXT_ATTR_INK,COLOR_WHITE        ; INK WHITE
 
-; Unused
-L805F:
+; Unused data bytes
+data_unused_805F:
   DEFB $01,$05,$0A,$0F
 
 ; Array [15] of terrain element definitions (16 bytes each).
@@ -7040,8 +7041,8 @@ render_sprite_0:
 
 ; Routine at 8B3C
 ;
-; Used by the routines at L60A5, handle_right, handle_left, L6682, L6794, render_rock, ship_or_helicopter_left_advance,
-; L71A2, animate_helicopter, L74A0, handle_object_proximity and L76DA.
+; Used by the routines at render_plane_and_terrain, handle_right, handle_left, render_plane, L6794, render_rock,
+; ship_or_helicopter_left_advance, L71A2, animate_helicopter, L74A0, handle_object_proximity and L76DA.
 ;
 ; I:A Sprite width in tiles
 ; I:BC Sprite size in bytes
@@ -7675,7 +7676,7 @@ carry_player_2_score_digit:
 
 ; Routine at 91C1
 ;
-; Used by the routine at L91E8.
+; Used by the routine at print_player_2_score_area.
 print_score_player_2:
   LD A,EXT_ATTR_INK                    ; INK of Player 2 color
   RST $10                              ;
@@ -7700,10 +7701,10 @@ print_score_player_2:
   CALL CHAN_OPEN
   RET
 
-; Routine at 91E8
+; Print player 2 score area on status line
 ;
 ; Used by the routine at play.
-L91E8:
+print_player_2_score_area:
   LD A,$01
   CALL CHAN_OPEN
   LD A,EXT_ATTR_AT                     ; AT 1,21
