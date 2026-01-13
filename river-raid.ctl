@@ -172,11 +172,11 @@
 > $4000 ; Player is refueling at a fuel station.
 > $4000 GAMEPLAY_MODE_REFUEL    EQU $06
 > $4000
-> $4000 OTHER_MODE_00             EQU $00
-> $4000 OTHER_MODE_FUEL           EQU $01
-> $4000 OTHER_MODE_HIT            EQU $02
-> $4000 OTHER_MODE_XOR            EQU $03
-> $4000 OTHER_MODE_HELICOPTER_ADV EQU $04
+> $4000 COLLISION_MODE_NONE               EQU $00
+> $4000 COLLISION_MODE_SKIP               EQU $01
+> $4000 COLLISION_MODE_MISSILE            EQU $02
+> $4000 COLLISION_MODE_ENEMY              EQU $03
+> $4000 COLLISION_MODE_HELICOPTER_MISSILE EQU $04
 > $4000
 > $4000 TANK_SHELL_INACTIVE EQU $00
 > $4000 TANK_SHELL_ACTIVE   EQU $01
@@ -485,7 +485,7 @@ g $5EF2 Tank shell state: $00 when no tank is in firing position, $01 when a tan
 g $5EF3
 @ $5EF4 label=state_plane_missile_x
 g $5EF4
-@ $5EF5 label=state_other_mode
+@ $5EF5 label=state_collision_mode
 g $5EF5
 @ $5EF6 label=L5EF6
 g $5EF6
@@ -614,16 +614,16 @@ C $6097 Scan lower row left (FIRE)
 @ $60A5 label=render_plane_and_terrain
 c $60A5 Render player plane and terrain fragments
 @ $60A8 isub=CP GAMEPLAY_MODE_NORMAL
-@ $60AD isub=LD A,OTHER_MODE_00
+@ $60AD isub=LD A,COLLISION_MODE_NONE
 c $6124
 @ $6136 label=L6136
 c $6136
-@ $6145 isub=CP OTHER_MODE_00
-@ $614A isub=CP OTHER_MODE_FUEL
-@ $614F isub=CP OTHER_MODE_HIT
-@ $6154 isub=CP OTHER_MODE_XOR
-@ $6159 isub=CP OTHER_MODE_HELICOPTER_ADV
-@ $615E label=handle_other_mode_xor
+@ $6145 isub=CP COLLISION_MODE_NONE
+@ $614A isub=CP COLLISION_MODE_SKIP
+@ $614F isub=CP COLLISION_MODE_MISSILE
+@ $6154 isub=CP COLLISION_MODE_ENEMY
+@ $6159 isub=CP COLLISION_MODE_HELICOPTER_MISSILE
+@ $615E label=handle_collision_mode_enemy
 c $615E
 @ $61A3 isub=LD (HL),SET_MARKER_EMPTY_SLOT
 @ $61B3 isub=LD A,POINTS_FIGHTER
@@ -673,7 +673,7 @@ c $62E8 Interact with something
 @ $63B4 isub=CP OBJECT_FUEL
 @ $63FC isub=LD A,GAMEPLAY_MODE_NORMAL
 c $63FC
-@ $6401 isub=LD A,OTHER_MODE_00
+@ $6401 isub=LD A,COLLISION_MODE_NONE
 @ $6414 label=hit_helicopter_reg
 @ $6414 isub=LD A,POINTS_HELICOPTER_REG
 c $6414
@@ -845,9 +845,9 @@ D $65F3 This routine is called when the player presses right on the joystick or 
   $6601 Copy new X-coordinate to C register for rendering
 @ $6602 isub=LD B,PLANE_COORDINATE_Y
   $6602 Set Y-coordinate to $80 (fixed vertical position)
-@ $6604 isub=LD A,OTHER_MODE_FUEL
-  $6604 Set other mode to $01 (fuel mode for sprite rendering)
-  $6606 Store other mode to #R$5EF5
+@ $6604 isub=LD A,COLLISION_MODE_SKIP
+  $6604 Set collision mode to $01 (skip collision detection for sprite rendering)
+  $6606 Store collision mode to #R$5EF5
   $6609 Store new plane coordinates (BC) to #R$8B0C for rendering
   $660D Decrement C to calculate previous X position (first pixel back)
   $660E Decrement C to calculate previous X position (second pixel back, total 2 pixels left)
@@ -890,9 +890,9 @@ D $6642 This routine is called when the player presses left on the joystick or k
   $6650 Copy new X-coordinate to C register for rendering
 @ $6651 isub=LD B,PLANE_COORDINATE_Y
   $6651 Set Y-coordinate to $80 (fixed vertical position)
-@ $6653 isub=LD A,OTHER_MODE_FUEL
-  $6653 Set other mode to $01 (fuel mode for sprite rendering)
-  $6655 Store other mode to #R$5EF5
+@ $6653 isub=LD A,COLLISION_MODE_SKIP
+  $6653 Set collision mode to $01 (skip collision detection for sprite rendering)
+  $6655 Store collision mode to #R$5EF5
   $6658 Store new plane coordinates (BC) to #R$8B0C for rendering
   $665C Increment C to calculate previous X position (first pixel right)
   $665D Increment C to calculate previous X position (second pixel right, total 2 pixels right)
@@ -917,7 +917,7 @@ D $6642 This routine is called when the player presses left on the joystick or k
 @ $6682 label=render_plane
 c $6682 Render player plane sprite
 @ $6685 isub=CP GAMEPLAY_MODE_NORMAL
-@ $6694 isub=LD A,OTHER_MODE_FUEL
+@ $6694 isub=LD A,COLLISION_MODE_SKIP
 @ $66A4 isub=LD BC,SPRITE_PLANE_FRAME_SIZE
 @ $66AD isub=LD E,SPRITE_PLANE_ATTRIBUTES
 @ $66B2 isub=CP PLAYER_2
@@ -949,7 +949,7 @@ c $6724
 s $673C
 @ $673D label=animate_plane_missile
 c $673D
-@ $677A isub=LD A,OTHER_MODE_HIT
+@ $677A isub=LD A,COLLISION_MODE_MISSILE
 @ $677F isub=LD DE,SPRITE_MISSILE_HEIGHT_PIXELS<<8|SPRITE_MISSILE_ATTRIBUTES
 @ $6785 isub=LD BC,SPRITE_MISSILE_FRAME_SIZE_BYTES
 @ $6788 isub=LD A,SPRITE_MISSILE_WIDTH_TILES
@@ -957,7 +957,7 @@ c $678E
   $6791,2 Reset CONTROLS_BIT_FIRE
 c $6794
 @ $679E isub=CP GAMEPLAY_MODE_REFUEL
-@ $67A3 isub=LD A,OTHER_MODE_00
+@ $67A3 isub=LD A,COLLISION_MODE_NONE
   $67E1,2 Reset CONTROLS_BIT_SPEED_DECREASED
 c $6831
 c $6836
@@ -1180,7 +1180,7 @@ c $6EC8
 @ $6EDA isub=CP SET_MARKER_END_OF_SET
 @ $6EF4 isub=AND VIEWPORT_HEIGHT
 @ $6EF6 isub=CP VIEWPORT_HEIGHT
-@ $6F30 isub=LD A,OTHER_MODE_00
+@ $6F30 isub=LD A,COLLISION_MODE_NONE
 @ $6F63 label=ld_sprite_explosion_f1
 c $6F63 Load frame 1 of the explosion sprite.
 R $6F63 O:DE Pointer to the sprite.
@@ -1196,7 +1196,7 @@ R $6F6F O:DE Pointer to the sprite.
 @ $6F73 label=init_exploding_fragments_ptr
 c $6F73
 c $6F7A
-@ $6F80 isub=LD A,OTHER_MODE_00
+@ $6F80 isub=LD A,COLLISION_MODE_NONE
 @ $6F80 label=next_row
 c $6F80 This routine gets called when the screen scrolls by another fragment
 @ $6F88 isub=LD DE,SIZE_LEVEL_SLOTS
@@ -1263,12 +1263,12 @@ R $7051 I:E X position
 @ $706C label=render_balloon
 c $706C Render balloon
 R $706C I:E X position
-@ $7072 isub=LD A,OTHER_MODE_00
+@ $7072 isub=LD A,COLLISION_MODE_NONE
 @ $7082 isub=LD BC,SPRITE_BALLOON_FRAME_SIZE
 @ $7085 isub=LD A,SPRITE_BALLOON_WIDTH_TILES
 @ $7087 isub=LD DE,SPRITE_BALLOON_HEIGHT_PIXELS<<8|SPRITE_BALLOON_ATTRIBUTES
 @ $708E label=operate_viewport_objects
-@ $708E isub=LD A,OTHER_MODE_00
+@ $708E isub=LD A,COLLISION_MODE_NONE
 c $708E Main viewport object processing loop.
 N $708E Iterates through the viewport_objects array, processing each active object. Each object slot is a 3-byte structure: [X position, Y position, OBJECT_DEFINITION byte].
 N $708E .
@@ -1280,7 +1280,7 @@ N $708E 4. Render missiles for advanced helicopters (OBJECT_HELICOPTER_ADV).
 N $708E 5. Skip further processing if in GAMEPLAY_MODE_SCROLL_IN.
 N $708E 6. Activate objects on their first frame using an interrupt counter and activation mask (sets bit 7 of the OBJECT_DEFINITION byte).
 N $708E 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHTER, OBJECT_BALLOON, OBJECT_FUEL, OBJECT_TANK, or ships/helicopters (other types).
-  $708E Reset state_other_mode to OTHER_MODE_00.
+  $708E Reset state_collision_mode to COLLISION_MODE_NONE.
   $7093 Load the current viewport_ptr into HL.
   $7096 Load the first byte of the object slot (X position) into C.
   $7097 Advance HL to the next byte.
@@ -1374,7 +1374,7 @@ N $7158 Advances the fighter by 4 pixels on each metronome tick and renders it u
 @ $7166 isub=CP FIGHTER_POSITION_LEFT_LIMIT
 @ $716B label=operate_fighter_continue
 @ $717B isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
-@ $7181 isub=LD A,OTHER_MODE_XOR
+@ $7181 isub=LD A,COLLISION_MODE_ENEMY
 @ $7186 isub=LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_FIGHTER_ATTRIBUTES
 @ $7192 label=fighter_right_advance
 c $7192
@@ -1483,7 +1483,7 @@ c $7393 Operates helicopter missile.
 @ $73A7 isub=AND VIEWPORT_HEIGHT
 @ $73A9 isub=CP VIEWPORT_HEIGHT
 @ $73B1 isub=BIT SLOT_BIT_ORIENTATION,A
-@ $73BE isub=LD A,OTHER_MODE_HELICOPTER_ADV
+@ $73BE isub=LD A,COLLISION_MODE_HELICOPTER_MISSILE
 @ $73C3 isub=LD A,SPRITE_HELICOPTER_MISSILE_WIDTH_TILES
 @ $73C5 isub=LD E,SPRITE_HELICOPTER_MISSILE_ATTRIBUTES
 @ $73D0 label=remove_helicopter_missile
@@ -1492,7 +1492,7 @@ c $73D8
 @ $73DD label=render_helicopter_missile
 c $73DD
 @ $73E0 isub=CP GAMEPLAY_MODE_SCROLL_IN
-@ $7415 label=handle_other_mode_helicopter_missile
+@ $7415 label=handle_collision_mode_helicopter_missile
 c $7415
 @ $7441 label=operate_tank_shell
 c $7441
@@ -1500,7 +1500,7 @@ c $7441
 @ $7452 isub=CP TANK_SHELL_TRAJECTORY_MAX_STEP
 @ $746F isub=AND TANK_SHELL_MASK_SPEED
 @ $7476 isub=BIT SLOT_BIT_ORIENTATION,D
-@ $7484 isub=LD A,OTHER_MODE_00
+@ $7484 isub=LD A,COLLISION_MODE_NONE
 @ $748A isub=AND VIEWPORT_HEIGHT
 @ $748C isub=CP VIEWPORT_HEIGHT
 @ $7494 isub=LD DE,SPRITE_SHELL_HEIGHT_PIXELS<<8|SPRITE_SHELL_ATTRIBUTES
@@ -2020,7 +2020,7 @@ c $8BC6
 c $8C0B
 @ $8C1B label=L8C1B
 c $8C1B
-@ $8C3B label=handle_other_mode_00
+@ $8C3B label=handle_collision_mode_none
 @ $8C3C label=L8C3C
 c $8C3C
 @ $8C45 label=jp_L6136

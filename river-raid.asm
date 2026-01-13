@@ -170,11 +170,11 @@ GAMEPLAY_MODE_OVERVIEW  EQU $02
 ; Player is refueling at a fuel station.
 GAMEPLAY_MODE_REFUEL    EQU $06
 
-OTHER_MODE_00             EQU $00
-OTHER_MODE_FUEL           EQU $01
-OTHER_MODE_HIT            EQU $02
-OTHER_MODE_XOR            EQU $03
-OTHER_MODE_HELICOPTER_ADV EQU $04
+COLLISION_MODE_NONE               EQU $00
+COLLISION_MODE_SKIP               EQU $01
+COLLISION_MODE_MISSILE            EQU $02
+COLLISION_MODE_ENEMY              EQU $03
+COLLISION_MODE_HELICOPTER_MISSILE EQU $04
 
 TANK_SHELL_INACTIVE EQU $00
 TANK_SHELL_ACTIVE   EQU $01
@@ -1468,7 +1468,7 @@ state_plane_missile_x:
   DEFB $00
 
 ; Game status buffer entry at 5EF5
-state_other_mode:
+state_collision_mode:
   DEFB $00
 
 ; Game status buffer entry at 5EF6
@@ -1830,8 +1830,8 @@ render_plane_and_terrain:
   LD A,(state_gameplay_mode)
   CP GAMEPLAY_MODE_NORMAL
   JP NZ,render_plane_and_terrain_0
-  LD A,OTHER_MODE_00
-  LD (state_other_mode),A
+  LD A,COLLISION_MODE_NONE
+  LD (state_collision_mode),A
   LD A,(state_x)
   LD C,A
   LD A,(state_speed)
@@ -1912,22 +1912,22 @@ L6136:
   LD (tmp_HL),HL
   LD (tmp_DE),DE
   LD (tmp_BC),BC
-  LD A,(state_other_mode)
-  CP OTHER_MODE_00
-  JP Z,handle_other_mode_00
-  CP OTHER_MODE_FUEL
+  LD A,(state_collision_mode)
+  CP COLLISION_MODE_NONE
+  JP Z,handle_collision_mode_none
+  CP COLLISION_MODE_SKIP
   JP Z,fuel
-  CP OTHER_MODE_HIT
+  CP COLLISION_MODE_MISSILE
   JP Z,interact_with_something
-  CP OTHER_MODE_XOR
-  JP Z,handle_other_mode_xor
-  CP OTHER_MODE_HELICOPTER_ADV
-  JP Z,handle_other_mode_helicopter_missile
+  CP COLLISION_MODE_ENEMY
+  JP Z,handle_collision_mode_enemy
+  CP COLLISION_MODE_HELICOPTER_MISSILE
+  JP Z,handle_collision_mode_helicopter_missile
 
 ; Routine at 615E
 ;
 ; Used by the routine at L6136.
-handle_other_mode_xor:
+handle_collision_mode_enemy:
   LD BC,(state_plane_missile_coordinates)
   LD DE,(object_coordinates)
   LD A,B
@@ -2327,14 +2327,14 @@ interact_with_something2_1:
 L63FC:
   LD A,GAMEPLAY_MODE_NORMAL
   LD (state_gameplay_mode),A
-; This entry point is used by the routine at handle_other_mode_xor.
+; This entry point is used by the routine at handle_collision_mode_enemy.
 L63FC_0:
-  LD A,OTHER_MODE_00
-  LD (state_other_mode),A
+  LD A,COLLISION_MODE_NONE
+  LD (state_collision_mode),A
   LD HL,(tmp_HL)
   LD DE,(tmp_DE)
   LD BC,(tmp_BC)
-  JP handle_other_mode_00
+  JP handle_collision_mode_none
 
 ; Routine at 6414
 ;
@@ -2673,8 +2673,8 @@ handle_right:
   LD (state_x),A                       ; Store new X-coordinate back to state_x
   LD C,A                               ; Copy new X-coordinate to C register for rendering
   LD B,PLANE_COORDINATE_Y              ; Set Y-coordinate to $80 (fixed vertical position)
-  LD A,OTHER_MODE_FUEL                 ; Set other mode to $01 (fuel mode for sprite rendering)
-  LD (state_other_mode),A              ; Store other mode to state_other_mode
+  LD A,COLLISION_MODE_SKIP             ; Set collision mode to $01 (skip collision detection for sprite rendering)
+  LD (state_collision_mode),A          ; Store collision mode to state_collision_mode
   LD (object_coordinates),BC           ; Store new plane coordinates (BC) to object_coordinates for rendering
   DEC C                                ; Decrement C to calculate previous X position (first pixel back)
   DEC C                                ; Decrement C to calculate previous X position (second pixel back, total 2 pixels
@@ -2723,8 +2723,8 @@ handle_left:
   LD (state_x),A                       ; Store new X-coordinate back to state_x
   LD C,A                               ; Copy new X-coordinate to C register for rendering
   LD B,PLANE_COORDINATE_Y              ; Set Y-coordinate to $80 (fixed vertical position)
-  LD A,OTHER_MODE_FUEL                 ; Set other mode to $01 (fuel mode for sprite rendering)
-  LD (state_other_mode),A              ; Store other mode to state_other_mode
+  LD A,COLLISION_MODE_SKIP             ; Set collision mode to $01 (skip collision detection for sprite rendering)
+  LD (state_collision_mode),A          ; Store collision mode to state_collision_mode
   LD (object_coordinates),BC           ; Store new plane coordinates (BC) to object_coordinates for rendering
   INC C                                ; Increment C to calculate previous X position (first pixel right)
   INC C                                ; Increment C to calculate previous X position (second pixel right, total 2
@@ -2756,8 +2756,8 @@ render_plane:
   LD (state_plane_missile_coordinates_backup),HL
   LD C,A
   LD B,$80
-  LD A,OTHER_MODE_FUEL
-  LD (state_other_mode),A
+  LD A,COLLISION_MODE_SKIP
+  LD (state_collision_mode),A
   LD (object_coordinates),BC
   CALL advance_object
   LD (previous_object_coordinates),BC
@@ -2897,8 +2897,8 @@ animate_plane_missile:
   SUB B
   CALL P,L678E
   LD (object_coordinates),BC
-  LD A,OTHER_MODE_HIT
-  LD (state_other_mode),A
+  LD A,COLLISION_MODE_MISSILE
+  LD (state_collision_mode),A
   LD DE,SPRITE_MISSILE_HEIGHT_PIXELS<<8|SPRITE_MISSILE_ATTRIBUTES
   LD HL,sprite_missile
   LD BC,SPRITE_MISSILE_FRAME_SIZE_BYTES
@@ -2916,16 +2916,16 @@ L678E:
 
 ; Routine at 6794
 ;
-; Used by the routines at handle_other_mode_xor, interact_with_something, next_bridge_player_2, interact_with_something2
-; and animate_plane_missile.
+; Used by the routines at handle_collision_mode_enemy, interact_with_something, next_bridge_player_2,
+; interact_with_something2 and animate_plane_missile.
 L6794:
   LD BC,(state_plane_missile_coordinates)
   CALL blenging_mode_or_or
   LD A,(state_gameplay_mode)
   CP GAMEPLAY_MODE_REFUEL
   JP Z,handle_no_fuel
-  LD A,OTHER_MODE_00
-  LD (state_other_mode),A
+  LD A,COLLISION_MODE_NONE
+  LD (state_collision_mode),A
   LD A,$01
   LD HL,L8451
   LD DE,$0008
@@ -4122,7 +4122,7 @@ signal_fuel_level_excessive:
 
 ; Explode a single fragment
 ;
-; Used by the routines at handle_other_mode_xor, interact_with_something, hit_helicopter_reg, hit_ship,
+; Used by the routines at handle_collision_mode_enemy, interact_with_something, hit_helicopter_reg, hit_ship,
 ; hit_helicopter_adv, hit_fighter, hit_balloon, interact_with_fuel, handle_no_fuel and L74EE.
 ;
 ; I:BC Pointer to the fragment to explode.
@@ -4232,8 +4232,8 @@ render_explosions:
   LD (render_sprite_ptr),HL
   LD (L8B10),DE
   LD D,A
-  LD A,OTHER_MODE_00
-  LD (state_other_mode),A
+  LD A,COLLISION_MODE_NONE
+  LD (state_collision_mode),A
   LD A,$02
   LD (render_object_width),A
   LD A,D
@@ -4314,8 +4314,8 @@ L6F7A:
 ;
 ; Used by the routines at L68C5 and L6927.
 next_row:
-  LD A,OTHER_MODE_00
-  LD (state_other_mode),A
+  LD A,COLLISION_MODE_NONE
+  LD (state_collision_mode),A
   LD HL,level_objects
   LD DE,SIZE_LEVEL_SLOTS
   LD A,(state_bridge_index)
@@ -4499,8 +4499,8 @@ render_balloon:
   LD B,$00
   LD C,E
   LD HL,sprite_balloon
-  LD A,OTHER_MODE_00
-  LD (state_other_mode),A
+  LD A,COLLISION_MODE_NONE
+  LD (state_collision_mode),A
   PUSH HL
   LD HL,viewport_objects
   CALL add_object_to_set
@@ -4540,8 +4540,8 @@ render_balloon:
 ; 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHTER, OBJECT_BALLOON, OBJECT_FUEL, OBJECT_TANK,
 ; or ships/helicopters (other types).
 operate_viewport_objects:
-  LD A,OTHER_MODE_00                   ; Reset state_other_mode to OTHER_MODE_00.
-  LD (state_other_mode),A              ;
+  LD A,COLLISION_MODE_NONE             ; Reset state_collision_mode to COLLISION_MODE_NONE.
+  LD (state_collision_mode),A          ;
   LD HL,(viewport_ptr)                 ; Load the current viewport_ptr into HL.
   LD C,(HL)                            ; Load the first byte of the object slot (X position) into C.
   INC HL                               ; Advance HL to the next byte.
@@ -4691,8 +4691,8 @@ operate_fighter_continue:
   CALL ld_enemy_sprites
   LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
   CALL blenging_mode_xor_xor
-  LD A,OTHER_MODE_XOR
-  LD (state_other_mode),A
+  LD A,COLLISION_MODE_ENEMY
+  LD (state_collision_mode),A
   LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_FIGHTER_ATTRIBUTES
   CALL render_sprite
   CALL blenging_mode_or_or
@@ -5114,8 +5114,8 @@ operate_helicopter_missile:
   CALL Z,invert_helicopter_missle_offset
   LD (object_coordinates),BC
   LD (helicopter_missile_coordinates_ptr),BC
-  LD A,OTHER_MODE_HELICOPTER_ADV
-  LD (state_other_mode),A
+  LD A,COLLISION_MODE_HELICOPTER_MISSILE
+  LD (state_collision_mode),A
   LD A,SPRITE_HELICOPTER_MISSILE_WIDTH_TILES
   LD E,SPRITE_HELICOPTER_MISSILE_ATTRIBUTES
   LD D,$01
@@ -5179,14 +5179,14 @@ render_helicopter_missile:
 ; Routine at 7415
 ;
 ; Used by the routine at L6136.
-handle_other_mode_helicopter_missile:
+handle_collision_mode_helicopter_missile:
   LD BC,(helicopter_missile_coordinates_ptr)
   BIT 7,B
-  JP Z,handle_other_mode_helicopter_missile_0
+  JP Z,handle_collision_mode_helicopter_missile_0
   RES 7,B
   LD A,B
   SUB $08
-  JP P,handle_other_mode_helicopter_missile_0
+  JP P,handle_collision_mode_helicopter_missile_0
   LD A,(state_x)
   AND $F8
   CP C
@@ -5194,7 +5194,7 @@ handle_other_mode_helicopter_missile:
   ADD A,$08
   CP C
   JP Z,handle_no_fuel
-handle_other_mode_helicopter_missile_0:
+handle_collision_mode_helicopter_missile_0:
   LD BC,$0000
   LD (helicopter_missile_coordinates_ptr),BC
   POP DE
@@ -5236,8 +5236,8 @@ operate_tank_shell:
   INC B
   LD (object_coordinates),BC
   LD (tank_shell_coordinates),BC
-  LD A,OTHER_MODE_00
-  LD (state_other_mode),A
+  LD A,COLLISION_MODE_NONE
+  LD (state_collision_mode),A
   LD A,B
   AND VIEWPORT_HEIGHT
   CP VIEWPORT_HEIGHT
@@ -7237,7 +7237,7 @@ L8C1B_0:
   CP D
   JP NZ,jp_L6136
 ; This entry point is used by the routines at L6136 and L63FC.
-handle_other_mode_00:
+handle_collision_mode_none:
   LD A,(HL)
 
 ; Routine at 8C3C
@@ -7514,7 +7514,7 @@ L90CE:
 
 ; Add score points for a hit target
 ;
-; Used by the routines at handle_other_mode_xor, interact_with_something, hit_helicopter_reg, hit_ship,
+; Used by the routines at handle_collision_mode_enemy, interact_with_something, hit_helicopter_reg, hit_ship,
 ; hit_helicopter_adv, hit_fighter, hit_balloon, interact_with_fuel and L74EE.
 ;
 ; I:A Number of points to add divided by 10.
