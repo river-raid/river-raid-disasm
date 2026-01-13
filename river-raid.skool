@@ -1771,31 +1771,36 @@ g$5F8D DEFW $0000
 @label=state_plane_missile_coordinates_backup
 g$5F8F DEFW $0000
 
-; Main loop
+; Main gameplay loop
 ;
-; Used by the routines at #R$5DA6, #R$5FDA, #R$600A, #R$6039 and #R$6068.
+; This is the main gameplay loop that runs continuously during active gameplay.
+; It handles input scanning (Enter key), updates the game state (metronome,
+; explosions, plane, objects, missiles, tank shells, helicopter missiles),
+; advances the game (scrolling), consumes fuel, and dispatches to the
+; appropriate input handler based on the selected control interface.
 @label=main_loop
 c$5F91 LD A,$BF      ; {Scan Enter
  $5F93 IN A,($FE)    ;
  $5F95 BIT 0,A       ;
  $5F97 CALL Z,$6BBF  ; }
- $5F9A LD HL,$5EEF   ;
- $5F9D INC (HL)      ;
- $5F9E CALL $6EC8    ;
- $5FA1 CALL $60A5    ;
- $5FA4 CALL $708E    ;
- $5FA7 LD A,$01      ;
- $5FA9 LD ($673C),A  ;
- $5FAC CALL $673D    ;
- $5FAF LD A,$00      ;
- $5FB1 LD ($673C),A  ;
- $5FB4 CALL $673D    ;
- $5FB7 CALL $7441    ;
- $5FBA CALL $7393    ;
- $5FBD CALL $66D0    ;
- $5FC0 CALL $6DFF    ;
- $5FC3 LD A,$00      ;
- $5FC5 LD ($5F69),A  ;
+ $5F9A LD HL,$5EEF   ; Load address of #R$5EEF (metronome counter) into HL
+ $5F9D INC (HL)      ; Increment metronome counter
+ $5F9E CALL $6EC8    ; Call #R$6EC8 to render explosions
+ $5FA1 CALL $60A5    ; Call #R$60A5 to render player plane and terrain
+                     ; fragments
+ $5FA4 CALL $708E    ; Call #R$708E to operate viewport objects
+ $5FA7 LD A,$01      ; Load $01 into A (first missile pass)
+ $5FA9 LD ($673C),A  ; Store $01 to #R$673C (missile pass selector)
+ $5FAC CALL $673D    ; Call #R$673D to animate plane missile (first pass)
+ $5FAF LD A,$00      ; Load $00 into A (second missile pass)
+ $5FB1 LD ($673C),A  ; Store $00 to #R$673C (missile pass selector)
+ $5FB4 CALL $673D    ; Call #R$673D to animate plane missile (second pass)
+ $5FB7 CALL $7441    ; Call #R$7441 to operate tank shell
+ $5FBA CALL $7393    ; Call #R$7393 to operate helicopter missile
+ $5FBD CALL $66D0    ; Call #R$66D0 to advance game state (scrolling)
+ $5FC0 CALL $6DFF    ; Call #R$6DFF to consume fuel
+ $5FC3 LD A,$00      ; Load $00 into A (reset sprite bank selector)
+ $5FC5 LD ($5F69),A  ; Store $00 to #R$5F69 (clear plane sprite bank)
  $5FC8 LD A,($5F67)  ;
 @isub=CP INPUT_INTERFACE_KEMPSTON
  $5FCB CP $02        ;

@@ -593,8 +593,26 @@ W $5F8D
 g $5F8F
 W $5F8F
 @ $5F91 label=main_loop
-c $5F91 Main loop
+c $5F91 Main gameplay loop
+D $5F91 This is the main gameplay loop that runs continuously during active gameplay. It handles input scanning (Enter key), updates the game state (metronome, explosions, plane, objects, missiles, tank shells, helicopter missiles), advances the game (scrolling), consumes fuel, and dispatches to the appropriate input handler based on the selected control interface.
 C $5F91,9 Scan Enter
+  $5F9A Load address of #R$5EEF (metronome counter) into HL
+  $5F9D Increment metronome counter
+  $5F9E Call #R$6EC8 to render explosions
+  $5FA1 Call #R$60A5 to render player plane and terrain fragments
+  $5FA4 Call #R$708E to operate viewport objects
+  $5FA7 Load $01 into A (first missile pass)
+  $5FA9 Store $01 to #R$673C (missile pass selector)
+  $5FAC Call #R$673D to animate plane missile (first pass)
+  $5FAF Load $00 into A (second missile pass)
+  $5FB1 Store $00 to #R$673C (missile pass selector)
+  $5FB4 Call #R$673D to animate plane missile (second pass)
+  $5FB7 Call #R$7441 to operate tank shell
+  $5FBA Call #R$7393 to operate helicopter missile
+  $5FBD Call #R$66D0 to advance game state (scrolling)
+  $5FC0 Call #R$6DFF to consume fuel
+  $5FC3 Load $00 into A (reset sprite bank selector)
+  $5FC5,3 Store $00 to #R$5F69 (clear plane sprite bank)
 @ $5FCB isub=CP INPUT_INTERFACE_KEMPSTON
 @ $5FD0 isub=CP INPUT_INTERFACE_SINCLAIR
 @ $5FD5 isub=CP INPUT_INTERFACE_KEYBOARD
