@@ -715,14 +715,74 @@ c $64F1 Print current bridge number for player 2
 c $6506 Print space
 @ $650A label=handle_no_fuel
 c $650A Handle the no fuel situation
+D $650A This routine is called when the player runs out of fuel. It stops the plane, creates two explosion fragments at the plane's position, animates the explosions over 16 frames, waits for a delay, then determines the next game state based on the current player and remaining lives in single or two-player mode.
+  $650A Load plane X-coordinate
+  $650D Align to 8-pixel boundary (clear lower 3 bits)
+  $650F Store aligned X-coordinate in C register
+  $6510 Set Y-coordinate to $7F (just below visible area)
+  $6512 Stop plane movement (clear speed and missile coordinates)
+  $651A Set explosion sprite type to $00
+  $651D Create first explosion fragment at plane position
+  $6522 Offset Y-coordinate by $05 pixels for second explosion
+  $6526 Create second explosion fragment
+  $6529 Set animation frame counter to $10 (16 frames)
+@ $652B label=animate_explosion_loop
+  $652B Save frame counter
+  $652C Set outer delay loop counter to $40 (64 iterations)
+@ $652E label=explosion_delay_outer
+  $652E Set inner delay loop counter to $00 (256 iterations)
+@ $6530 label=explosion_delay_inner
+  $6530 Tight delay loop (256 iterations)
+  $6533 Repeat outer delay loop (64 times)
+  $6535 Render current explosion animation frame
+  $6538 Restore and decrement frame counter
+  $653A Repeat animation loop for all 16 frames
+  $653D Set final delay counter to $0C (12 iterations)
+  $6541 Initialize inner loop counter to $00
+@ $6543 label=final_delay_loop
+  $6543 Triple-nested delay loop for extended pause after explosion
+  $654B Clear control state (reset all button flags)
+  $654D Store cleared control state
+  $6550 Load current player number
 @ $6553 isub=CP PLAYER_2
+  $6553 Check if current player is Player 2
+  $6555 If Player 2, jump to Player 2 death handler
+  $6558 Load Player 1 lives remaining
+@ $655B isub=CP $00
+  $655B Check if Player 1 has no lives left
+  $655D If no lives, jump to check for game over
+  $6560 Load game mode (1 or 2 player)
 @ $6563 isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
-c $656F
+  $6563 Check if two-player mode is active
+  $6565 If two-player mode, jump to switch to Player 2
+@ $6568 label=restart_current_player
+c $6568 Restart gameplay for current player
+D $6568 This entry point is used by multiple death handler routines to restart gameplay for the current player. It restores the stack pointer and jumps back to the main play routine.
+  $6568 Restore stack pointer to main game loop
+  $656C Restart gameplay for current player
+@ $656F label=check_player_2_lives
+c $656F Check if Player 2 has lives remaining when Player 1 is out
+D $656F This routine is called when Player 1 has no lives left. In two-player mode, it checks if Player 2 has lives and switches to Player 2 if so, otherwise triggers game over.
+  $656F Load game mode (1 or 2 player)
 @ $6572 isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
+  $6572 Check if two-player mode is active
+  $6574 If two-player mode, jump to switch to Player 2
 @ $6577 label=game_over
 c $6577 Game Over
-c $6587
+D $6577 This routine displays the "GAME OVER" message, plays the game over sequence, and returns to the overview/demo mode.
+  $6577 Set scroller pointer to "GAME OVER" message
+  $657D Display game over sequence
+  $6580 Restore stack pointer to main loop
+  $6584 Return to overview/demo mode
+@ $6587 label=setup_player_2_display
+c $6587 Setup Player 2 display during overview mode
+D $6587 This routine is called during overview mode to set up the Player 2 status display. It only executes in two-player mode, setting the player to Player 2, printing the bridge number, and configuring the Player 2 color scheme.
+  $6587 Load game mode (1 or 2 player)
 @ $658A isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
+  $658A Check if two-player mode is active
+  $658C Return if single-player mode
+  $658D Set current player to Player 2 ($01)
+  $6592 Print current bridge number for Player 2
 @ $6595 isub=LD A,EXT_ATTR_INK
   $6595 INK of Player 2 color
 @ $6598 isub=LD A,COLOR_PLAYER_2
@@ -730,10 +790,49 @@ c $6587
   $659B,6 AT 20,...
 @ $65A1 ofix=LD DE,$8052
 @ $65A4 ofix=LD BC,$0008
-c $65AB
-c $65BB
-c $65CB
-c $65DE
+  $65A7 Print Player 2 status line text
+  $65AA Return to caller
+@ $65AB label=switch_to_player_2
+c $65AB Switch to Player 2 after Player 1 death
+D $65AB This routine is called when Player 1 dies and Player 2 has lives remaining in two-player mode. It checks if Player 2 has lives, triggers game over if not, otherwise switches to Player 2 and restarts gameplay.
+  $65AB Load Player 2 lives remaining
+@ $65AE isub=CP $00
+  $65AE Check if Player 2 has no lives left
+  $65B0 If no lives, trigger game over
+  $65B3 Set current player to Player 2 ($02)
+  $65B8 Restart gameplay for Player 2
+@ $65BB label=switch_to_player_2_in_two_player_mode
+c $65BB Switch to Player 2 when Player 1 dies in two-player mode
+D $65BB This routine is called when Player 1 dies in two-player mode and still has lives. It checks if Player 2 has lives, and if so, switches to Player 2. If Player 2 has no lives, it restarts Player 1 instead.
+  $65BB Load Player 2 lives remaining
+@ $65BE isub=CP $00
+  $65BE Check if Player 2 has no lives left
+  $65C0 If no lives, restart current player (Player 1)
+  $65C3 Set current player to Player 2 ($02)
+  $65C8 Restart gameplay for Player 2
+@ $65CB label=handle_player_2_death
+c $65CB Handle Player 2 death and determine next game state
+D $65CB This routine is called when Player 2 dies. It checks both players' lives to determine whether to switch to Player 1, continue with Player 2, or trigger game over.
+  $65CB Load Player 2 lives remaining
+@ $65CE isub=CP $00
+  $65CE Check if Player 2 has no lives left
+  $65D0 If no lives, jump to check Player 1 status
+  $65D3 Load Player 1 lives remaining
+@ $65D6 isub=CP $00
+  $65D6 Check if Player 1 has no lives left
+  $65D8 If Player 1 has lives, switch to Player 1
+  $65DB Otherwise restart Player 2
+@ $65DE label=switch_to_player_1
+c $65DE Switch to Player 1 after Player 2 death
+D $65DE This routine is called when Player 2 dies and Player 1 has lives remaining. It switches the current player to Player 1 and restarts gameplay, or triggers game over if Player 1 has no lives.
+  $65DE Set current player to Player 1 ($01)
+@ $65E3 label=check_player_1_lives
+  $65E3 Load Player 1 lives remaining
+@ $65E6 isub=CP $00
+  $65E6 Check if Player 1 has no lives left
+  $65E8 If no lives, trigger game over
+  $65EB Set current player to Player 1 ($01)
+  $65F0,3 Restart gameplay for Player 1
 @ $65F3 label=handle_right
 c $65F3
 @ $6602 isub=LD B,PLANE_COORDINATE_Y

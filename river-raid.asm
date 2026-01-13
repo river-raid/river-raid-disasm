@@ -2445,7 +2445,7 @@ L64B4:
 
 ; Routine at 64BC
 ;
-; Used by the routines at play, interact_with_something, next_bridge_player_2, L6587 and overview.
+; Used by the routines at play, interact_with_something, next_bridge_player_2, setup_player_2_display and overview.
 print_bridge:
   LD A,(state_player)
   CP PLAYER_2
@@ -2479,7 +2479,7 @@ print_bridge_player_2:
 
 ; Print current bridge number for player 2
 ;
-; Used by the routine at L6587.
+; Used by the routine at setup_player_2_display.
 print_bridge_no_player_2:
   CALL PR_STRING
   LD A,(state_bridge_player_2)
@@ -2501,89 +2501,97 @@ print_space:
 
 ; Handle the no fuel situation
 ;
-; Used by the routines at L6794, consume_fuel and handle_other_mode_helicopter_missile.
+; This routine is called when the player runs out of fuel. It stops the plane, creates two explosion fragments at the
+; plane's position, animates the explosions over 16 frames, waits for a delay, then determines the next game state based
+; on the current player and remaining lives in single or two-player mode.
 handle_no_fuel:
-  LD A,(state_x)
-  AND $F8
-  LD C,A
-  LD B,$7F
-  LD A,$00
-  LD (state_speed),A
-  LD (state_plane_missile_coordinates),A
-  LD (state_plane_missile_x),A
-  LD D,$00
-  CALL explode_fragment
-  LD A,B
-  ADD A,$05
-  LD B,A
-  CALL explode_fragment
-  LD A,$10
-handle_no_fuel_0:
-  PUSH AF
-  LD B,$40
-handle_no_fuel_1:
-  LD D,$00
-handle_no_fuel_2:
-  DEC D
-  JR NZ,handle_no_fuel_2
-  DJNZ handle_no_fuel_1
-  CALL render_explosions
-  POP AF
-  DEC A
-  JP NZ,handle_no_fuel_0
-  LD D,$0C
-  LD A,$00
-  LD B,$00
-handle_no_fuel_3:
-  DJNZ handle_no_fuel_3
-  DEC A
-  JR NZ,handle_no_fuel_3
-  DEC D
-  JR NZ,handle_no_fuel_3
-  LD A,$00
-  LD (state_controls),A
-  LD A,(state_player)
-  CP PLAYER_2
-  JP Z,L65CB
-  LD A,(state_lives_player_1)
-  CP $00
-  JP Z,L656F
-  LD A,(state_game_mode)
-  BIT GAME_MODE_BIT_TWO_PLAYERS,A
-  JP NZ,L65BB
-; This entry point is used by the routines at L65AB, L65BB, L65CB and L65DE.
-handle_no_fuel_4:
-  LD SP,(saved_stack_pointer)
-  JP play
+  LD A,(state_x)                       ; Load plane X-coordinate
+  AND $F8                              ; Align to 8-pixel boundary (clear lower 3 bits)
+  LD C,A                               ; Store aligned X-coordinate in C register
+  LD B,$7F                             ; Set Y-coordinate to $7F (just below visible area)
+  LD A,$00                               ; Stop plane movement (clear speed and missile coordinates)
+  LD (state_speed),A                     ;
+  LD (state_plane_missile_coordinates),A ;
+  LD (state_plane_missile_x),A         ; Set explosion sprite type to $00
+  LD D,$00                             ; Create first explosion fragment at plane position
+  CALL explode_fragment                ;
+  LD A,B                               ; Offset Y-coordinate by $05 pixels for second explosion
+  ADD A,$05                            ;
+  LD B,A                               ;
+  CALL explode_fragment                ; Create second explosion fragment
+  LD A,$10                             ; Set animation frame counter to $10 (16 frames)
+animate_explosion_loop:
+  PUSH AF                              ; Save frame counter
+  LD B,$40                             ; Set outer delay loop counter to $40 (64 iterations)
+explosion_delay_outer:
+  LD D,$00                             ; Set inner delay loop counter to $00 (256 iterations)
+explosion_delay_inner:
+  DEC D                                ; Tight delay loop (256 iterations)
+  JR NZ,explosion_delay_inner          ;
+  DJNZ explosion_delay_outer           ; Repeat outer delay loop (64 times)
+  CALL render_explosions               ; Render current explosion animation frame
+  POP AF                               ; Restore and decrement frame counter
+  DEC A                                ;
+  JP NZ,animate_explosion_loop         ; Repeat animation loop for all 16 frames
+  LD D,$0C                             ; Set final delay counter to $0C (12 iterations)
+  LD A,$00                             ;
+  LD B,$00                             ; Initialize inner loop counter to $00
+final_delay_loop:
+  DJNZ final_delay_loop                ; Triple-nested delay loop for extended pause after explosion
+  DEC A                                ;
+  JR NZ,final_delay_loop               ;
+  DEC D                                ;
+  JR NZ,final_delay_loop               ;
+  LD A,$00                             ; Clear control state (reset all button flags)
+  LD (state_controls),A                ; Store cleared control state
+  LD A,(state_player)                  ; Load current player number
+  CP PLAYER_2                          ; Check if current player is Player 2
+  JP Z,handle_player_2_death           ; If Player 2, jump to Player 2 death handler
+  LD A,(state_lives_player_1)          ; Load Player 1 lives remaining
+  CP $00                               ; Check if Player 1 has no lives left
+  JP Z,check_player_2_lives            ; If no lives, jump to check for game over
+  LD A,(state_game_mode)               ; Load game mode (1 or 2 player)
+  BIT GAME_MODE_BIT_TWO_PLAYERS,A      ; Check if two-player mode is active
+  JP NZ,switch_to_player_2_in_two_player_mode ; If two-player mode, jump to switch to Player 2
 
-; Routine at 656F
+; Restart gameplay for current player
 ;
-; Used by the routine at handle_no_fuel.
-L656F:
-  LD A,(state_game_mode)
-  BIT GAME_MODE_BIT_TWO_PLAYERS,A
-  JP NZ,L65AB
+; This entry point is used by multiple death handler routines to restart gameplay for the current player. It restores
+; the stack pointer and jumps back to the main play routine.
+restart_current_player:
+  LD SP,(saved_stack_pointer)          ; Restore stack pointer to main game loop
+  JP play                              ; Restart gameplay for current player
+
+; Check if Player 2 has lives remaining when Player 1 is out
+;
+; This routine is called when Player 1 has no lives left. In two-player mode, it checks if Player 2 has lives and
+; switches to Player 2 if so, otherwise triggers game over.
+check_player_2_lives:
+  LD A,(state_game_mode)               ; Load game mode (1 or 2 player)
+  BIT GAME_MODE_BIT_TWO_PLAYERS,A      ; Check if two-player mode is active
+  JP NZ,switch_to_player_2             ; If two-player mode, jump to switch to Player 2
 
 ; Game Over
 ;
-; Used by the routines at L65AB and L65DE.
+; This routine displays the "GAME OVER" message, plays the game over sequence, and returns to the overview/demo mode.
 game_over:
-  LD HL,msg_game_over
-  LD (ptr_scroller),HL
-  CALL L93BE
-  LD SP,(saved_stack_pointer)
-  JP start_overview
+  LD HL,msg_game_over                  ; Set scroller pointer to "GAME OVER" message
+  LD (ptr_scroller),HL                 ;
+  CALL L93BE                           ; Display game over sequence
+  LD SP,(saved_stack_pointer)          ; Restore stack pointer to main loop
+  JP start_overview                    ; Return to overview/demo mode
 
-; Routine at 6587
+; Setup Player 2 display during overview mode
 ;
-; Used by the routine at overview.
-L6587:
-  LD A,(state_game_mode)
-  BIT GAME_MODE_BIT_TWO_PLAYERS,A
-  RET Z
-  LD A,$01
-  LD (state_player),A
-  CALL print_bridge
+; This routine is called during overview mode to set up the Player 2 status display. It only executes in two-player
+; mode, setting the player to Player 2, printing the bridge number, and configuring the Player 2 color scheme.
+setup_player_2_display:
+  LD A,(state_game_mode)               ; Load game mode (1 or 2 player)
+  BIT GAME_MODE_BIT_TWO_PLAYERS,A      ; Check if two-player mode is active
+  RET Z                                ; Return if single-player mode
+  LD A,$01                             ; Set current player to Player 2 ($01)
+  LD (state_player),A                  ;
+  CALL print_bridge                    ; Print current bridge number for Player 2
   LD A,EXT_ATTR_INK                    ; INK of Player 2 color
   RST $10                              ;
   LD A,COLOR_PLAYER_2                  ;
@@ -2594,57 +2602,61 @@ L6587:
   RST $10                              ;
   LD DE,status_line_3_text
   LD BC,$0008
-  CALL print_bridge_no_player_2
-  RET
+  CALL print_bridge_no_player_2        ; Print Player 2 status line text
+  RET                                  ; Return to caller
 
-; Routine at 65AB
+; Switch to Player 2 after Player 1 death
 ;
-; Used by the routine at L656F.
-L65AB:
-  LD A,(state_lives_player_2)
-  CP $00
-  JP Z,game_over
-  LD A,$02
-  LD (state_player),A
-  JP handle_no_fuel_4
+; This routine is called when Player 1 dies and Player 2 has lives remaining in two-player mode. It checks if Player 2
+; has lives, triggers game over if not, otherwise switches to Player 2 and restarts gameplay.
+switch_to_player_2:
+  LD A,(state_lives_player_2)          ; Load Player 2 lives remaining
+  CP $00                               ; Check if Player 2 has no lives left
+  JP Z,game_over                       ; If no lives, trigger game over
+  LD A,$02                             ; Set current player to Player 2 ($02)
+  LD (state_player),A                  ;
+  JP restart_current_player            ; Restart gameplay for Player 2
 
-; Routine at 65BB
+; Switch to Player 2 when Player 1 dies in two-player mode
 ;
-; Used by the routine at handle_no_fuel.
-L65BB:
-  LD A,(state_lives_player_2)
-  CP $00
-  JP Z,handle_no_fuel_4
-  LD A,$02
-  LD (state_player),A
-  JP handle_no_fuel_4
+; This routine is called when Player 1 dies in two-player mode and still has lives. It checks if Player 2 has lives, and
+; if so, switches to Player 2. If Player 2 has no lives, it restarts Player 1 instead.
+switch_to_player_2_in_two_player_mode:
+  LD A,(state_lives_player_2)          ; Load Player 2 lives remaining
+  CP $00                               ; Check if Player 2 has no lives left
+  JP Z,restart_current_player          ; If no lives, restart current player (Player 1)
+  LD A,$02                             ; Set current player to Player 2 ($02)
+  LD (state_player),A                  ;
+  JP restart_current_player            ; Restart gameplay for Player 2
 
-; Routine at 65CB
+; Handle Player 2 death and determine next game state
 ;
-; Used by the routine at handle_no_fuel.
-L65CB:
-  LD A,(state_lives_player_2)
-  CP $00
-  JP Z,L65DE_0
-  LD A,(state_lives_player_1)
-  CP $00
-  JP NZ,L65DE
-  JP handle_no_fuel_4
+; This routine is called when Player 2 dies. It checks both players' lives to determine whether to switch to Player 1,
+; continue with Player 2, or trigger game over.
+handle_player_2_death:
+  LD A,(state_lives_player_2)          ; Load Player 2 lives remaining
+  CP $00                               ; Check if Player 2 has no lives left
+  JP Z,check_player_1_lives            ; If no lives, jump to check Player 1 status
+  LD A,(state_lives_player_1)          ; Load Player 1 lives remaining
+  CP $00                               ; Check if Player 1 has no lives left
+  JP NZ,switch_to_player_1             ; If Player 1 has lives, switch to Player 1
+  JP restart_current_player            ; Otherwise restart Player 2
 
-; Routine at 65DE
+; Switch to Player 1 after Player 2 death
 ;
-; Used by the routine at L65CB.
-L65DE:
-  LD A,$01
-  LD (state_player),A
-; This entry point is used by the routine at L65CB.
-L65DE_0:
-  LD A,(state_lives_player_1)
-  CP $00
-  JP Z,game_over
-  LD A,$01
-  LD (state_player),A
-  JP handle_no_fuel_4
+; This routine is called when Player 2 dies and Player 1 has lives remaining. It switches the current player to Player 1
+; and restarts gameplay, or triggers game over if Player 1 has no lives.
+switch_to_player_1:
+  LD A,$01                             ; Set current player to Player 1 ($01)
+  LD (state_player),A                  ;
+; This entry point is used by the routine at handle_player_2_death.
+check_player_1_lives:
+  LD A,(state_lives_player_1)          ; Load Player 1 lives remaining
+  CP $00                               ; Check if Player 1 has no lives left
+  JP Z,game_over                       ; If no lives, trigger game over
+  LD A,$01                             ; Set current player to Player 1 ($01)
+  LD (state_player),A                  ;
+  JP restart_current_player            ; Restart gameplay for Player 1
 
 ; Routine at 65F3
 ;
@@ -3889,7 +3901,7 @@ overview:
   LD BC,status_line_2 - status_line_1
   CALL PR_STRING
   CALL print_bridge
-  CALL L6587
+  CALL setup_player_2_display
   CALL init_starting_bridge
   CALL init_current_bridge
   LD A,$04

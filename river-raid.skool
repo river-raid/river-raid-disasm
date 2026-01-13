@@ -2614,87 +2614,108 @@ c$6506 LD A,$20      ;
 
 ; Handle the no fuel situation
 ;
-; Used by the routines at #R$6794, #R$6DFF and #R$7415.
+; This routine is called when the player runs out of fuel. It stops the plane,
+; creates two explosion fragments at the plane's position, animates the
+; explosions over 16 frames, waits for a delay, then determines the next game
+; state based on the current player and remaining lives in single or two-player
+; mode.
 @label=handle_no_fuel
-c$650A LD A,($5F72)  ;
- $650D AND $F8       ;
- $650F LD C,A        ;
- $6510 LD B,$7F      ;
- $6512 LD A,$00      ;
- $6514 LD ($5F64),A  ;
- $6517 LD ($5EF3),A  ;
- $651A LD ($5EF4),A  ;
- $651D LD D,$00      ;
- $651F CALL $6E9C    ;
- $6522 LD A,B        ;
+c$650A LD A,($5F72)  ; Load plane X-coordinate
+ $650D AND $F8       ; Align to 8-pixel boundary (clear lower 3 bits)
+ $650F LD C,A        ; Store aligned X-coordinate in C register
+ $6510 LD B,$7F      ; Set Y-coordinate to $7F (just below visible area)
+ $6512 LD A,$00      ; {Stop plane movement (clear speed and missile
+ $6514 LD ($5F64),A  ; coordinates)
+ $6517 LD ($5EF3),A  ; }
+ $651A LD ($5EF4),A  ; Set explosion sprite type to $00
+ $651D LD D,$00      ; {Create first explosion fragment at plane position
+ $651F CALL $6E9C    ; }
+ $6522 LD A,B        ; {Offset Y-coordinate by $05 pixels for second explosion
  $6523 ADD A,$05     ;
- $6525 LD B,A        ;
- $6526 CALL $6E9C    ;
- $6529 LD A,$10      ;
-*$652B PUSH AF       ;
- $652C LD B,$40      ;
-*$652E LD D,$00      ;
-*$6530 DEC D         ;
- $6531 JR NZ,$6530   ;
- $6533 DJNZ $652E    ;
- $6535 CALL $6EC8    ;
- $6538 POP AF        ;
- $6539 DEC A         ;
- $653A JP NZ,$652B   ;
- $653D LD D,$0C      ;
- $653F LD A,$00      ;
- $6541 LD B,$00      ;
-*$6543 DJNZ $6543    ;
- $6545 DEC A         ;
+ $6525 LD B,A        ; }
+ $6526 CALL $6E9C    ; Create second explosion fragment
+ $6529 LD A,$10      ; Set animation frame counter to $10 (16 frames)
+@label=animate_explosion_loop
+*$652B PUSH AF       ; Save frame counter
+ $652C LD B,$40      ; Set outer delay loop counter to $40 (64 iterations)
+@label=explosion_delay_outer
+*$652E LD D,$00      ; Set inner delay loop counter to $00 (256 iterations)
+@label=explosion_delay_inner
+*$6530 DEC D         ; {Tight delay loop (256 iterations)
+ $6531 JR NZ,$6530   ; }
+ $6533 DJNZ $652E    ; Repeat outer delay loop (64 times)
+ $6535 CALL $6EC8    ; Render current explosion animation frame
+ $6538 POP AF        ; {Restore and decrement frame counter
+ $6539 DEC A         ; }
+ $653A JP NZ,$652B   ; Repeat animation loop for all 16 frames
+ $653D LD D,$0C      ; {Set final delay counter to $0C (12 iterations)
+ $653F LD A,$00      ; }
+ $6541 LD B,$00      ; Initialize inner loop counter to $00
+@label=final_delay_loop
+*$6543 DJNZ $6543    ; {Triple-nested delay loop for extended pause after
+ $6545 DEC A         ; explosion
  $6546 JR NZ,$6543   ;
  $6548 DEC D         ;
- $6549 JR NZ,$6543   ;
- $654B LD A,$00      ;
- $654D LD ($6BB0),A  ;
- $6550 LD A,($923D)  ;
+ $6549 JR NZ,$6543   ; }
+ $654B LD A,$00      ; Clear control state (reset all button flags)
+ $654D LD ($6BB0),A  ; Store cleared control state
+ $6550 LD A,($923D)  ; Load current player number
 @isub=CP PLAYER_2
- $6553 CP $02        ;
- $6555 JP Z,$65CB    ;
- $6558 LD A,($923B)  ;
- $655B CP $00        ;
- $655D JP Z,$656F    ;
- $6560 LD A,($923A)  ;
+ $6553 CP $02        ; Check if current player is Player 2
+ $6555 JP Z,$65CB    ; If Player 2, jump to Player 2 death handler
+ $6558 LD A,($923B)  ; Load Player 1 lives remaining
+@isub=CP $00
+ $655B CP $00        ; Check if Player 1 has no lives left
+ $655D JP Z,$656F    ; If no lives, jump to check for game over
+ $6560 LD A,($923A)  ; Load game mode (1 or 2 player)
 @isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
- $6563 BIT 0,A       ;
- $6565 JP NZ,$65BB   ;
-; This entry point is used by the routines at #R$65AB, #R$65BB, #R$65CB and
-; #R$65DE.
-*$6568 LD SP,($5F83) ;
- $656C JP $5DA6      ;
+ $6563 BIT 0,A       ; Check if two-player mode is active
+ $6565 JP NZ,$65BB   ; If two-player mode, jump to switch to Player 2
 
-; Routine at 656F
+; Restart gameplay for current player
 ;
-; Used by the routine at #R$650A.
-c$656F LD A,($923A)  ;
+; This entry point is used by multiple death handler routines to restart
+; gameplay for the current player. It restores the stack pointer and jumps back
+; to the main play routine.
+@label=restart_current_player
+c$6568 LD SP,($5F83) ; Restore stack pointer to main game loop
+ $656C JP $5DA6      ; Restart gameplay for current player
+
+; Check if Player 2 has lives remaining when Player 1 is out
+;
+; This routine is called when Player 1 has no lives left. In two-player mode,
+; it checks if Player 2 has lives and switches to Player 2 if so, otherwise
+; triggers game over.
+@label=check_player_2_lives
+c$656F LD A,($923A)  ; Load game mode (1 or 2 player)
 @isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
- $6572 BIT 0,A       ;
- $6574 JP NZ,$65AB   ;
+ $6572 BIT 0,A       ; Check if two-player mode is active
+ $6574 JP NZ,$65AB   ; If two-player mode, jump to switch to Player 2
 
 ; Game Over
 ;
-; Used by the routines at #R$65AB and #R$65DE.
+; This routine displays the "GAME OVER" message, plays the game over sequence,
+; and returns to the overview/demo mode.
 @label=game_over
-c$6577 LD HL,$8153   ;
- $657A LD ($5F7E),HL ;
- $657D CALL $93BE    ;
- $6580 LD SP,($5F83) ;
- $6584 JP $5D2B      ;
+c$6577 LD HL,$8153   ; {Set scroller pointer to "GAME OVER" message
+ $657A LD ($5F7E),HL ; }
+ $657D CALL $93BE    ; Display game over sequence
+ $6580 LD SP,($5F83) ; Restore stack pointer to main loop
+ $6584 JP $5D2B      ; Return to overview/demo mode
 
-; Routine at 6587
+; Setup Player 2 display during overview mode
 ;
-; Used by the routine at #R$6D17.
-c$6587 LD A,($923A)  ;
+; This routine is called during overview mode to set up the Player 2 status
+; display. It only executes in two-player mode, setting the player to Player 2,
+; printing the bridge number, and configuring the Player 2 color scheme.
+@label=setup_player_2_display
+c$6587 LD A,($923A)  ; Load game mode (1 or 2 player)
 @isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
- $658A BIT 0,A       ;
- $658C RET Z         ;
- $658D LD A,$01      ;
- $658F LD ($923D),A  ;
- $6592 CALL $64BC    ;
+ $658A BIT 0,A       ; Check if two-player mode is active
+ $658C RET Z         ; Return if single-player mode
+ $658D LD A,$01      ; {Set current player to Player 2 ($01)
+ $658F LD ($923D),A  ; }
+ $6592 CALL $64BC    ; Print current bridge number for Player 2
 @isub=LD A,EXT_ATTR_INK
  $6595 LD A,$10      ; {INK of Player 2 color
  $6597 RST $10       ;
@@ -2710,52 +2731,70 @@ c$6587 LD A,($923A)  ;
  $65A1 LD DE,$8051   ;
 @ofix=LD BC,$0008
  $65A4 LD BC,$0009   ;
- $65A7 CALL $64F1    ;
- $65AA RET           ;
+ $65A7 CALL $64F1    ; Print Player 2 status line text
+ $65AA RET           ; Return to caller
 
-; Routine at 65AB
+; Switch to Player 2 after Player 1 death
 ;
-; Used by the routine at #R$656F.
-c$65AB LD A,($923C)  ;
- $65AE CP $00        ;
- $65B0 JP Z,$6577    ;
- $65B3 LD A,$02      ;
- $65B5 LD ($923D),A  ;
- $65B8 JP $6568      ;
+; This routine is called when Player 1 dies and Player 2 has lives remaining in
+; two-player mode. It checks if Player 2 has lives, triggers game over if not,
+; otherwise switches to Player 2 and restarts gameplay.
+@label=switch_to_player_2
+c$65AB LD A,($923C)  ; Load Player 2 lives remaining
+@isub=CP $00
+ $65AE CP $00        ; Check if Player 2 has no lives left
+ $65B0 JP Z,$6577    ; If no lives, trigger game over
+ $65B3 LD A,$02      ; {Set current player to Player 2 ($02)
+ $65B5 LD ($923D),A  ; }
+ $65B8 JP $6568      ; Restart gameplay for Player 2
 
-; Routine at 65BB
+; Switch to Player 2 when Player 1 dies in two-player mode
 ;
-; Used by the routine at #R$650A.
-c$65BB LD A,($923C)  ;
- $65BE CP $00        ;
- $65C0 JP Z,$6568    ;
- $65C3 LD A,$02      ;
- $65C5 LD ($923D),A  ;
- $65C8 JP $6568      ;
+; This routine is called when Player 1 dies in two-player mode and still has
+; lives. It checks if Player 2 has lives, and if so, switches to Player 2. If
+; Player 2 has no lives, it restarts Player 1 instead.
+@label=switch_to_player_2_in_two_player_mode
+c$65BB LD A,($923C)  ; Load Player 2 lives remaining
+@isub=CP $00
+ $65BE CP $00        ; Check if Player 2 has no lives left
+ $65C0 JP Z,$6568    ; If no lives, restart current player (Player 1)
+ $65C3 LD A,$02      ; {Set current player to Player 2 ($02)
+ $65C5 LD ($923D),A  ; }
+ $65C8 JP $6568      ; Restart gameplay for Player 2
 
-; Routine at 65CB
+; Handle Player 2 death and determine next game state
 ;
-; Used by the routine at #R$650A.
-c$65CB LD A,($923C)  ;
- $65CE CP $00        ;
- $65D0 JP Z,$65E3    ;
- $65D3 LD A,($923B)  ;
- $65D6 CP $00        ;
- $65D8 JP NZ,$65DE   ;
- $65DB JP $6568      ;
+; This routine is called when Player 2 dies. It checks both players' lives to
+; determine whether to switch to Player 1, continue with Player 2, or trigger
+; game over.
+@label=handle_player_2_death
+c$65CB LD A,($923C)  ; Load Player 2 lives remaining
+@isub=CP $00
+ $65CE CP $00        ; Check if Player 2 has no lives left
+ $65D0 JP Z,$65E3    ; If no lives, jump to check Player 1 status
+ $65D3 LD A,($923B)  ; Load Player 1 lives remaining
+@isub=CP $00
+ $65D6 CP $00        ; Check if Player 1 has no lives left
+ $65D8 JP NZ,$65DE   ; If Player 1 has lives, switch to Player 1
+ $65DB JP $6568      ; Otherwise restart Player 2
 
-; Routine at 65DE
+; Switch to Player 1 after Player 2 death
 ;
-; Used by the routine at #R$65CB.
-c$65DE LD A,$01      ;
- $65E0 LD ($923D),A  ;
+; This routine is called when Player 2 dies and Player 1 has lives remaining.
+; It switches the current player to Player 1 and restarts gameplay, or triggers
+; game over if Player 1 has no lives.
+@label=switch_to_player_1
+c$65DE LD A,$01      ; {Set current player to Player 1 ($01)
+ $65E0 LD ($923D),A  ; }
 ; This entry point is used by the routine at #R$65CB.
-*$65E3 LD A,($923B)  ;
- $65E6 CP $00        ;
- $65E8 JP Z,$6577    ;
- $65EB LD A,$01      ;
- $65ED LD ($923D),A  ;
- $65F0 JP $6568      ;
+@label=check_player_1_lives
+*$65E3 LD A,($923B)  ; Load Player 1 lives remaining
+@isub=CP $00
+ $65E6 CP $00        ; Check if Player 1 has no lives left
+ $65E8 JP Z,$6577    ; If no lives, trigger game over
+ $65EB LD A,$01      ; {Set current player to Player 1 ($01)
+ $65ED LD ($923D),A  ; }
+ $65F0 JP $6568      ; Restart gameplay for Player 1
 
 ; Routine at 65F3
 ;
