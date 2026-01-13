@@ -2796,88 +2796,117 @@ c$65DE LD A,$01      ; {Set current player to Player 1 ($01)
  $65ED LD ($923D),A  ; }
  $65F0 JP $6568      ; Restart gameplay for Player 1
 
-; Routine at 65F3
+; Move player plane right by 2 pixels
 ;
-; Used by the routines at #R$5F91, #R$600A, #R$6039 and #R$6068.
+; This routine is called when the player presses right on the joystick or
+; keyboard. It moves the plane 2 pixels to the right (INC A twice), backs up
+; the missile coordinates, renders the plane at the new position, then restores
+; the missile coordinates and sets the sprite bank selector.
 @label=handle_right
-c$65F3 LD A,($5F72)  ;
- $65F6 LD HL,($5EF3) ;
- $65F9 LD ($5F8F),HL ;
- $65FC INC A         ;
- $65FD INC A         ;
- $65FE LD ($5F72),A  ;
- $6601 LD C,A        ;
+c$65F3 LD A,($5F72)  ; Load current plane X-coordinate from #R$5F72
+ $65F6 LD HL,($5EF3) ; Load missile coordinates into HL
+ $65F9 LD ($5F8F),HL ; Back up missile coordinates to #R$5F8F for later
+                     ; restoration
+ $65FC INC A         ; Increment X-coordinate by 1 pixel (first pixel)
+ $65FD INC A         ; Increment X-coordinate by 1 pixel (second pixel, total 2
+                     ; pixels right)
+ $65FE LD ($5F72),A  ; Store new X-coordinate back to #R$5F72
+ $6601 LD C,A        ; Copy new X-coordinate to C register for rendering
 @isub=LD B,PLANE_COORDINATE_Y
- $6602 LD B,$80      ;
+ $6602 LD B,$80      ; Set Y-coordinate to $80 (fixed vertical position)
 @isub=LD A,OTHER_MODE_FUEL
- $6604 LD A,$01      ;
- $6606 LD ($5EF5),A  ;
- $6609 LD ($8B0C),BC ;
- $660D DEC C         ;
- $660E DEC C         ;
- $660F LD ($8B0A),BC ;
+ $6604 LD A,$01      ; Set other mode to $01 (fuel mode for sprite rendering)
+ $6606 LD ($5EF5),A  ; Store other mode to #R$5EF5
+ $6609 LD ($8B0C),BC ; Store new plane coordinates (BC) to #R$8B0C for
+                     ; rendering
+ $660D DEC C         ; Decrement C to calculate previous X position (first
+                     ; pixel back)
+ $660E DEC C         ; Decrement C to calculate previous X position (second
+                     ; pixel back, total 2 pixels left)
+ $660F LD ($8B0A),BC ; Store previous coordinates to #R$8B0A for erasing old
+                     ; sprite
 @isub=LD BC,SPRITE_PLANE_FRAME_SIZE
- $6613 LD BC,$0010   ;
- $6616 LD HL,($5EF7) ;
- $6619 LD ($8B0E),HL ;
+ $6613 LD BC,$0010   ; Set sprite frame size to $0010 (16 bytes per frame)
+ $6616 LD HL,($5EF7) ; Load sprite data pointer from #R$5EF7
+ $6619 LD ($8B0E),HL ; Store sprite pointer to #R$8B0E for rendering
 @isub=LD E,SPRITE_PLANE_ATTRIBUTES
- $661C LD E,$0E      ;
- $661E LD A,($923D)  ;
+ $661C LD E,$0E      ; Set sprite attributes to $0E (color/attribute byte)
+ $661E LD A,($923D)  ; Load current player number from #R$923D
 @isub=CP PLAYER_2
- $6621 CP $02        ; {Player 2 and ship use the same attributes
- $6623 CALL Z,$7038  ; }
+ $6621 CP $02        ; Check if current player is Player 2
+ $6623 CALL Z,$7038  ; If Player 2, call routine to set Player 2 sprite
+                     ; attributes
 @isub=LD D,SPRITE_PLANE_HEIGHT_PIXELS
- $6626 LD D,$08      ;
+ $6626 LD D,$08      ; Set sprite height to $08 (8 pixels)
 @isub=LD A,SPRITE_PLANE_WIDTH_TILES
- $6628 LD A,$02      ;
- $662A LD HL,$83F1   ;
- $662D CALL $8B3C    ;
-; This entry point is used by the routines at #R$6642 and #R$6682.
-*$6630 LD HL,($5F8F) ;
- $6633 LD ($5EF3),HL ;
- $6636 LD HL,($8B16) ;
- $6639 LD ($5EF7),HL ;
- $663C LD A,$04      ;
- $663E LD ($5F69),A  ;
- $6641 RET           ;
+ $6628 LD A,$02      ; Set sprite width to $02 (2 tiles wide)
+ $662A LD HL,$83F1   ; Load sprite data address #R$83F1
+ $662D CALL $8B3C    ; Call #R$8B3C to render the plane sprite at new position
 
-; Routine at 6642
+; Restore plane state after rendering
 ;
-; Used by the routines at #R$5F91, #R$600A, #R$6039 and #R$6068.
+; This shared cleanup routine is used by #R$65F3, #R$6642, and #R$6682 to
+; restore the plane's missile coordinates and sprite bank selector after
+; rendering the plane sprite. It ensures the game state is properly restored
+; after sprite rendering operations.
+@label=restore_plane_state_after_render
+c$6630 LD HL,($5F8F) ; Load backed-up missile coordinates from #R$5F8F
+ $6633 LD ($5EF3),HL ; Restore missile coordinates to #R$5EF3
+ $6636 LD HL,($8B16) ; Load sprite data pointer from #R$8B16 (updated by render
+                     ; routine)
+ $6639 LD ($5EF7),HL ; Store updated sprite pointer to #R$5EF7
+ $663C LD A,$04      ; Set sprite bank selector to $04 (select banked plane
+                     ; sprite)
+ $663E LD ($5F69),A  ; Store sprite bank selector to #R$5F69
+ $6641 RET           ; Return to caller
+
+; Move player plane left by 2 pixels
+;
+; This routine is called when the player presses left on the joystick or
+; keyboard. It moves the plane 2 pixels to the left (DEC A twice), backs up the
+; missile coordinates, renders the plane at the new position, then restores the
+; missile coordinates and sets the sprite bank selector.
 @label=handle_left
-c$6642 LD A,($5F72)  ;
- $6645 LD HL,($5EF3) ;
- $6648 LD ($5F8F),HL ;
- $664B DEC A         ;
- $664C DEC A         ;
- $664D LD ($5F72),A  ;
- $6650 LD C,A        ;
+c$6642 LD A,($5F72)  ; Load current plane X-coordinate from #R$5F72
+ $6645 LD HL,($5EF3) ; Load missile coordinates into HL
+ $6648 LD ($5F8F),HL ; Back up missile coordinates to #R$5F8F for later
+                     ; restoration
+ $664B DEC A         ; Decrement X-coordinate by 1 pixel (first pixel)
+ $664C DEC A         ; Decrement X-coordinate by 1 pixel (second pixel, total 2
+                     ; pixels left)
+ $664D LD ($5F72),A  ; Store new X-coordinate back to #R$5F72
+ $6650 LD C,A        ; Copy new X-coordinate to C register for rendering
 @isub=LD B,PLANE_COORDINATE_Y
- $6651 LD B,$80      ;
+ $6651 LD B,$80      ; Set Y-coordinate to $80 (fixed vertical position)
 @isub=LD A,OTHER_MODE_FUEL
- $6653 LD A,$01      ;
- $6655 LD ($5EF5),A  ;
- $6658 LD ($8B0C),BC ;
- $665C INC C         ;
- $665D INC C         ;
- $665E LD ($8B0A),BC ;
+ $6653 LD A,$01      ; Set other mode to $01 (fuel mode for sprite rendering)
+ $6655 LD ($5EF5),A  ; Store other mode to #R$5EF5
+ $6658 LD ($8B0C),BC ; Store new plane coordinates (BC) to #R$8B0C for
+                     ; rendering
+ $665C INC C         ; Increment C to calculate previous X position (first
+                     ; pixel right)
+ $665D INC C         ; Increment C to calculate previous X position (second
+                     ; pixel right, total 2 pixels right)
+ $665E LD ($8B0A),BC ; Store previous coordinates to #R$8B0A for erasing old
+                     ; sprite
 @isub=LD BC,SPRITE_PLANE_FRAME_SIZE
- $6662 LD BC,$0010   ;
- $6665 LD HL,($5EF7) ;
- $6668 LD ($8B0E),HL ;
+ $6662 LD BC,$0010   ; Set sprite frame size to $0010 (16 bytes per frame)
+ $6665 LD HL,($5EF7) ; Load sprite data pointer from #R$5EF7
+ $6668 LD ($8B0E),HL ; Store sprite pointer to #R$8B0E for rendering
 @isub=LD E,SPRITE_PLANE_ATTRIBUTES
- $666B LD E,$0E      ;
- $666D LD A,($923D)  ;
+ $666B LD E,$0E      ; Set sprite attributes to $0E (color/attribute byte)
+ $666D LD A,($923D)  ; Load current player number from #R$923D
 @isub=CP PLAYER_2
- $6670 CP $02        ; {Player 2 and ship use the same attributes
- $6672 CALL Z,$7038  ; }
+ $6670 CP $02        ; Check if current player is Player 2
+ $6672 CALL Z,$7038  ; If Player 2, call routine to set Player 2 sprite
+                     ; attributes
 @isub=LD D,SPRITE_PLANE_HEIGHT_PIXELS
- $6675 LD D,$08      ;
+ $6675 LD D,$08      ; Set sprite height to $08 (8 pixels)
 @isub=LD A,SPRITE_PLANE_WIDTH_TILES
- $6677 LD A,$02      ;
- $6679 LD HL,$83F1   ;
- $667C CALL $8B3C    ;
- $667F JP $6630      ;
+ $6677 LD A,$02      ; Set sprite width to $02 (2 tiles wide)
+ $6679 LD HL,$83F1   ; Load sprite data address #R$83F1
+ $667C CALL $8B3C    ; Call #R$8B3C to render the plane sprite at new position
+ $667F JP $6630      ; Jump to #R$6630 to restore plane state after rendering
 
 ; Render player plane sprite
 ;

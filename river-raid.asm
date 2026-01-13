@@ -2658,75 +2658,91 @@ check_player_1_lives:
   LD (state_player),A                  ;
   JP restart_current_player            ; Restart gameplay for Player 1
 
-; Routine at 65F3
+; Move player plane right by 2 pixels
 ;
-; Used by the routines at main_loop, scan_kempston, scan_sinclair and scan_keyboard.
+; This routine is called when the player presses right on the joystick or keyboard. It moves the plane 2 pixels to the
+; right (INC A twice), backs up the missile coordinates, renders the plane at the new position, then restores the
+; missile coordinates and sets the sprite bank selector.
 handle_right:
-  LD A,(state_x)
-  LD HL,(state_plane_missile_coordinates)
-  LD (state_plane_missile_coordinates_backup),HL
-  INC A
-  INC A
-  LD (state_x),A
-  LD C,A
-  LD B,PLANE_COORDINATE_Y
-  LD A,OTHER_MODE_FUEL
-  LD (state_other_mode),A
-  LD (object_coordinates),BC
-  DEC C
-  DEC C
-  LD (previous_object_coordinates),BC
-  LD BC,SPRITE_PLANE_FRAME_SIZE
-  LD HL,(L5EF7)
-  LD (render_sprite_ptr),HL
-  LD E,SPRITE_PLANE_ATTRIBUTES
-  LD A,(state_player)
-  CP PLAYER_2                          ; Player 2 and ship use the same attributes
-  CALL Z,ld_attributes_ship            ;
-  LD D,SPRITE_PLANE_HEIGHT_PIXELS
-  LD A,SPRITE_PLANE_WIDTH_TILES
-  LD HL,sprite_plane_banked
-  CALL render_object
-; This entry point is used by the routines at handle_left and render_plane.
-handle_right_0:
-  LD HL,(state_plane_missile_coordinates_backup)
-  LD (state_plane_missile_coordinates),HL
-  LD HL,(L8B16)
-  LD (L5EF7),HL
-  LD A,$04
-  LD (state_plane_sprite_bank),A
-  RET
+  LD A,(state_x)                       ; Load current plane X-coordinate from state_x
+  LD HL,(state_plane_missile_coordinates) ; Load missile coordinates into HL
+  LD (state_plane_missile_coordinates_backup),HL ; Back up missile coordinates to state_plane_missile_coordinates_backup
+                                                 ; for later restoration
+  INC A                                ; Increment X-coordinate by 1 pixel (first pixel)
+  INC A                                ; Increment X-coordinate by 1 pixel (second pixel, total 2 pixels right)
+  LD (state_x),A                       ; Store new X-coordinate back to state_x
+  LD C,A                               ; Copy new X-coordinate to C register for rendering
+  LD B,PLANE_COORDINATE_Y              ; Set Y-coordinate to $80 (fixed vertical position)
+  LD A,OTHER_MODE_FUEL                 ; Set other mode to $01 (fuel mode for sprite rendering)
+  LD (state_other_mode),A              ; Store other mode to state_other_mode
+  LD (object_coordinates),BC           ; Store new plane coordinates (BC) to object_coordinates for rendering
+  DEC C                                ; Decrement C to calculate previous X position (first pixel back)
+  DEC C                                ; Decrement C to calculate previous X position (second pixel back, total 2 pixels
+                                       ; left)
+  LD (previous_object_coordinates),BC  ; Store previous coordinates to previous_object_coordinates for erasing old
+                                       ; sprite
+  LD BC,SPRITE_PLANE_FRAME_SIZE        ; Set sprite frame size to $0010 (16 bytes per frame)
+  LD HL,(L5EF7)                        ; Load sprite data pointer from L5EF7
+  LD (render_sprite_ptr),HL            ; Store sprite pointer to render_sprite_ptr for rendering
+  LD E,SPRITE_PLANE_ATTRIBUTES         ; Set sprite attributes to $0E (color/attribute byte)
+  LD A,(state_player)                  ; Load current player number from state_player
+  CP PLAYER_2                          ; Check if current player is Player 2
+  CALL Z,ld_attributes_ship            ; If Player 2, call routine to set Player 2 sprite attributes
+  LD D,SPRITE_PLANE_HEIGHT_PIXELS      ; Set sprite height to $08 (8 pixels)
+  LD A,SPRITE_PLANE_WIDTH_TILES        ; Set sprite width to $02 (2 tiles wide)
+  LD HL,sprite_plane_banked            ; Load sprite data address sprite_plane_banked
+  CALL render_object                   ; Call render_object to render the plane sprite at new position
 
-; Routine at 6642
+; Restore plane state after rendering
 ;
-; Used by the routines at main_loop, scan_kempston, scan_sinclair and scan_keyboard.
+; This shared cleanup routine is used by handle_right, handle_left, and render_plane to restore the plane's missile
+; coordinates and sprite bank selector after rendering the plane sprite. It ensures the game state is properly restored
+; after sprite rendering operations.
+restore_plane_state_after_render:
+  LD HL,(state_plane_missile_coordinates_backup) ; Load backed-up missile coordinates from
+                                                 ; state_plane_missile_coordinates_backup
+  LD (state_plane_missile_coordinates),HL ; Restore missile coordinates to state_plane_missile_coordinates
+  LD HL,(L8B16)                        ; Load sprite data pointer from L8B16 (updated by render routine)
+  LD (L5EF7),HL                        ; Store updated sprite pointer to L5EF7
+  LD A,$04                             ; Set sprite bank selector to $04 (select banked plane sprite)
+  LD (state_plane_sprite_bank),A       ; Store sprite bank selector to state_plane_sprite_bank
+  RET                                  ; Return to caller
+
+; Move player plane left by 2 pixels
+;
+; This routine is called when the player presses left on the joystick or keyboard. It moves the plane 2 pixels to the
+; left (DEC A twice), backs up the missile coordinates, renders the plane at the new position, then restores the missile
+; coordinates and sets the sprite bank selector.
 handle_left:
-  LD A,(state_x)
-  LD HL,(state_plane_missile_coordinates)
-  LD (state_plane_missile_coordinates_backup),HL
-  DEC A
-  DEC A
-  LD (state_x),A
-  LD C,A
-  LD B,PLANE_COORDINATE_Y
-  LD A,OTHER_MODE_FUEL
-  LD (state_other_mode),A
-  LD (object_coordinates),BC
-  INC C
-  INC C
-  LD (previous_object_coordinates),BC
-  LD BC,SPRITE_PLANE_FRAME_SIZE
-  LD HL,(L5EF7)
-  LD (render_sprite_ptr),HL
-  LD E,SPRITE_PLANE_ATTRIBUTES
-  LD A,(state_player)
-  CP PLAYER_2                          ; Player 2 and ship use the same attributes
-  CALL Z,ld_attributes_ship            ;
-  LD D,SPRITE_PLANE_HEIGHT_PIXELS
-  LD A,SPRITE_PLANE_WIDTH_TILES
-  LD HL,sprite_plane_banked
-  CALL render_object
-  JP handle_right_0
+  LD A,(state_x)                       ; Load current plane X-coordinate from state_x
+  LD HL,(state_plane_missile_coordinates) ; Load missile coordinates into HL
+  LD (state_plane_missile_coordinates_backup),HL ; Back up missile coordinates to state_plane_missile_coordinates_backup
+                                                 ; for later restoration
+  DEC A                                ; Decrement X-coordinate by 1 pixel (first pixel)
+  DEC A                                ; Decrement X-coordinate by 1 pixel (second pixel, total 2 pixels left)
+  LD (state_x),A                       ; Store new X-coordinate back to state_x
+  LD C,A                               ; Copy new X-coordinate to C register for rendering
+  LD B,PLANE_COORDINATE_Y              ; Set Y-coordinate to $80 (fixed vertical position)
+  LD A,OTHER_MODE_FUEL                 ; Set other mode to $01 (fuel mode for sprite rendering)
+  LD (state_other_mode),A              ; Store other mode to state_other_mode
+  LD (object_coordinates),BC           ; Store new plane coordinates (BC) to object_coordinates for rendering
+  INC C                                ; Increment C to calculate previous X position (first pixel right)
+  INC C                                ; Increment C to calculate previous X position (second pixel right, total 2
+                                       ; pixels right)
+  LD (previous_object_coordinates),BC  ; Store previous coordinates to previous_object_coordinates for erasing old
+                                       ; sprite
+  LD BC,SPRITE_PLANE_FRAME_SIZE        ; Set sprite frame size to $0010 (16 bytes per frame)
+  LD HL,(L5EF7)                        ; Load sprite data pointer from L5EF7
+  LD (render_sprite_ptr),HL            ; Store sprite pointer to render_sprite_ptr for rendering
+  LD E,SPRITE_PLANE_ATTRIBUTES         ; Set sprite attributes to $0E (color/attribute byte)
+  LD A,(state_player)                  ; Load current player number from state_player
+  CP PLAYER_2                          ; Check if current player is Player 2
+  CALL Z,ld_attributes_ship            ; If Player 2, call routine to set Player 2 sprite attributes
+  LD D,SPRITE_PLANE_HEIGHT_PIXELS      ; Set sprite height to $08 (8 pixels)
+  LD A,SPRITE_PLANE_WIDTH_TILES        ; Set sprite width to $02 (2 tiles wide)
+  LD HL,sprite_plane_banked            ; Load sprite data address sprite_plane_banked
+  CALL render_object                   ; Call render_object to render the plane sprite at new position
+  JP restore_plane_state_after_render  ; Jump to restore_plane_state_after_render to restore plane state after rendering
 
 ; Render player plane sprite
 ;
@@ -2759,7 +2775,7 @@ render_plane:
   CALL Z,ld_sprite_plane_banked
   LD A,SPRITE_PLANE_WIDTH_TILES
   CALL render_object
-  JP handle_right_0
+  JP restore_plane_state_after_render
 
 ; Routine at 66CC
 ;
