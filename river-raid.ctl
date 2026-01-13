@@ -230,7 +230,7 @@ u $5C79
 c $5CD2 Game initialization and interrupt setup
 N $5CD2 This is the main entry point invoked by the BASIC loader. It performs one-time initialization of the game engine, including setting up the custom interrupt handler (IM 2 mode) and initializing global pointers.
   $5CD2 Initialize #R$9283 to point to #R$6BB0.
-  $5CD5,6 Initialize #R$8B08 to point to #R$6136 (the state dispatcher routine).
+  $5CD5,6 Initialize #R$8B08 to point to #R$6136 (collision dispatcher routine).
 @ $5CD8 nowarn
   $5CDE Load $C3 (JP instruction opcode) into A.
   $5CE0 Write the JP opcode to $FEFE (interrupt vector table entry).
@@ -647,16 +647,109 @@ C $608C Scan lower row right (FIRE)
 C $6097 Scan lower row left (FIRE)
 @ $60A5 label=render_plane_and_terrain
 c $60A5 Render player plane and terrain fragments
+D $60A5 This routine renders the player plane sprite (in normal gameplay mode) and then renders terrain fragments based on the current speed. It calculates the screen position based on speed, then loops through terrain fragments, calling the terrain rendering routine for each one. Every 8 fragments, it calls the attribute scrolling routine.
+  $60A5 Load gameplay mode from #R$5F68
 @ $60A8 isub=CP GAMEPLAY_MODE_NORMAL
+  $60A8 Check if gameplay mode is NORMAL ($00)
+  $60AA If not normal mode, skip plane rendering and jump to #R$60E5
 @ $60AD isub=LD A,COLLISION_MODE_NONE
-c $6124
-@ $6136 label=L6136
-c $6136
+  $60AD Set collision mode to NONE ($00) for plane rendering
+  $60AF Store collision mode to #R$5EF5
+  $60B2 Load plane X-coordinate from #R$5F72
+  $60B5 Copy X-coordinate to C register
+  $60B6 Load current speed from #R$5F64
+  $60B9 Copy speed to E register
+  $60BA Load $08 into A
+  $60BC Subtract speed from $08 (calculate frame offset)
+  $60BD Clear D register (prepare for 16-bit arithmetic)
+  $60BF Copy result to E register
+  $60C0 Shift E left (multiply by 2 for 16-byte frames)
+  $60C2 Load sprite data pointer from #R$5EF7
+  $60C5 Add frame offset to sprite pointer
+  $60C6 Store updated sprite pointer to #R$8B0E
+  $60C9 Add $80 to A (calculate Y-coordinate)
+  $60CB Copy Y-coordinate to B register
+  $60CC Load current speed from #R$5F64
+  $60CF Copy speed to D register
+  $60D0 Store plane coordinates (BC) to #R$8B0A (previous position)
+  $60D4 Store plane coordinates (BC) to #R$8B0C (current position)
+  $60D8 Set E to $00 (sprite attributes)
+  $60DA Set BC to $0010 (sprite frame size: 16 bytes)
+  $60DD Set A to $02 (sprite width: 2 tiles)
+  $60DF Load address of #R$82F5 (sprite erasure data) into HL
+  $60E2 Call #R$8B3C to render the plane sprite
+@ $60E5 label=render_terrain_fragments
+  $60E5 Call #R$683B to handle island rendering
+  $60E8 Load current speed from #R$5F64
+  $60EB Set DE to $0100 (256 bytes per screen row)
+  $60EE Load #R$4000 into HL
+  $60F1 Clear carry flag
+  $60F2 Subtract DE from HL (move up one row)
+@ $60F4 label=calculate_screen_row_loop
+  $60F4 Add DE to HL (move down one row)
+  $60F5 Decrement A (speed counter)
+  $60F6 If not zero, loop to calculate correct screen row
+  $60F8 Store calculated screen pointer to #R$5F7B
+  $60FB Load current speed from #R$5F64
+  $60FE Copy speed to B register (loop counter)
+  $60FF Load terrain fragment counter from #R$5EEE
+  $6102 Copy fragment counter to C register
+@ $6103 label=render_terrain_loop
+  $6103 Increment fragment counter
+  $6104 Copy fragment counter to A
+  $6105 Push BC (save loop counter and fragment counter)
+  $6106 Mask lower 3 bits (check if fragment counter is multiple of 8)
+  $6108 Compare with $00
+  $610A If zero (every 8 fragments), call #R$68B7 to scroll attributes
+  $610D Call #R$6AA3 to render current terrain fragment
+  $6110 Set DE to $0100 (256 bytes per screen row)
+  $6113 Load screen pointer from #R$5F7B
+  $6116 Clear carry flag
+  $6117 Subtract DE from HL (move up one row for next fragment)
+  $6119 Store updated screen pointer to #R$5F7B
+  $611C Pop BC (restore loop counter and fragment counter)
+  $611D Decrement B and loop if not zero
+  $611F Copy final fragment counter to A
+  $6120 Store updated fragment counter to #R$5EEE
+  $6123 Return to caller
+@ $6124 label=calculate_fuel_gauge_offset
+c $6124 Calculate fuel gauge sprite offset
+D $6124 This routine is used by fuel consumption and refueling to calculate the sprite offset for the fuel gauge display. It performs bit manipulation on the fuel level to determine which sprite frame to display.
+  $6124 Load $07 into A
+  $6126 Push DE (save DE register)
+  $6127 Subtract B from A
+  $6128 Shift A left (multiply by 2)
+  $612A Shift A left (multiply by 4)
+  $612C Shift A left (multiply by 8)
+  $612E Pop DE (restore DE register)
+  $612F Add D to A
+  $6130 Store result into the middle of the next instruction (self-modifying code)
+  $6133 Rotate B left through carry
+@ $6135 nowarn
+  $6135 Return to caller
+@ $6136 label=collision_dispatcher
+c $6136 Collision detection dispatcher
+D $6136 This routine is called during sprite rendering (via #R$8C45) to handle collision detection. It saves the current register state, checks the collision mode, and dispatches to the appropriate collision handler. This is the central dispatcher for all collision detection in the game.
+  $6136 Pop HL (get return address from stack)
+  $6137 Store return address to #R$5F85 (tmp_HL)
+  $613A Store DE to #R$5F87 (tmp_DE)
+  $613E Store BC to #R$5F89 (tmp_BC)
+  $6142 Load collision mode from #R$5EF5
 @ $6145 isub=CP COLLISION_MODE_NONE
+  $6145 Check if collision mode is NONE ($00)
+  $6147 If NONE, jump to #R$8C3B to handle no collision
 @ $614A isub=CP COLLISION_MODE_SKIP
+  $614A Check if collision mode is SKIP ($01)
+  $614C If SKIP, jump to #R$6256 (fuel/skip collision)
 @ $614F isub=CP COLLISION_MODE_MISSILE
+  $614F Check if collision mode is MISSILE ($02)
+  $6151 If MISSILE, jump to #R$61BB to handle missile collision
 @ $6154 isub=CP COLLISION_MODE_ENEMY
+  $6154 Check if collision mode is ENEMY ($03)
+  $6156 If ENEMY, jump to #R$615E to handle enemy collision
 @ $6159 isub=CP COLLISION_MODE_HELICOPTER_MISSILE
+  $6159 Check if collision mode is HELICOPTER_MISSILE ($04)
+  $615B,3 If HELICOPTER_MISSILE, jump to #R$7415 to handle helicopter missile collision
 @ $615E label=handle_collision_mode_enemy
 c $615E
 @ $61A3 isub=LD (HL),SET_MARKER_EMPTY_SLOT
@@ -993,12 +1086,34 @@ c $6794
 @ $679E isub=CP GAMEPLAY_MODE_REFUEL
 @ $67A3 isub=LD A,COLLISION_MODE_NONE
   $67E1,2 Reset CONTROLS_BIT_SPEED_DECREASED
-c $6831
-c $6836
-c $683B
-c $68A1
-c $68B7
+@ $6831 label=add_island_offset_800
+c $6831 Add $0800 offset to island data pointer
+  $6831 Set DE to $0800
+  $6834 Add DE to HL (adjust island pointer)
+  $6835 Return to caller
+@ $6836 label=add_island_offset_1000
+c $6836 Add $1000 offset to island data pointer
+  $6836 Set DE to $1000
+  $6839 Add DE to HL (adjust island pointer)
+  $683A,1 Return to caller
+@ $683B label=handle_island_rendering
+c $683B Handle island rendering and scrolling
+D $683B This routine manages island rendering by manipulating island data pointers based on bit flags, copying island data to screen memory, and calling render_plane when appropriate. It loops through island lines, decrementing the island counter until it reaches zero.
+@ $68A1 label=finalize_island_rendering
+c $68A1 Finalize island rendering
+@ $68B7 label=scroll_attributes
+@ $68B7 ignoreua=$5A1F
+c $68B7 Scroll screen attributes up by one row
+D $68B7 This routine is called every 8 terrain fragments to scroll the screen attributes. It copies attribute data from one row to the next, effectively scrolling the attributes upward. It also handles special bridge attribute rendering.
+  $68B7 Load source address $5A1F into HL (attribute row)
+@ $68BA ignoreua=$5A3F
+  $68BA Load destination address $5A3F into DE (next attribute row)
+  $68BD Set BC to $020C (524 bytes to copy)
+  $68C0 Copy attributes backward (LDDR)
+@ $68C2 ignoreua=$5BDF
+  $68C2,3 Load address $5BDF into HL (bottom attribute row)
 @ $68C5 nowarn
+@ $68C5 label=scroll_attributes_continue
 c $68C5
 @ $68E9 label=init_current_bridge
 c $68E9
@@ -2005,8 +2120,8 @@ b $8AB8
 @ $8AC8 label=sprite_helicopter_rotor_right
 b $8AC8
 u $8AD8
-@ $8B08 label=L6136_ptr
-g $8B08 Pointer to #R$6136
+@ $8B08 label=collision_dispatcher_ptr
+g $8B08 Pointer to #R$6136 (collision dispatcher)
 W $8B08
 @ $8B0A label=previous_object_coordinates
 g $8B0A
@@ -2057,8 +2172,9 @@ c $8C1B
 @ $8C3B label=handle_collision_mode_none
 @ $8C3C label=L8C3C
 c $8C3C
-@ $8C45 label=jp_L6136
-c $8C45
+@ $8C45 label=jp_collision_dispatcher
+c $8C45 Jump to collision dispatcher
+D $8C45 This routine is called during sprite rendering to invoke the collision detection dispatcher. It performs an indirect jump through the collision_dispatcher_ptr to reach the collision_dispatcher routine.
 u $8C4A
 @ $8FFC label=sprite_tank_shell_explosion
 b $8FFC

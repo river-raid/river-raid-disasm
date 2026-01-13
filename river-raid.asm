@@ -1162,9 +1162,9 @@ L5C79:
 ; including setting up the custom interrupt handler (IM 2 mode) and initializing global pointers.
 init:
   LD HL,state_controls                 ; Initialize ptr_state_controls to point to state_controls.
-  LD (ptr_state_controls),HL           ; Initialize L6136_ptr to point to L6136 (the state dispatcher routine).
-  LD HL,L6136                          ;
-  LD (L6136_ptr),HL
+  LD (ptr_state_controls),HL           ; Initialize collision_dispatcher_ptr to point to collision_dispatcher (collision
+  LD HL,collision_dispatcher           ; dispatcher routine).
+  LD (collision_dispatcher_ptr),HL
   LD A,$C3                             ; Load $C3 (JP instruction opcode) into A.
   LD ($FEFE),A                         ; Write the JP opcode to $FEFE (interrupt vector table entry).
   LD HL,int_handler                    ; Load the address of int_handler into HL.
@@ -1830,108 +1830,117 @@ scan_keyboard:
 
 ; Render player plane and terrain fragments
 ;
-; Used by the routines at play, main_loop and overview.
+; This routine renders the player plane sprite (in normal gameplay mode) and then renders terrain fragments based on the
+; current speed. It calculates the screen position based on speed, then loops through terrain fragments, calling the
+; terrain rendering routine for each one. Every 8 fragments, it calls the attribute scrolling routine.
 render_plane_and_terrain:
-  LD A,(state_gameplay_mode)
-  CP GAMEPLAY_MODE_NORMAL
-  JP NZ,render_plane_and_terrain_0
-  LD A,COLLISION_MODE_NONE
-  LD (state_collision_mode),A
-  LD A,(state_x)
-  LD C,A
-  LD A,(state_speed)
-  LD E,A
-  LD A,$08
-  SUB E
-  LD D,$00
-  LD E,A
-  SLA E
-  LD HL,(L5EF7)
-  ADD HL,DE
-  LD (render_sprite_ptr),HL
-  ADD A,$80
-  LD B,A
-  LD A,(state_speed)
-  LD D,A
-  LD (previous_object_coordinates),BC
-  LD (object_coordinates),BC
-  LD E,$00
-  LD BC,$0010
-  LD A,$02
-  LD HL,sprite_erasure
-  CALL render_object
-render_plane_and_terrain_0:
-  CALL L683B
-  LD A,(state_speed)
-  LD DE,$0100
-  LD HL,screen_pixels
-  OR A
-  SBC HL,DE
-render_plane_and_terrain_1:
-  ADD HL,DE
-  DEC A
-  JR NZ,render_plane_and_terrain_1
-  LD (screen_ptr),HL
-  LD A,(state_speed)
-  LD B,A
-  LD A,(state_terrain_fragment_counter)
-  LD C,A
-render_plane_and_terrain_2:
-  INC C
-  LD A,C
-  PUSH BC
-  AND $07
-  CP $00
-  CALL Z,L68B7
-  CALL render_terrain_fragment
-  LD DE,$0100
-  LD HL,(screen_ptr)
-  OR A
-  SBC HL,DE
-  LD (screen_ptr),HL
-  POP BC
-  DJNZ render_plane_and_terrain_2
-  LD A,C
-  LD (state_terrain_fragment_counter),A
-  RET
+  LD A,(state_gameplay_mode)           ; Load gameplay mode from state_gameplay_mode
+  CP GAMEPLAY_MODE_NORMAL              ; Check if gameplay mode is NORMAL ($00)
+  JP NZ,render_terrain_fragments       ; If not normal mode, skip plane rendering and jump to render_terrain_fragments
+  LD A,COLLISION_MODE_NONE             ; Set collision mode to NONE ($00) for plane rendering
+  LD (state_collision_mode),A          ; Store collision mode to state_collision_mode
+  LD A,(state_x)                       ; Load plane X-coordinate from state_x
+  LD C,A                               ; Copy X-coordinate to C register
+  LD A,(state_speed)                   ; Load current speed from state_speed
+  LD E,A                               ; Copy speed to E register
+  LD A,$08                             ; Load $08 into A
+  SUB E                                ; Subtract speed from $08 (calculate frame offset)
+  LD D,$00                             ; Clear D register (prepare for 16-bit arithmetic)
+  LD E,A                               ; Copy result to E register
+  SLA E                                ; Shift E left (multiply by 2 for 16-byte frames)
+  LD HL,(L5EF7)                        ; Load sprite data pointer from L5EF7
+  ADD HL,DE                            ; Add frame offset to sprite pointer
+  LD (render_sprite_ptr),HL            ; Store updated sprite pointer to render_sprite_ptr
+  ADD A,$80                            ; Add $80 to A (calculate Y-coordinate)
+  LD B,A                               ; Copy Y-coordinate to B register
+  LD A,(state_speed)                   ; Load current speed from state_speed
+  LD D,A                               ; Copy speed to D register
+  LD (previous_object_coordinates),BC  ; Store plane coordinates (BC) to previous_object_coordinates (previous position)
+  LD (object_coordinates),BC           ; Store plane coordinates (BC) to object_coordinates (current position)
+  LD E,$00                             ; Set E to $00 (sprite attributes)
+  LD BC,$0010                          ; Set BC to $0010 (sprite frame size: 16 bytes)
+  LD A,$02                             ; Set A to $02 (sprite width: 2 tiles)
+  LD HL,sprite_erasure                 ; Load address of sprite_erasure (sprite erasure data) into HL
+  CALL render_object                   ; Call render_object to render the plane sprite
+render_terrain_fragments:
+  CALL handle_island_rendering         ; Call handle_island_rendering to handle island rendering
+  LD A,(state_speed)                   ; Load current speed from state_speed
+  LD DE,$0100                          ; Set DE to $0100 (256 bytes per screen row)
+  LD HL,screen_pixels                  ; Load screen_pixels into HL
+  OR A                                 ; Clear carry flag
+  SBC HL,DE                            ; Subtract DE from HL (move up one row)
+calculate_screen_row_loop:
+  ADD HL,DE                            ; Add DE to HL (move down one row)
+  DEC A                                ; Decrement A (speed counter)
+  JR NZ,calculate_screen_row_loop      ; If not zero, loop to calculate correct screen row
+  LD (screen_ptr),HL                   ; Store calculated screen pointer to screen_ptr
+  LD A,(state_speed)                   ; Load current speed from state_speed
+  LD B,A                               ; Copy speed to B register (loop counter)
+  LD A,(state_terrain_fragment_counter) ; Load terrain fragment counter from state_terrain_fragment_counter
+  LD C,A                               ; Copy fragment counter to C register
+render_terrain_loop:
+  INC C                                ; Increment fragment counter
+  LD A,C                               ; Copy fragment counter to A
+  PUSH BC                              ; Push BC (save loop counter and fragment counter)
+  AND $07                              ; Mask lower 3 bits (check if fragment counter is multiple of 8)
+  CP $00                               ; Compare with $00
+  CALL Z,scroll_attributes             ; If zero (every 8 fragments), call scroll_attributes to scroll attributes
+  CALL render_terrain_fragment         ; Call render_terrain_fragment to render current terrain fragment
+  LD DE,$0100                          ; Set DE to $0100 (256 bytes per screen row)
+  LD HL,(screen_ptr)                   ; Load screen pointer from screen_ptr
+  OR A                                 ; Clear carry flag
+  SBC HL,DE                            ; Subtract DE from HL (move up one row for next fragment)
+  LD (screen_ptr),HL                   ; Store updated screen pointer to screen_ptr
+  POP BC                               ; Pop BC (restore loop counter and fragment counter)
+  DJNZ render_terrain_loop             ; Decrement B and loop if not zero
+  LD A,C                               ; Copy final fragment counter to A
+  LD (state_terrain_fragment_counter),A ; Store updated fragment counter to state_terrain_fragment_counter
+  RET                                  ; Return to caller
 
-; Routine at 6124
+; Calculate fuel gauge sprite offset
 ;
-; Used by the routines at consume_fuel and add_fuel.
-L6124:
-  LD A,$07
-  PUSH DE
-  SUB B
-  SLA A
-  SLA A
-  SLA A
-  POP DE
-  ADD A,D
-  LD ($6134),A
-  RLC B
-  RET
+; This routine is used by fuel consumption and refueling to calculate the sprite offset for the fuel gauge display. It
+; performs bit manipulation on the fuel level to determine which sprite frame to display.
+calculate_fuel_gauge_offset:
+  LD A,$07                             ; Load $07 into A
+  PUSH DE                              ; Push DE (save DE register)
+  SUB B                                ; Subtract B from A
+  SLA A                                ; Shift A left (multiply by 2)
+  SLA A                                ; Shift A left (multiply by 4)
+  SLA A                                ; Shift A left (multiply by 8)
+  POP DE                               ; Pop DE (restore DE register)
+  ADD A,D                              ; Add D to A
+  LD ($6134),A                         ; Store result into the middle of the next instruction (self-modifying code)
+  RLC B                                ; Rotate B left through carry
+  RET                                  ; Return to caller
 
-; Routine at 6136
-L6136:
-  POP HL
-  LD (tmp_HL),HL
-  LD (tmp_DE),DE
-  LD (tmp_BC),BC
-  LD A,(state_collision_mode)
-  CP COLLISION_MODE_NONE
-  JP Z,handle_collision_mode_none
-  CP COLLISION_MODE_SKIP
-  JP Z,fuel
-  CP COLLISION_MODE_MISSILE
-  JP Z,interact_with_something
-  CP COLLISION_MODE_ENEMY
-  JP Z,handle_collision_mode_enemy
-  CP COLLISION_MODE_HELICOPTER_MISSILE
-  JP Z,handle_collision_mode_helicopter_missile
+; Collision detection dispatcher
+;
+; This routine is called during sprite rendering (via jp_collision_dispatcher) to handle collision detection. It saves
+; the current register state, checks the collision mode, and dispatches to the appropriate collision handler. This is
+; the central dispatcher for all collision detection in the game.
+collision_dispatcher:
+  POP HL                               ; Pop HL (get return address from stack)
+  LD (tmp_HL),HL                       ; Store return address to tmp_HL (tmp_HL)
+  LD (tmp_DE),DE                       ; Store DE to tmp_DE (tmp_DE)
+  LD (tmp_BC),BC                       ; Store BC to tmp_BC (tmp_BC)
+  LD A,(state_collision_mode)          ; Load collision mode from state_collision_mode
+  CP COLLISION_MODE_NONE               ; Check if collision mode is NONE ($00)
+  JP Z,handle_collision_mode_none      ; If NONE, jump to handle_collision_mode_none to handle no collision
+  CP COLLISION_MODE_SKIP               ; Check if collision mode is SKIP ($01)
+  JP Z,fuel                            ; If SKIP, jump to fuel (fuel/skip collision)
+  CP COLLISION_MODE_MISSILE            ; Check if collision mode is MISSILE ($02)
+  JP Z,interact_with_something         ; If MISSILE, jump to interact_with_something to handle missile collision
+  CP COLLISION_MODE_ENEMY              ; Check if collision mode is ENEMY ($03)
+  JP Z,handle_collision_mode_enemy     ; If ENEMY, jump to handle_collision_mode_enemy to handle enemy collision
+  CP COLLISION_MODE_HELICOPTER_MISSILE ; Check if collision mode is HELICOPTER_MISSILE ($04)
+  JP Z,handle_collision_mode_helicopter_missile ; If HELICOPTER_MISSILE, jump to
+                                                ; handle_collision_mode_helicopter_missile to handle helicopter missile
+                                                ; collision
 
 ; Routine at 615E
 ;
-; Used by the routine at L6136.
+; Used by the routine at collision_dispatcher.
 handle_collision_mode_enemy:
   LD BC,(state_plane_missile_coordinates)
   LD DE,(object_coordinates)
@@ -1988,7 +1997,7 @@ handle_collision_mode_enemy:
 
 ; Routine at 61BB
 ;
-; Used by the routines at L6136 and fuel.
+; Used by the routines at collision_dispatcher and fuel.
 interact_with_something:
   LD BC,(state_plane_missile_coordinates)
   LD A,(state_bridge_y_position)
@@ -2069,7 +2078,7 @@ L6253:
 
 ; Routine at 6256
 ;
-; Used by the routine at L6136.
+; Used by the routine at collision_dispatcher.
 fuel:
   LD A,GAMEPLAY_MODE_REFUEL
   LD (state_gameplay_mode),A
@@ -2751,7 +2760,7 @@ handle_left:
 
 ; Render player plane sprite
 ;
-; Used by the routines at play and L683B.
+; Used by the routines at play and handle_island_rendering.
 render_plane:
   LD A,(state_gameplay_mode)
   CP GAMEPLAY_MODE_NORMAL
@@ -2997,28 +3006,30 @@ L6794_1:
   CALL render_object
   RET
 
-; Routine at 6831
+; Add $0800 offset to island data pointer
 ;
-; Used by the routine at L683B.
-L6831:
-  LD DE,$0800
-  ADD HL,DE
-  RET
+; Used by the routine at handle_island_rendering.
+add_island_offset_800:
+  LD DE,$0800                          ; Set DE to $0800
+  ADD HL,DE                            ; Add DE to HL (adjust island pointer)
+  RET                                  ; Return to caller
 
-; Routine at 6836
+; Add $1000 offset to island data pointer
 ;
-; Used by the routine at L683B.
-L6836:
-  LD DE,$1000
-  ADD HL,DE
-  RET
+; Used by the routine at handle_island_rendering.
+add_island_offset_1000:
+  LD DE,$1000                          ; Set DE to $1000
+  ADD HL,DE                            ; Add DE to HL (adjust island pointer)
+  RET                                  ; Return to caller
 
-; Routine at 683B
+; Handle island rendering and scrolling
 ;
-; Used by the routine at render_plane_and_terrain.
-L683B:
+; This routine manages island rendering by manipulating island data pointers based on bit flags, copying island data to
+; screen memory, and calling render_plane when appropriate. It loops through island lines, decrementing the island
+; counter until it reaches zero.
+handle_island_rendering:
   LD A,$8F
-L683B_0:
+handle_island_rendering_0:
   LD (L5EF9),A
   AND $3F
   LD HL,L5B00
@@ -3032,9 +3043,9 @@ L683B_0:
   EX DE,HL
   LD A,(L5EF9)
   BIT 7,A
-  CALL NZ,L6836
+  CALL NZ,add_island_offset_1000
   BIT 6,A
-  CALL NZ,L6831
+  CALL NZ,add_island_offset_800
   PUSH HL
   LD HL,L5B00
   LD A,(state_speed)
@@ -3055,52 +3066,53 @@ L683B_0:
   LD A,(L5EF9)
   SUB D
   BIT 7,A
-  CALL NZ,L6836
+  CALL NZ,add_island_offset_1000
   BIT 6,A
-  CALL NZ,L6831
+  CALL NZ,add_island_offset_800
   POP DE
   LD BC,$0020
   LDDR
   LD A,(L5EF9)
   DEC A
   CP $00
-  JP Z,L68A1
+  JP Z,finalize_island_rendering
   CP $7F
   CALL Z,render_plane
   LD A,(L5EF9)
   DEC A
-  JP L683B_0
+  JP handle_island_rendering_0
 
-; Routine at 68A1
+; Finalize island rendering
 ;
-; Used by the routine at L683B.
-L68A1:
+; Used by the routine at handle_island_rendering.
+finalize_island_rendering:
   LD HL,screen_pixels
   LD DE,$00E0
   LD A,(state_speed)
-L68A1_0:
+finalize_island_rendering_0:
   LD B,$20
-L68A1_1:
+finalize_island_rendering_1:
   LD (HL),$00
   INC HL
-  DJNZ L68A1_1
+  DJNZ finalize_island_rendering_1
   ADD HL,DE
   DEC A
-  JP NZ,L68A1_0
+  JP NZ,finalize_island_rendering_0
   RET
 
-; Routine at 68B7
+; Scroll screen attributes up by one row
 ;
-; Used by the routine at render_plane_and_terrain.
-L68B7:
-  LD HL,$5A1F
-  LD DE,$5A3F
-  LD BC,$020C
-  LDDR
-  LD HL,$5BDF
+; This routine is called every 8 terrain fragments to scroll the screen attributes. It copies attribute data from one
+; row to the next, effectively scrolling the attributes upward. It also handles special bridge attribute rendering.
+scroll_attributes:
+  LD HL,$5A1F                          ; Load source address $5A1F into HL (attribute row)
+  LD DE,$5A3F                          ; Load destination address $5A3F into DE (next attribute row)
+  LD BC,$020C                          ; Set BC to $020C (524 bytes to copy)
+  LDDR                                 ; Copy attributes backward (LDDR)
+  LD HL,$5BDF                          ; Load address $5BDF into HL (bottom attribute row)
 
 ; Routine at 68C5
-L68C5:
+scroll_attributes_continue:
   LD DE,$5820
   LD BC,$0020
   LDIR
@@ -3110,14 +3122,14 @@ L68C5:
   CP $02
   JP Z,L6927
 ; This entry point is used by the routine at init_current_bridge.
-L68C5_0:
+scroll_attributes_continue_0:
   LD DE,$5BDF
   LD A,$0C
   LD B,$20
-L68C5_1:
+scroll_attributes_continue_1:
   LD (DE),A
   INC DE
-  DJNZ L68C5_1
+  DJNZ scroll_attributes_continue_1
   CALL next_row
   RET
 
@@ -3158,11 +3170,11 @@ init_current_bridge_1:
   LD A,L
   INC A
   LD (state_bridge_index),A
-  JP L68C5_0
+  JP scroll_attributes_continue_0
 
 ; Routine at 6927
 ;
-; Used by the routine at L68C5.
+; Used by the routine at scroll_attributes_continue.
 L6927:
   LD DE,$5BDF
   LD HL,sprite_road_attributes
@@ -4055,7 +4067,7 @@ consume_fuel:
   LD D,$86
 consume_fuel_0:
   PUSH AF
-  CALL L6124
+  CALL calculate_fuel_gauge_offset
   INC H
   POP AF
   DEC A
@@ -4093,7 +4105,7 @@ add_fuel:
   LD D,$C6
 add_fuel_0:
   PUSH AF
-  CALL L6124
+  CALL calculate_fuel_gauge_offset
   INC H
   POP AF
   DEC A
@@ -4317,7 +4329,7 @@ L6F7A:
 
 ; This routine gets called when the screen scrolls by another fragment
 ;
-; Used by the routines at L68C5 and L6927.
+; Used by the routines at scroll_attributes_continue and L6927.
 next_row:
   LD A,COLLISION_MODE_NONE
   LD (state_collision_mode),A
@@ -5183,7 +5195,7 @@ render_helicopter_missile:
 
 ; Routine at 7415
 ;
-; Used by the routine at L6136.
+; Used by the routine at collision_dispatcher.
 handle_collision_mode_helicopter_missile:
   LD BC,(helicopter_missile_coordinates_ptr)
   BIT 7,B
@@ -6998,8 +7010,8 @@ L8AD8:
   DEFB $10,$38,$7C,$FE,$7C,$38,$10,$00
   DEFB $18,$3C,$7E,$FF,$FF,$7E,$3C,$18
 
-; Pointer to L6136
-L6136_ptr:
+; Pointer to collision_dispatcher (collision dispatcher)
+collision_dispatcher_ptr:
   DEFW $0000
 
 ; Game status buffer entry at 8B0A
@@ -7240,8 +7252,8 @@ L8C1B_0:
   XOR B
   OR B
   CP D
-  JP NZ,jp_L6136
-; This entry point is used by the routines at L6136 and L63FC.
+  JP NZ,jp_collision_dispatcher
+; This entry point is used by the routines at collision_dispatcher and L63FC.
 handle_collision_mode_none:
   LD A,(HL)
 
@@ -7256,12 +7268,13 @@ L8C3C:
   JR NZ,L8C1B_0
   RET
 
-; Routine at 8C45
+; Jump to collision dispatcher
 ;
-; Used by the routine at L8C1B.
-jp_L6136:
+; This routine is called during sprite rendering to invoke the collision detection dispatcher. It performs an indirect
+; jump through the collision_dispatcher_ptr to reach the collision_dispatcher routine.
+jp_collision_dispatcher:
   PUSH HL
-  LD HL,(L6136_ptr)
+  LD HL,(collision_dispatcher_ptr)
   JP (HL)
 
 ; Unused
