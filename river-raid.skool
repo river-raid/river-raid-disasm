@@ -1773,7 +1773,7 @@ g$5F8F DEFW $0000
 
 ; Main loop
 ;
-; Used by the routines at #R$5DA6, #R$600A, #R$6039 and #R$6068.
+; Used by the routines at #R$5DA6, #R$5FDA, #R$600A, #R$6039 and #R$6068.
 @label=main_loop
 c$5F91 LD A,$BF      ; {Scan Enter
  $5F93 IN A,($FE)    ;
@@ -1806,74 +1806,76 @@ c$5F91 LD A,$BF      ; {Scan Enter
 @isub=CP INPUT_INTERFACE_KEYBOARD
  $5FD5 CP $00        ;
  $5FD7 JP Z,$6068    ;
+
+; Scan cursor keys
 @label=scan_cursor
- $5FDA LD A,$EF      ;
+c$5FDA LD A,$EF      ; {Scan "8" (RIGHT)
  $5FDC IN A,($FE)    ;
  $5FDE LD ($5EF1),A  ;
  $5FE1 BIT 2,A       ;
- $5FE3 CALL Z,$65F3  ;
- $5FE6 LD A,$F7      ;
+ $5FE3 CALL Z,$65F3  ; }
+ $5FE6 LD A,$F7      ; {Scan "5" (LEFT)
  $5FE8 IN A,($FE)    ;
  $5FEA BIT 4,A       ;
- $5FEC CALL Z,$6642  ;
- $5FEF LD A,($5EF1)  ;
+ $5FEC CALL Z,$6642  ; }
+ $5FEF LD A,($5EF1)  ; {Scan "0" (FIRE)
  $5FF2 BIT 0,A       ;
- $5FF4 CALL Z,$6724  ;
- $5FF7 LD A,($5EF1)  ;
+ $5FF4 CALL Z,$6724  ; }
+ $5FF7 LD A,($5EF1)  ; {Scan "7" (UP)
  $5FFA BIT 3,A       ;
- $5FFC CALL Z,$670A  ;
- $5FFF LD A,($5EF1)  ;
+ $5FFC CALL Z,$670A  ; }
+ $5FFF LD A,($5EF1)  ; {Scan "6" (DOWN)
  $6002 BIT 4,A       ;
  $6004 CALL Z,$6717  ;
- $6007 JP $5F91      ;
+ $6007 JP $5F91      ; }
 
-; Routine at 600A
+; Scan Kempston joystick
 ;
 ; Used by the routine at #R$5F91.
 @label=scan_kempston
-c$600A LD A,$FE      ;
+c$600A LD A,$FE      ; {Scan RIGHT
  $600C IN A,($1F)    ;
  $600E LD ($5EF1),A  ;
  $6011 BIT 0,A       ;
- $6013 CALL NZ,$65F3 ;
- $6016 LD A,($5EF1)  ;
+ $6013 CALL NZ,$65F3 ; }
+ $6016 LD A,($5EF1)  ; {Scan LEFT
  $6019 BIT 1,A       ;
- $601B CALL NZ,$6642 ;
- $601E LD A,($5EF1)  ;
+ $601B CALL NZ,$6642 ; }
+ $601E LD A,($5EF1)  ; {Scan DOWN
  $6021 BIT 2,A       ;
- $6023 CALL NZ,$6717 ;
- $6026 LD A,($5EF1)  ;
+ $6023 CALL NZ,$6717 ; }
+ $6026 LD A,($5EF1)  ; {Scan UP
  $6029 BIT 3,A       ;
- $602B CALL NZ,$670A ;
- $602E LD A,($5EF1)  ;
+ $602B CALL NZ,$670A ; }
+ $602E LD A,($5EF1)  ; {Scan FIRE
  $6031 BIT 4,A       ;
  $6033 CALL NZ,$6724 ;
- $6036 JP $5F91      ;
+ $6036 JP $5F91      ; }
 
-; Routine at 6039
+; Scan Sinclair joystick
 ;
 ; Used by the routine at #R$5F91.
 @label=scan_sinclair
-c$6039 LD A,$EF      ;
+c$6039 LD A,$EF      ; {Scan "0" (FIRE)
  $603B IN A,($FE)    ;
  $603D LD ($5EF1),A  ;
  $6040 BIT 0,A       ;
- $6042 CALL Z,$6724  ;
- $6045 LD A,($5EF1)  ;
+ $6042 CALL Z,$6724  ; }
+ $6045 LD A,($5EF1)  ; {Scan "9" (UP)
  $6048 BIT 1,A       ;
- $604A CALL Z,$670A  ;
- $604D LD A,($5EF1)  ;
+ $604A CALL Z,$670A  ; }
+ $604D LD A,($5EF1)  ; {Scan "8" (DOWN)
  $6050 BIT 2,A       ;
- $6052 CALL Z,$6717  ;
- $6055 LD A,($5EF1)  ;
+ $6052 CALL Z,$6717  ; }
+ $6055 LD A,($5EF1)  ; {Scan "7" (RIGHT)
  $6058 BIT 3,A       ;
- $605A CALL Z,$65F3  ;
- $605D LD A,($5EF1)  ;
+ $605A CALL Z,$65F3  ; }
+ $605D LD A,($5EF1)  ; {Scan "6" (LEFT)
  $6060 BIT 4,A       ;
  $6062 CALL Z,$6642  ;
- $6065 JP $5F91      ;
+ $6065 JP $5F91      ; }
 
-; Routine at 6068
+; Scan keyboard
 ;
 ; Used by the routine at #R$5F91.
 @label=scan_keyboard
@@ -3003,7 +3005,7 @@ c$6704 LD A,$00      ;
 
 ; Routine at 670A
 ;
-; Used by the routines at #R$5F91, #R$600A, #R$6039 and #R$6068.
+; Used by the routines at #R$5FDA, #R$600A, #R$6039 and #R$6068.
 @isub=LD A,SPEED_FAST
 @label=handle_up
 c$670A LD A,$04      ;
@@ -3017,7 +3019,7 @@ c$670A LD A,$04      ;
 
 ; Routine at 6717
 ;
-; Used by the routines at #R$5F91, #R$600A, #R$6039 and #R$6068.
+; Used by the routines at #R$5FDA, #R$600A, #R$6039 and #R$6068.
 @isub=LD A,SPEED_SLOW
 @label=handle_down
 c$6717 LD A,$01      ;
@@ -3031,7 +3033,7 @@ c$6717 LD A,$01      ;
 
 ; Routine at 6724
 ;
-; Used by the routines at #R$5F91, #R$600A, #R$6039 and #R$6068.
+; Used by the routines at #R$5FDA, #R$600A, #R$6039 and #R$6068.
 @label=handle_fire
 c$6724 LD A,($5EF3)  ;
  $6727 CP $00        ;

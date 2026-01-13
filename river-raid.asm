@@ -1694,7 +1694,7 @@ state_plane_missile_coordinates_backup:
 
 ; Main loop
 ;
-; Used by the routines at play, scan_kempston, scan_sinclair and scan_keyboard.
+; Used by the routines at play, scan_cursor, scan_kempston, scan_sinclair and scan_keyboard.
 main_loop:
   LD A,$BF                             ; Scan Enter
   IN A,($FE)                           ;
@@ -1724,74 +1724,76 @@ main_loop:
   JP Z,scan_sinclair
   CP INPUT_INTERFACE_KEYBOARD
   JP Z,scan_keyboard
-scan_cursor:
-  LD A,$EF
-  IN A,($FE)
-  LD (state_input_readings),A
-  BIT 2,A
-  CALL Z,handle_right
-  LD A,$F7
-  IN A,($FE)
-  BIT 4,A
-  CALL Z,handle_left
-  LD A,(state_input_readings)
-  BIT 0,A
-  CALL Z,handle_fire
-  LD A,(state_input_readings)
-  BIT 3,A
-  CALL Z,handle_up
-  LD A,(state_input_readings)
-  BIT 4,A
-  CALL Z,handle_down
-  JP main_loop
 
-; Routine at 600A
+; Scan cursor keys
+scan_cursor:
+  LD A,$EF                             ; Scan "8" (RIGHT)
+  IN A,($FE)                           ;
+  LD (state_input_readings),A          ;
+  BIT 2,A                              ;
+  CALL Z,handle_right                  ;
+  LD A,$F7                             ; Scan "5" (LEFT)
+  IN A,($FE)                           ;
+  BIT 4,A                              ;
+  CALL Z,handle_left                   ;
+  LD A,(state_input_readings)          ; Scan "0" (FIRE)
+  BIT 0,A                              ;
+  CALL Z,handle_fire                   ;
+  LD A,(state_input_readings)          ; Scan "7" (UP)
+  BIT 3,A                              ;
+  CALL Z,handle_up                     ;
+  LD A,(state_input_readings)          ; Scan "6" (DOWN)
+  BIT 4,A                              ;
+  CALL Z,handle_down                   ;
+  JP main_loop                         ;
+
+; Scan Kempston joystick
 ;
 ; Used by the routine at main_loop.
 scan_kempston:
-  LD A,$FE
-  IN A,($1F)
-  LD (state_input_readings),A
-  BIT 0,A
-  CALL NZ,handle_right
-  LD A,(state_input_readings)
-  BIT 1,A
-  CALL NZ,handle_left
-  LD A,(state_input_readings)
-  BIT 2,A
-  CALL NZ,handle_down
-  LD A,(state_input_readings)
-  BIT 3,A
-  CALL NZ,handle_up
-  LD A,(state_input_readings)
-  BIT 4,A
-  CALL NZ,handle_fire
-  JP main_loop
+  LD A,$FE                             ; Scan RIGHT
+  IN A,($1F)                           ;
+  LD (state_input_readings),A          ;
+  BIT 0,A                              ;
+  CALL NZ,handle_right                 ;
+  LD A,(state_input_readings)          ; Scan LEFT
+  BIT 1,A                              ;
+  CALL NZ,handle_left                  ;
+  LD A,(state_input_readings)          ; Scan DOWN
+  BIT 2,A                              ;
+  CALL NZ,handle_down                  ;
+  LD A,(state_input_readings)          ; Scan UP
+  BIT 3,A                              ;
+  CALL NZ,handle_up                    ;
+  LD A,(state_input_readings)          ; Scan FIRE
+  BIT 4,A                              ;
+  CALL NZ,handle_fire                  ;
+  JP main_loop                         ;
 
-; Routine at 6039
+; Scan Sinclair joystick
 ;
 ; Used by the routine at main_loop.
 scan_sinclair:
-  LD A,$EF
-  IN A,($FE)
-  LD (state_input_readings),A
-  BIT 0,A
-  CALL Z,handle_fire
-  LD A,(state_input_readings)
-  BIT 1,A
-  CALL Z,handle_up
-  LD A,(state_input_readings)
-  BIT 2,A
-  CALL Z,handle_down
-  LD A,(state_input_readings)
-  BIT 3,A
-  CALL Z,handle_right
-  LD A,(state_input_readings)
-  BIT 4,A
-  CALL Z,handle_left
-  JP main_loop
+  LD A,$EF                             ; Scan "0" (FIRE)
+  IN A,($FE)                           ;
+  LD (state_input_readings),A          ;
+  BIT 0,A                              ;
+  CALL Z,handle_fire                   ;
+  LD A,(state_input_readings)          ; Scan "9" (UP)
+  BIT 1,A                              ;
+  CALL Z,handle_up                     ;
+  LD A,(state_input_readings)          ; Scan "8" (DOWN)
+  BIT 2,A                              ;
+  CALL Z,handle_down                   ;
+  LD A,(state_input_readings)          ; Scan "7" (RIGHT)
+  BIT 3,A                              ;
+  CALL Z,handle_right                  ;
+  LD A,(state_input_readings)          ; Scan "6" (LEFT)
+  BIT 4,A                              ;
+  CALL Z,handle_left                   ;
+  JP main_loop                         ;
 
-; Routine at 6068
+; Scan keyboard
 ;
 ; Used by the routine at main_loop.
 scan_keyboard:
@@ -2829,7 +2831,7 @@ L6704:
 
 ; Routine at 670A
 ;
-; Used by the routines at main_loop, scan_kempston, scan_sinclair and scan_keyboard.
+; Used by the routines at scan_cursor, scan_kempston, scan_sinclair and scan_keyboard.
 handle_up:
   LD A,SPEED_FAST
   LD (state_speed),A
@@ -2840,7 +2842,7 @@ handle_up:
 
 ; Routine at 6717
 ;
-; Used by the routines at main_loop, scan_kempston, scan_sinclair and scan_keyboard.
+; Used by the routines at scan_cursor, scan_kempston, scan_sinclair and scan_keyboard.
 handle_down:
   LD A,SPEED_SLOW
   LD (state_speed),A
@@ -2851,7 +2853,7 @@ handle_down:
 
 ; Routine at 6724
 ;
-; Used by the routines at main_loop, scan_kempston, scan_sinclair and scan_keyboard.
+; Used by the routines at scan_cursor, scan_kempston, scan_sinclair and scan_keyboard.
 handle_fire:
   LD A,(state_plane_missile_coordinates)
   CP $00

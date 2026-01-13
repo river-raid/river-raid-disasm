@@ -599,12 +599,28 @@ C $5F91,9 Scan Enter
 @ $5FD0 isub=CP INPUT_INTERFACE_SINCLAIR
 @ $5FD5 isub=CP INPUT_INTERFACE_KEYBOARD
 @ $5FDA label=scan_cursor
+c $5FDA Scan cursor keys
+C $5FDA Scan "8" (RIGHT)
+C $5FE6 Scan "5" (LEFT)
+C $5FEF Scan "0" (FIRE)
+C $5FF7 Scan "7" (UP)
+C $5FFF Scan "6" (DOWN)
 @ $600A label=scan_kempston
-c $600A
+c $600A Scan Kempston joystick
+C $600A Scan RIGHT
+C $6016 Scan LEFT
+C $601E Scan DOWN
+C $6026 Scan UP
+C $602E Scan FIRE
 @ $6039 label=scan_sinclair
-c $6039
+c $6039 Scan Sinclair joystick
+C $6039 Scan "0" (FIRE)
+C $6045 Scan "9" (UP)
+C $604D Scan "8" (DOWN)
+C $6055 Scan "7" (RIGHT)
+C $605D Scan "6" (LEFT)
 @ $6068 label=scan_keyboard
-c $6068
+c $6068 Scan keyboard
 C $6068 Scan "O" (LEFT)
 C $6071 Scan "P" (RIGHT)
 C $607A Scan "2" (UP)
