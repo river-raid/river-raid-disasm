@@ -1304,135 +1304,135 @@ decrease_lives_player_2:
 ; This routine initializes the game screen and state for gameplay mode, then enters the main game loop. It is called
 ; when starting a new game or restarting after losing a life.
 play:
-  LD A,$10                             ; Initialize island rendering state (line index $10, activation mask $1F) and
-  LD (state_island_line_idx),A         ; restore stack pointer.
-  LD A,$1F                             ;
-  LD (state_activation_mask),A         ;
-  LD SP,(saved_stack_pointer)          ;
-  LD D,COLOR_BLUE<<3|COLOR_GREEN       ; PAPER BLUE; INK GREEN
-  CALL clear_screen
-  CALL init_udg
-  LD DE,status_line_1                  ; Print status line 1.
-  LD BC,status_line_2 - status_line_1
-  CALL PR_STRING
-  LD A,$01                             ; Initialize metronome to $01
-  LD (state_metronome),A               ;
-  CALL CHAN_OPEN                       ; Open channel 1.
-  LD DE,status_line_2                  ;
-  LD BC,status_line_3 - status_line_2   ; Print status line 2, open channel 2, print bridge number, and clear various
-  CALL PR_STRING                        ; state variables.
-  LD A,$02                              ;
-  CALL CHAN_OPEN                        ;
-  CALL print_bridge                     ;
-  LD A,$04                              ;
-  LD (state_terrain_fragment_counter),A ;
-  LD A,$00                              ;
-  LD (state_bridge_section),A           ;
-  LD (state_unused_5F6F),A              ;
-  LD (state_terrain_position),A         ;
-  LD (state_plane_sprite_bank),A        ;
-  LD A,FUEL_LEVEL_FULL                 ; Set fuel level to full.
-  LD (state_fuel),A                    ;
-  LD BC,$0010                          ; Set initial player Y position to $0010 and initialize current bridge.
-  LD (state_y),BC                      ;
-  CALL init_current_bridge             ;
-  LD A,$78                             ; Set player X position to $78 (center of screen) and initialize viewport objects
-  LD (state_x),A                       ; list.
-  LD HL,viewport_objects               ;
-  LD (viewport_ptr),HL                 ;
-  LD (HL),SET_MARKER_END_OF_SET        ; Initialize exploding fragments list (empty).
-  LD HL,exploding_fragments            ;
-  LD (exploding_fragments_ptr),HL      ;
-  LD (HL),$FF                          ; Print lives display and open channel 1.
-  LD BC,$0000                          ;
-  CALL print_lives                     ;
-  LD A,$01                             ;
-  CALL CHAN_OPEN                       ;
-  LD A,EXT_ATTR_AT                     ; AT 1,5
-  RST $10                              ;
-  LD A,$01                             ;
-  RST $10                              ;
-  LD A,$05                             ;
-  RST $10                              ;
-  LD A,EXT_ATTR_INK                    ; INK YELLOW
-  RST $10                              ;
-  LD A,COLOR_YELLOW                    ;
-  RST $10                              ;
-  LD DE,state_score_player_1_low                            ; Print player 1 score.
-  LD BC,state_score_player_2_low - state_score_player_1_low ;
-  CALL PR_STRING                                            ;
-  LD A,$02                               ; Open channel 2, print status line 4, and display game mode digit.
-  CALL CHAN_OPEN                         ;
-  LD DE,status_line_4                    ;
-  LD BC,data_unused_805F - status_line_4 ;
-  CALL PR_STRING                         ;
-  LD A,(state_game_mode)                 ;
-  ADD A,$31                            ; Open channel 1 and set terrain position to $FF.
-  RST $10                              ;
-  LD A,$01                             ;
-  CALL CHAN_OPEN                       ;
-  LD A,$FF                             ; Set terrain profile number to $02 and open channel 2.
-  LD (state_terrain_position),A        ;
-  LD A,$02                             ;
-  LD (state_terrain_profile_number),A  ; Initialize gameplay state (level fragment, gameplay mode, bridge destroyed flag
-  CALL CHAN_OPEN                       ; to $01).
-  LD A,$01                             ;
-  LD (state_level_fragment_number),A   ;
-  LD (state_gameplay_mode),A           ;
-  LD (state_bridge_destroyed),A        ;
-  LD A,$68                             ;
-  LD (LAST_K),A                        ;
-  LD A,$00                             ; Set last key to $68 and clear control state.
-  LD (state_controls),A                ;
-  LD (state_tank_shell),A              ;
-  LD A,SPEED_FAST                      ; Set speed to SPEED_FAST.
-  LD (state_speed),A                   ;
-  LD BC,$4C83                          ; Initialize terrain element 23 to $4C83.
-  LD (state_terrain_element_23),BC     ;
-  CALL print_player_2_score_area       ; Print player 2 score area and initialize current bridge.
-  CALL init_current_bridge             ;
-  LD B,$28                             ;
+  LD A,$10                             ; Initialize island line index to $10 (starting line for island rendering)
+  LD (state_island_line_idx),A         ; Store island line index
+  LD A,$1F                             ; Initialize activation mask to $1F (controls which objects are active)
+  LD (state_activation_mask),A         ; Store activation mask
+  LD SP,(saved_stack_pointer)          ; Restore stack pointer from saved location
+  LD D,COLOR_BLUE<<3|COLOR_GREEN       ; Set color attributes: PAPER BLUE, INK GREEN
+  CALL clear_screen                    ; Clear screen with the specified colors
+  CALL init_udg                        ; Initialize user-defined graphics (UDGs)
+  LD DE,status_line_1                  ; Point to status line 1 text
+  LD BC,status_line_2 - status_line_1  ; Calculate length of status line 1
+  CALL PR_STRING                       ; Print status line 1
+  LD A,$01                             ; Initialize metronome counter to $01 (used for timing game events)
+  LD (state_metronome),A               ; Store metronome value
+  CALL CHAN_OPEN                       ; Open channel 1 (upper screen area)
+  LD DE,status_line_2                  ; Point to status line 2 text
+  LD BC,status_line_3 - status_line_2  ; Calculate length of status line 2
+  CALL PR_STRING                       ; Print status line 2
+  LD A,$02                             ; Prepare to open channel 2
+  CALL CHAN_OPEN                       ; Open channel 2 (lower screen area)
+  CALL print_bridge                    ; Print current bridge number
+  LD A,$04                             ; Initialize terrain fragment counter to $04
+  LD (state_terrain_fragment_counter),A ; Store terrain fragment counter
+  LD A,$00                             ; Clear accumulator for initializing multiple state variables
+  LD (state_bridge_section),A          ; Clear bridge section counter (tracks position within current bridge)
+  LD (state_unused_5F6F),A             ; Clear unused state variable
+  LD (state_terrain_position),A        ; Clear terrain position (will be set to $FF later)
+  LD (state_plane_sprite_bank),A       ; Clear plane sprite bank (selects which plane sprite to display)
+  LD A,FUEL_LEVEL_FULL                 ; Set fuel level to full ($80)
+  LD (state_fuel),A                    ; Store fuel level
+  LD BC,$0010                          ; Set initial Y position to $0010 (vertical position on screen)
+  LD (state_y),BC                      ; Store Y position
+  CALL init_current_bridge             ; Initialize current bridge data structures
+  LD A,$78                             ; Set X position to $78 (horizontal center of screen)
+  LD (state_x),A                       ; Store X position
+  LD HL,viewport_objects               ; Point to viewport objects list (tracks active game objects)
+  LD (viewport_ptr),HL                 ; Store viewport objects pointer
+  LD (HL),SET_MARKER_END_OF_SET        ; Mark viewport objects list as empty (end-of-set marker)
+  LD HL,exploding_fragments            ; Point to exploding fragments list (tracks explosion animations)
+  LD (exploding_fragments_ptr),HL      ; Store exploding fragments pointer
+  LD (HL),$FF                          ; Mark exploding fragments list as empty ($FF terminator)
+  LD BC,$0000                          ; Set BC to $0000 for print_lives call
+  CALL print_lives                     ; Display lives remaining for current player
+  LD A,$01                             ; Prepare to open channel 1
+  CALL CHAN_OPEN                       ; Open channel 1 for score display
+  LD A,EXT_ATTR_AT                     ; Load AT control code (position cursor)
+  RST $10                              ; Print AT control code
+  LD A,$01                             ; Row 1 for AT command
+  RST $10                              ; Print row parameter
+  LD A,$05                             ; Column 5 for AT command
+  RST $10                              ; Print column parameter
+  LD A,EXT_ATTR_INK                    ; Load INK control code (set text color)
+  RST $10                              ; Print INK control code
+  LD A,COLOR_YELLOW                    ; Set color to yellow
+  RST $10                              ; Print color parameter
+  LD DE,state_score_player_1_low       ; Point to player 1 score data
+  LD BC,state_score_player_2_low - state_score_player_1_low ; Calculate length of score data
+  CALL PR_STRING                       ; Print player 1 score
+  LD A,$02                             ; Prepare to open channel 2
+  CALL CHAN_OPEN                       ; Open channel 2 for status display
+  LD DE,status_line_4                  ; Point to status line 4 text
+  LD BC,data_unused_805F - status_line_4 ; Calculate length of status line 4
+  CALL PR_STRING                       ; Print status line 4
+  LD A,(state_game_mode)               ; Load current game mode (1 or 2 player)
+  ADD A,$31                            ; Convert to ASCII digit (add $31 to convert 0-9 to '0'-'9')
+  RST $10                              ; Print game mode digit
+  LD A,$01                             ; Prepare to open channel 1
+  CALL CHAN_OPEN                       ; Open channel 1
+  LD A,$FF                             ; Set terrain position to $FF (forces terrain regeneration)
+  LD (state_terrain_position),A        ; Store terrain position
+  LD A,$02                             ; Set terrain profile number to $02 (selects terrain pattern)
+  LD (state_terrain_profile_number),A  ; Store terrain profile number
+  CALL CHAN_OPEN                       ; Open channel 2
+  LD A,$01                             ; Initialize level fragment number to $01 (first fragment of level)
+  LD (state_level_fragment_number),A   ; Store level fragment number
+  LD (state_gameplay_mode),A           ; Set gameplay mode to $01 (normal gameplay)
+  LD (state_bridge_destroyed),A        ; Set bridge destroyed flag to $01 (bridge intact)
+  LD A,$68                             ; Set last key to $68 (dummy key value)
+  LD (LAST_K),A                        ; Store last key pressed
+  LD A,$00                             ; Clear control state (no buttons pressed)
+  LD (state_controls),A                ; Store control state
+  LD (state_tank_shell),A              ; Clear tank shell state (no tank shell active)
+  LD A,SPEED_FAST                      ; Set speed to SPEED_FAST ($04) for level scroll-in
+  LD (state_speed),A                   ; Store speed
+  LD BC,$4C83                          ; Initialize terrain element 23 to $4C83
+  LD (state_terrain_element_23),BC     ; Store terrain element 23
+  CALL print_player_2_score_area       ; Print player 2 score area
+  CALL init_current_bridge             ; Initialize current bridge data
+  LD B,$28                             ; Set loop counter to $28 (40 iterations for scroll-in)
 play_0:
-  PUSH BC                              ; Scroll in the level (loop 40 times at fast speed).
-  LD HL,state_metronome                ;
-  INC (HL)                             ;
-  CALL render_plane_and_terrain        ;
-  CALL operate_viewport_objects        ;
-  CALL advance                         ;
-  LD A,SPEED_FAST                      ;
-  LD (state_speed),A                   ;
-  POP BC                               ;
-  DJNZ play_0                          ;
-  LD A,$00                             ;
-  LD (state_controls),A                ;
-  LD (state_gameplay_mode),A           ; Clear control state and gameplay mode, then render player plane.
-  CALL render_plane                    ;
-  LD A,$0D                             ;
-  LD (LAST_K),A                        ; Set last key to Enter and decrement current player's lives.
-  LD A,(state_player)                  ;
-  CP PLAYER_2                          ;
-  JP Z,decrease_lives_player_2         ;
-  LD HL,state_lives_player_1           ;
-  DEC (HL)                             ; Print updated lives display and wait for
+  PUSH BC                              ; Save loop counter
+  LD HL,state_metronome                ; Point to metronome counter
+  INC (HL)                             ; Increment metronome (advances game timing)
+  CALL render_plane_and_terrain        ; Render player plane and terrain for current frame
+  CALL operate_viewport_objects        ; Update and render viewport objects (enemies, fuel, etc.)
+  CALL advance                         ; Advance game state (scroll terrain, update positions)
+  LD A,SPEED_FAST                      ; Set speed to SPEED_FAST (maintain fast scroll during intro)
+  LD (state_speed),A                   ; Store speed
+  POP BC                               ; Restore loop counter
+  DJNZ play_0                          ; Repeat scroll-in loop until counter reaches zero
+  LD A,$00                             ; Clear control state (reset controls after scroll-in)
+  LD (state_controls),A                ; Store control state
+  LD (state_gameplay_mode),A           ; Set gameplay mode to $00 (ready for player control)
+  CALL render_plane                    ; Render player plane in starting position
+  LD A,$0D                             ; Set last key to $0D (Enter key - wait for start)
+  LD (LAST_K),A                        ; Store last key
+  LD A,(state_player)                  ; Load current player number
+  CP PLAYER_2                          ; Check if player 2
+  JP Z,decrease_lives_player_2         ; If player 2, jump to decrease player 2 lives
+  LD HL,state_lives_player_1           ; Point to player 1 lives counter
+  DEC (HL)                             ; Decrement lives (player lost a life)
 ; This entry point is used by the routine at decrease_lives_player_2.
 play_1:
-  CALL print_lives                     ; keyboard/joystick input.
+  CALL print_lives                     ; Display updated lives count
 play_2:
-  CALL KEYBOARD
-  EI
-  LD A,(LAST_K)
-  CP $0D
-  JR NZ,play_3
-  LD A,(state_input_interface)
-  CP INPUT_INTERFACE_KEMPSTON
-  JP NZ,play_2
-  LD A,$FE
-  IN A,($1F)                           ; }
-  CP $00                               ; Clear bridge destruction state, set speed to normal, and jump to main game
-  JP Z,play_2                          ; loop.
+  CALL KEYBOARD                        ; Scan keyboard for input
+  EI                                   ; Enable interrupts
+  LD A,(LAST_K)                        ; Load last key pressed
+  CP $0D                               ; Check if Enter key ($0D)
+  JR NZ,play_3                         ; If not Enter, start game
+  LD A,(state_input_interface)         ; Load input interface type (keyboard/joystick)
+  CP INPUT_INTERFACE_KEMPSTON          ; Check if Kempston joystick
+  JP NZ,play_2                         ; If not Kempston, wait for key press
+  LD A,$FE                             ; Set port address for Kempston joystick read
+  IN A,($1F)                           ; Read Kempston joystick port
+  CP $00                               ; Check if joystick is centered (no input)
+  JP Z,play_2                          ; If centered, keep waiting for input
 play_3:
-  LD A,$00                             ;
-  LD (state_bridge_destroyed),A        ;
+  LD A,$00                             ; Clear bridge destroyed flag (bridge is intact at start)
+  LD (state_bridge_destroyed),A        ; Store bridge destroyed flag
   LD (state_bridge_y_position),A
   LD A,$02
   LD (state_speed),A

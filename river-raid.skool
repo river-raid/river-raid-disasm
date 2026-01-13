@@ -1354,146 +1354,160 @@ c$5D9F LD HL,$923C   ;
 ; enters the main game loop. It is called when starting a new game or
 ; restarting after losing a life.
 @label=play
-c$5DA6 LD A,$10      ; {Initialize island rendering state (line index $10,
- $5DA8 LD ($5EFD),A  ; activation mask $1F) and restore stack pointer.
- $5DAB LD A,$1F      ;
- $5DAD LD ($5F5F),A  ;
- $5DB0 LD SP,($5F83) ; }
+c$5DA6 LD A,$10      ; Initialize island line index to $10 (starting line for
+                     ; island rendering)
+ $5DA8 LD ($5EFD),A  ; Store island line index
+ $5DAB LD A,$1F      ; Initialize activation mask to $1F (controls which
+                     ; objects are active)
+ $5DAD LD ($5F5F),A  ; Store activation mask
+ $5DB0 LD SP,($5F83) ; Restore stack pointer from saved location
 @isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
- $5DB4 LD D,$0C      ; PAPER BLUE; INK GREEN
- $5DB6 CALL $940A    ;
- $5DB9 CALL $8A33    ;
- $5DBC LD DE,$8000   ; Print status line 1.
+ $5DB4 LD D,$0C      ; Set color attributes: PAPER BLUE, INK GREEN
+ $5DB6 CALL $940A    ; Clear screen with the specified colors
+ $5DB9 CALL $8A33    ; Initialize user-defined graphics (UDGs)
+ $5DBC LD DE,$8000   ; Point to status line 1 text
 @isub=LD BC,status_line_2 - status_line_1
- $5DBF LD BC,$0031   ;
- $5DC2 CALL $203C    ;
- $5DC5 LD A,$01      ; {Initialize metronome to $01
- $5DC7 LD ($5EEF),A  ; }
- $5DCA CALL $1601    ; {Open channel 1.
- $5DCD LD DE,$8031   ; }
+ $5DBF LD BC,$0031   ; Calculate length of status line 1
+ $5DC2 CALL $203C    ; Print status line 1
+ $5DC5 LD A,$01      ; Initialize metronome counter to $01 (used for timing
+                     ; game events)
+ $5DC7 LD ($5EEF),A  ; Store metronome value
+ $5DCA CALL $1601    ; Open channel 1 (upper screen area)
+ $5DCD LD DE,$8031   ; Point to status line 2 text
 @isub=LD BC,status_line_3 - status_line_2
- $5DD0 LD BC,$001E   ; {Print status line 2, open channel 2, print bridge
- $5DD3 CALL $203C    ; number, and clear various state variables.
- $5DD6 LD A,$02      ;
- $5DD8 CALL $1601    ;
- $5DDB CALL $64BC    ;
- $5DDE LD A,$04      ;
- $5DE0 LD ($5EEE),A  ;
- $5DE3 LD A,$00      ;
- $5DE5 LD ($5F6C),A  ;
- $5DE8 LD ($5F6F),A  ;
- $5DEB LD ($5F7D),A  ;
- $5DEE LD ($5F69),A  ; }
+ $5DD0 LD BC,$001E   ; Calculate length of status line 2
+ $5DD3 CALL $203C    ; Print status line 2
+ $5DD6 LD A,$02      ; Prepare to open channel 2
+ $5DD8 CALL $1601    ; Open channel 2 (lower screen area)
+ $5DDB CALL $64BC    ; Print current bridge number
+ $5DDE LD A,$04      ; Initialize terrain fragment counter to $04
+ $5DE0 LD ($5EEE),A  ; Store terrain fragment counter
+ $5DE3 LD A,$00      ; Clear accumulator for initializing multiple state
+                     ; variables
+ $5DE5 LD ($5F6C),A  ; Clear bridge section counter (tracks position within
+                     ; current bridge)
+ $5DE8 LD ($5F6F),A  ; Clear unused state variable
+ $5DEB LD ($5F7D),A  ; Clear terrain position (will be set to $FF later)
+ $5DEE LD ($5F69),A  ; Clear plane sprite bank (selects which plane sprite to
+                     ; display)
 @isub=LD A,FUEL_LEVEL_FULL
- $5DF1 LD A,$FF      ; {Set fuel level to full.
- $5DF3 LD ($5F66),A  ; }
- $5DF6 LD BC,$0010   ; {Set initial player Y position to $0010 and initialize
- $5DF9 LD ($5F70),BC ; current bridge.
- $5DFD CALL $68E9    ; }
- $5E00 LD A,$78      ; {Set player X position to $78 (center of screen) and
- $5E02 LD ($5F72),A  ; initialize viewport objects list.
- $5E05 LD HL,$5F00   ;
- $5E08 LD ($5F60),HL ; }
+ $5DF1 LD A,$FF      ; Set fuel level to full ($80)
+ $5DF3 LD ($5F66),A  ; Store fuel level
+ $5DF6 LD BC,$0010   ; Set initial Y position to $0010 (vertical position on
+                     ; screen)
+ $5DF9 LD ($5F70),BC ; Store Y position
+ $5DFD CALL $68E9    ; Initialize current bridge data structures
+ $5E00 LD A,$78      ; Set X position to $78 (horizontal center of screen)
+ $5E02 LD ($5F72),A  ; Store X position
+ $5E05 LD HL,$5F00   ; Point to viewport objects list (tracks active game
+                     ; objects)
+ $5E08 LD ($5F60),HL ; Store viewport objects pointer
 @isub=LD (HL),SET_MARKER_END_OF_SET
- $5E0B LD (HL),$FF   ; {Initialize exploding fragments list (empty).
- $5E0D LD HL,$5F2E   ;
- $5E10 LD ($5F62),HL ; }
- $5E13 LD (HL),$FF   ; {Print lives display and open channel 1.
- $5E15 LD BC,$0000   ;
- $5E18 CALL $923E    ;
- $5E1B LD A,$01      ;
- $5E1D CALL $1601    ; }
+ $5E0B LD (HL),$FF   ; Mark viewport objects list as empty (end-of-set marker)
+ $5E0D LD HL,$5F2E   ; Point to exploding fragments list (tracks explosion
+                     ; animations)
+ $5E10 LD ($5F62),HL ; Store exploding fragments pointer
+ $5E13 LD (HL),$FF   ; Mark exploding fragments list as empty ($FF terminator)
+ $5E15 LD BC,$0000   ; Set BC to $0000 for print_lives call
+ $5E18 CALL $923E    ; Display lives remaining for current player
+ $5E1B LD A,$01      ; Prepare to open channel 1
+ $5E1D CALL $1601    ; Open channel 1 for score display
 @isub=LD A,EXT_ATTR_AT
- $5E20 LD A,$16      ; {AT 1,5
- $5E22 RST $10       ;
- $5E23 LD A,$01      ;
- $5E25 RST $10       ;
- $5E26 LD A,$05      ;
- $5E28 RST $10       ; }
+ $5E20 LD A,$16      ; Load AT control code (position cursor)
+ $5E22 RST $10       ; Print AT control code
+ $5E23 LD A,$01      ; Row 1 for AT command
+ $5E25 RST $10       ; Print row parameter
+ $5E26 LD A,$05      ; Column 5 for AT command
+ $5E28 RST $10       ; Print column parameter
 @isub=LD A,EXT_ATTR_INK
- $5E29 LD A,$10      ; {INK YELLOW
- $5E2B RST $10       ;
+ $5E29 LD A,$10      ; Load INK control code (set text color)
+ $5E2B RST $10       ; Print INK control code
 @isub=LD A,COLOR_YELLOW
- $5E2C LD A,$06      ;
- $5E2E RST $10       ; }
- $5E2F LD DE,$90BC   ; {Print player 1 score.
+ $5E2C LD A,$06      ; Set color to yellow
+ $5E2E RST $10       ; Print color parameter
+ $5E2F LD DE,$90BC   ; Point to player 1 score data
 @isub=LD BC,state_score_player_2_low - state_score_player_1_low
- $5E32 LD BC,$0006   ;
- $5E35 CALL $203C    ; }
- $5E38 LD A,$02      ; {Open channel 2, print status line 4, and display game
- $5E3A CALL $1601    ; mode digit.
- $5E3D LD DE,$805A   ;
+ $5E32 LD BC,$0006   ; Calculate length of score data
+ $5E35 CALL $203C    ; Print player 1 score
+ $5E38 LD A,$02      ; Prepare to open channel 2
+ $5E3A CALL $1601    ; Open channel 2 for status display
+ $5E3D LD DE,$805A   ; Point to status line 4 text
 @isub=LD BC,data_unused_805F - status_line_4
- $5E40 LD BC,$0005   ;
- $5E43 CALL $203C    ;
- $5E46 LD A,($923A)  ; }
- $5E49 ADD A,$31     ; {Open channel 1 and set terrain position to $FF.
- $5E4B RST $10       ;
- $5E4C LD A,$01      ;
- $5E4E CALL $1601    ; }
- $5E51 LD A,$FF      ; {Set terrain profile number to $02 and open channel 2.
- $5E53 LD ($5F7D),A  ;
- $5E56 LD A,$02      ; }
- $5E58 LD ($5F77),A  ; {Initialize gameplay state (level fragment, gameplay
- $5E5B CALL $1601    ; mode, bridge destroyed flag to $01).
- $5E5E LD A,$01      ;
- $5E60 LD ($5F76),A  ;
- $5E63 LD ($5F68),A  ;
- $5E66 LD ($5F6D),A  ;
- $5E69 LD A,$68      ;
- $5E6B LD ($5C08),A  ; }
- $5E6E LD A,$00      ; {Set last key to $68 and clear control state.
- $5E70 LD ($6BB0),A  ;
- $5E73 LD ($5EF2),A  ; }
+ $5E40 LD BC,$0005   ; Calculate length of status line 4
+ $5E43 CALL $203C    ; Print status line 4
+ $5E46 LD A,($923A)  ; Load current game mode (1 or 2 player)
+ $5E49 ADD A,$31     ; Convert to ASCII digit (add $31 to convert 0-9 to
+                     ; '0'-'9')
+ $5E4B RST $10       ; Print game mode digit
+ $5E4C LD A,$01      ; Prepare to open channel 1
+ $5E4E CALL $1601    ; Open channel 1
+ $5E51 LD A,$FF      ; Set terrain position to $FF (forces terrain
+                     ; regeneration)
+ $5E53 LD ($5F7D),A  ; Store terrain position
+ $5E56 LD A,$02      ; Set terrain profile number to $02 (selects terrain
+                     ; pattern)
+ $5E58 LD ($5F77),A  ; Store terrain profile number
+ $5E5B CALL $1601    ; Open channel 2
+ $5E5E LD A,$01      ; Initialize level fragment number to $01 (first fragment
+                     ; of level)
+ $5E60 LD ($5F76),A  ; Store level fragment number
+ $5E63 LD ($5F68),A  ; Set gameplay mode to $01 (normal gameplay)
+ $5E66 LD ($5F6D),A  ; Set bridge destroyed flag to $01 (bridge intact)
+ $5E69 LD A,$68      ; Set last key to $68 (dummy key value)
+ $5E6B LD ($5C08),A  ; Store last key pressed
+ $5E6E LD A,$00      ; Clear control state (no buttons pressed)
+ $5E70 LD ($6BB0),A  ; Store control state
+ $5E73 LD ($5EF2),A  ; Clear tank shell state (no tank shell active)
 @isub=LD A,SPEED_FAST
- $5E76 LD A,$04      ; {Set speed to SPEED_FAST.
- $5E78 LD ($5F64),A  ; }
+ $5E76 LD A,$04      ; Set speed to SPEED_FAST ($04) for level scroll-in
+ $5E78 LD ($5F64),A  ; Store speed
 @ignoreua=$4C83
- $5E7B LD BC,$4C83   ; {Initialize terrain element 23 to $4C83.
- $5E7E LD ($5F78),BC ; }
- $5E82 CALL $91E8    ; {Print player 2 score area and initialize current
- $5E85 CALL $68E9    ; bridge.
- $5E88 LD B,$28      ; }
-*$5E8A PUSH BC       ; {Scroll in the level (loop 40 times at fast speed).
- $5E8B LD HL,$5EEF   ;
- $5E8E INC (HL)      ;
- $5E8F CALL $60A5    ;
- $5E92 CALL $708E    ;
- $5E95 CALL $66D0    ;
+ $5E7B LD BC,$4C83   ; Initialize terrain element 23 to $4C83
+ $5E7E LD ($5F78),BC ; Store terrain element 23
+ $5E82 CALL $91E8    ; Print player 2 score area
+ $5E85 CALL $68E9    ; Initialize current bridge data
+ $5E88 LD B,$28      ; Set loop counter to $28 (40 iterations for scroll-in)
+*$5E8A PUSH BC       ; Save loop counter
+ $5E8B LD HL,$5EEF   ; Point to metronome counter
+ $5E8E INC (HL)      ; Increment metronome (advances game timing)
+ $5E8F CALL $60A5    ; Render player plane and terrain for current frame
+ $5E92 CALL $708E    ; Update and render viewport objects (enemies, fuel, etc.)
+ $5E95 CALL $66D0    ; Advance game state (scroll terrain, update positions)
 @isub=LD A,SPEED_FAST
- $5E98 LD A,$04      ;
- $5E9A LD ($5F64),A  ;
- $5E9D POP BC        ;
- $5E9E DJNZ $5E8A    ;
- $5EA0 LD A,$00      ;
- $5EA2 LD ($6BB0),A  ; }
- $5EA5 LD ($5F68),A  ; {Clear control state and gameplay mode, then render
- $5EA8 CALL $6682    ; player plane.
- $5EAB LD A,$0D      ; }
- $5EAD LD ($5C08),A  ; {Set last key to Enter and decrement current player's
- $5EB0 LD A,($923D)  ; lives.
+ $5E98 LD A,$04      ; Set speed to SPEED_FAST (maintain fast scroll during
+                     ; intro)
+ $5E9A LD ($5F64),A  ; Store speed
+ $5E9D POP BC        ; Restore loop counter
+ $5E9E DJNZ $5E8A    ; Repeat scroll-in loop until counter reaches zero
+ $5EA0 LD A,$00      ; Clear control state (reset controls after scroll-in)
+ $5EA2 LD ($6BB0),A  ; Store control state
+ $5EA5 LD ($5F68),A  ; Set gameplay mode to $00 (ready for player control)
+ $5EA8 CALL $6682    ; Render player plane in starting position
+ $5EAB LD A,$0D      ; Set last key to $0D (Enter key - wait for start)
+ $5EAD LD ($5C08),A  ; Store last key
+ $5EB0 LD A,($923D)  ; Load current player number
 @isub=CP PLAYER_2
- $5EB3 CP $02        ;
- $5EB5 JP Z,$5D9F    ;
- $5EB8 LD HL,$923B   ; }
- $5EBB DEC (HL)      ; {Print updated lives display and wait for
+ $5EB3 CP $02        ; Check if player 2
+ $5EB5 JP Z,$5D9F    ; If player 2, jump to decrease player 2 lives
+ $5EB8 LD HL,$923B   ; Point to player 1 lives counter
+ $5EBB DEC (HL)      ; Decrement lives (player lost a life)
 ; This entry point is used by the routine at #R$5D9F.
-*$5EBC CALL $923E    ; keyboard/joystick input.
-*$5EBF CALL $02BF    ;
- $5EC2 EI            ;
- $5EC3 LD A,($5C08)  ;
- $5EC6 CP $0D        ;
- $5EC8 JR NZ,$5EDB   ;
- $5ECA LD A,($5F67)  ;
+*$5EBC CALL $923E    ; Display updated lives count
+*$5EBF CALL $02BF    ; Scan keyboard for input
+ $5EC2 EI            ; Enable interrupts
+ $5EC3 LD A,($5C08)  ; Load last key pressed
+ $5EC6 CP $0D        ; Check if Enter key ($0D)
+ $5EC8 JR NZ,$5EDB   ; If not Enter, start game
+ $5ECA LD A,($5F67)  ; Load input interface type (keyboard/joystick)
 @isub=CP INPUT_INTERFACE_KEMPSTON
- $5ECD CP $02        ;
- $5ECF JP NZ,$5EBF   ;
- $5ED2 LD A,$FE      ;
- $5ED4 IN A,($1F)    ; }
- $5ED6 CP $00        ; {Clear bridge destruction state, set speed to normal,
- $5ED8 JP Z,$5EBF    ; and jump to main game loop.
-*$5EDB LD A,$00      ;
- $5EDD LD ($5F6D),A  ; }
+ $5ECD CP $02        ; Check if Kempston joystick
+ $5ECF JP NZ,$5EBF   ; If not Kempston, wait for key press
+ $5ED2 LD A,$FE      ; Set port address for Kempston joystick read
+ $5ED4 IN A,($1F)    ; Read Kempston joystick port
+ $5ED6 CP $00        ; Check if joystick is centered (no input)
+ $5ED8 JP Z,$5EBF    ; If centered, keep waiting for input
+*$5EDB LD A,$00      ; Clear bridge destroyed flag (bridge is intact at start)
+ $5EDD LD ($5F6D),A  ; Store bridge destroyed flag
  $5EE0 LD ($5F6E),A  ;
  $5EE3 LD A,$02      ;
  $5EE5 LD ($5F64),A  ;

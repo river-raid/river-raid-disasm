@@ -332,50 +332,145 @@ c $5D9F Decrease player 2 lives
 @ $5DA6 label=play
 c $5DA6 Initialize and start gameplay mode
 D $5DA6 This routine initializes the game screen and state for gameplay mode, then enters the main game loop. It is called when starting a new game or restarting after losing a life.
-  $5DA6 Initialize island rendering state (line index $10, activation mask $1F) and restore stack pointer.
-  $5DB4,11 Clear screen with blue background and initialize UDGs.
+  $5DA6 Initialize island line index to $10 (starting line for island rendering)
+  $5DA8 Store island line index
+  $5DAB Initialize activation mask to $1F (controls which objects are active)
+  $5DAD Store activation mask
+  $5DB0 Restore stack pointer from saved location
+  $5DB4 Set color attributes: PAPER BLUE, INK GREEN
 @ $5DB4 isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
-C $5DB4,2 PAPER BLUE; INK GREEN
-  $5DBC Print status line 1.
+  $5DB6 Clear screen with the specified colors
+  $5DB9 Initialize user-defined graphics (UDGs)
+  $5DBC Point to status line 1 text
+  $5DBF Calculate length of status line 1
 @ $5DBF isub=LD BC,status_line_2 - status_line_1
-  $5DC5 Initialize metronome to $01
-  $5DCA Open channel 1.
-  $5DD0 Print status line 2, open channel 2, print bridge number, and clear various state variables.
+  $5DC2 Print status line 1
+  $5DC5 Initialize metronome counter to $01 (used for timing game events)
+  $5DC7 Store metronome value
+  $5DCA Open channel 1 (upper screen area)
+  $5DCD Point to status line 2 text
+  $5DD0 Calculate length of status line 2
 @ $5DD0 isub=LD BC,status_line_3 - status_line_2
-  $5DF1 Set fuel level to full.
+  $5DD3 Print status line 2
+  $5DD6 Prepare to open channel 2
+  $5DD8 Open channel 2 (lower screen area)
+  $5DDB Print current bridge number
+  $5DDE Initialize terrain fragment counter to $04
+  $5DE0 Store terrain fragment counter
+  $5DE3 Clear accumulator for initializing multiple state variables
+  $5DE5 Clear bridge section counter (tracks position within current bridge)
+  $5DE8 Clear unused state variable
+  $5DEB Clear terrain position (will be set to $FF later)
+  $5DEE Clear plane sprite bank (selects which plane sprite to display)
+  $5DF1 Set fuel level to full ($80)
 @ $5DF1 isub=LD A,FUEL_LEVEL_FULL
-  $5DF6 Set initial player Y position to $0010 and initialize current bridge.
-  $5E00 Set player X position to $78 (center of screen) and initialize viewport objects list.
-  $5E0B Initialize exploding fragments list (empty).
+  $5DF3 Store fuel level
+  $5DF6 Set initial Y position to $0010 (vertical position on screen)
+  $5DF9 Store Y position
+  $5DFD Initialize current bridge data structures
+  $5E00 Set X position to $78 (horizontal center of screen)
+  $5E02 Store X position
+  $5E05 Point to viewport objects list (tracks active game objects)
+  $5E08 Store viewport objects pointer
+  $5E0B Mark viewport objects list as empty (end-of-set marker)
 @ $5E0B isub=LD (HL),SET_MARKER_END_OF_SET
-  $5E13 Print lives display and open channel 1.
-  $5E20,15 Position cursor at row 1, column 5 and set ink color to yellow.
+  $5E0D Point to exploding fragments list (tracks explosion animations)
+  $5E10 Store exploding fragments pointer
+  $5E13 Mark exploding fragments list as empty ($FF terminator)
+  $5E15 Set BC to $0000 for print_lives call
+  $5E18 Display lives remaining for current player
+  $5E1B Prepare to open channel 1
+  $5E1D Open channel 1 for score display
+  $5E20 Load AT control code (position cursor)
 @ $5E20 isub=LD A,EXT_ATTR_AT
-  $5E20 AT 1,5
+  $5E22 Print AT control code
+  $5E23 Row 1 for AT command
+  $5E25 Print row parameter
+  $5E26 Column 5 for AT command
+  $5E28 Print column parameter
+  $5E29 Load INK control code (set text color)
 @ $5E29 isub=LD A,EXT_ATTR_INK
-  $5E29 INK YELLOW
+  $5E2B Print INK control code
+  $5E2C Set color to yellow
 @ $5E2C isub=LD A,COLOR_YELLOW
-  $5E2F Print player 1 score.
+  $5E2E Print color parameter
+  $5E2F Point to player 1 score data
+  $5E32 Calculate length of score data
 @ $5E32 isub=LD BC,state_score_player_2_low - state_score_player_1_low
-  $5E38 Open channel 2, print status line 4, and display game mode digit.
+  $5E35 Print player 1 score
+  $5E38 Prepare to open channel 2
+  $5E3A Open channel 2 for status display
+  $5E3D Point to status line 4 text
+  $5E40 Calculate length of status line 4
 @ $5E40 isub=LD BC,data_unused_805F - status_line_4
-  $5E49 Open channel 1 and set terrain position to $FF.
-  $5E51 Set terrain profile number to $02 and open channel 2.
-  $5E58 Initialize gameplay state (level fragment, gameplay mode, bridge destroyed flag to $01).
-  $5E6E Set last key to $68 and clear control state.
-  $5E76 Set speed to SPEED_FAST.
+  $5E43 Print status line 4
+  $5E46 Load current game mode (1 or 2 player)
+  $5E49 Convert to ASCII digit (add $31 to convert 0-9 to '0'-'9')
+  $5E4B Print game mode digit
+  $5E4C Prepare to open channel 1
+  $5E4E Open channel 1
+  $5E51 Set terrain position to $FF (forces terrain regeneration)
+  $5E53 Store terrain position
+  $5E56 Set terrain profile number to $02 (selects terrain pattern)
+  $5E58 Store terrain profile number
+  $5E5B Open channel 2
+  $5E5E Initialize level fragment number to $01 (first fragment of level)
+  $5E60 Store level fragment number
+  $5E63 Set gameplay mode to $01 (normal gameplay)
+  $5E66 Set bridge destroyed flag to $01 (bridge intact)
+  $5E69 Set last key to $68 (dummy key value)
+  $5E6B Store last key pressed
+  $5E6E Clear control state (no buttons pressed)
+  $5E70 Store control state
+  $5E73 Clear tank shell state (no tank shell active)
+  $5E76 Set speed to SPEED_FAST ($04) for level scroll-in
 @ $5E76 isub=LD A,SPEED_FAST
+  $5E78 Store speed
 @ $5E7B ignoreua=$4C83
-  $5E7B Initialize terrain element 23 to $4C83.
-  $5E82 Print player 2 score area and initialize current bridge.
-  $5E8A Scroll in the level (loop 40 times at fast speed).
+  $5E7B Initialize terrain element 23 to $4C83
+  $5E7E Store terrain element 23
+  $5E82 Print player 2 score area
+  $5E85 Initialize current bridge data
+  $5E88 Set loop counter to $28 (40 iterations for scroll-in)
+  $5E8A Save loop counter
+  $5E8B Point to metronome counter
+  $5E8E Increment metronome (advances game timing)
+  $5E8F Render player plane and terrain for current frame
+  $5E92 Update and render viewport objects (enemies, fuel, etc.)
+  $5E95 Advance game state (scroll terrain, update positions)
+  $5E98 Set speed to SPEED_FAST (maintain fast scroll during intro)
 @ $5E98 isub=LD A,SPEED_FAST
-  $5EA5 Clear control state and gameplay mode, then render player plane.
-  $5EAD Set last key to Enter and decrement current player's lives.
+  $5E9A Store speed
+  $5E9D Restore loop counter
+  $5E9E Repeat scroll-in loop until counter reaches zero
+  $5EA0 Clear control state (reset controls after scroll-in)
+  $5EA2 Store control state
+  $5EA5 Set gameplay mode to $00 (ready for player control)
+  $5EA8 Render player plane in starting position
+  $5EAB Set last key to $0D (Enter key - wait for start)
+  $5EAD Store last key
+  $5EB0 Load current player number
+  $5EB3 Check if player 2
 @ $5EB3 isub=CP PLAYER_2
-  $5EBB Print updated lives display and wait for keyboard/joystick input.
+  $5EB5 If player 2, jump to decrease player 2 lives
+  $5EB8 Point to player 1 lives counter
+  $5EBB Decrement lives (player lost a life)
+  $5EBC Display updated lives count
+  $5EBF Scan keyboard for input
+  $5EC2 Enable interrupts
+  $5EC3 Load last key pressed
+  $5EC6 Check if Enter key ($0D)
+  $5EC8 If not Enter, start game
+  $5ECA Load input interface type (keyboard/joystick)
+  $5ECD Check if Kempston joystick
 @ $5ECD isub=CP INPUT_INTERFACE_KEMPSTON
-  $5ED6,10 Clear bridge destruction state, set speed to normal, and jump to main game loop.
+  $5ECF If not Kempston, wait for key press
+  $5ED2 Set port address for Kempston joystick read
+  $5ED4 Read Kempston joystick port
+  $5ED6 Check if joystick is centered (no input)
+  $5ED8 If centered, keep waiting for input
+  $5EDB Clear bridge destroyed flag (bridge is intact at start)
+  $5EDD,3 Store bridge destroyed flag
 @ $5EEE label=state_terrain_fragment_counter
 g $5EEE Counter for terrain fragment rendering (incremented each time a fragment is rendered).
 @ $5EEF label=state_metronome
