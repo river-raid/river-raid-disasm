@@ -2130,84 +2130,102 @@ c$615E LD BC,($5EF3) ; Load missile coordinates (B=Y, C=X) from #R$5EF3.
 ; .
 ;
 ; Checks if the player's missile has collided with a bridge or any viewport
-; object. First checks bridge collision, then iterates through viewport objects
-; via #R$62E8.
+; object.
+; .
+; .
+; .
+; First checks if a bridge exists (#R$5F6E != 0) and whether the missile Y
+; coordinate is within the bridge's vertical bounds (bridge_y - $16 to
+; bridge_y). If the missile hits the bridge, awards POINTS_BRIDGE, triggers 6
+; explosion fragments in a 2x3 grid pattern, increments the player's bridge
+; counter, and clears the bridge.
+; .
+; .
+; .
+; If no bridge collision, falls through to #R$62E8 to check collision against
+; viewport objects.
 @label=handle_missile_collision
-c$61BB LD BC,($5EF3) ;
- $61BF LD A,($5F6E)  ;
- $61C2 CP $00        ;
- $61C4 JP Z,$62E8    ;
- $61C7 LD D,A        ;
- $61C8 SUB B         ;
- $61C9 JP M,$62E8    ;
- $61CC LD A,D        ;
- $61CD SUB $16       ;
- $61CF SUB B         ;
- $61D0 JP P,$62E8    ;
+c$61BB LD BC,($5EF3) ; Load missile coordinates (B=Y, C=X) from #R$5EF3.
+ $61BF LD A,($5F6E)  ; Load bridge Y position from #R$5F6E.
+ $61C2 CP $00        ; Check if a bridge exists (Y position != 0).
+ $61C4 JP Z,$62E8    ; If no bridge, jump to #R$62E8 to check viewport objects.
+ $61C7 LD D,A        ; Save bridge Y position in D.
+ $61C8 SUB B         ; Calculate bridge_y - missile_y.
+ $61C9 JP M,$62E8    ; If negative (missile above bridge), no collision - check
+                     ; objects.
+ $61CC LD A,D        ; Restore bridge Y position from D.
+ $61CD SUB $16       ; Subtract $16 (bridge height) from bridge Y.
+ $61CF SUB B         ; Calculate (bridge_y - $16) - missile_y.
+ $61D0 JP P,$62E8    ; If positive (missile below bridge), no collision - check
+                     ; objects.
 @isub=LD A,POINTS_BRIDGE
- $61D3 LD A,$50      ;
- $61D5 CALL $90E0    ;
- $61D8 LD A,$0F      ;
- $61DA LD ($5F5F),A  ;
- $61DD POP DE        ;
+ $61D3 LD A,$50      ; Bridge hit! Load POINTS_BRIDGE into A.
+ $61D5 CALL $90E0    ; Call #R$90E0 to add points to score.
+ $61D8 LD A,$0F      ; Load $0F into A (new activation mask after bridge
+                     ; destruction).
+ $61DA LD ($5F5F),A  ; Store new activation mask to #R$5F5F.
+ $61DD POP DE        ; {Clean up stack (4x POP).
  $61DE POP DE        ;
  $61DF POP DE        ;
- $61E0 POP BC        ;
- $61E1 LD A,D        ;
- $61E2 LD ($5EF6),A  ;
- $61E5 LD A,($5F6E)  ;
- $61E8 SUB $04       ;
- $61EA LD B,A        ;
- $61EB LD C,$70      ;
- $61ED LD D,$00      ;
- $61EF CALL $6E9C    ;
- $61F2 LD C,$80      ;
- $61F4 CALL $6E9C    ;
- $61F7 LD A,B        ;
- $61F8 SUB $08       ;
- $61FA LD B,A        ;
- $61FB CALL $6E9C    ;
- $61FE LD C,$70      ;
- $6200 CALL $6E9C    ;
- $6203 LD A,B        ;
- $6204 SUB $08       ;
- $6206 LD B,A        ;
- $6207 CALL $6E9C    ;
- $620A LD C,$80      ;
- $620C CALL $6E9C    ;
- $620F LD A,($5F6C)  ;
- $6212 CP $02        ;
- $6214 LD HL,$4000   ;
- $6217 CALL Z,$6BA4  ;
- $621A LD A,($5F6C)  ;
- $621D CP $02        ;
+ $61E0 POP BC        ; }
+ $61E1 LD A,D        ; Copy saved value (D) into A.
+ $61E2 LD ($5EF6),A  ; Store to #R$5EF6.
+ $61E5 LD A,($5F6E)  ; Load bridge Y position from #R$5F6E.
+ $61E8 SUB $04       ; Subtract 4 to position first explosion row.
+ $61EA LD B,A        ; Store adjusted Y in B.
+ $61EB LD C,$70      ; Set X = $70 for left column of explosions.
+ $61ED LD D,$00      ; Set D = 0 (explosion frame).
+ $61EF CALL $6E9C    ; Call #R$6E9C - explosion fragment 1 (top-left).
+ $61F2 LD C,$80      ; Set X = $80 for right column.
+ $61F4 CALL $6E9C    ; Call #R$6E9C - explosion fragment 2 (top-right).
+ $61F7 LD A,B        ; {Move Y up by 8 pixels for middle row.
+ $61F8 SUB $08       ; }
+ $61FA LD B,A        ; Store new Y in B.
+ $61FB CALL $6E9C    ; Call #R$6E9C - explosion fragment 3 (middle-right, X
+                     ; still $80).
+ $61FE LD C,$70      ; Set X = $70 for left column.
+ $6200 CALL $6E9C    ; Call #R$6E9C - explosion fragment 4 (middle-left).
+ $6203 LD A,B        ; {Move Y up by 8 pixels for bottom row.
+ $6204 SUB $08       ; }
+ $6206 LD B,A        ; Store new Y in B.
+ $6207 CALL $6E9C    ; Call #R$6E9C - explosion fragment 5 (bottom-left, X
+                     ; still $70).
+ $620A LD C,$80      ; Set X = $80 for right column.
+ $620C CALL $6E9C    ; Call #R$6E9C - explosion fragment 6 (bottom-right).
+ $620F LD A,($5F6C)  ; Load bridge section from #R$5F6C.
+ $6212 CP $02        ; Check if special bridge section ($02).
+ $6214 LD HL,$4000   ; Load #R$4000 into HL.
+ $6217 CALL Z,$6BA4  ; If special section, call #R$6BA4 to handle terrain.
+ $621A LD A,($5F6C)  ; Load bridge section from #R$5F6C again.
+ $621D CP $02        ; Check if special bridge section ($02).
 @keep
- $621F LD HL,$4100   ;
- $6222 CALL Z,$6BA4  ;
- $6225 LD A,$00      ;
- $6227 LD ($5F6E),A  ;
- $622A LD A,$01      ;
- $622C LD ($5F6D),A  ;
- $622F LD BC,($5F8D) ;
- $6233 LD ($5EF3),BC ;
- $6237 LD A,($923D)  ;
+@ignoreua=$4100
+ $621F LD HL,$4100   ; Load screen address $4100 into HL.
+ $6222 CALL Z,$6BA4  ; If special section, call #R$6BA4 to handle terrain.
+ $6225 LD A,$00      ; Load 0 into A.
+ $6227 LD ($5F6E),A  ; Clear bridge Y position (#R$5F6E) - bridge destroyed.
+ $622A LD A,$01      ; Load 1 into A.
+ $622C LD ($5F6D),A  ; Set bridge destroyed flag (#R$5F6D).
+ $622F LD BC,($5F8D) ; Load saved missile coordinates from #R$5F8D.
+ $6233 LD ($5EF3),BC ; Restore missile coordinates to #R$5EF3.
+ $6237 LD A,($923D)  ; Load current player from #R$923D.
 @isub=CP PLAYER_2
- $623A CP $02        ;
- $623C JP Z,$6249    ;
+ $623A CP $02        ; Check if player 2.
+ $623C JP Z,$6249    ; If player 2, jump to #R$6249.
 @label=next_bridge_player_1
- $623F LD HL,$5F6A   ;
- $6242 INC (HL)      ;
- $6243 CALL $64BC    ;
- $6246 JP $6794      ;
+ $623F LD HL,$5F6A   ; Load address of #R$5F6A (player 1 bridge counter).
+ $6242 INC (HL)      ; Increment player 1's bridge count.
+ $6243 CALL $64BC    ; Call #R$64BC to print updated bridge number.
+ $6246 JP $6794      ; Jump to #R$6794 for post-collision processing.
 
-; Routine at 6249
+; Increment player 2's bridge counter
 ;
 ; Used by the routine at #R$61BB.
 @label=next_bridge_player_2
-c$6249 LD HL,$5F6B   ;
- $624C INC (HL)      ;
- $624D CALL $64BC    ;
- $6250 JP $6794      ;
+c$6249 LD HL,$5F6B   ; Load address of #R$5F6B (player 2 bridge counter).
+ $624C INC (HL)      ; Increment player 2's bridge count.
+ $624D CALL $64BC    ; Call #R$64BC to print updated bridge number.
+ $6250 JP $6794      ; Jump to #R$6794 for post-collision processing.
 
 ; Unused
 u$6253 DEFB $3E,$00,$C9

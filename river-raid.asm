@@ -2010,81 +2010,88 @@ handle_collision_mode_fighter:
 ;
 ; Used by the routines at collision_dispatcher and fuel.
 ;
-; Checks if the player's missile has collided with a bridge or any viewport object. First checks bridge collision, then
-; iterates through viewport objects via check_missile_vs_objects.
+; Checks if the player's missile has collided with a bridge or any viewport object.
+;
+; First checks if a bridge exists (state_bridge_y_position != 0) and whether the missile Y coordinate is within the
+; bridge's vertical bounds (bridge_y - $16 to bridge_y). If the missile hits the bridge, awards POINTS_BRIDGE, triggers
+; 6 explosion fragments in a 2x3 grid pattern, increments the player's bridge counter, and clears the bridge.
+;
+; If no bridge collision, falls through to check_missile_vs_objects to check collision against viewport objects.
 handle_missile_collision:
-  LD BC,(state_plane_missile_coordinates)
-  LD A,(state_bridge_y_position)
-  CP $00
-  JP Z,check_missile_vs_objects
-  LD D,A
-  SUB B
-  JP M,check_missile_vs_objects
-  LD A,D
-  SUB $16
-  SUB B
-  JP P,check_missile_vs_objects
-  LD A,POINTS_BRIDGE
-  CALL add_points
-  LD A,$0F
-  LD (state_activation_mask),A
-  POP DE
-  POP DE
-  POP DE
-  POP BC
-  LD A,D
-  LD (L5EF6),A
-  LD A,(state_bridge_y_position)
-  SUB $04
-  LD B,A
-  LD C,$70
-  LD D,$00
-  CALL explode_fragment
-  LD C,$80
-  CALL explode_fragment
-  LD A,B
-  SUB $08
-  LD B,A
-  CALL explode_fragment
-  LD C,$70
-  CALL explode_fragment
-  LD A,B
-  SUB $08
-  LD B,A
-  CALL explode_fragment
-  LD C,$80
-  CALL explode_fragment
-  LD A,(state_bridge_section)
-  CP $02
-  LD HL,screen_pixels
-  CALL Z,handle_special_terrain_fragment_0
-  LD A,(state_bridge_section)
-  CP $02
-  LD HL,$4100
-  CALL Z,handle_special_terrain_fragment_0
-  LD A,$00
-  LD (state_bridge_y_position),A
-  LD A,$01
-  LD (state_bridge_destroyed),A
-  LD BC,(L5F8D)
-  LD (state_plane_missile_coordinates),BC
-  LD A,(state_player)
-  CP PLAYER_2
-  JP Z,next_bridge_player_2
+  LD BC,(state_plane_missile_coordinates) ; Load missile coordinates (B=Y, C=X) from state_plane_missile_coordinates.
+  LD A,(state_bridge_y_position)       ; Load bridge Y position from state_bridge_y_position.
+  CP $00                               ; Check if a bridge exists (Y position != 0).
+  JP Z,check_missile_vs_objects        ; If no bridge, jump to check_missile_vs_objects to check viewport objects.
+  LD D,A                               ; Save bridge Y position in D.
+  SUB B                                ; Calculate bridge_y - missile_y.
+  JP M,check_missile_vs_objects        ; If negative (missile above bridge), no collision - check objects.
+  LD A,D                               ; Restore bridge Y position from D.
+  SUB $16                              ; Subtract $16 (bridge height) from bridge Y.
+  SUB B                                ; Calculate (bridge_y - $16) - missile_y.
+  JP P,check_missile_vs_objects        ; If positive (missile below bridge), no collision - check objects.
+  LD A,POINTS_BRIDGE                   ; Bridge hit! Load POINTS_BRIDGE into A.
+  CALL add_points                      ; Call add_points to add points to score.
+  LD A,$0F                             ; Load $0F into A (new activation mask after bridge destruction).
+  LD (state_activation_mask),A         ; Store new activation mask to state_activation_mask.
+  POP DE                               ; Clean up stack (4x POP).
+  POP DE                               ;
+  POP DE                               ;
+  POP BC                               ;
+  LD A,D                               ; Copy saved value (D) into A.
+  LD (L5EF6),A                         ; Store to L5EF6.
+  LD A,(state_bridge_y_position)       ; Load bridge Y position from state_bridge_y_position.
+  SUB $04                              ; Subtract 4 to position first explosion row.
+  LD B,A                               ; Store adjusted Y in B.
+  LD C,$70                             ; Set X = $70 for left column of explosions.
+  LD D,$00                             ; Set D = 0 (explosion frame).
+  CALL explode_fragment                ; Call explode_fragment - explosion fragment 1 (top-left).
+  LD C,$80                             ; Set X = $80 for right column.
+  CALL explode_fragment                ; Call explode_fragment - explosion fragment 2 (top-right).
+  LD A,B                               ; Move Y up by 8 pixels for middle row.
+  SUB $08                              ;
+  LD B,A                               ; Store new Y in B.
+  CALL explode_fragment                ; Call explode_fragment - explosion fragment 3 (middle-right, X still $80).
+  LD C,$70                             ; Set X = $70 for left column.
+  CALL explode_fragment                ; Call explode_fragment - explosion fragment 4 (middle-left).
+  LD A,B                               ; Move Y up by 8 pixels for bottom row.
+  SUB $08                              ;
+  LD B,A                               ; Store new Y in B.
+  CALL explode_fragment                ; Call explode_fragment - explosion fragment 5 (bottom-left, X still $70).
+  LD C,$80                             ; Set X = $80 for right column.
+  CALL explode_fragment                ; Call explode_fragment - explosion fragment 6 (bottom-right).
+  LD A,(state_bridge_section)          ; Load bridge section from state_bridge_section.
+  CP $02                               ; Check if special bridge section ($02).
+  LD HL,screen_pixels                  ; Load screen_pixels into HL.
+  CALL Z,handle_special_terrain_fragment_0 ; If special section, call handle_special_terrain_fragment_0 to handle
+                                           ; terrain.
+  LD A,(state_bridge_section)          ; Load bridge section from state_bridge_section again.
+  CP $02                               ; Check if special bridge section ($02).
+  LD HL,$4100                          ; Load screen address $4100 into HL.
+  CALL Z,handle_special_terrain_fragment_0 ; If special section, call handle_special_terrain_fragment_0 to handle
+                                           ; terrain.
+  LD A,$00                             ; Load 0 into A.
+  LD (state_bridge_y_position),A       ; Clear bridge Y position (state_bridge_y_position) - bridge destroyed.
+  LD A,$01                             ; Load 1 into A.
+  LD (state_bridge_destroyed),A        ; Set bridge destroyed flag (state_bridge_destroyed).
+  LD BC,(L5F8D)                        ; Load saved missile coordinates from L5F8D.
+  LD (state_plane_missile_coordinates),BC ; Restore missile coordinates to state_plane_missile_coordinates.
+  LD A,(state_player)                  ; Load current player from state_player.
+  CP PLAYER_2                          ; Check if player 2.
+  JP Z,next_bridge_player_2            ; If player 2, jump to next_bridge_player_2.
 next_bridge_player_1:
-  LD HL,state_bridge_player_1
-  INC (HL)
-  CALL print_bridge
-  JP L6794
+  LD HL,state_bridge_player_1          ; Load address of state_bridge_player_1 (player 1 bridge counter).
+  INC (HL)                             ; Increment player 1's bridge count.
+  CALL print_bridge                    ; Call print_bridge to print updated bridge number.
+  JP L6794                             ; Jump to L6794 for post-collision processing.
 
-; Routine at 6249
+; Increment player 2's bridge counter
 ;
 ; Used by the routine at handle_missile_collision.
 next_bridge_player_2:
-  LD HL,state_bridge_player_2
-  INC (HL)
-  CALL print_bridge
-  JP L6794
+  LD HL,state_bridge_player_2          ; Load address of state_bridge_player_2 (player 2 bridge counter).
+  INC (HL)                             ; Increment player 2's bridge count.
+  CALL print_bridge                    ; Call print_bridge to print updated bridge number.
+  JP L6794                             ; Jump to L6794 for post-collision processing.
 
 ; Unused
 L6253:

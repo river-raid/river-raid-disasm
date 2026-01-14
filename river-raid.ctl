@@ -804,16 +804,82 @@ N $615E On collision: removes the fighter from the viewport, triggers two explos
 @ $61B3 isub=LD A,POINTS_FIGHTER
   $61B3 Load POINTS_FIGHTER into A.
   $61B5 Call #R$90E0 to add points to score.
-  $61B8,3 Jump to #R$6794 for post-collision processing.
+  $61B8 Jump to #R$6794 for post-collision processing.
 @ $61BB label=handle_missile_collision
 c $61BB Handle COLLISION_MODE_MISSILE collision detection
-N $61BB Checks if the player's missile has collided with a bridge or any viewport object. First checks bridge collision, then iterates through viewport objects via #R$62E8.
+N $61BB Checks if the player's missile has collided with a bridge or any viewport object.
+N $61BB .
+N $61BB First checks if a bridge exists (#R$5F6E != 0) and whether the missile Y coordinate is within the bridge's vertical bounds (bridge_y - $16 to bridge_y). If the missile hits the bridge, awards POINTS_BRIDGE, triggers 6 explosion fragments in a 2x3 grid pattern, increments the player's bridge counter, and clears the bridge.
+N $61BB .
+N $61BB If no bridge collision, falls through to #R$62E8 to check collision against viewport objects.
+  $61BB Load missile coordinates (B=Y, C=X) from #R$5EF3.
+  $61BF Load bridge Y position from #R$5F6E.
+  $61C2 Check if a bridge exists (Y position != 0).
+  $61C4 If no bridge, jump to #R$62E8 to check viewport objects.
+  $61C7 Save bridge Y position in D.
+  $61C8 Calculate bridge_y - missile_y.
+  $61C9 If negative (missile above bridge), no collision - check objects.
+  $61CC Restore bridge Y position from D.
+  $61CD Subtract $16 (bridge height) from bridge Y.
+  $61CF Calculate (bridge_y - $16) - missile_y.
+  $61D0 If positive (missile below bridge), no collision - check objects.
 @ $61D3 isub=LD A,POINTS_BRIDGE
+  $61D3 Bridge hit! Load POINTS_BRIDGE into A.
+  $61D5 Call #R$90E0 to add points to score.
+  $61D8 Load $0F into A (new activation mask after bridge destruction).
+  $61DA Store new activation mask to #R$5F5F.
+  $61DD Clean up stack (4x POP).
+  $61E1 Copy saved value (D) into A.
+  $61E2 Store to #R$5EF6.
+  $61E5 Load bridge Y position from #R$5F6E.
+  $61E8 Subtract 4 to position first explosion row.
+  $61EA Store adjusted Y in B.
+  $61EB Set X = $70 for left column of explosions.
+  $61ED Set D = 0 (explosion frame).
+  $61EF Call #R$6E9C - explosion fragment 1 (top-left).
+  $61F2 Set X = $80 for right column.
+  $61F4 Call #R$6E9C - explosion fragment 2 (top-right).
+  $61F7 Move Y up by 8 pixels for middle row.
+  $61FA Store new Y in B.
+  $61FB Call #R$6E9C - explosion fragment 3 (middle-right, X still $80).
+  $61FE Set X = $70 for left column.
+  $6200 Call #R$6E9C - explosion fragment 4 (middle-left).
+  $6203 Move Y up by 8 pixels for bottom row.
+  $6206 Store new Y in B.
+  $6207 Call #R$6E9C - explosion fragment 5 (bottom-left, X still $70).
+  $620A Set X = $80 for right column.
+  $620C Call #R$6E9C - explosion fragment 6 (bottom-right).
+  $620F Load bridge section from #R$5F6C.
+  $6212 Check if special bridge section ($02).
+  $6214 Load #R$4000 into HL.
+  $6217 If special section, call #R$6BA4 to handle terrain.
+  $621A Load bridge section from #R$5F6C again.
+  $621D Check if special bridge section ($02).
 @ $621F keep
+@ $621F ignoreua=$4100
+  $621F Load screen address $4100 into HL.
+  $6222 If special section, call #R$6BA4 to handle terrain.
+  $6225 Load 0 into A.
+  $6227 Clear bridge Y position (#R$5F6E) - bridge destroyed.
+  $622A Load 1 into A.
+  $622C Set bridge destroyed flag (#R$5F6D).
+  $622F Load saved missile coordinates from #R$5F8D.
+  $6233 Restore missile coordinates to #R$5EF3.
+  $6237 Load current player from #R$923D.
 @ $623A isub=CP PLAYER_2
+  $623A Check if player 2.
+  $623C If player 2, jump to #R$6249.
 @ $623F label=next_bridge_player_1
+  $623F Load address of #R$5F6A (player 1 bridge counter).
+  $6242 Increment player 1's bridge count.
+  $6243 Call #R$64BC to print updated bridge number.
+  $6246 Jump to #R$6794 for post-collision processing.
 @ $6249 label=next_bridge_player_2
-c $6249
+c $6249 Increment player 2's bridge counter
+  $6249 Load address of #R$5F6B (player 2 bridge counter).
+  $624C Increment player 2's bridge count.
+  $624D Call #R$64BC to print updated bridge number.
+  $6250,3 Jump to #R$6794 for post-collision processing.
 u $6253
 @ $6256 label=fuel
 @ $6256 isub=LD A,GAMEPLAY_MODE_REFUEL
