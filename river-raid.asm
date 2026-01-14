@@ -173,7 +173,7 @@ GAMEPLAY_MODE_REFUEL    EQU $06
 COLLISION_MODE_NONE               EQU $00
 COLLISION_MODE_SKIP               EQU $01
 COLLISION_MODE_MISSILE            EQU $02
-COLLISION_MODE_ENEMY              EQU $03
+COLLISION_MODE_FIGHTER            EQU $03
 COLLISION_MODE_HELICOPTER_MISSILE EQU $04
 
 TANK_SHELL_INACTIVE EQU $00
@@ -1930,86 +1930,100 @@ collision_dispatcher:
   CP COLLISION_MODE_SKIP               ; Check if collision mode is SKIP ($01)
   JP Z,fuel                            ; If SKIP, jump to fuel (fuel/skip collision)
   CP COLLISION_MODE_MISSILE            ; Check if collision mode is MISSILE ($02)
-  JP Z,interact_with_something         ; If MISSILE, jump to interact_with_something to handle missile collision
-  CP COLLISION_MODE_ENEMY              ; Check if collision mode is ENEMY ($03)
-  JP Z,handle_collision_mode_enemy     ; If ENEMY, jump to handle_collision_mode_enemy to handle enemy collision
+  JP Z,handle_missile_collision        ; If MISSILE, jump to handle_missile_collision to handle missile collision
+  CP COLLISION_MODE_FIGHTER            ; Check if collision mode is ENEMY ($03)
+  JP Z,handle_collision_mode_fighter   ; If ENEMY, jump to handle_collision_mode_fighter to handle fighter collision
   CP COLLISION_MODE_HELICOPTER_MISSILE ; Check if collision mode is HELICOPTER_MISSILE ($04)
   JP Z,handle_collision_mode_helicopter_missile ; If HELICOPTER_MISSILE, jump to
                                                 ; handle_collision_mode_helicopter_missile to handle helicopter missile
                                                 ; collision
 
-; Routine at 615E
+; Handle COLLISION_MODE_FIGHTER collision detection
 ;
 ; Used by the routine at collision_dispatcher.
-handle_collision_mode_enemy:
-  LD BC,(state_plane_missile_coordinates)
-  LD DE,(object_coordinates)
-  LD A,B
-  ADD A,$06
-  SUB D
-  JP M,L63FC_0
-  LD A,D
-  ADD A,$06
-  SUB B
-  JP M,L63FC_0
-  LD H,$00
-  LD A,E
-  ADD A,$0A
-  LD L,A
-  LD B,$00
-  OR A
-  SBC HL,BC
-  JP M,L63FC_0
-  LD H,$00
-  LD BC,(state_plane_missile_coordinates)
-  LD A,C
-  INC A
-  LD L,A
-  LD B,$00
-  LD C,E
-  OR A
-  SBC HL,BC
-  JP M,L63FC_0
-  POP DE
-  POP DE
-  POP DE
-  LD A,D
-  LD (L5EF6),A
-  LD HL,(viewport_ptr)
-  DEC HL
-  DEC HL
-  LD B,(HL)
-  DEC HL
-  LD C,(HL)
-  LD (HL),SET_MARKER_EMPTY_SLOT
-  LD D,$00
-  CALL explode_fragment
-  DEC C
-  DEC C
-  DEC C
-  DEC C
-  DEC C
-  DEC C
-  CALL explode_fragment
-  LD A,POINTS_FIGHTER
-  CALL add_points
-  JP L6794
+;
+; Checks if the player's missile has collided with a fighter aircraft. Uses bounding box collision detection by
+; comparing the missile coordinates (from state_plane_missile_coordinates) with the fighter's coordinates (from
+; object_coordinates).
+;
+; The collision box is 6 pixels wide (horizontally) and uses vertical bounds of +10 and +1 pixels.
+;
+; If no collision is detected (any boundary check fails), jumps to no_collision_exit to reset collision mode and return.
+;
+; On collision: removes the fighter from the viewport, triggers two explosion fragments, awards POINTS_FIGHTER, and
+; continues to post-collision processing at L6794.
+handle_collision_mode_fighter:
+  LD BC,(state_plane_missile_coordinates) ; Load missile coordinates (B=Y, C=X) from state_plane_missile_coordinates.
+  LD DE,(object_coordinates)           ; Load fighter coordinates (D=Y, E=X) from object_coordinates.
+  LD A,B                               ; Copy missile Y coordinate (B) into A.
+  ADD A,$06                            ; Add 6 to missile Y.
+  SUB D                                ; Subtract fighter Y (D) from result.
+  JP M,no_collision_exit               ; If negative (missile too far above), no collision - exit.
+  LD A,D                               ; Copy fighter Y (D) into A.
+  ADD A,$06                            ; Add 6 to fighter Y.
+  SUB B                                ; Subtract missile Y (B) from result.
+  JP M,no_collision_exit               ; If negative (missile too far below), no collision - exit.
+  LD H,$00                             ; Set H to 0 for 16-bit arithmetic.
+  LD A,E                               ; Copy fighter X (E) into A.
+  ADD A,$0A                            ; Add 10 to fighter X.
+  LD L,A                               ; Store result in L (HL = fighter X + 10).
+  LD B,$00                             ; Set B to 0 for 16-bit subtraction.
+  OR A                                 ; Clear carry flag for subtraction.
+  SBC HL,BC                            ; HL = (fighter X + 10) - missile X.
+  JP M,no_collision_exit               ; If negative (missile too far right), no collision - exit.
+  LD H,$00                             ; Set H to 0 for 16-bit arithmetic.
+  LD BC,(state_plane_missile_coordinates) ; Reload missile coordinates from state_plane_missile_coordinates.
+  LD A,C                               ; Copy missile X (C) into A.
+  INC A                                ; Increment missile X.
+  LD L,A                               ; Store result in L (HL = missile X + 1).
+  LD B,$00                             ; Set B to 0 for 16-bit subtraction.
+  LD C,E                               ; Copy fighter X (E) into C.
+  OR A                                 ; Clear carry flag for subtraction.
+  SBC HL,BC                            ; HL = (missile X + 1) - fighter X.
+  JP M,no_collision_exit               ; If negative (missile too far left), no collision - exit.
+  POP DE                               ; Collision detected! Clean up stack (3x POP DE).
+  POP DE                               ;
+  POP DE                               ;
+  LD A,D                               ; Copy fighter Y (D) into A.
+  LD (L5EF6),A                         ; Store fighter Y coordinate to L5EF6.
+  LD HL,(viewport_ptr)                 ; Load current viewport pointer from viewport_ptr.
+  DEC HL                               ; Move back 2 bytes to point to Y position in slot.
+  DEC HL                               ;
+  LD B,(HL)                            ; Load Y position into B.
+  DEC HL                               ; Move back to X position in slot.
+  LD C,(HL)                            ; Load X position into C.
+  LD (HL),SET_MARKER_EMPTY_SLOT        ; Mark this object slot as empty.
+  LD D,$00                             ; Set D to 0 (frame number for explosion).
+  CALL explode_fragment                ; Call explode_fragment to render first explosion fragment.
+  DEC C                                ; Subtract 6 from X position (C) to offset second explosion.
+  DEC C                                ;
+  DEC C                                ;
+  DEC C                                ;
+  DEC C                                ;
+  DEC C                                ;
+  CALL explode_fragment                ; Call explode_fragment to render second explosion fragment.
+  LD A,POINTS_FIGHTER                  ; Load POINTS_FIGHTER into A.
+  CALL add_points                      ; Call add_points to add points to score.
+  JP L6794                             ; Jump to L6794 for post-collision processing.
 
-; Routine at 61BB
+; Handle COLLISION_MODE_MISSILE collision detection
 ;
 ; Used by the routines at collision_dispatcher and fuel.
-interact_with_something:
+;
+; Checks if the player's missile has collided with a bridge or any viewport object. First checks bridge collision, then
+; iterates through viewport objects via check_missile_vs_objects.
+handle_missile_collision:
   LD BC,(state_plane_missile_coordinates)
   LD A,(state_bridge_y_position)
   CP $00
-  JP Z,interact_with_something2
+  JP Z,check_missile_vs_objects
   LD D,A
   SUB B
-  JP M,interact_with_something2
+  JP M,check_missile_vs_objects
   LD A,D
   SUB $16
   SUB B
-  JP P,interact_with_something2
+  JP P,check_missile_vs_objects
   LD A,POINTS_BRIDGE
   CALL add_points
   LD A,$0F
@@ -2065,7 +2079,7 @@ next_bridge_player_1:
 
 ; Routine at 6249
 ;
-; Used by the routine at interact_with_something.
+; Used by the routine at handle_missile_collision.
 next_bridge_player_2:
   LD HL,state_bridge_player_2
   INC (HL)
@@ -2086,11 +2100,11 @@ fuel:
   LD A,(state_x)
   LD C,A
   LD (state_plane_missile_coordinates),BC
-  JP interact_with_something
+  JP handle_missile_collision
 
 ; Fighter hits terrain
 ;
-; Used by the routine at interact_with_something2.
+; Used by the routine at check_missile_vs_objects.
 hit_terrain:
   LD HL,(exploding_fragments_ptr)
   LD C,(HL)
@@ -2157,21 +2171,21 @@ L62CE:
 
 ; Routine at 62D4
 ;
-; Used by the routine at interact_with_something2.
+; Used by the routine at check_missile_vs_objects.
 L62D4:
   LD E,$09
   RET
 
 ; Routine at 62D7
 ;
-; Used by the routine at interact_with_something2.
+; Used by the routine at check_missile_vs_objects.
 L62D7:
   LD E,$11
   RET
 
 ; Increase vertical coordinate of the object by the value of state_speed.
 ;
-; Used by the routines at hit_terrain, interact_with_something2, render_plane, L66EE, animate_plane_missile, L6794,
+; Used by the routines at hit_terrain, check_missile_vs_objects, render_plane, L66EE, animate_plane_missile, L6794,
 ; L6FEA, operate_viewport_objects, operate_helicopter_missile and operate_tank_shell.
 ;
 ; I:B Current coordinate
@@ -2184,7 +2198,7 @@ advance_object:
 
 ; Decrease vertical coordinate of the object by the value of state_speed.
 ;
-; Used by the routine at interact_with_something2.
+; Used by the routine at check_missile_vs_objects.
 ;
 ; I:B Current coordinate
 ; O:B New coordinate
@@ -2196,10 +2210,14 @@ retract_object:
   LD B,A
   RET
 
-; Interact with something
+; Check missile collision against viewport objects
 ;
-; Used by the routine at interact_with_something.
-interact_with_something2:
+; Used by the routine at handle_missile_collision.
+;
+; Iterates through viewport_objects checking if the player's missile collides with any object. On hit, dispatches to
+; type-specific handlers: hit_helicopter_reg (helicopter), hit_ship (ship), hit_helicopter_adv (advanced helicopter),
+; hit_fighter (fighter), hit_balloon (balloon), interact_with_fuel (fuel).
+check_missile_vs_objects:
   LD HL,(viewport_ptr)
   LD C,(HL)
   INC HL
@@ -2209,9 +2227,9 @@ interact_with_something2:
   LD (viewport_ptr),HL
   LD A,C
   CP SET_MARKER_EMPTY_SLOT
-  JP Z,interact_with_something2
+  JP Z,check_missile_vs_objects
   CP SET_MARKER_END_OF_SET
-  JP Z,interact_with_something2_0
+  JP Z,check_missile_vs_objects_0
   LD A,(state_gameplay_mode)
   CP GAMEPLAY_MODE_REFUEL
   CALL Z,advance_object
@@ -2224,7 +2242,7 @@ interact_with_something2:
   OR A
   LD E,B
   SBC HL,DE
-  JP M,interact_with_something2
+  JP M,check_missile_vs_objects
   LD A,B
   ADD A,$08
   LD D,A
@@ -2246,7 +2264,7 @@ interact_with_something2:
   LD D,$00
   OR A
   SBC HL,DE
-  JP M,interact_with_something2
+  JP M,check_missile_vs_objects
   LD DE,(state_plane_missile_coordinates)
   LD A,E
   ADD A,$08
@@ -2257,7 +2275,7 @@ interact_with_something2:
   LD E,C
   OR A
   SBC HL,DE
-  JP M,interact_with_something2
+  JP M,check_missile_vs_objects
   LD A,C
   ADD A,$0A
   LD D,A
@@ -2277,7 +2295,7 @@ interact_with_something2:
   OR A
   LD D,$00
   SBC HL,DE
-  JP M,interact_with_something2
+  JP M,check_missile_vs_objects
   LD A,(state_gameplay_mode)
   CP GAMEPLAY_MODE_REFUEL
   CALL Z,retract_object
@@ -2287,7 +2305,7 @@ interact_with_something2:
   LD A,(HL)
   AND $07
   CP $00
-  JP Z,interact_with_something2_1
+  JP Z,check_missile_vs_objects_1
   DEC HL
   DEC HL
   LD (HL),$00
@@ -2304,7 +2322,7 @@ interact_with_something2:
   JP Z,hit_balloon
   CP OBJECT_FUEL
   JP Z,interact_with_fuel
-interact_with_something2_0:
+check_missile_vs_objects_0:
   CALL hit_terrain
   LD HL,viewport_objects
   LD (viewport_ptr),HL
@@ -2320,7 +2338,7 @@ interact_with_something2_0:
   JP Z,L63FC
 ; This entry point is used by the routines at hit_helicopter_reg, hit_ship, hit_helicopter_adv, hit_fighter, hit_balloon
 ; and L649E.
-interact_with_something2_1:
+check_missile_vs_objects_1:
   POP DE
   POP DE
   POP DE
@@ -2337,12 +2355,12 @@ interact_with_something2_1:
 
 ; Routine at 63FC
 ;
-; Used by the routines at interact_with_something2 and L64A1.
+; Used by the routines at check_missile_vs_objects and L64A1.
 L63FC:
   LD A,GAMEPLAY_MODE_NORMAL
   LD (state_gameplay_mode),A
-; This entry point is used by the routine at handle_collision_mode_enemy.
-L63FC_0:
+; This entry point is used by the routine at handle_collision_mode_fighter.
+no_collision_exit:
   LD A,COLLISION_MODE_NONE
   LD (state_collision_mode),A
   LD HL,(tmp_HL)
@@ -2352,17 +2370,17 @@ L63FC_0:
 
 ; Routine at 6414
 ;
-; Used by the routine at interact_with_something2.
+; Used by the routine at check_missile_vs_objects.
 hit_helicopter_reg:
   LD A,POINTS_HELICOPTER_REG
   CALL add_points
   LD BC,(L5F8B)
   CALL explode_fragment
-  JP interact_with_something2_1
+  JP check_missile_vs_objects_1
 
 ; Routine at 6423
 ;
-; Used by the routine at interact_with_something2.
+; Used by the routine at check_missile_vs_objects.
 hit_ship:
   LD A,POINTS_SHIP
   CALL add_points
@@ -2379,31 +2397,31 @@ hit_ship:
   ADD A,$04
   LD B,A
   CALL explode_fragment
-  JP interact_with_something2_1
+  JP check_missile_vs_objects_1
 
 ; Hit advanced helicopter
 ;
-; Used by the routine at interact_with_something2.
+; Used by the routine at check_missile_vs_objects.
 hit_helicopter_adv:
   LD A,POINTS_HELICOPTER_ADV
   CALL add_points
   LD BC,(L5F8B)
   CALL explode_fragment
-  JP interact_with_something2_1
+  JP check_missile_vs_objects_1
 
 ; Hit fighter
 ;
-; Used by the routine at interact_with_something2.
+; Used by the routine at check_missile_vs_objects.
 hit_fighter:
   LD A,POINTS_FIGHTER
   CALL add_points
   LD BC,(L5F8B)
   CALL explode_fragment
-  JP interact_with_something2_1
+  JP check_missile_vs_objects_1
 
 ; Routine at 6462
 ;
-; Used by the routine at interact_with_something2.
+; Used by the routine at check_missile_vs_objects.
 hit_balloon:
   LD A,POINTS_BALLOON
   CALL add_points
@@ -2413,11 +2431,11 @@ hit_balloon:
   ADD A,$08
   LD B,A
   CALL explode_fragment
-  JP interact_with_something2_1
+  JP check_missile_vs_objects_1
 
 ; Routine at 6478
 ;
-; Used by the routine at interact_with_something2.
+; Used by the routine at check_missile_vs_objects.
 interact_with_fuel:
   LD A,(state_gameplay_mode)
   CP GAMEPLAY_MODE_REFUEL
@@ -2439,7 +2457,7 @@ interact_with_fuel:
 
 ; Routine at 649E
 L649E:
-  JP interact_with_something2_1
+  JP check_missile_vs_objects_1
 
 ; Routine at 64A1
 ;
@@ -2459,7 +2477,7 @@ L64B4:
 
 ; Routine at 64BC
 ;
-; Used by the routines at play, interact_with_something, next_bridge_player_2, setup_player_2_display and overview.
+; Used by the routines at play, handle_missile_collision, next_bridge_player_2, setup_player_2_display and overview.
 print_bridge:
   LD A,(state_player)
   CP PLAYER_2
@@ -2930,8 +2948,8 @@ L678E:
 
 ; Routine at 6794
 ;
-; Used by the routines at handle_collision_mode_enemy, interact_with_something, next_bridge_player_2,
-; interact_with_something2 and animate_plane_missile.
+; Used by the routines at handle_collision_mode_fighter, handle_missile_collision, next_bridge_player_2,
+; check_missile_vs_objects and animate_plane_missile.
 L6794:
   LD BC,(state_plane_missile_coordinates)
   CALL blenging_mode_or_or
@@ -3628,7 +3646,7 @@ handle_special_terrain_fragment_continue:
   CP $00
   RET Z
   LD HL,(screen_ptr)
-; This entry point is used by the routine at interact_with_something.
+; This entry point is used by the routine at handle_missile_collision.
 handle_special_terrain_fragment_0:
   LD DE,$000E
   LD B,$04
@@ -4139,7 +4157,7 @@ signal_fuel_level_excessive:
 
 ; Explode a single fragment
 ;
-; Used by the routines at handle_collision_mode_enemy, interact_with_something, hit_helicopter_reg, hit_ship,
+; Used by the routines at handle_collision_mode_fighter, handle_missile_collision, hit_helicopter_reg, hit_ship,
 ; hit_helicopter_adv, hit_fighter, hit_balloon, interact_with_fuel, handle_no_fuel and L74EE.
 ;
 ; I:BC Pointer to the fragment to explode.
@@ -4708,7 +4726,7 @@ operate_fighter_continue:
   CALL ld_enemy_sprites
   LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
   CALL blenging_mode_xor_xor
-  LD A,COLLISION_MODE_ENEMY
+  LD A,COLLISION_MODE_FIGHTER
   LD (state_collision_mode),A
   LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_FIGHTER_ATTRIBUTES
   CALL render_sprite
@@ -7532,7 +7550,7 @@ L90CE:
 
 ; Add score points for a hit target
 ;
-; Used by the routines at handle_collision_mode_enemy, interact_with_something, hit_helicopter_reg, hit_ship,
+; Used by the routines at handle_collision_mode_fighter, handle_missile_collision, hit_helicopter_reg, hit_ship,
 ; hit_helicopter_adv, hit_fighter, hit_balloon, interact_with_fuel and L74EE.
 ;
 ; I:A Number of points to add divided by 10.

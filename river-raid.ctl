@@ -175,7 +175,7 @@
 > $4000 COLLISION_MODE_NONE               EQU $00
 > $4000 COLLISION_MODE_SKIP               EQU $01
 > $4000 COLLISION_MODE_MISSILE            EQU $02
-> $4000 COLLISION_MODE_ENEMY              EQU $03
+> $4000 COLLISION_MODE_FIGHTER            EQU $03
 > $4000 COLLISION_MODE_HELICOPTER_MISSILE EQU $04
 > $4000
 > $4000 TANK_SHELL_INACTIVE EQU $00
@@ -744,18 +744,70 @@ D $6136 This routine is called during sprite rendering (via #R$8C45) to handle c
 @ $614F isub=CP COLLISION_MODE_MISSILE
   $614F Check if collision mode is MISSILE ($02)
   $6151 If MISSILE, jump to #R$61BB to handle missile collision
-@ $6154 isub=CP COLLISION_MODE_ENEMY
+@ $6154 isub=CP COLLISION_MODE_FIGHTER
   $6154 Check if collision mode is ENEMY ($03)
-  $6156 If ENEMY, jump to #R$615E to handle enemy collision
+  $6156 If ENEMY, jump to #R$615E to handle fighter collision
 @ $6159 isub=CP COLLISION_MODE_HELICOPTER_MISSILE
   $6159 Check if collision mode is HELICOPTER_MISSILE ($04)
-  $615B,3 If HELICOPTER_MISSILE, jump to #R$7415 to handle helicopter missile collision
-@ $615E label=handle_collision_mode_enemy
-c $615E
+  $615B If HELICOPTER_MISSILE, jump to #R$7415 to handle helicopter missile collision
+@ $615E label=handle_collision_mode_fighter
+c $615E Handle COLLISION_MODE_FIGHTER collision detection
+N $615E Checks if the player's missile has collided with a fighter aircraft. Uses bounding box collision detection by comparing the missile coordinates (from #R$5EF3) with the fighter's coordinates (from #R$8B0C).
+N $615E .
+N $615E The collision box is 6 pixels wide (horizontally) and uses vertical bounds of +10 and +1 pixels.
+N $615E .
+N $615E If no collision is detected (any boundary check fails), jumps to #R$6401 to reset collision mode and return.
+N $615E .
+N $615E On collision: removes the fighter from the viewport, triggers two explosion fragments, awards POINTS_FIGHTER, and continues to post-collision processing at #R$6794.
+  $615E Load missile coordinates (B=Y, C=X) from #R$5EF3.
+  $6162 Load fighter coordinates (D=Y, E=X) from #R$8B0C.
+  $6166 Copy missile Y coordinate (B) into A.
+  $6167 Add 6 to missile Y.
+  $6169 Subtract fighter Y (D) from result.
+  $616A If negative (missile too far above), no collision - exit.
+  $616D Copy fighter Y (D) into A.
+  $616E Add 6 to fighter Y.
+  $6170 Subtract missile Y (B) from result.
+  $6171 If negative (missile too far below), no collision - exit.
+  $6174 Set H to 0 for 16-bit arithmetic.
+  $6176 Copy fighter X (E) into A.
+  $6177 Add 10 to fighter X.
+  $6179 Store result in L (HL = fighter X + 10).
+  $617A Set B to 0 for 16-bit subtraction.
+  $617C Clear carry flag for subtraction.
+  $617D HL = (fighter X + 10) - missile X.
+  $617F If negative (missile too far right), no collision - exit.
+  $6182 Set H to 0 for 16-bit arithmetic.
+  $6184 Reload missile coordinates from #R$5EF3.
+  $6188 Copy missile X (C) into A.
+  $6189 Increment missile X.
+  $618A Store result in L (HL = missile X + 1).
+  $618B Set B to 0 for 16-bit subtraction.
+  $618D Copy fighter X (E) into C.
+  $618E Clear carry flag for subtraction.
+  $618F HL = (missile X + 1) - fighter X.
+  $6191 If negative (missile too far left), no collision - exit.
+  $6194 Collision detected! Clean up stack (3x POP DE).
+  $6197 Copy fighter Y (D) into A.
+  $6198 Store fighter Y coordinate to #R$5EF6.
+  $619B Load current viewport pointer from #R$5F60.
+  $619E Move back 2 bytes to point to Y position in slot.
+  $61A0 Load Y position into B.
+  $61A1 Move back to X position in slot.
+  $61A2 Load X position into C.
 @ $61A3 isub=LD (HL),SET_MARKER_EMPTY_SLOT
+  $61A3 Mark this object slot as empty.
+  $61A5 Set D to 0 (frame number for explosion).
+  $61A7 Call #R$6E9C to render first explosion fragment.
+  $61AA Subtract 6 from X position (C) to offset second explosion.
+  $61B0 Call #R$6E9C to render second explosion fragment.
 @ $61B3 isub=LD A,POINTS_FIGHTER
-@ $61BB label=interact_with_something
-c $61BB
+  $61B3 Load POINTS_FIGHTER into A.
+  $61B5 Call #R$90E0 to add points to score.
+  $61B8,3 Jump to #R$6794 for post-collision processing.
+@ $61BB label=handle_missile_collision
+c $61BB Handle COLLISION_MODE_MISSILE collision detection
+N $61BB Checks if the player's missile has collided with a bridge or any viewport object. First checks bridge collision, then iterates through viewport objects via #R$62E8.
 @ $61D3 isub=LD A,POINTS_BRIDGE
 @ $621F keep
 @ $623A isub=CP PLAYER_2
@@ -781,8 +833,9 @@ R $62DA O:B New coordinate
 c $62E0 Decrease vertical coordinate of the object by the value of #R$5F64.
 R $62E0 I:B Current coordinate
 R $62E0 O:B New coordinate
-@ $62E8 label=interact_with_something2
-c $62E8 Interact with something
+@ $62E8 label=check_missile_vs_objects
+c $62E8 Check missile collision against viewport objects
+N $62E8 Iterates through viewport_objects checking if the player's missile collides with any object. On hit, dispatches to type-specific handlers: #R$6414 (helicopter), #R$6423 (ship), #R$6444 (advanced helicopter), #R$6453 (fighter), #R$6462 (balloon), #R$6478 (fuel).
 @ $62F4 isub=CP SET_MARKER_EMPTY_SLOT
 @ $62F9 isub=CP SET_MARKER_END_OF_SET
 @ $6301 isub=CP GAMEPLAY_MODE_REFUEL
@@ -800,6 +853,7 @@ c $62E8 Interact with something
 @ $63B4 isub=CP OBJECT_FUEL
 @ $63FC isub=LD A,GAMEPLAY_MODE_NORMAL
 c $63FC
+@ $6401 label=no_collision_exit
 @ $6401 isub=LD A,COLLISION_MODE_NONE
 @ $6414 label=hit_helicopter_reg
 @ $6414 isub=LD A,POINTS_HELICOPTER_REG
@@ -1523,7 +1577,7 @@ N $7158 Advances the fighter by 4 pixels on each metronome tick and renders it u
 @ $7166 isub=CP FIGHTER_POSITION_LEFT_LIMIT
 @ $716B label=operate_fighter_continue
 @ $717B isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
-@ $7181 isub=LD A,COLLISION_MODE_ENEMY
+@ $7181 isub=LD A,COLLISION_MODE_FIGHTER
 @ $7186 isub=LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_FIGHTER_ATTRIBUTES
 @ $7192 label=fighter_right_advance
 c $7192
