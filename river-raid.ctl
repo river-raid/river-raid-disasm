@@ -1202,10 +1202,16 @@ c $673D
 @ $6788 isub=LD A,SPRITE_MISSILE_WIDTH_TILES
 c $678E
   $6791,2 Reset CONTROLS_BIT_FIRE
-c $6794
+@ $6794 label=finalize_collision
+c $6794 Finalize collision and erase missile sprite
+N $6794 Called after a successful collision to clean up the game state. Erases the missile sprite from the screen, resets the collision mode to COLLISION_MODE_NONE, clears the missile coordinates, and resets CONTROLS_BIT_SPEED_DECREASED.
+N $6794 .
+N $6794 If in GAMEPLAY_MODE_REFUEL, jumps to #R$650A instead.
 @ $679E isub=CP GAMEPLAY_MODE_REFUEL
 @ $67A3 isub=LD A,COLLISION_MODE_NONE
+@ $67B9 label=finalize_collision_erase_missile_loop
   $67E1,2 Reset CONTROLS_BIT_SPEED_DECREASED
+@ $6809 label=finalize_collision_erase_residue_loop
 @ $6831 label=add_island_offset_800
 c $6831 Add $0800 offset to island data pointer
   $6831 Set DE to $0800

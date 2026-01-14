@@ -3183,9 +3183,21 @@ c$678E LD HL,$6BB0   ;
  $6791 RES 0,(HL)    ; Reset CONTROLS_BIT_FIRE
  $6793 RET           ;
 
-; Routine at 6794
+; Finalize collision and erase missile sprite
 ;
 ; Used by the routines at #R$615E, #R$61BB, #R$6249, #R$62E8 and #R$673D.
+;
+; .
+;
+; Called after a successful collision to clean up the game state. Erases the
+; missile sprite from the screen, resets the collision mode to
+; COLLISION_MODE_NONE, clears the missile coordinates, and resets
+; CONTROLS_BIT_SPEED_DECREASED.
+; .
+; .
+; .
+; If in GAMEPLAY_MODE_REFUEL, jumps to #R$650A instead.
+@label=finalize_collision
 c$6794 LD BC,($5EF3) ;
  $6798 CALL $72EF    ;
  $679B LD A,($5F68)  ;
@@ -3204,6 +3216,7 @@ c$6794 LD BC,($5EF3) ;
  $67B5 INC A         ;
  $67B6 OR A          ;
  $67B7 SBC HL,DE     ;
+@label=finalize_collision_erase_missile_loop
 *$67B9 ADD HL,DE     ;
  $67BA DEC A         ;
  $67BB JR NZ,$67B9   ;
@@ -3239,6 +3252,7 @@ c$6794 LD BC,($5EF3) ;
  $6805 INC A         ;
  $6806 OR A          ;
  $6807 SBC HL,DE     ;
+@label=finalize_collision_erase_residue_loop
 *$6809 ADD HL,DE     ;
  $680A DEC A         ;
  $680B JR NZ,$6809   ;

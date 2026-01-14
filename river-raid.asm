@@ -1951,7 +1951,7 @@ collision_dispatcher:
 ; If no collision is detected (any boundary check fails), jumps to no_collision_exit to reset collision mode and return.
 ;
 ; On collision: removes the fighter from the viewport, triggers two explosion fragments, awards POINTS_FIGHTER, and
-; continues to post-collision processing at L6794.
+; continues to post-collision processing at finalize_collision.
 handle_collision_mode_fighter:
   LD BC,(state_plane_missile_coordinates) ; Load missile coordinates (B=Y, C=X) from state_plane_missile_coordinates.
   LD DE,(object_coordinates)           ; Load fighter coordinates (D=Y, E=X) from object_coordinates.
@@ -2004,7 +2004,7 @@ handle_collision_mode_fighter:
   CALL explode_fragment                ; Call explode_fragment to render second explosion fragment.
   LD A,POINTS_FIGHTER                  ; Load POINTS_FIGHTER into A.
   CALL add_points                      ; Call add_points to add points to score.
-  JP L6794                             ; Jump to L6794 for post-collision processing.
+  JP finalize_collision                ; Jump to finalize_collision for post-collision processing.
 
 ; Handle COLLISION_MODE_MISSILE collision detection
 ;
@@ -2082,7 +2082,7 @@ next_bridge_player_1:
   LD HL,state_bridge_player_1          ; Load address of state_bridge_player_1 (player 1 bridge counter).
   INC (HL)                             ; Increment player 1's bridge count.
   CALL print_bridge                    ; Call print_bridge to print updated bridge number.
-  JP L6794                             ; Jump to L6794 for post-collision processing.
+  JP finalize_collision                ; Jump to finalize_collision for post-collision processing.
 
 ; Increment player 2's bridge counter
 ;
@@ -2091,7 +2091,7 @@ next_bridge_player_2:
   LD HL,state_bridge_player_2          ; Load address of state_bridge_player_2 (player 2 bridge counter).
   INC (HL)                             ; Increment player 2's bridge count.
   CALL print_bridge                    ; Call print_bridge to print updated bridge number.
-  JP L6794                             ; Jump to L6794 for post-collision processing.
+  JP finalize_collision                ; Jump to finalize_collision for post-collision processing.
 
 ; Unused
 L6253:
@@ -2192,8 +2192,8 @@ L62D7:
 
 ; Increase vertical coordinate of the object by the value of state_speed.
 ;
-; Used by the routines at hit_terrain, check_missile_vs_objects, render_plane, L66EE, animate_plane_missile, L6794,
-; L6FEA, operate_viewport_objects, operate_helicopter_missile and operate_tank_shell.
+; Used by the routines at hit_terrain, check_missile_vs_objects, render_plane, L66EE, animate_plane_missile,
+; finalize_collision, L6FEA, operate_viewport_objects, operate_helicopter_missile and operate_tank_shell.
 ;
 ; I:B Current coordinate
 ; O:B New coordinate
@@ -2358,7 +2358,7 @@ check_missile_vs_objects_1:
   LD (viewport_ptr),HL
   LD BC,(L5F8D)
   LD (state_plane_missile_coordinates),BC
-  JP L6794
+  JP finalize_collision
 
 ; Routine at 63FC
 ;
@@ -2930,7 +2930,7 @@ animate_plane_missile:
   LD B,A
   AND $F8
   CP $00
-  JP Z,L6794
+  JP Z,finalize_collision
   LD (state_plane_missile_coordinates),BC
   LD A,$70
   SUB B
@@ -2953,11 +2953,16 @@ L678E:
   RES 0,(HL)                           ; Reset CONTROLS_BIT_FIRE
   RET
 
-; Routine at 6794
+; Finalize collision and erase missile sprite
 ;
 ; Used by the routines at handle_collision_mode_fighter, handle_missile_collision, next_bridge_player_2,
 ; check_missile_vs_objects and animate_plane_missile.
-L6794:
+;
+; Called after a successful collision to clean up the game state. Erases the missile sprite from the screen, resets the
+; collision mode to COLLISION_MODE_NONE, clears the missile coordinates, and resets CONTROLS_BIT_SPEED_DECREASED.
+;
+; If in GAMEPLAY_MODE_REFUEL, jumps to handle_no_fuel instead.
+finalize_collision:
   LD BC,(state_plane_missile_coordinates)
   CALL blenging_mode_or_or
   LD A,(state_gameplay_mode)
@@ -2974,10 +2979,10 @@ L6794:
   INC A
   OR A
   SBC HL,DE
-L6794_0:
+finalize_collision_erase_missile_loop:
   ADD HL,DE
   DEC A
-  JR NZ,L6794_0
+  JR NZ,finalize_collision_erase_missile_loop
   LD A,(L673C)
   CP $01
   CALL Z,advance_object
@@ -3010,10 +3015,10 @@ L6794_0:
   INC A
   OR A
   SBC HL,DE
-L6794_1:
+finalize_collision_erase_residue_loop:
   ADD HL,DE
   DEC A
-  JR NZ,L6794_1
+  JR NZ,finalize_collision_erase_residue_loop
   LD A,(L5EF6)
   LD D,A
   LD A,$08
@@ -4977,7 +4982,7 @@ blenging_mode_xor_xor:
 
 ; Routine at 72EF
 ;
-; Used by the routines at L6794, render_enemy, operate_fighter and operate_tank.
+; Used by the routines at finalize_collision, render_enemy, operate_fighter and operate_tank.
 blenging_mode_or_or:
   LD A,$B0
   LD (L8C1B),A                         ; Put "OR B" into L8C1B
@@ -7111,8 +7116,8 @@ render_sprite_0:
 
 ; Routine at 8B3C
 ;
-; Used by the routines at render_plane_and_terrain, handle_right, handle_left, render_plane, L6794, render_rock,
-; ship_or_helicopter_left_advance, L71A2, animate_helicopter, L74A0, handle_object_proximity and L76DA.
+; Used by the routines at render_plane_and_terrain, handle_right, handle_left, render_plane, finalize_collision,
+; render_rock, ship_or_helicopter_left_advance, L71A2, animate_helicopter, L74A0, handle_object_proximity and L76DA.
 ;
 ; I:A Sprite width in tiles
 ; I:BC Sprite size in bytes
