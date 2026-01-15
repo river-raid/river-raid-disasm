@@ -1684,8 +1684,9 @@ g$5F6E DEFB $00
 @label=state_unused_5F6F
 g$5F6F DEFB $00
 
-; Current Y coordinate
-@label=state_y
+; Scroll offset - accumulated vertical distance traveled. Incremented by
+; current speed each frame.
+@label=state_scroll_offset
 g$5F70 DEFB $00,$00
 
 ; Current X coordinate
@@ -3184,92 +3185,131 @@ c$6682 LD A,($5F68)  ; {Return if not in GAMEPLAY_MODE_NORMAL.
 c$66CC LD HL,$83F1   ; Load #R$83F1 into HL.
  $66CF RET           ;
 
-; Increase #R$5F70 by the value of #R$5F64, set #R$5F64 to the default value
-; and do something with the #R$6BB0 bits.
+; Advance game scroll and update bridge position
 ;
 ; Used by the routines at #R$5DA6, #R$5F91 and #R$6D17.
-@label=advance
-c$66D0 LD BC,($5F70) ;
+;
+; .
+;
+; Called each frame to advance the vertical scroll position. Adds current speed
+; (#R$5F64) to scroll offset (#R$5F70), updates the bridge's Y position via
+; #R$66EE, then resets speed to SPEED_NORMAL and updates control flags.
+; .
+; .
+; .
+; The control bits modified are: clears CONTROLS_BIT_SPEED_ALTERED, sets
+; CONTROLS_BIT_SPEED_DECREASED. This marks that speed has returned to normal
+; after any joystick input.
+@label=advance_scroll
+c$66D0 LD BC,($5F70) ; {Add speed to scroll offset and store result.
  $66D4 LD H,$00      ;
  $66D6 LD A,($5F64)  ;
  $66D9 LD L,A        ;
- $66DA ADD HL,BC     ;
- $66DB LD ($5F70),HL ;
- $66DE CALL $66EE    ;
+ $66DA ADD HL,BC     ; }
+ $66DB LD ($5F70),HL ; {Call #R$66EE to update bridge; reset speed to
+ $66DE CALL $66EE    ; SPEED_NORMAL.}
 @isub=LD A,SPEED_NORMAL
  $66E1 LD A,$02      ;
  $66E3 LD ($5F64),A  ;
- $66E6 LD HL,$6BB0   ;
- $66E9 RES 2,(HL)    ;
- $66EB SET 1,(HL)    ;
+ $66E6 LD HL,$6BB0   ; {Clear CONTROLS_BIT_SPEED_ALTERED, set
+ $66E9 RES 2,(HL)    ; CONTROLS_BIT_SPEED_DECREASED in #R$6BB0.
+ $66EB SET 1,(HL)    ; }
  $66ED RET           ;
 
-; Routine at 66EE
+; Update bridge Y position during scroll
 ;
 ; Used by the routine at #R$66D0.
-c$66EE LD A,($5F6E)  ;
- $66F1 CP $00        ;
+;
+; .
+;
+; Adjusts the bridge's Y position (#R$5F6E) based on current scrolling. If no
+; bridge exists (Y=0), returns immediately. If the bridge scrolls off the
+; bottom of the screen (Y AND $88 == $88), clears it via #R$6704.
+@label=update_bridge_scroll
+c$66EE LD A,($5F6E)  ; {If no bridge, return; otherwise advance bridge Y via
+ $66F1 CP $00        ; #R$62DA.
  $66F3 RET Z         ;
- $66F4 LD B,A        ;
- $66F5 CALL $62DA    ;
+ $66F4 LD B,A        ; }
+ $66F5 CALL $62DA    ; {If bridge scrolled off screen, call #R$6704 to clear
 @isub=AND VIEWPORT_HEIGHT
- $66F8 AND $88       ;
+ $66F8 AND $88       ; it.
 @isub=CP VIEWPORT_HEIGHT
  $66FA CP $88        ;
- $66FC LD A,B        ;
- $66FD CALL Z,$6704  ;
- $6700 LD ($5F6E),A  ;
+ $66FC LD A,B        ; }
+ $66FD CALL Z,$6704  ; {Store updated bridge Y and return.
+ $6700 LD ($5F6E),A  ; }
  $6703 RET           ;
 
-; Routine at 6704
+; Clear bridge when scrolled off screen
 ;
 ; Used by the routine at #R$66EE.
-c$6704 LD A,$00      ;
- $6706 LD ($5F6D),A  ;
+;
+; .
+;
+; Clears the bridge destroyed flag (#R$5F6D) and returns 0 in A, which the
+; caller stores to #R$5F6E to mark no bridge present.
+@label=clear_bridge
+c$6704 LD A,$00      ; {Clear bridge destroyed flag.
+ $6706 LD ($5F6D),A  ; }
  $6709 RET           ;
 
-; Routine at 670A
+; Handle up/accelerate input
 ;
 ; Used by the routines at #R$5FDA, #R$600A, #R$6039 and #R$6068.
-@isub=LD A,SPEED_FAST
+;
+; .
+;
+; Sets speed to SPEED_FAST and updates control flags. Called when player
+; presses up on joystick/keyboard.
 @label=handle_up
-c$670A LD A,$04      ;
- $670C LD ($5F64),A  ;
- $670F LD HL,$6BB0   ;
+@isub=LD A,SPEED_FAST
+c$670A LD A,$04      ; {Set speed to SPEED_FAST.
+ $670C LD ($5F64),A  ; }
+ $670F LD HL,$6BB0   ; {Set CONTROLS_BIT_SPEED_ALTERED, clear
 @isub=SET CONTROLS_BIT_SPEED_ALTERED,(HL)
- $6712 SET 2,(HL)    ;
+ $6712 SET 2,(HL)    ; CONTROLS_BIT_SPEED_DECREASED.
 @isub=RES CONTROLS_BIT_SPEED_DECREASED,(HL)
- $6714 RES 1,(HL)    ;
+ $6714 RES 1,(HL)    ; }
  $6716 RET           ;
 
-; Routine at 6717
+; Handle down/decelerate input
 ;
 ; Used by the routines at #R$5FDA, #R$600A, #R$6039 and #R$6068.
-@isub=LD A,SPEED_SLOW
+;
+; .
+;
+; Sets speed to SPEED_SLOW and updates control flags. Called when player
+; presses down on joystick/keyboard.
 @label=handle_down
-c$6717 LD A,$01      ;
- $6719 LD ($5F64),A  ;
- $671C LD HL,$6BB0   ;
+@isub=LD A,SPEED_SLOW
+c$6717 LD A,$01      ; {Set speed to SPEED_SLOW.
+ $6719 LD ($5F64),A  ; }
+ $671C LD HL,$6BB0   ; {Set CONTROLS_BIT_SPEED_ALTERED and
 @isub=SET CONTROLS_BIT_SPEED_ALTERED,(HL)
- $671F SET 2,(HL)    ;
+ $671F SET 2,(HL)    ; CONTROLS_BIT_SPEED_DECREASED.
 @isub=SET CONTROLS_BIT_SPEED_DECREASED,(HL)
- $6721 SET 1,(HL)    ;
+ $6721 SET 1,(HL)    ; }
  $6723 RET           ;
 
-; Routine at 6724
+; Handle fire button input
 ;
 ; Used by the routines at #R$5FDA, #R$600A, #R$6039 and #R$6068.
+;
+; .
+;
+; Creates a new missile if none is currently active. Positions missile at plane
+; X + 4, Y = $7E (just above plane). Sets CONTROLS_BIT_FIRE flag.
 @label=handle_fire
-c$6724 LD A,($5EF3)  ;
+c$6724 LD A,($5EF3)  ; {Return if missile already active (Y != 0).
  $6727 CP $00        ;
- $6729 RET NZ        ;
- $672A LD A,($5F72)  ;
+ $6729 RET NZ        ; }
+ $672A LD A,($5F72)  ; {Create missile at (plane_X + 4, $7E).
  $672D ADD A,$04     ;
  $672F LD B,$7E      ;
  $6731 LD C,A        ;
- $6732 LD ($5EF3),BC ;
- $6736 LD HL,$6BB0   ;
- $6739 SET 0,(HL)    ; Set CONTROLS_BIT_FIRE
+ $6732 LD ($5EF3),BC ; }
+ $6736 LD HL,$6BB0   ; {Set CONTROLS_BIT_FIRE in #R$6BB0.
+ $6739 SET 0,(HL)    ; }
  $673B RET           ;
 
 ; Unused

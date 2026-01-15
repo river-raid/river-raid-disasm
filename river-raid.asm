@@ -1334,7 +1334,7 @@ play:
   LD A,FUEL_LEVEL_FULL                 ; Set fuel level to full ($80)
   LD (state_fuel),A                    ; Store fuel level
   LD BC,$0010                          ; Set initial Y position to $0010 (vertical position on screen)
-  LD (state_y),BC                      ; Store Y position
+  LD (state_scroll_offset),BC          ; Store Y position
   CALL init_current_bridge             ; Initialize current bridge data structures
   LD A,$78                             ; Set X position to $78 (horizontal center of screen)
   LD (state_x),A                       ; Store X position
@@ -1398,7 +1398,7 @@ play_0:
   INC (HL)                             ; Increment metronome (advances game timing)
   CALL render_plane_and_terrain        ; Render player plane and terrain for current frame
   CALL operate_viewport_objects        ; Update and render viewport objects (enemies, fuel, etc.)
-  CALL advance                         ; Advance game state (scroll terrain, update positions)
+  CALL advance_scroll                  ; Advance game state (scroll terrain, update positions)
   LD A,SPEED_FAST                      ; Set speed to SPEED_FAST (maintain fast scroll during intro)
   LD (state_speed),A                   ; Store speed
   POP BC                               ; Restore loop counter
@@ -1604,8 +1604,8 @@ state_bridge_y_position:
 state_unused_5F6F:
   DEFB $00
 
-; Current Y coordinate
-state_y:
+; Scroll offset - accumulated vertical distance traveled. Incremented by current speed each frame.
+state_scroll_offset:
   DEFB $00,$00
 
 ; Current X coordinate
@@ -1716,7 +1716,7 @@ main_loop:
   CALL animate_plane_missile           ; Call animate_plane_missile to animate plane missile (second pass)
   CALL operate_tank_shell              ; Call operate_tank_shell to operate tank shell
   CALL operate_helicopter_missile      ; Call operate_helicopter_missile to operate helicopter missile
-  CALL advance                         ; Call advance to advance game state (scrolling)
+  CALL advance_scroll                  ; Call advance_scroll to advance game state (scrolling)
   CALL consume_fuel                    ; Call consume_fuel to consume fuel
   LD A,$00                             ; Load $00 into A (reset sprite bank selector)
   LD (state_plane_sprite_bank),A       ; Store $00 to state_plane_sprite_bank (clear plane sprite bank)
@@ -2212,7 +2212,7 @@ get_offset_fuel:
 
 ; Increase vertical coordinate of the object by the value of state_speed.
 ;
-; Used by the routines at check_fragment_collision, check_missile_vs_objects, render_plane, L66EE,
+; Used by the routines at check_fragment_collision, check_missile_vs_objects, render_plane, update_bridge_scroll,
 ; animate_plane_missile, finalize_collision, L6FEA, operate_viewport_objects, operate_helicopter_missile and
 ; operate_tank_shell.
 ;
@@ -2896,85 +2896,105 @@ ld_sprite_plane_banked:
   LD HL,sprite_plane_banked            ; Load sprite_plane_banked into HL.
   RET
 
-; Increase state_y by the value of state_speed, set state_speed to the default value and do something with the
-; state_controls bits.
+; Advance game scroll and update bridge position
 ;
 ; Used by the routines at play, main_loop and overview.
-advance:
-  LD BC,(state_y)
-  LD H,$00
-  LD A,(state_speed)
-  LD L,A
-  ADD HL,BC
-  LD (state_y),HL
-  CALL L66EE
+;
+; Called each frame to advance the vertical scroll position. Adds current speed (state_speed) to scroll offset
+; (state_scroll_offset), updates the bridge's Y position via update_bridge_scroll, then resets speed to SPEED_NORMAL and
+; updates control flags.
+;
+; The control bits modified are: clears CONTROLS_BIT_SPEED_ALTERED, sets CONTROLS_BIT_SPEED_DECREASED. This marks that
+; speed has returned to normal after any joystick input.
+advance_scroll:
+  LD BC,(state_scroll_offset)          ; Add speed to scroll offset and store result.
+  LD H,$00                             ;
+  LD A,(state_speed)                   ;
+  LD L,A                               ;
+  ADD HL,BC                            ;
+  LD (state_scroll_offset),HL          ; Call update_bridge_scroll to update bridge; reset speed to SPEED_NORMAL.
+  CALL update_bridge_scroll            ;
   LD A,SPEED_NORMAL
   LD (state_speed),A
-  LD HL,state_controls
-  RES 2,(HL)
-  SET 1,(HL)
+  LD HL,state_controls                 ; Clear CONTROLS_BIT_SPEED_ALTERED, set CONTROLS_BIT_SPEED_DECREASED in
+  RES 2,(HL)                           ; state_controls.
+  SET 1,(HL)                           ;
   RET
 
-; Routine at 66EE
+; Update bridge Y position during scroll
 ;
-; Used by the routine at advance.
-L66EE:
-  LD A,(state_bridge_y_position)
-  CP $00
-  RET Z
-  LD B,A
-  CALL advance_object
-  AND VIEWPORT_HEIGHT
-  CP VIEWPORT_HEIGHT
-  LD A,B
-  CALL Z,L6704
-  LD (state_bridge_y_position),A
-  RET
-
-; Routine at 6704
+; Used by the routine at advance_scroll.
 ;
-; Used by the routine at L66EE.
-L6704:
-  LD A,$00
-  LD (state_bridge_destroyed),A
+; Adjusts the bridge's Y position (state_bridge_y_position) based on current scrolling. If no bridge exists (Y=0),
+; returns immediately. If the bridge scrolls off the bottom of the screen (Y AND $88 == $88), clears it via
+; clear_bridge.
+update_bridge_scroll:
+  LD A,(state_bridge_y_position)       ; If no bridge, return; otherwise advance bridge Y via advance_object.
+  CP $00                               ;
+  RET Z                                ;
+  LD B,A                               ;
+  CALL advance_object                  ; If bridge scrolled off screen, call clear_bridge to clear it.
+  AND VIEWPORT_HEIGHT                  ;
+  CP VIEWPORT_HEIGHT                   ;
+  LD A,B                               ;
+  CALL Z,clear_bridge                  ; Store updated bridge Y and return.
+  LD (state_bridge_y_position),A       ;
   RET
 
-; Routine at 670A
+; Clear bridge when scrolled off screen
+;
+; Used by the routine at update_bridge_scroll.
+;
+; Clears the bridge destroyed flag (state_bridge_destroyed) and returns 0 in A, which the caller stores to
+; state_bridge_y_position to mark no bridge present.
+clear_bridge:
+  LD A,$00                             ; Clear bridge destroyed flag.
+  LD (state_bridge_destroyed),A        ;
+  RET
+
+; Handle up/accelerate input
 ;
 ; Used by the routines at scan_cursor, scan_kempston, scan_sinclair and scan_keyboard.
+;
+; Sets speed to SPEED_FAST and updates control flags. Called when player presses up on joystick/keyboard.
 handle_up:
-  LD A,SPEED_FAST
-  LD (state_speed),A
-  LD HL,state_controls
-  SET CONTROLS_BIT_SPEED_ALTERED,(HL)
-  RES CONTROLS_BIT_SPEED_DECREASED,(HL)
+  LD A,SPEED_FAST                      ; Set speed to SPEED_FAST.
+  LD (state_speed),A                   ;
+  LD HL,state_controls                  ; Set CONTROLS_BIT_SPEED_ALTERED, clear CONTROLS_BIT_SPEED_DECREASED.
+  SET CONTROLS_BIT_SPEED_ALTERED,(HL)   ;
+  RES CONTROLS_BIT_SPEED_DECREASED,(HL) ;
   RET
 
-; Routine at 6717
+; Handle down/decelerate input
 ;
 ; Used by the routines at scan_cursor, scan_kempston, scan_sinclair and scan_keyboard.
+;
+; Sets speed to SPEED_SLOW and updates control flags. Called when player presses down on joystick/keyboard.
 handle_down:
-  LD A,SPEED_SLOW
-  LD (state_speed),A
-  LD HL,state_controls
-  SET CONTROLS_BIT_SPEED_ALTERED,(HL)
-  SET CONTROLS_BIT_SPEED_DECREASED,(HL)
+  LD A,SPEED_SLOW                      ; Set speed to SPEED_SLOW.
+  LD (state_speed),A                   ;
+  LD HL,state_controls                  ; Set CONTROLS_BIT_SPEED_ALTERED and CONTROLS_BIT_SPEED_DECREASED.
+  SET CONTROLS_BIT_SPEED_ALTERED,(HL)   ;
+  SET CONTROLS_BIT_SPEED_DECREASED,(HL) ;
   RET
 
-; Routine at 6724
+; Handle fire button input
 ;
 ; Used by the routines at scan_cursor, scan_kempston, scan_sinclair and scan_keyboard.
+;
+; Creates a new missile if none is currently active. Positions missile at plane X + 4, Y = $7E (just above plane). Sets
+; CONTROLS_BIT_FIRE flag.
 handle_fire:
-  LD A,(state_plane_missile_coordinates)
-  CP $00
-  RET NZ
-  LD A,(state_x)
-  ADD A,$04
-  LD B,$7E
-  LD C,A
-  LD (state_plane_missile_coordinates),BC
-  LD HL,state_controls
-  SET 0,(HL)                           ; Set CONTROLS_BIT_FIRE
+  LD A,(state_plane_missile_coordinates) ; Return if missile already active (Y != 0).
+  CP $00                                 ;
+  RET NZ                                 ;
+  LD A,(state_x)                          ; Create missile at (plane_X + 4, $7E).
+  ADD A,$04                               ;
+  LD B,$7E                                ;
+  LD C,A                                  ;
+  LD (state_plane_missile_coordinates),BC ;
+  LD HL,state_controls                 ; Set CONTROLS_BIT_FIRE in state_controls.
+  SET 0,(HL)                           ;
   RET
 
 ; Unused
@@ -3320,7 +3340,7 @@ handle_terrain_element_1_eq_2:
 ; O:A Always set to 0
 increase_bridge_index:
   LD DE,$0000                          ; Reset Y-position
-  LD (state_y),DE                      ;
+  LD (state_scroll_offset),DE          ;
   LD A,(state_bridge_index)            ; Increase bridge index
   INC A                                ;
   LD (state_bridge_index),A            ;
@@ -4030,7 +4050,7 @@ do_low_fuel_2:
 ; Used by the routine at start_overview.
 overview:
   LD BC,$0010
-  LD (state_y),BC
+  LD (state_scroll_offset),BC
   LD A,$10
   LD (state_island_line_idx),A
   LD D,COLOR_BLUE<<3|COLOR_GREEN       ; PAPER BLUE; INK GREEN
@@ -4076,7 +4096,7 @@ overview_0:
   CALL operate_viewport_objects
   CALL operate_tank_shell
   CALL operate_helicopter_missile
-  CALL advance
+  CALL advance_scroll
   CALL L8A1B
   LD HL,L5F81
   INC (HL)
@@ -4448,7 +4468,7 @@ locate_level:
   ADD HL,DE                            ; Have HL point to the level defined by A
   DEC A                                ;
   JR NZ,locate_level                   ;
-  LD BC,(state_y)
+  LD BC,(state_scroll_offset)
   SRL B
   RR C
   SRL B

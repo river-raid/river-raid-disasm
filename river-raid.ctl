@@ -542,8 +542,8 @@ g $5F6D Bridge destruction flag: $00 = no bridge destroyed, $01 = bridge destroy
 g $5F6E Y-position of the destroyed bridge section (used for rendering explosion fragments).
 @ $5F6F label=state_unused_5F6F
 g $5F6F Unused state variable (cleared during initialization).
-@ $5F70 label=state_y
-g $5F70 Current Y coordinate
+@ $5F70 label=state_scroll_offset
+g $5F70 Scroll offset - accumulated vertical distance traveled. Incremented by current speed each frame.
 @ $5F72 label=state_x
 g $5F72 Current X coordinate
 @ $5F73 label=helicopter_missile_coordinates_ptr
@@ -1274,26 +1274,49 @@ N $6682 Selects between normal sprite (#R$83B1) and banked sprite (#R$83F1) base
 c $66CC Load banked plane sprite address
 N $66CC Helper to load the banked sprite address (#R$83F1) into HL when sprite bank selector is $04.
   $66CC,3 Load #R$83F1 into HL.
-@ $66D0 label=advance
-c $66D0 Increase #R$5F70 by the value of #R$5F64, set #R$5F64 to the default value and do something with the #R$6BB0 bits.
+@ $66D0 label=advance_scroll
+c $66D0 Advance game scroll and update bridge position
+N $66D0 Called each frame to advance the vertical scroll position. Adds current speed (#R$5F64) to scroll offset (#R$5F70), updates the bridge's Y position via #R$66EE, then resets speed to SPEED_NORMAL and updates control flags.
+N $66D0 .
+N $66D0 The control bits modified are: clears CONTROLS_BIT_SPEED_ALTERED, sets CONTROLS_BIT_SPEED_DECREASED. This marks that speed has returned to normal after any joystick input.
 @ $66E1 isub=LD A,SPEED_NORMAL
-c $66EE
+  $66D0 Add speed to scroll offset and store result.
+  $66DB,6 Call #R$66EE to update bridge; reset speed to SPEED_NORMAL.
+  $66E6,7 Clear CONTROLS_BIT_SPEED_ALTERED, set CONTROLS_BIT_SPEED_DECREASED in #R$6BB0.
+@ $66EE label=update_bridge_scroll
+c $66EE Update bridge Y position during scroll
+N $66EE Adjusts the bridge's Y position (#R$5F6E) based on current scrolling. If no bridge exists (Y=0), returns immediately. If the bridge scrolls off the bottom of the screen (Y AND $88 == $88), clears it via #R$6704.
 @ $66F8 isub=AND VIEWPORT_HEIGHT
 @ $66FA isub=CP VIEWPORT_HEIGHT
-c $6704
-@ $670A isub=LD A,SPEED_FAST
+  $66EE If no bridge, return; otherwise advance bridge Y via #R$62DA.
+  $66F5 If bridge scrolled off screen, call #R$6704 to clear it.
+  $66FD,6 Store updated bridge Y and return.
+@ $6704 label=clear_bridge
+c $6704 Clear bridge when scrolled off screen
+N $6704 Clears the bridge destroyed flag (#R$5F6D) and returns 0 in A, which the caller stores to #R$5F6E to mark no bridge present.
+  $6704,5 Clear bridge destroyed flag.
 @ $670A label=handle_up
-c $670A
+@ $670A isub=LD A,SPEED_FAST
+c $670A Handle up/accelerate input
+N $670A Sets speed to SPEED_FAST and updates control flags. Called when player presses up on joystick/keyboard.
 @ $6712 isub=SET CONTROLS_BIT_SPEED_ALTERED,(HL)
 @ $6714 isub=RES CONTROLS_BIT_SPEED_DECREASED,(HL)
-@ $6717 isub=LD A,SPEED_SLOW
+  $670A Set speed to SPEED_FAST.
+  $670F,7 Set CONTROLS_BIT_SPEED_ALTERED, clear CONTROLS_BIT_SPEED_DECREASED.
 @ $6717 label=handle_down
-c $6717
+@ $6717 isub=LD A,SPEED_SLOW
+c $6717 Handle down/decelerate input
+N $6717 Sets speed to SPEED_SLOW and updates control flags. Called when player presses down on joystick/keyboard.
 @ $671F isub=SET CONTROLS_BIT_SPEED_ALTERED,(HL)
 @ $6721 isub=SET CONTROLS_BIT_SPEED_DECREASED,(HL)
+  $6717 Set speed to SPEED_SLOW.
+  $671C,7 Set CONTROLS_BIT_SPEED_ALTERED and CONTROLS_BIT_SPEED_DECREASED.
 @ $6724 label=handle_fire
-c $6724
-  $6739,2 Set CONTROLS_BIT_FIRE
+c $6724 Handle fire button input
+N $6724 Creates a new missile if none is currently active. Positions missile at plane X + 4, Y = $7E (just above plane). Sets CONTROLS_BIT_FIRE flag.
+  $6724 Return if missile already active (Y != 0).
+  $672A Create missile at (plane_X + 4, $7E).
+  $6736,5 Set CONTROLS_BIT_FIRE in #R$6BB0.
 s $673C
 @ $673D label=animate_plane_missile
 c $673D
