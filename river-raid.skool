@@ -3197,81 +3197,86 @@ c$678E LD HL,$6BB0   ;
 ; .
 ; .
 ; If in GAMEPLAY_MODE_REFUEL, jumps to #R$650A instead.
+; .
+; .
+; .
+; The sprite frame selection uses the X coordinate's lower 3 bits to choose the
+; correct pixel-aligned erasure frame (1-4).
 @label=finalize_collision
-c$6794 LD BC,($5EF3) ;
- $6798 CALL $72EF    ;
- $679B LD A,($5F68)  ;
+c$6794 LD BC,($5EF3) ; Load missile coordinates from #R$5EF3.
+ $6798 CALL $72EF    ; Call #R$72EF to set blending mode to OR.
+ $679B LD A,($5F68)  ; Load gameplay mode from #R$5F68.
 @isub=CP GAMEPLAY_MODE_REFUEL
- $679E CP $06        ;
- $67A0 JP Z,$650A    ;
+ $679E CP $06        ; Check if in GAMEPLAY_MODE_REFUEL.
+ $67A0 JP Z,$650A    ; If refueling, jump to #R$650A.
 @isub=LD A,COLLISION_MODE_NONE
- $67A3 LD A,$00      ;
- $67A5 LD ($5EF5),A  ;
- $67A8 LD A,$01      ;
- $67AA LD HL,$8451   ;
- $67AD LD DE,$0008   ;
- $67B0 LD A,C        ;
- $67B1 AND $07       ;
- $67B3 SRL A         ;
- $67B5 INC A         ;
- $67B6 OR A          ;
- $67B7 SBC HL,DE     ;
+ $67A3 LD A,$00      ; Load COLLISION_MODE_NONE.
+ $67A5 LD ($5EF5),A  ; Reset collision mode in #R$5EF5.
+ $67A8 LD A,$01      ; Load sprite width (1 tile).
+ $67AA LD HL,$8451   ; Load sprite base address #R$8451 into HL.
+ $67AD LD DE,$0008   ; Load frame size (8 bytes) into DE.
+ $67B0 LD A,C        ; Load missile X coordinate into A.
+ $67B1 AND $07       ; Mask lower 3 bits (pixel alignment 0-7).
+ $67B3 SRL A         ; Divide by 2 (alignment 0-3).
+ $67B5 INC A         ; Add 1 (frame index 1-4).
+ $67B6 OR A          ; Clear carry for subtraction.
+ $67B7 SBC HL,DE     ; Subtract one frame size from HL.
 @label=finalize_collision_erase_missile_loop
-*$67B9 ADD HL,DE     ;
- $67BA DEC A         ;
- $67BB JR NZ,$67B9   ;
- $67BD LD A,($673C)  ;
- $67C0 CP $01        ;
- $67C2 CALL Z,$62DA  ;
- $67C5 LD ($8B0E),HL ;
- $67C8 LD ($8B0C),BC ;
- $67CC LD ($8B0A),BC ;
- $67D0 LD A,$01      ;
- $67D2 LD BC,$0008   ;
- $67D5 LD DE,$080C   ;
- $67D8 LD HL,$82F5   ;
- $67DB CALL $8B3C    ;
- $67DE LD HL,$6BB0   ;
- $67E1 RES 1,(HL)    ; Reset CONTROLS_BIT_SPEED_DECREASED
- $67E3 LD BC,($5EF3) ;
- $67E7 LD HL,$0000   ;
- $67EA LD ($5EF3),HL ;
- $67ED LD A,B        ;
- $67EE SUB $06       ;
- $67F0 LD B,A        ;
- $67F1 CP $06        ;
- $67F3 RET Z         ;
- $67F4 LD A,($5F72)  ;
- $67F7 ADD A,$04     ;
- $67F9 LD C,A        ;
- $67FA LD HL,$8451   ;
- $67FD LD DE,$0008   ;
- $6800 LD A,C        ;
- $6801 AND $07       ;
- $6803 SRL A         ;
- $6805 INC A         ;
- $6806 OR A          ;
- $6807 SBC HL,DE     ;
+*$67B9 ADD HL,DE     ; Add frame size to HL.
+ $67BA DEC A         ; Decrement frame counter.
+ $67BB JR NZ,$67B9   ; Loop until correct frame selected.
+ $67BD LD A,($673C)  ; Load missile pass selector from #R$673C.
+ $67C0 CP $01        ; Check if first pass ($01).
+ $67C2 CALL Z,$62DA  ; If first pass, call #R$62DA to advance object position.
+ $67C5 LD ($8B0E),HL ; Store sprite pointer to #R$8B0E.
+ $67C8 LD ($8B0C),BC ; Store coordinates to #R$8B0C.
+ $67CC LD ($8B0A),BC ; Store coordinates to #R$8B0A (previous position).
+ $67D0 LD A,$01      ; Set sprite width to 1 tile.
+ $67D2 LD BC,$0008   ; Set frame size to 8 bytes.
+ $67D5 LD DE,$080C   ; Set height ($08) and attributes ($0C) in DE.
+ $67D8 LD HL,$82F5   ; Load #R$82F5 (sprite_erasure) into HL.
+ $67DB CALL $8B3C    ; Call #R$8B3C to render erasure sprite over missile.
+ $67DE LD HL,$6BB0   ; Load address of #R$6BB0 (state_controls).
+ $67E1 RES 1,(HL)    ; Reset CONTROLS_BIT_SPEED_DECREASED.
+ $67E3 LD BC,($5EF3) ; Reload missile coordinates from #R$5EF3.
+ $67E7 LD HL,$0000   ; Load $0000 into HL.
+ $67EA LD ($5EF3),HL ; Clear missile coordinates in #R$5EF3.
+ $67ED LD A,B        ; Load missile Y coordinate into A.
+ $67EE SUB $06       ; Subtract 6 from Y.
+ $67F0 LD B,A        ; Store adjusted Y back in B.
+ $67F1 CP $06        ; Check if Y <= 6 (at top of screen).
+ $67F3 RET Z         ; Return if no residue to erase.
+ $67F4 LD A,($5F72)  ; Load plane X coordinate from #R$5F72.
+ $67F7 ADD A,$04     ; Add 4 to center the erasure.
+ $67F9 LD C,A        ; Store in C for coordinates.
+ $67FA LD HL,$8451   ; Load sprite base address #R$8451 into HL.
+ $67FD LD DE,$0008   ; Load frame size (8 bytes) into DE.
+ $6800 LD A,C        ; Load X coordinate into A.
+ $6801 AND $07       ; Mask lower 3 bits (pixel alignment).
+ $6803 SRL A         ; Divide by 2.
+ $6805 INC A         ; Add 1 (frame index 1-4).
+ $6806 OR A          ; Clear carry for subtraction.
+ $6807 SBC HL,DE     ; Subtract one frame size from HL.
 @label=finalize_collision_erase_residue_loop
-*$6809 ADD HL,DE     ;
- $680A DEC A         ;
- $680B JR NZ,$6809   ;
- $680D LD A,($5EF6)  ;
- $6810 LD D,A        ;
- $6811 LD A,$08      ;
- $6813 SUB D         ;
- $6814 CP $00        ;
- $6816 RET Z         ;
- $6817 LD D,A        ;
- $6818 LD E,$0C      ;
- $681A LD A,$01      ;
- $681C LD ($8B0E),HL ;
- $681F LD HL,$82F5   ;
- $6822 LD ($8B0C),BC ;
- $6826 LD ($8B0A),BC ;
- $682A LD BC,$0000   ;
- $682D CALL $8B3C    ;
- $6830 RET           ;
+*$6809 ADD HL,DE     ; Add frame size to HL.
+ $680A DEC A         ; Decrement frame counter.
+ $680B JR NZ,$6809   ; Loop until correct frame selected.
+ $680D LD A,($5EF6)  ; Load saved Y offset from #R$5EF6.
+ $6810 LD D,A        ; Store in D.
+ $6811 LD A,$08      ; Load 8 into A.
+ $6813 SUB D         ; Subtract offset (remaining height).
+ $6814 CP $00        ; Check if zero.
+ $6816 RET Z         ; Return if nothing to erase.
+ $6817 LD D,A        ; Store height in D.
+ $6818 LD E,$0C      ; Set attributes ($0C) in E.
+ $681A LD A,$01      ; Set sprite width to 1 tile.
+ $681C LD ($8B0E),HL ; Store sprite pointer to #R$8B0E.
+ $681F LD HL,$82F5   ; Load #R$82F5 (sprite_erasure) into HL.
+ $6822 LD ($8B0C),BC ; Store coordinates to #R$8B0C.
+ $6826 LD ($8B0A),BC ; Store coordinates to #R$8B0A.
+ $682A LD BC,$0000   ; Set frame size to 0 (use existing frame).
+ $682D CALL $8B3C    ; Call #R$8B3C to render residue erasure.
+ $6830 RET           ; Return.
 
 ; Add $0800 offset to island data pointer
 ;

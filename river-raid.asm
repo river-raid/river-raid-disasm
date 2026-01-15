@@ -2962,79 +2962,82 @@ L678E:
 ; collision mode to COLLISION_MODE_NONE, clears the missile coordinates, and resets CONTROLS_BIT_SPEED_DECREASED.
 ;
 ; If in GAMEPLAY_MODE_REFUEL, jumps to handle_no_fuel instead.
+;
+; The sprite frame selection uses the X coordinate's lower 3 bits to choose the correct pixel-aligned erasure frame
+; (1-4).
 finalize_collision:
-  LD BC,(state_plane_missile_coordinates)
-  CALL blenging_mode_or_or
-  LD A,(state_gameplay_mode)
-  CP GAMEPLAY_MODE_REFUEL
-  JP Z,handle_no_fuel
-  LD A,COLLISION_MODE_NONE
-  LD (state_collision_mode),A
-  LD A,$01
-  LD HL,L8451
-  LD DE,$0008
-  LD A,C
-  AND $07
-  SRL A
-  INC A
-  OR A
-  SBC HL,DE
+  LD BC,(state_plane_missile_coordinates) ; Load missile coordinates from state_plane_missile_coordinates.
+  CALL blenging_mode_or_or             ; Call blenging_mode_or_or to set blending mode to OR.
+  LD A,(state_gameplay_mode)           ; Load gameplay mode from state_gameplay_mode.
+  CP GAMEPLAY_MODE_REFUEL              ; Check if in GAMEPLAY_MODE_REFUEL.
+  JP Z,handle_no_fuel                  ; If refueling, jump to handle_no_fuel.
+  LD A,COLLISION_MODE_NONE             ; Load COLLISION_MODE_NONE.
+  LD (state_collision_mode),A          ; Reset collision mode in state_collision_mode.
+  LD A,$01                             ; Load sprite width (1 tile).
+  LD HL,L8451                          ; Load sprite base address L8451 into HL.
+  LD DE,$0008                          ; Load frame size (8 bytes) into DE.
+  LD A,C                               ; Load missile X coordinate into A.
+  AND $07                              ; Mask lower 3 bits (pixel alignment 0-7).
+  SRL A                                ; Divide by 2 (alignment 0-3).
+  INC A                                ; Add 1 (frame index 1-4).
+  OR A                                 ; Clear carry for subtraction.
+  SBC HL,DE                            ; Subtract one frame size from HL.
 finalize_collision_erase_missile_loop:
-  ADD HL,DE
-  DEC A
-  JR NZ,finalize_collision_erase_missile_loop
-  LD A,(L673C)
-  CP $01
-  CALL Z,advance_object
-  LD (render_sprite_ptr),HL
-  LD (object_coordinates),BC
-  LD (previous_object_coordinates),BC
-  LD A,$01
-  LD BC,$0008
-  LD DE,$080C
-  LD HL,sprite_erasure
-  CALL render_object
-  LD HL,state_controls
-  RES 1,(HL)                           ; Reset CONTROLS_BIT_SPEED_DECREASED
-  LD BC,(state_plane_missile_coordinates)
-  LD HL,$0000
-  LD (state_plane_missile_coordinates),HL
-  LD A,B
-  SUB $06
-  LD B,A
-  CP $06
-  RET Z
-  LD A,(state_x)
-  ADD A,$04
-  LD C,A
-  LD HL,L8451
-  LD DE,$0008
-  LD A,C
-  AND $07
-  SRL A
-  INC A
-  OR A
-  SBC HL,DE
+  ADD HL,DE                            ; Add frame size to HL.
+  DEC A                                ; Decrement frame counter.
+  JR NZ,finalize_collision_erase_missile_loop ; Loop until correct frame selected.
+  LD A,(L673C)                         ; Load missile pass selector from L673C.
+  CP $01                               ; Check if first pass ($01).
+  CALL Z,advance_object                ; If first pass, call advance_object to advance object position.
+  LD (render_sprite_ptr),HL            ; Store sprite pointer to render_sprite_ptr.
+  LD (object_coordinates),BC           ; Store coordinates to object_coordinates.
+  LD (previous_object_coordinates),BC  ; Store coordinates to previous_object_coordinates (previous position).
+  LD A,$01                             ; Set sprite width to 1 tile.
+  LD BC,$0008                          ; Set frame size to 8 bytes.
+  LD DE,$080C                          ; Set height ($08) and attributes ($0C) in DE.
+  LD HL,sprite_erasure                 ; Load sprite_erasure (sprite_erasure) into HL.
+  CALL render_object                   ; Call render_object to render erasure sprite over missile.
+  LD HL,state_controls                 ; Load address of state_controls (state_controls).
+  RES 1,(HL)                           ; Reset CONTROLS_BIT_SPEED_DECREASED.
+  LD BC,(state_plane_missile_coordinates) ; Reload missile coordinates from state_plane_missile_coordinates.
+  LD HL,$0000                          ; Load $0000 into HL.
+  LD (state_plane_missile_coordinates),HL ; Clear missile coordinates in state_plane_missile_coordinates.
+  LD A,B                               ; Load missile Y coordinate into A.
+  SUB $06                              ; Subtract 6 from Y.
+  LD B,A                               ; Store adjusted Y back in B.
+  CP $06                               ; Check if Y <= 6 (at top of screen).
+  RET Z                                ; Return if no residue to erase.
+  LD A,(state_x)                       ; Load plane X coordinate from state_x.
+  ADD A,$04                            ; Add 4 to center the erasure.
+  LD C,A                               ; Store in C for coordinates.
+  LD HL,L8451                          ; Load sprite base address L8451 into HL.
+  LD DE,$0008                          ; Load frame size (8 bytes) into DE.
+  LD A,C                               ; Load X coordinate into A.
+  AND $07                              ; Mask lower 3 bits (pixel alignment).
+  SRL A                                ; Divide by 2.
+  INC A                                ; Add 1 (frame index 1-4).
+  OR A                                 ; Clear carry for subtraction.
+  SBC HL,DE                            ; Subtract one frame size from HL.
 finalize_collision_erase_residue_loop:
-  ADD HL,DE
-  DEC A
-  JR NZ,finalize_collision_erase_residue_loop
-  LD A,(L5EF6)
-  LD D,A
-  LD A,$08
-  SUB D
-  CP $00
-  RET Z
-  LD D,A
-  LD E,$0C
-  LD A,$01
-  LD (render_sprite_ptr),HL
-  LD HL,sprite_erasure
-  LD (object_coordinates),BC
-  LD (previous_object_coordinates),BC
-  LD BC,$0000
-  CALL render_object
-  RET
+  ADD HL,DE                            ; Add frame size to HL.
+  DEC A                                ; Decrement frame counter.
+  JR NZ,finalize_collision_erase_residue_loop ; Loop until correct frame selected.
+  LD A,(L5EF6)                         ; Load saved Y offset from L5EF6.
+  LD D,A                               ; Store in D.
+  LD A,$08                             ; Load 8 into A.
+  SUB D                                ; Subtract offset (remaining height).
+  CP $00                               ; Check if zero.
+  RET Z                                ; Return if nothing to erase.
+  LD D,A                               ; Store height in D.
+  LD E,$0C                             ; Set attributes ($0C) in E.
+  LD A,$01                             ; Set sprite width to 1 tile.
+  LD (render_sprite_ptr),HL            ; Store sprite pointer to render_sprite_ptr.
+  LD HL,sprite_erasure                 ; Load sprite_erasure (sprite_erasure) into HL.
+  LD (object_coordinates),BC           ; Store coordinates to object_coordinates.
+  LD (previous_object_coordinates),BC  ; Store coordinates to previous_object_coordinates.
+  LD BC,$0000                          ; Set frame size to 0 (use existing frame).
+  CALL render_object                   ; Call render_object to render residue erasure.
+  RET                                  ; Return.
 
 ; Add $0800 offset to island data pointer
 ;

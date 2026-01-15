@@ -1207,11 +1207,82 @@ c $6794 Finalize collision and erase missile sprite
 N $6794 Called after a successful collision to clean up the game state. Erases the missile sprite from the screen, resets the collision mode to COLLISION_MODE_NONE, clears the missile coordinates, and resets CONTROLS_BIT_SPEED_DECREASED.
 N $6794 .
 N $6794 If in GAMEPLAY_MODE_REFUEL, jumps to #R$650A instead.
+N $6794 .
+N $6794 The sprite frame selection uses the X coordinate's lower 3 bits to choose the correct pixel-aligned erasure frame (1-4).
+  $6794 Load missile coordinates from #R$5EF3.
+  $6798 Call #R$72EF to set blending mode to OR.
+  $679B Load gameplay mode from #R$5F68.
 @ $679E isub=CP GAMEPLAY_MODE_REFUEL
+  $679E Check if in GAMEPLAY_MODE_REFUEL.
+  $67A0 If refueling, jump to #R$650A.
 @ $67A3 isub=LD A,COLLISION_MODE_NONE
+  $67A3 Load COLLISION_MODE_NONE.
+  $67A5 Reset collision mode in #R$5EF5.
+  $67A8 Load sprite width (1 tile).
+  $67AA Load sprite base address #R$8451 into HL.
+  $67AD Load frame size (8 bytes) into DE.
+  $67B0 Load missile X coordinate into A.
+  $67B1 Mask lower 3 bits (pixel alignment 0-7).
+  $67B3 Divide by 2 (alignment 0-3).
+  $67B5 Add 1 (frame index 1-4).
+  $67B6 Clear carry for subtraction.
+  $67B7 Subtract one frame size from HL.
 @ $67B9 label=finalize_collision_erase_missile_loop
-  $67E1,2 Reset CONTROLS_BIT_SPEED_DECREASED
+  $67B9 Add frame size to HL.
+  $67BA Decrement frame counter.
+  $67BB Loop until correct frame selected.
+  $67BD Load missile pass selector from #R$673C.
+  $67C0 Check if first pass ($01).
+  $67C2 If first pass, call #R$62DA to advance object position.
+  $67C5 Store sprite pointer to #R$8B0E.
+  $67C8 Store coordinates to #R$8B0C.
+  $67CC Store coordinates to #R$8B0A (previous position).
+  $67D0 Set sprite width to 1 tile.
+  $67D2 Set frame size to 8 bytes.
+  $67D5 Set height ($08) and attributes ($0C) in DE.
+  $67D8 Load #R$82F5 (sprite_erasure) into HL.
+  $67DB Call #R$8B3C to render erasure sprite over missile.
+  $67DE Load address of #R$6BB0 (state_controls).
+  $67E1 Reset CONTROLS_BIT_SPEED_DECREASED.
+  $67E3 Reload missile coordinates from #R$5EF3.
+  $67E7 Load $0000 into HL.
+  $67EA Clear missile coordinates in #R$5EF3.
+  $67ED Load missile Y coordinate into A.
+  $67EE Subtract 6 from Y.
+  $67F0 Store adjusted Y back in B.
+  $67F1 Check if Y <= 6 (at top of screen).
+  $67F3 Return if no residue to erase.
+  $67F4 Load plane X coordinate from #R$5F72.
+  $67F7 Add 4 to center the erasure.
+  $67F9 Store in C for coordinates.
+  $67FA Load sprite base address #R$8451 into HL.
+  $67FD Load frame size (8 bytes) into DE.
+  $6800 Load X coordinate into A.
+  $6801 Mask lower 3 bits (pixel alignment).
+  $6803 Divide by 2.
+  $6805 Add 1 (frame index 1-4).
+  $6806 Clear carry for subtraction.
+  $6807 Subtract one frame size from HL.
 @ $6809 label=finalize_collision_erase_residue_loop
+  $6809 Add frame size to HL.
+  $680A Decrement frame counter.
+  $680B Loop until correct frame selected.
+  $680D Load saved Y offset from #R$5EF6.
+  $6810 Store in D.
+  $6811 Load 8 into A.
+  $6813 Subtract offset (remaining height).
+  $6814 Check if zero.
+  $6816 Return if nothing to erase.
+  $6817 Store height in D.
+  $6818 Set attributes ($0C) in E.
+  $681A Set sprite width to 1 tile.
+  $681C Store sprite pointer to #R$8B0E.
+  $681F Load #R$82F5 (sprite_erasure) into HL.
+  $6822 Store coordinates to #R$8B0C.
+  $6826 Store coordinates to #R$8B0A.
+  $682A Set frame size to 0 (use existing frame).
+  $682D Call #R$8B3C to render residue erasure.
+  $6830 Return.
 @ $6831 label=add_island_offset_800
 c $6831 Add $0800 offset to island data pointer
   $6831 Set DE to $0800
