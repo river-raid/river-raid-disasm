@@ -3118,48 +3118,70 @@ c$6642 LD A,($5F72)  ; Load current plane X-coordinate from #R$5F72
 ; Render player plane sprite
 ;
 ; Used by the routines at #R$5DA6 and #R$683B.
+;
+; .
+;
+; Renders the player's plane at its current position. Only executes in
+; GAMEPLAY_MODE_NORMAL; returns immediately in other modes (scroll-in,
+; overview, refuel).
+; .
+; .
+; .
+; Sets COLLISION_MODE_FUEL_DEPOT so the collision system checks for fuel depot
+; contact during rendering. Backs up missile coordinates to #R$5F8F before
+; modifying them for collision detection.
+; .
+; .
+; .
+; Selects between normal sprite (#R$83B1) and banked sprite (#R$83F1) based on
+; #R$5F69. Player 2 uses different attributes (same as ship).
 @label=render_plane
-c$6682 LD A,($5F68)  ;
+c$6682 LD A,($5F68)  ; {Return if not in GAMEPLAY_MODE_NORMAL.
 @isub=CP GAMEPLAY_MODE_NORMAL
  $6685 CP $00        ;
- $6687 RET NZ        ;
- $6688 LD A,($5F72)  ;
- $668B LD HL,($5EF3) ;
- $668E LD ($5F8F),HL ;
- $6691 LD C,A        ;
- $6692 LD B,$80      ;
+ $6687 RET NZ        ; }
+ $6688 LD A,($5F72)  ; {Backup missile coords to #R$5F8F; set up plane position
+ $668B LD HL,($5EF3) ; (Y=$80, X from #R$5F72).
+ $668E LD ($5F8F),HL ; }
+ $6691 LD C,A        ; {Set COLLISION_MODE_FUEL_DEPOT and store plane coords to
+ $6692 LD B,$80      ; #R$8B0C.
 @isub=LD A,COLLISION_MODE_FUEL_DEPOT
  $6694 LD A,$01      ;
- $6696 LD ($5EF5),A  ;
- $6699 LD ($8B0C),BC ;
- $669D CALL $62DA    ;
- $66A0 LD ($8B0A),BC ;
+ $6696 LD ($5EF5),A  ; }
+ $6699 LD ($8B0C),BC ; (continued).
+ $669D CALL $62DA    ; {Advance position via #R$62DA and store to #R$8B0A.
+ $66A0 LD ($8B0A),BC ; }
 @isub=LD BC,SPRITE_PLANE_FRAME_SIZE
- $66A4 LD BC,$0010   ;
+ $66A4 LD BC,$0010   ; {Set frame size and sprite pointer from #R$5EF7.
  $66A7 LD HL,($5EF7) ;
- $66AA LD ($8B0E),HL ;
+ $66AA LD ($8B0E),HL ; }
 @isub=LD E,SPRITE_PLANE_ATTRIBUTES
- $66AD LD E,$0E      ;
- $66AF LD A,($923D)  ;
+ $66AD LD E,$0E      ; {Set attributes; call #R$7038 for Player 2 (uses ship
+ $66AF LD A,($923D)  ; attributes).
 @isub=CP PLAYER_2
- $66B2 CP $02        ; {Player 2 and ship use the same attributes
+ $66B2 CP $02        ;
  $66B4 CALL Z,$7038  ; }
 @isub=LD D,SPRITE_PLANE_HEIGHT_PIXELS
- $66B7 LD D,$08      ;
+ $66B7 LD D,$08      ; {Set height, load sprite base; if bank=$04, use #R$83F1.
  $66B9 LD HL,$83B1   ;
  $66BC LD A,($5F69)  ;
- $66BF CP $04        ;
+ $66BF CP $04        ; }
  $66C1 CALL Z,$66CC  ;
 @isub=LD A,SPRITE_PLANE_WIDTH_TILES
- $66C4 LD A,$02      ;
- $66C6 CALL $8B3C    ;
- $66C9 JP $6630      ;
+ $66C4 LD A,$02      ; {Set width and call #R$8B3C to render.
+ $66C6 CALL $8B3C    ; }
+ $66C9 JP $6630      ; Restore state via #R$6630.
 
-; Routine at 66CC
+; Load banked plane sprite address
 ;
 ; Used by the routine at #R$6682.
+;
+; .
+;
+; Helper to load the banked sprite address (#R$83F1) into HL when sprite bank
+; selector is $04.
 @label=ld_sprite_plane_banked
-c$66CC LD HL,$83F1   ;
+c$66CC LD HL,$83F1   ; Load #R$83F1 into HL.
  $66CF RET           ;
 
 ; Increase #R$5F70 by the value of #R$5F64, set #R$5F64 to the default value

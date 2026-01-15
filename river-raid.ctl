@@ -1245,19 +1245,35 @@ D $6642 This routine is called when the player presses left on the joystick or k
   $6677 Set sprite width to $02 (2 tiles wide)
   $6679 Load sprite data address #R$83F1
   $667C Call #R$8B3C to render the plane sprite at new position
-  $667F,3 Jump to #R$6630 to restore plane state after rendering
+  $667F Jump to #R$6630 to restore plane state after rendering
 @ $6682 label=render_plane
 c $6682 Render player plane sprite
+N $6682 Renders the player's plane at its current position. Only executes in GAMEPLAY_MODE_NORMAL; returns immediately in other modes (scroll-in, overview, refuel).
+N $6682 .
+N $6682 Sets COLLISION_MODE_FUEL_DEPOT so the collision system checks for fuel depot contact during rendering. Backs up missile coordinates to #R$5F8F before modifying them for collision detection.
+N $6682 .
+N $6682 Selects between normal sprite (#R$83B1) and banked sprite (#R$83F1) based on #R$5F69. Player 2 uses different attributes (same as ship).
+  $6682 Return if not in GAMEPLAY_MODE_NORMAL.
 @ $6685 isub=CP GAMEPLAY_MODE_NORMAL
+  $6688 Backup missile coords to #R$5F8F; set up plane position (Y=$80, X from #R$5F72).
+  $6691 Set COLLISION_MODE_FUEL_DEPOT and store plane coords to #R$8B0C.
 @ $6694 isub=LD A,COLLISION_MODE_FUEL_DEPOT
+  $6699 (continued).
+  $669D Advance position via #R$62DA and store to #R$8B0A.
 @ $66A4 isub=LD BC,SPRITE_PLANE_FRAME_SIZE
+  $66A4 Set frame size and sprite pointer from #R$5EF7.
 @ $66AD isub=LD E,SPRITE_PLANE_ATTRIBUTES
+  $66AD Set attributes; call #R$7038 for Player 2 (uses ship attributes).
 @ $66B2 isub=CP PLAYER_2
-  $66B2,5 Player 2 and ship use the same attributes
 @ $66B7 isub=LD D,SPRITE_PLANE_HEIGHT_PIXELS
+  $66B7,10 Set height, load sprite base; if bank=$04, use #R$83F1.
 @ $66C4 isub=LD A,SPRITE_PLANE_WIDTH_TILES
+  $66C4 Set width and call #R$8B3C to render.
+  $66C9 Restore state via #R$6630.
 @ $66CC label=ld_sprite_plane_banked
-c $66CC
+c $66CC Load banked plane sprite address
+N $66CC Helper to load the banked sprite address (#R$83F1) into HL when sprite bank selector is $04.
+  $66CC,3 Load #R$83F1 into HL.
 @ $66D0 label=advance
 c $66D0 Increase #R$5F70 by the value of #R$5F64, set #R$5F64 to the default value and do something with the #R$6BB0 bits.
 @ $66E1 isub=LD A,SPEED_NORMAL

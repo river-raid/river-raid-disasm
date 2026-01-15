@@ -2848,41 +2848,52 @@ handle_left:
 ; Render player plane sprite
 ;
 ; Used by the routines at play and handle_island_rendering.
+;
+; Renders the player's plane at its current position. Only executes in GAMEPLAY_MODE_NORMAL; returns immediately in
+; other modes (scroll-in, overview, refuel).
+;
+; Sets COLLISION_MODE_FUEL_DEPOT so the collision system checks for fuel depot contact during rendering. Backs up
+; missile coordinates to state_plane_missile_coordinates_backup before modifying them for collision detection.
+;
+; Selects between normal sprite (sprite_plane) and banked sprite (sprite_plane_banked) based on state_plane_sprite_bank.
+; Player 2 uses different attributes (same as ship).
 render_plane:
-  LD A,(state_gameplay_mode)
-  CP GAMEPLAY_MODE_NORMAL
-  RET NZ
-  LD A,(state_x)
-  LD HL,(state_plane_missile_coordinates)
-  LD (state_plane_missile_coordinates_backup),HL
-  LD C,A
-  LD B,$80
-  LD A,COLLISION_MODE_FUEL_DEPOT
-  LD (state_collision_mode),A
-  LD (object_coordinates),BC
-  CALL advance_object
-  LD (previous_object_coordinates),BC
-  LD BC,SPRITE_PLANE_FRAME_SIZE
-  LD HL,(L5EF7)
-  LD (render_sprite_ptr),HL
-  LD E,SPRITE_PLANE_ATTRIBUTES
-  LD A,(state_player)
-  CP PLAYER_2                          ; Player 2 and ship use the same attributes
+  LD A,(state_gameplay_mode)           ; Return if not in GAMEPLAY_MODE_NORMAL.
+  CP GAMEPLAY_MODE_NORMAL              ;
+  RET NZ                               ;
+  LD A,(state_x)                                 ; Backup missile coords to state_plane_missile_coordinates_backup; set
+  LD HL,(state_plane_missile_coordinates)        ; up plane position (Y=$80, X from state_x).
+  LD (state_plane_missile_coordinates_backup),HL ;
+  LD C,A                               ; Set COLLISION_MODE_FUEL_DEPOT and store plane coords to object_coordinates.
+  LD B,$80                             ;
+  LD A,COLLISION_MODE_FUEL_DEPOT       ;
+  LD (state_collision_mode),A          ;
+  LD (object_coordinates),BC           ; (continued).
+  CALL advance_object                  ; Advance position via advance_object and store to previous_object_coordinates.
+  LD (previous_object_coordinates),BC  ;
+  LD BC,SPRITE_PLANE_FRAME_SIZE        ; Set frame size and sprite pointer from L5EF7.
+  LD HL,(L5EF7)                        ;
+  LD (render_sprite_ptr),HL            ;
+  LD E,SPRITE_PLANE_ATTRIBUTES         ; Set attributes; call ld_attributes_ship for Player 2 (uses ship attributes).
+  LD A,(state_player)                  ;
+  CP PLAYER_2                          ;
   CALL Z,ld_attributes_ship            ;
-  LD D,SPRITE_PLANE_HEIGHT_PIXELS
-  LD HL,sprite_plane
-  LD A,(state_plane_sprite_bank)
-  CP $04
+  LD D,SPRITE_PLANE_HEIGHT_PIXELS      ; Set height, load sprite base; if bank=$04, use sprite_plane_banked.
+  LD HL,sprite_plane                   ;
+  LD A,(state_plane_sprite_bank)       ;
+  CP $04                               ;
   CALL Z,ld_sprite_plane_banked
-  LD A,SPRITE_PLANE_WIDTH_TILES
-  CALL render_object
-  JP restore_plane_state_after_render
+  LD A,SPRITE_PLANE_WIDTH_TILES        ; Set width and call render_object to render.
+  CALL render_object                   ;
+  JP restore_plane_state_after_render  ; Restore state via restore_plane_state_after_render.
 
-; Routine at 66CC
+; Load banked plane sprite address
 ;
 ; Used by the routine at render_plane.
+;
+; Helper to load the banked sprite address (sprite_plane_banked) into HL when sprite bank selector is $04.
 ld_sprite_plane_banked:
-  LD HL,sprite_plane_banked
+  LD HL,sprite_plane_banked            ; Load sprite_plane_banked into HL.
   RET
 
 ; Increase state_y by the value of state_speed, set state_speed to the default value and do something with the
