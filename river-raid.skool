@@ -2732,67 +2732,89 @@ c$64A1 LD (HL),C     ; Mark depot slot as empty.
 ; Unused
 u$64B4 DEFB $D1,$D1,$D1,$D1,$D1,$C3,$0A,$65
 
-; Routine at 64BC
+; Print current bridge number on status line
 ;
 ; Used by the routines at #R$5DA6, #R$61BB, #R$6249, #R$6587 and #R$6D17.
+;
+; .
+;
+; Displays the current bridge number for the active player on the status line.
+; Sets the appropriate ink color (yellow for Player 1, cyan for Player 2) and
+; prints the bridge counter with leading space padding for single-digit
+; numbers.
+; .
+; .
+; .
+; Uses ROM routine at $203C to print status line text and $1A1B (OUT_NUM_1) to
+; print the numeric value.
 @label=print_bridge
-c$64BC LD A,($923D)  ;
+c$64BC LD A,($923D)  ; {If Player 2, jump to #R$64E5.
 @isub=CP PLAYER_2
- $64BF CP $02        ;
+ $64BF CP $02        ; }
  $64C1 JP Z,$64E5    ;
 @isub=LD A,EXT_ATTR_INK
- $64C4 LD A,$10      ; {INK of Player 1 color
+ $64C4 LD A,$10      ; {Set ink to COLOR_PLAYER_1.
  $64C6 RST $10       ;
 @isub=LD A,COLOR_PLAYER_1
  $64C7 LD A,$06      ;
  $64C9 RST $10       ; }
- $64CA LD DE,$804F   ;
+ $64CA LD DE,$804F   ; {Print #R$804F (11 bytes) to position cursor.
 @isub=LD BC,status_line_4 - status_line_3
  $64CD LD BC,$000B   ;
- $64D0 CALL $203C    ;
- $64D3 LD A,($5F6A)  ;
- $64D6 SUB $0A       ;
- $64D8 CALL M,$6506  ;
- $64DB LD A,($5F6A)  ;
+ $64D0 CALL $203C    ; }
+ $64D3 LD A,($5F6A)  ; {If bridge count < 10, print leading space.
+ $64D6 SUB $0A       ; }
+ $64D8 CALL M,$6506  ; (continued).
+ $64DB LD A,($5F6A)  ; {Print bridge count from #R$5F6A.
  $64DE LD B,$00      ;
  $64E0 LD C,A        ;
- $64E1 CALL $1A1B    ;
+ $64E1 CALL $1A1B    ; }
  $64E4 RET           ;
 
-; Print current bridge for player 2
+; Print bridge number for Player 2
 ;
 ; Used by the routine at #R$64BC.
+;
+; .
+;
+; Entry point when current player is Player 2. Sets ink color and falls through
+; to common printing logic.
 @label=print_bridge_player_2
 @isub=LD A,EXT_ATTR_INK
-c$64E5 LD A,$10      ; {INK of Player 2 color
+c$64E5 LD A,$10      ; {Set ink to COLOR_PLAYER_2.
  $64E7 RST $10       ;
 @isub=LD A,COLOR_PLAYER_2
  $64E8 LD A,$05      ;
  $64EA RST $10       ; }
- $64EB LD DE,$804F   ;
+ $64EB LD DE,$804F   ; {Set up DE=$804F, BC=11 for status text.
 @isub=LD BC,status_line_4 - status_line_3
- $64EE LD BC,$000B   ;
+ $64EE LD BC,$000B   ; }
 
-; Print current bridge number for player 2
+; Common bridge printing for Player 2
 ;
 ; Used by the routine at #R$6587.
-@label=print_bridge_no_player_2
-c$64F1 CALL $203C    ;
- $64F4 LD A,($5F6B)  ;
- $64F7 SUB $0A       ;
- $64F9 CALL M,$6506  ;
- $64FC LD A,($5F6B)  ;
+;
+; .
+;
+; Shared code for printing Player 2's bridge number. Called directly when
+; printing Player 2's status line in two-player mode.
+@label=print_bridge_player_2_common
+c$64F1 CALL $203C    ; {Print status line text and check if bridge < 10.
+ $64F4 LD A,($5F6B)  ; }
+ $64F7 SUB $0A       ; {(continued) If so, print leading space.
+ $64F9 CALL M,$6506  ; }
+ $64FC LD A,($5F6B)  ; {Print bridge count from #R$5F6B.
  $64FF LD B,$00      ;
  $6501 LD C,A        ;
- $6502 CALL $1A1B    ;
+ $6502 CALL $1A1B    ; }
  $6505 RET           ;
 
-; Print space
+; Print a space character
 ;
 ; Used by the routines at #R$64BC and #R$64F1.
 @label=print_space
-c$6506 LD A,$20      ;
- $6508 RST $10       ;
+c$6506 LD A,$20      ; {Output space ($20) via RST $10.
+ $6508 RST $10       ; }
  $6509 RET           ;
 
 ; Handle the no fuel situation

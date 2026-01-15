@@ -1016,22 +1016,37 @@ N $64A1 Called when the plane touches a fuel depot during REFUEL mode. Marks the
   $64AE,6 Add fuel and jump to #R$63FC to reset gameplay mode.
 u $64B4
 @ $64BC label=print_bridge
-c $64BC
+c $64BC Print current bridge number on status line
+N $64BC Displays the current bridge number for the active player on the status line. Sets the appropriate ink color (yellow for Player 1, cyan for Player 2) and prints the bridge counter with leading space padding for single-digit numbers.
+N $64BC .
+N $64BC Uses ROM routine at $203C to print status line text and $1A1B (OUT_NUM_1) to print the numeric value.
+  $64BC,5 If Player 2, jump to #R$64E5.
 @ $64BF isub=CP PLAYER_2
 @ $64C4 isub=LD A,EXT_ATTR_INK
-  $64C4,6 INK of Player 1 color
+  $64C4 Set ink to COLOR_PLAYER_1.
 @ $64C7 isub=LD A,COLOR_PLAYER_1
+  $64CA Print #R$804F (11 bytes) to position cursor.
 @ $64CD isub=LD BC,status_line_4 - status_line_3
+  $64D3 If bridge count < 10, print leading space.
+  $64D8 (continued).
+  $64DB,9 Print bridge count from #R$5F6A.
 @ $64E5 label=print_bridge_player_2
 @ $64E5 isub=LD A,EXT_ATTR_INK
-c $64E5 Print current bridge for player 2
-  $64E5,6 INK of Player 2 color
+c $64E5 Print bridge number for Player 2
+N $64E5 Entry point when current player is Player 2. Sets ink color and falls through to common printing logic.
+  $64E5 Set ink to COLOR_PLAYER_2.
 @ $64E8 isub=LD A,COLOR_PLAYER_2
+  $64EB Set up DE=$804F, BC=11 for status text.
 @ $64EE isub=LD BC,status_line_4 - status_line_3
-@ $64F1 label=print_bridge_no_player_2
-c $64F1 Print current bridge number for player 2
+@ $64F1 label=print_bridge_player_2_common
+c $64F1 Common bridge printing for Player 2
+N $64F1 Shared code for printing Player 2's bridge number. Called directly when printing Player 2's status line in two-player mode.
+  $64F1 Print status line text and check if bridge < 10.
+  $64F7 (continued) If so, print leading space.
+  $64FC,9 Print bridge count from #R$5F6B.
 @ $6506 label=print_space
-c $6506 Print space
+c $6506 Print a space character
+  $6506,3 Output space ($20) via RST $10.
 @ $650A label=handle_no_fuel
 c $650A Handle the no fuel situation
 D $650A This routine is called when the player runs out of fuel. It stops the plane, creates two explosion fragments at the plane's position, animates the explosions over 16 frames, waits for a delay, then determines the next game state based on the current player and remaining lives in single or two-player mode.

@@ -2534,60 +2534,70 @@ refuel_from_depot:
 L64B4:
   DEFB $D1,$D1,$D1,$D1,$D1,$C3,$0A,$65
 
-; Routine at 64BC
+; Print current bridge number on status line
 ;
 ; Used by the routines at play, check_collision, next_bridge_player_2, setup_player_2_display and overview.
+;
+; Displays the current bridge number for the active player on the status line. Sets the appropriate ink color (yellow
+; for Player 1, cyan for Player 2) and prints the bridge counter with leading space padding for single-digit numbers.
+;
+; Uses ROM routine at $203C to print status line text and $1A1B (OUT_NUM_1) to print the numeric value.
 print_bridge:
-  LD A,(state_player)
-  CP PLAYER_2
+  LD A,(state_player)                  ; If Player 2, jump to print_bridge_player_2.
+  CP PLAYER_2                          ;
   JP Z,print_bridge_player_2
-  LD A,EXT_ATTR_INK                    ; INK of Player 1 color
+  LD A,EXT_ATTR_INK                    ; Set ink to COLOR_PLAYER_1.
   RST $10                              ;
   LD A,COLOR_PLAYER_1                  ;
   RST $10                              ;
-  LD DE,status_line_3
-  LD BC,status_line_4 - status_line_3
-  CALL PR_STRING
-  LD A,(state_bridge_player_1)
-  SUB $0A
-  CALL M,print_space
-  LD A,(state_bridge_player_1)
-  LD B,$00
-  LD C,A
-  CALL OUT_NUM_1
+  LD DE,status_line_3                  ; Print status_line_3 (11 bytes) to position cursor.
+  LD BC,status_line_4 - status_line_3  ;
+  CALL PR_STRING                       ;
+  LD A,(state_bridge_player_1)         ; If bridge count < 10, print leading space.
+  SUB $0A                              ;
+  CALL M,print_space                   ; (continued).
+  LD A,(state_bridge_player_1)         ; Print bridge count from state_bridge_player_1.
+  LD B,$00                             ;
+  LD C,A                               ;
+  CALL OUT_NUM_1                       ;
   RET
 
-; Print current bridge for player 2
+; Print bridge number for Player 2
 ;
 ; Used by the routine at print_bridge.
+;
+; Entry point when current player is Player 2. Sets ink color and falls through to common printing logic.
 print_bridge_player_2:
-  LD A,EXT_ATTR_INK                    ; INK of Player 2 color
+  LD A,EXT_ATTR_INK                    ; Set ink to COLOR_PLAYER_2.
   RST $10                              ;
   LD A,COLOR_PLAYER_2                  ;
   RST $10                              ;
-  LD DE,status_line_3
-  LD BC,status_line_4 - status_line_3
+  LD DE,status_line_3                  ; Set up DE=$804F, BC=11 for status text.
+  LD BC,status_line_4 - status_line_3  ;
 
-; Print current bridge number for player 2
+; Common bridge printing for Player 2
 ;
 ; Used by the routine at setup_player_2_display.
-print_bridge_no_player_2:
-  CALL PR_STRING
-  LD A,(state_bridge_player_2)
-  SUB $0A
-  CALL M,print_space
-  LD A,(state_bridge_player_2)
-  LD B,$00
-  LD C,A
-  CALL OUT_NUM_1
+;
+; Shared code for printing Player 2's bridge number. Called directly when printing Player 2's status line in two-player
+; mode.
+print_bridge_player_2_common:
+  CALL PR_STRING                       ; Print status line text and check if bridge < 10.
+  LD A,(state_bridge_player_2)         ;
+  SUB $0A                              ; (continued) If so, print leading space.
+  CALL M,print_space                   ;
+  LD A,(state_bridge_player_2)         ; Print bridge count from state_bridge_player_2.
+  LD B,$00                             ;
+  LD C,A                               ;
+  CALL OUT_NUM_1                       ;
   RET
 
-; Print space
+; Print a space character
 ;
-; Used by the routines at print_bridge and print_bridge_no_player_2.
+; Used by the routines at print_bridge and print_bridge_player_2_common.
 print_space:
-  LD A,$20
-  RST $10
+  LD A,$20                             ; Output space ($20) via RST $10.
+  RST $10                              ;
   RET
 
 ; Handle the no fuel situation
@@ -2693,7 +2703,7 @@ setup_player_2_display:
   RST $10                              ;
   LD DE,status_line_3_text
   LD BC,$0008
-  CALL print_bridge_no_player_2        ; Print Player 2 status line text
+  CALL print_bridge_player_2_common    ; Print Player 2 status line text
   RET
 
 ; Switch to Player 2 after Player 1 death
