@@ -2394,174 +2394,204 @@ c$62E0 LD A,($5F64)  ;
 ;
 ; .
 ;
-; Iterates through viewport_objects checking if the player's missile collides
-; with any object. On hit, dispatches to type-specific handlers: #R$6414
-; (helicopter), #R$6423 (ship), #R$6444 (advanced helicopter), #R$6453
-; (fighter), #R$6462 (balloon), #R$6478 (fuel).
+; Iterates through #R$5F00 (viewport_objects) checking if the player's missile
+; collides with any object. Each object slot is 3 bytes: X, Y, and type/state.
+; .
+; .
+; .
+; Collision detection uses type-specific bounding boxes. Most objects are 10x8
+; pixels, but balloons and fuel depots are taller (17-25 pixels), and ships are
+; wider (19 pixels).
+; .
+; .
+; .
+; On hit, dispatches to type-specific handlers: #R$6414 (helicopter), #R$6423
+; (ship), #R$6444 (advanced helicopter), #R$6453 (fighter), #R$6462 (balloon),
+; #R$6478 (fuel). If no known type matches, checks #R$6268 for fragment
+; collision.
+; .
+; .
+; .
+; During GAMEPLAY_MODE_REFUEL, object Y coordinates are adjusted for scrolling
+; before and after collision checks.
 @label=check_missile_vs_objects
-c$62E8 LD HL,($5F60) ;
- $62EB LD C,(HL)     ;
- $62EC INC HL        ;
- $62ED LD B,(HL)     ;
- $62EE INC HL        ;
- $62EF INC HL        ;
- $62F0 LD ($5F60),HL ;
- $62F3 LD A,C        ;
+c$62E8 LD HL,($5F60) ; Load object list pointer from #R$5F60.
+ $62EB LD C,(HL)     ; Load object X coordinate into C.
+ $62EC INC HL        ; Advance pointer.
+ $62ED LD B,(HL)     ; Load object Y coordinate into B.
+ $62EE INC HL        ; {Skip third byte (type/state), advance pointer.
+ $62EF INC HL        ; }
+ $62F0 LD ($5F60),HL ; Store updated pointer to #R$5F60.
+ $62F3 LD A,C        ; Copy X to A for marker check.
 @isub=CP SET_MARKER_EMPTY_SLOT
- $62F4 CP $00        ;
- $62F6 JP Z,$62E8    ;
+ $62F4 CP $00        ; Check if empty slot marker ($00).
+ $62F6 JP Z,$62E8    ; If empty, skip to next object.
 @isub=CP SET_MARKER_END_OF_SET
- $62F9 CP $FF        ;
- $62FB JP Z,$63B9    ;
- $62FE LD A,($5F68)  ;
+ $62F9 CP $FF        ; Check if end-of-list marker ($FF).
+ $62FB JP Z,$63B9    ; If end, jump to #R$63B9 for fragment collision check.
+ $62FE LD A,($5F68)  ; Load gameplay mode from #R$5F68.
 @isub=CP GAMEPLAY_MODE_REFUEL
- $6301 CP $06        ;
- $6303 CALL Z,$62DA  ;
- $6306 LD DE,($5EF3) ;
- $630A LD A,D        ;
- $630B ADD A,$09     ;
- $630D LD H,$00      ;
- $630F LD L,A        ;
- $6310 LD D,$00      ;
+ $6301 CP $06        ; Check if in REFUEL mode.
+ $6303 CALL Z,$62DA  ; If refueling, call #R$62DA to adjust object Y for
+                     ; scrolling.
+; Y-axis collision check (entity height: 9 pixels).
+ $6306 LD DE,($5EF3) ; Load entity coordinates (D=Y, E=X) from #R$5EF3.
+ $630A LD A,D        ; Copy entity Y to A.
+ $630B ADD A,$09     ; Add 9 (entity bottom edge).
+ $630D LD H,$00      ; {Set up HL = entity_Y + 9.
+ $630F LD L,A        ; }
+ $6310 LD D,$00      ; {Set up DE = object_Y.
  $6312 OR A          ;
- $6313 LD E,B        ;
- $6314 SBC HL,DE     ;
- $6316 JP M,$62E8    ;
- $6319 LD A,B        ;
- $631A ADD A,$08     ;
- $631C LD D,A        ;
- $631D LD E,$00      ;
- $631F LD HL,($5F60) ;
- $6322 DEC HL        ;
- $6323 LD A,(HL)     ;
+ $6313 LD E,B        ; }
+ $6314 SBC HL,DE     ; Calculate (entity_Y + 9) - object_Y.
+ $6316 JP M,$62E8    ; If negative (entity above object), no collision - next
+                     ; object.
+ $6319 LD A,B        ; Load object Y into A.
+ $631A ADD A,$08     ; Add 8 (base object height).
+ $631C LD D,A        ; Store in D (D = object_Y + 8).
+ $631D LD E,$00      ; Clear E (height offset = 0).
+ $631F LD HL,($5F60) ; Load pointer from #R$5F60.
+ $6322 DEC HL        ; Point to type/state byte.
+ $6323 LD A,(HL)     ; Load type/state.
 @isub=AND SLOT_MASK_OBJECT_TYPE
- $6324 AND $07       ;
+ $6324 AND $07       ; Mask to get object type.
 @isub=CP OBJECT_BALLOON
- $6326 CP $06        ;
- $6328 CALL Z,$62D4  ;
+ $6326 CP $06        ; Check if balloon.
+ $6328 CALL Z,$62D4  ; If balloon, call #R$62D4 (E = 9, taller).
 @isub=CP OBJECT_FUEL
- $632B CP $07        ;
- $632D CALL Z,$62D7  ;
- $6330 LD A,D        ;
- $6331 ADD A,E       ;
- $6332 LD DE,($5EF3) ;
- $6336 LD H,$00      ;
+ $632B CP $07        ; Check if fuel depot.
+ $632D CALL Z,$62D7  ; If fuel, call #R$62D7 (E = 17, tallest).
+ $6330 LD A,D        ; Load D (object_Y + 8).
+ $6331 ADD A,E       ; Add height offset E.
+ $6332 LD DE,($5EF3) ; Load entity Y into E.
+ $6336 LD H,$00      ; {Set up HL = object_Y + 8 + offset.
  $6338 LD L,A        ;
- $6339 LD E,D        ;
- $633A LD D,$00      ;
- $633C OR A          ;
- $633D SBC HL,DE     ;
- $633F JP M,$62E8    ;
- $6342 LD DE,($5EF3) ;
- $6346 LD A,E        ;
- $6347 ADD A,$08     ;
- $6349 LD E,A        ;
- $634A LD H,$00      ;
- $634C LD L,E        ;
- $634D LD D,$00      ;
- $634F LD E,C        ;
- $6350 OR A          ;
- $6351 SBC HL,DE     ;
- $6353 JP M,$62E8    ;
- $6356 LD A,C        ;
- $6357 ADD A,$0A     ;
- $6359 LD D,A        ;
- $635A LD E,$00      ;
- $635C LD HL,($5F60) ;
- $635F DEC HL        ;
- $6360 LD A,(HL)     ;
+ $6339 LD E,D        ; }
+ $633A LD D,$00      ; Set up DE = entity_Y.
+ $633C OR A          ; Clear carry.
+ $633D SBC HL,DE     ; Calculate (object_Y + 8 + offset) - entity_Y.
+ $633F JP M,$62E8    ; If negative (object above entity), no collision - next
+                     ; object.
+; X-axis collision check (entity width: 8 pixels).
+ $6342 LD DE,($5EF3) ; Load entity coordinates (D=Y, E=X) from #R$5EF3.
+ $6346 LD A,E        ; Copy entity X to A.
+ $6347 ADD A,$08     ; Add 8 (entity right edge).
+ $6349 LD E,A        ; Store in E.
+ $634A LD H,$00      ; {Set up HL = entity_X + 8.
+ $634C LD L,E        ; }
+ $634D LD D,$00      ; {Set up DE = object_X.
+ $634F LD E,C        ; }
+ $6350 OR A          ; Clear carry.
+ $6351 SBC HL,DE     ; Calculate (entity_X + 8) - object_X.
+ $6353 JP M,$62E8    ; If negative (entity left of object), no collision - next
+                     ; object.
+ $6356 LD A,C        ; Load object X into A.
+ $6357 ADD A,$0A     ; Add 10 (base object width).
+ $6359 LD D,A        ; Store in D (D = object_X + 10).
+ $635A LD E,$00      ; Clear E (width offset = 0).
+ $635C LD HL,($5F60) ; Load pointer from #R$5F60.
+ $635F DEC HL        ; Point to type/state byte.
+ $6360 LD A,(HL)     ; Load type/state.
 @isub=AND SLOT_MASK_OBJECT_TYPE
- $6361 AND $07       ;
+ $6361 AND $07       ; Mask to get object type.
 @isub=CP OBJECT_SHIP
- $6363 CP $02        ;
- $6365 CALL Z,$62D4  ;
- $6368 LD A,D        ;
- $6369 ADD A,E       ;
- $636A LD DE,($5EF3) ;
- $636E LD ($5F8B),BC ;
- $6372 LD H,$00      ;
+ $6363 CP $02        ; Check if ship.
+ $6365 CALL Z,$62D4  ; If ship, call #R$62D4 (E = 9, wider).
+ $6368 LD A,D        ; Load D (object_X + 10).
+ $6369 ADD A,E       ; Add width offset E.
+ $636A LD DE,($5EF3) ; Load entity X into E.
+ $636E LD ($5F8B),BC ; Store object coordinates BC to #R$5F8B for hit handlers.
+ $6372 LD H,$00      ; {Set up HL = object_X + 10 + offset.
  $6374 LD L,A        ;
- $6375 OR A          ;
- $6376 LD D,$00      ;
- $6378 SBC HL,DE     ;
- $637A JP M,$62E8    ;
- $637D LD A,($5F68)  ;
+ $6375 OR A          ; }
+ $6376 LD D,$00      ; Set up DE = entity_X.
+ $6378 SBC HL,DE     ; Calculate (object_X + 10 + offset) - entity_X.
+ $637A JP M,$62E8    ; If negative (object right of entity), no collision -
+                     ; next object.
+; Collision detected - prepare for type dispatch.
+ $637D LD A,($5F68)  ; Load gameplay mode from #R$5F68.
 @isub=CP GAMEPLAY_MODE_REFUEL
- $6380 CP $06        ;
- $6382 CALL Z,$62E0  ;
- $6385 LD ($5F8B),BC ;
- $6389 LD HL,($5F60) ;
- $638C DEC HL        ;
- $638D LD A,(HL)     ;
- $638E AND $07       ;
- $6390 CP $00        ;
- $6392 JP Z,$63DD    ;
- $6395 DEC HL        ;
- $6396 DEC HL        ;
- $6397 LD (HL),$00   ;
- $6399 LD D,$00      ;
+ $6380 CP $06        ; Check if in REFUEL mode.
+ $6382 CALL Z,$62E0  ; If refueling, call #R$62E0 to undo Y adjustment.
+ $6385 LD ($5F8B),BC ; Store object coordinates BC to #R$5F8B (update after
+                     ; adjustment).
+ $6389 LD HL,($5F60) ; Load pointer from #R$5F60.
+ $638C DEC HL        ; Point to type/state byte.
+ $638D LD A,(HL)     ; Load type/state.
+ $638E AND $07       ; Mask to get object type.
+ $6390 CP $00        ; Check if type is 0 (terrain/unknown).
+ $6392 JP Z,$63DD    ; If type 0, jump to #R$63DD to process collision.
+ $6395 DEC HL        ; {Point to X coordinate.
+ $6396 DEC HL        ; }
+ $6397 LD (HL),$00   ; Clear the slot (mark object as destroyed).
+ $6399 LD D,$00      ; Clear D for dispatch.
 @isub=CP OBJECT_HELICOPTER_REG
- $639B CP $01        ;
- $639D JP Z,$6414    ;
+ $639B CP $01        ; Check if regular helicopter.
+ $639D JP Z,$6414    ; If helicopter, jump to #R$6414.
 @isub=CP OBJECT_SHIP
- $63A0 CP $02        ;
- $63A2 JP Z,$6423    ;
+ $63A0 CP $02        ; Check if ship.
+ $63A2 JP Z,$6423    ; If ship, jump to #R$6423.
 @isub=CP OBJECT_HELICOPTER_ADV
- $63A5 CP $03        ;
- $63A7 JP Z,$6444    ;
+ $63A5 CP $03        ; Check if advanced helicopter.
+ $63A7 JP Z,$6444    ; If advanced helicopter, jump to #R$6444.
 @isub=CP OBJECT_FIGHTER
- $63AA CP $05        ;
- $63AC JP Z,$6453    ;
+ $63AA CP $05        ; Check if fighter.
+ $63AC JP Z,$6453    ; If fighter, jump to #R$6453.
 @isub=CP OBJECT_BALLOON
- $63AF CP $06        ;
- $63B1 JP Z,$6462    ;
+ $63AF CP $06        ; Check if balloon.
+ $63B1 JP Z,$6462    ; If balloon, jump to #R$6462.
 @isub=CP OBJECT_FUEL
- $63B4 CP $07        ;
- $63B6 JP Z,$6478    ;
-*$63B9 CALL $6268    ;
- $63BC LD HL,$5F00   ;
- $63BF LD ($5F60),HL ;
- $63C2 LD HL,$5F2E   ;
- $63C5 LD ($5F62),HL ;
- $63C8 LD A,($5F8B)  ;
- $63CB CP $02        ;
- $63CD JP Z,$63FC    ;
- $63D0 LD BC,($7385) ;
- $63D4 LD DE,($8B0C) ;
- $63D8 LD A,B        ;
- $63D9 CP D          ;
- $63DA JP Z,$63FC    ;
-; This entry point is used by the routines at #R$6414, #R$6423, #R$6444,
-; #R$6453, #R$6462 and #R$649E.
-*$63DD POP DE        ;
+ $63B4 CP $07        ; Check if fuel depot.
+ $63B6 JP Z,$6478    ; If fuel, jump to #R$6478.
+; End of object list - check fragment collision and tank shell.
+@label=check_missile_vs_objects_end
+*$63B9 CALL $6268    ; Call #R$6268 to check collision with explosion
+                     ; fragments.
+ $63BC LD HL,$5F00   ; {Reset #R$5F60 to start of viewport_objects.
+ $63BF LD ($5F60),HL ; }
+ $63C2 LD HL,$5F2E   ; {Reset #R$5F62 to start of exploding_fragments.
+ $63C5 LD ($5F62),HL ; }
+ $63C8 LD A,($5F8B)  ; Load collision result from #R$5F8B.
+ $63CB CP $02        ; Check if fragment collision detected ($02).
+ $63CD JP Z,$63FC    ; If fragment hit, jump to #R$63FC to exit.
+ $63D0 LD BC,($7385) ; Load tank shell coordinates from #R$7385.
+ $63D4 LD DE,($8B0C) ; Load plane coordinates from #R$8B0C.
+ $63D8 LD A,B        ; {Compare Y coordinates.
+ $63D9 CP D          ; }
+ $63DA JP Z,$63FC    ; If Y matches (missile hit by tank shell), jump to
+                     ; #R$63FC.
+; Entry point for collision hit processing. Cleans up stack and finalizes
+; collision.
+@label=process_collision_hit
+*$63DD POP DE        ; {Pop four words from stack (unwind call frames).
  $63DE POP DE        ;
  $63DF POP DE        ;
- $63E0 POP BC        ;
- $63E1 LD A,D        ;
- $63E2 LD ($5EF6),A  ;
- $63E5 LD HL,$5F2E   ;
- $63E8 LD ($5F62),HL ;
- $63EB LD HL,$5F00   ;
- $63EE LD ($5F60),HL ;
- $63F1 LD BC,($5F8D) ;
- $63F5 LD ($5EF3),BC ;
- $63F9 JP $6794      ;
+ $63E0 POP BC        ; }
+ $63E1 LD A,D        ; Copy hit Y coordinate to A.
+ $63E2 LD ($5EF6),A  ; Store to #R$5EF6.
+ $63E5 LD HL,$5F2E   ; {Reset #R$5F62 to start of exploding_fragments.
+ $63E8 LD ($5F62),HL ; }
+ $63EB LD HL,$5F00   ; {Reset #R$5F60 to start of viewport_objects.
+ $63EE LD ($5F60),HL ; }
+ $63F1 LD BC,($5F8D) ; Load saved coordinates from #R$5F8D.
+ $63F5 LD ($5EF3),BC ; Store to #R$5EF3.
+ $63F9 JP $6794      ; Jump to #R$6794 for post-collision processing.
 
-; Routine at 63FC
+; Reset gameplay mode to normal and exit collision system
 ;
 ; Used by the routines at #R$62E8 and #R$64A1.
-@isub=LD A,GAMEPLAY_MODE_NORMAL
-c$63FC LD A,$00      ;
- $63FE LD ($5F68),A  ;
-; This entry point is used by the routine at #R$615E.
+@label=reset_gameplay_mode
+c$63FC LD A,$00      ; Load GAMEPLAY_MODE_NORMAL ($00).
+ $63FE LD ($5F68),A  ; Store to #R$5F68.
+; Exit collision system with no collision detected.
 @label=no_collision_exit
 @isub=LD A,COLLISION_MODE_NONE
-*$6401 LD A,$00      ;
- $6403 LD ($5EF5),A  ;
- $6406 LD HL,($5F85) ;
+*$6401 LD A,$00      ; Load COLLISION_MODE_NONE ($00).
+ $6403 LD ($5EF5),A  ; Store to #R$5EF5.
+ $6406 LD HL,($5F85) ; {Restore HL, DE, BC from #R$5F85, #R$5F87, #R$5F89.
  $6409 LD DE,($5F87) ;
- $640D LD BC,($5F89) ;
- $6411 JP $8C3B      ;
+ $640D LD BC,($5F89) ; }
+ $6411 JP $8C3B      ; Jump to #R$8C3B to continue rendering.
 
 ; Routine at 6414
 ;

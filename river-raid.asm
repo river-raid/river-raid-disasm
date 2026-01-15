@@ -2241,159 +2241,170 @@ retract_object:
 ;
 ; Used by the routine at check_collision.
 ;
-; Iterates through viewport_objects checking if the player's missile collides with any object. On hit, dispatches to
-; type-specific handlers: hit_helicopter_reg (helicopter), hit_ship (ship), hit_helicopter_adv (advanced helicopter),
-; hit_fighter (fighter), hit_balloon (balloon), interact_with_fuel (fuel).
+; Iterates through viewport_objects (viewport_objects) checking if the player's missile collides with any object. Each
+; object slot is 3 bytes: X, Y, and type/state.
+;
+; Collision detection uses type-specific bounding boxes. Most objects are 10x8 pixels, but balloons and fuel depots are
+; taller (17-25 pixels), and ships are wider (19 pixels).
+;
+; On hit, dispatches to type-specific handlers: hit_helicopter_reg (helicopter), hit_ship (ship), hit_helicopter_adv
+; (advanced helicopter), hit_fighter (fighter), hit_balloon (balloon), interact_with_fuel (fuel). If no known type
+; matches, checks check_fragment_collision for fragment collision.
+;
+; During GAMEPLAY_MODE_REFUEL, object Y coordinates are adjusted for scrolling before and after collision checks.
 check_missile_vs_objects:
-  LD HL,(viewport_ptr)
-  LD C,(HL)
-  INC HL
-  LD B,(HL)
-  INC HL
-  INC HL
-  LD (viewport_ptr),HL
-  LD A,C
-  CP SET_MARKER_EMPTY_SLOT
-  JP Z,check_missile_vs_objects
-  CP SET_MARKER_END_OF_SET
-  JP Z,check_missile_vs_objects_0
-  LD A,(state_gameplay_mode)
-  CP GAMEPLAY_MODE_REFUEL
-  CALL Z,advance_object
-  LD DE,(state_plane_missile_coordinates)
-  LD A,D
-  ADD A,$09
-  LD H,$00
-  LD L,A
-  LD D,$00
-  OR A
-  LD E,B
-  SBC HL,DE
-  JP M,check_missile_vs_objects
-  LD A,B
-  ADD A,$08
-  LD D,A
-  LD E,$00
-  LD HL,(viewport_ptr)
-  DEC HL
-  LD A,(HL)
-  AND SLOT_MASK_OBJECT_TYPE
-  CP OBJECT_BALLOON
-  CALL Z,get_offset_balloon
-  CP OBJECT_FUEL
-  CALL Z,get_offset_fuel
-  LD A,D
-  ADD A,E
-  LD DE,(state_plane_missile_coordinates)
-  LD H,$00
-  LD L,A
-  LD E,D
-  LD D,$00
-  OR A
-  SBC HL,DE
-  JP M,check_missile_vs_objects
-  LD DE,(state_plane_missile_coordinates)
-  LD A,E
-  ADD A,$08
-  LD E,A
-  LD H,$00
-  LD L,E
-  LD D,$00
-  LD E,C
-  OR A
-  SBC HL,DE
-  JP M,check_missile_vs_objects
-  LD A,C
-  ADD A,$0A
-  LD D,A
-  LD E,$00
-  LD HL,(viewport_ptr)
-  DEC HL
-  LD A,(HL)
-  AND SLOT_MASK_OBJECT_TYPE
-  CP OBJECT_SHIP
-  CALL Z,get_offset_balloon
-  LD A,D
-  ADD A,E
-  LD DE,(state_plane_missile_coordinates)
-  LD (collision_result),BC
-  LD H,$00
-  LD L,A
-  OR A
-  LD D,$00
-  SBC HL,DE
-  JP M,check_missile_vs_objects
-  LD A,(state_gameplay_mode)
-  CP GAMEPLAY_MODE_REFUEL
-  CALL Z,retract_object
-  LD (collision_result),BC
-  LD HL,(viewport_ptr)
-  DEC HL
-  LD A,(HL)
-  AND $07
-  CP $00
-  JP Z,check_missile_vs_objects_1
-  DEC HL
-  DEC HL
-  LD (HL),$00
-  LD D,$00
-  CP OBJECT_HELICOPTER_REG
-  JP Z,hit_helicopter_reg
-  CP OBJECT_SHIP
-  JP Z,hit_ship
-  CP OBJECT_HELICOPTER_ADV
-  JP Z,hit_helicopter_adv
-  CP OBJECT_FIGHTER
-  JP Z,hit_fighter
-  CP OBJECT_BALLOON
-  JP Z,hit_balloon
-  CP OBJECT_FUEL
-  JP Z,interact_with_fuel
-check_missile_vs_objects_0:
-  CALL check_fragment_collision
-  LD HL,viewport_objects
-  LD (viewport_ptr),HL
-  LD HL,exploding_fragments
-  LD (exploding_fragments_ptr),HL
-  LD A,(collision_result)
-  CP $02
-  JP Z,L63FC
-  LD BC,(tank_shell_coordinates)
-  LD DE,(object_coordinates)
-  LD A,B
-  CP D
-  JP Z,L63FC
-; This entry point is used by the routines at hit_helicopter_reg, hit_ship, hit_helicopter_adv, hit_fighter, hit_balloon
-; and L649E.
-check_missile_vs_objects_1:
-  POP DE
-  POP DE
-  POP DE
-  POP BC
-  LD A,D
-  LD (L5EF6),A
-  LD HL,exploding_fragments
-  LD (exploding_fragments_ptr),HL
-  LD HL,viewport_objects
-  LD (viewport_ptr),HL
-  LD BC,(L5F8D)
-  LD (state_plane_missile_coordinates),BC
-  JP finalize_collision
+  LD HL,(viewport_ptr)                 ; Load object list pointer from viewport_ptr.
+  LD C,(HL)                            ; Load object X coordinate into C.
+  INC HL                               ; Advance pointer.
+  LD B,(HL)                            ; Load object Y coordinate into B.
+  INC HL                               ; Skip third byte (type/state), advance pointer.
+  INC HL                               ;
+  LD (viewport_ptr),HL                 ; Store updated pointer to viewport_ptr.
+  LD A,C                               ; Copy X to A for marker check.
+  CP SET_MARKER_EMPTY_SLOT             ; Check if empty slot marker ($00).
+  JP Z,check_missile_vs_objects        ; If empty, skip to next object.
+  CP SET_MARKER_END_OF_SET             ; Check if end-of-list marker ($FF).
+  JP Z,check_missile_vs_objects_end    ; If end, jump to check_missile_vs_objects_end for fragment collision check.
+  LD A,(state_gameplay_mode)           ; Load gameplay mode from state_gameplay_mode.
+  CP GAMEPLAY_MODE_REFUEL              ; Check if in REFUEL mode.
+  CALL Z,advance_object                ; If refueling, call advance_object to adjust object Y for scrolling.
+; Y-axis collision check (entity height: 9 pixels).
+  LD DE,(state_plane_missile_coordinates) ; Load entity coordinates (D=Y, E=X) from state_plane_missile_coordinates.
+  LD A,D                               ; Copy entity Y to A.
+  ADD A,$09                            ; Add 9 (entity bottom edge).
+  LD H,$00                             ; Set up HL = entity_Y + 9.
+  LD L,A                               ;
+  LD D,$00                             ; Set up DE = object_Y.
+  OR A                                 ;
+  LD E,B                               ;
+  SBC HL,DE                            ; Calculate (entity_Y + 9) - object_Y.
+  JP M,check_missile_vs_objects        ; If negative (entity above object), no collision - next object.
+  LD A,B                               ; Load object Y into A.
+  ADD A,$08                            ; Add 8 (base object height).
+  LD D,A                               ; Store in D (D = object_Y + 8).
+  LD E,$00                             ; Clear E (height offset = 0).
+  LD HL,(viewport_ptr)                 ; Load pointer from viewport_ptr.
+  DEC HL                               ; Point to type/state byte.
+  LD A,(HL)                            ; Load type/state.
+  AND SLOT_MASK_OBJECT_TYPE            ; Mask to get object type.
+  CP OBJECT_BALLOON                    ; Check if balloon.
+  CALL Z,get_offset_balloon            ; If balloon, call get_offset_balloon (E = 9, taller).
+  CP OBJECT_FUEL                       ; Check if fuel depot.
+  CALL Z,get_offset_fuel               ; If fuel, call get_offset_fuel (E = 17, tallest).
+  LD A,D                               ; Load D (object_Y + 8).
+  ADD A,E                              ; Add height offset E.
+  LD DE,(state_plane_missile_coordinates) ; Load entity Y into E.
+  LD H,$00                             ; Set up HL = object_Y + 8 + offset.
+  LD L,A                               ;
+  LD E,D                               ;
+  LD D,$00                             ; Set up DE = entity_Y.
+  OR A                                 ; Clear carry.
+  SBC HL,DE                            ; Calculate (object_Y + 8 + offset) - entity_Y.
+  JP M,check_missile_vs_objects        ; If negative (object above entity), no collision - next object.
+; X-axis collision check (entity width: 8 pixels).
+  LD DE,(state_plane_missile_coordinates) ; Load entity coordinates (D=Y, E=X) from state_plane_missile_coordinates.
+  LD A,E                               ; Copy entity X to A.
+  ADD A,$08                            ; Add 8 (entity right edge).
+  LD E,A                               ; Store in E.
+  LD H,$00                             ; Set up HL = entity_X + 8.
+  LD L,E                               ;
+  LD D,$00                             ; Set up DE = object_X.
+  LD E,C                               ;
+  OR A                                 ; Clear carry.
+  SBC HL,DE                            ; Calculate (entity_X + 8) - object_X.
+  JP M,check_missile_vs_objects        ; If negative (entity left of object), no collision - next object.
+  LD A,C                               ; Load object X into A.
+  ADD A,$0A                            ; Add 10 (base object width).
+  LD D,A                               ; Store in D (D = object_X + 10).
+  LD E,$00                             ; Clear E (width offset = 0).
+  LD HL,(viewport_ptr)                 ; Load pointer from viewport_ptr.
+  DEC HL                               ; Point to type/state byte.
+  LD A,(HL)                            ; Load type/state.
+  AND SLOT_MASK_OBJECT_TYPE            ; Mask to get object type.
+  CP OBJECT_SHIP                       ; Check if ship.
+  CALL Z,get_offset_balloon            ; If ship, call get_offset_balloon (E = 9, wider).
+  LD A,D                               ; Load D (object_X + 10).
+  ADD A,E                              ; Add width offset E.
+  LD DE,(state_plane_missile_coordinates) ; Load entity X into E.
+  LD (collision_result),BC             ; Store object coordinates BC to collision_result for hit handlers.
+  LD H,$00                             ; Set up HL = object_X + 10 + offset.
+  LD L,A                               ;
+  OR A                                 ;
+  LD D,$00                             ; Set up DE = entity_X.
+  SBC HL,DE                            ; Calculate (object_X + 10 + offset) - entity_X.
+  JP M,check_missile_vs_objects        ; If negative (object right of entity), no collision - next object.
+; Collision detected - prepare for type dispatch.
+  LD A,(state_gameplay_mode)           ; Load gameplay mode from state_gameplay_mode.
+  CP GAMEPLAY_MODE_REFUEL              ; Check if in REFUEL mode.
+  CALL Z,retract_object                ; If refueling, call retract_object to undo Y adjustment.
+  LD (collision_result),BC             ; Store object coordinates BC to collision_result (update after adjustment).
+  LD HL,(viewport_ptr)                 ; Load pointer from viewport_ptr.
+  DEC HL                               ; Point to type/state byte.
+  LD A,(HL)                            ; Load type/state.
+  AND $07                              ; Mask to get object type.
+  CP $00                               ; Check if type is 0 (terrain/unknown).
+  JP Z,process_collision_hit           ; If type 0, jump to process_collision_hit to process collision.
+  DEC HL                               ; Point to X coordinate.
+  DEC HL                               ;
+  LD (HL),$00                          ; Clear the slot (mark object as destroyed).
+  LD D,$00                             ; Clear D for dispatch.
+  CP OBJECT_HELICOPTER_REG             ; Check if regular helicopter.
+  JP Z,hit_helicopter_reg              ; If helicopter, jump to hit_helicopter_reg.
+  CP OBJECT_SHIP                       ; Check if ship.
+  JP Z,hit_ship                        ; If ship, jump to hit_ship.
+  CP OBJECT_HELICOPTER_ADV             ; Check if advanced helicopter.
+  JP Z,hit_helicopter_adv              ; If advanced helicopter, jump to hit_helicopter_adv.
+  CP OBJECT_FIGHTER                    ; Check if fighter.
+  JP Z,hit_fighter                     ; If fighter, jump to hit_fighter.
+  CP OBJECT_BALLOON                    ; Check if balloon.
+  JP Z,hit_balloon                     ; If balloon, jump to hit_balloon.
+  CP OBJECT_FUEL                       ; Check if fuel depot.
+  JP Z,interact_with_fuel              ; If fuel, jump to interact_with_fuel.
+; End of object list - check fragment collision and tank shell.
+check_missile_vs_objects_end:
+  CALL check_fragment_collision        ; Call check_fragment_collision to check collision with explosion fragments.
+  LD HL,viewport_objects               ; Reset viewport_ptr to start of viewport_objects.
+  LD (viewport_ptr),HL                 ;
+  LD HL,exploding_fragments            ; Reset exploding_fragments_ptr to start of exploding_fragments.
+  LD (exploding_fragments_ptr),HL      ;
+  LD A,(collision_result)              ; Load collision result from collision_result.
+  CP $02                               ; Check if fragment collision detected ($02).
+  JP Z,reset_gameplay_mode             ; If fragment hit, jump to reset_gameplay_mode to exit.
+  LD BC,(tank_shell_coordinates)       ; Load tank shell coordinates from tank_shell_coordinates.
+  LD DE,(object_coordinates)           ; Load plane coordinates from object_coordinates.
+  LD A,B                               ; Compare Y coordinates.
+  CP D                                 ;
+  JP Z,reset_gameplay_mode             ; If Y matches (missile hit by tank shell), jump to reset_gameplay_mode.
+; Entry point for collision hit processing. Cleans up stack and finalizes collision.
+process_collision_hit:
+  POP DE                               ; Pop four words from stack (unwind call frames).
+  POP DE                               ;
+  POP DE                               ;
+  POP BC                               ;
+  LD A,D                               ; Copy hit Y coordinate to A.
+  LD (L5EF6),A                         ; Store to L5EF6.
+  LD HL,exploding_fragments            ; Reset exploding_fragments_ptr to start of exploding_fragments.
+  LD (exploding_fragments_ptr),HL      ;
+  LD HL,viewport_objects               ; Reset viewport_ptr to start of viewport_objects.
+  LD (viewport_ptr),HL                 ;
+  LD BC,(L5F8D)                        ; Load saved coordinates from L5F8D.
+  LD (state_plane_missile_coordinates),BC ; Store to state_plane_missile_coordinates.
+  JP finalize_collision                ; Jump to finalize_collision for post-collision processing.
 
-; Routine at 63FC
+; Reset gameplay mode to normal and exit collision system
 ;
 ; Used by the routines at check_missile_vs_objects and L64A1.
-L63FC:
-  LD A,GAMEPLAY_MODE_NORMAL
-  LD (state_gameplay_mode),A
-; This entry point is used by the routine at handle_collision_mode_fighter.
+reset_gameplay_mode:
+  LD A,$00                             ; Load GAMEPLAY_MODE_NORMAL ($00).
+  LD (state_gameplay_mode),A           ; Store to state_gameplay_mode.
+; Exit collision system with no collision detected.
 no_collision_exit:
-  LD A,COLLISION_MODE_NONE
-  LD (state_collision_mode),A
-  LD HL,(tmp_HL)
-  LD DE,(tmp_DE)
-  LD BC,(tmp_BC)
-  JP handle_collision_mode_none
+  LD A,COLLISION_MODE_NONE             ; Load COLLISION_MODE_NONE ($00).
+  LD (state_collision_mode),A          ; Store to state_collision_mode.
+  LD HL,(tmp_HL)                       ; Restore HL, DE, BC from tmp_HL, tmp_DE, tmp_BC.
+  LD DE,(tmp_DE)                       ;
+  LD BC,(tmp_BC)                       ;
+  JP handle_collision_mode_none        ; Jump to handle_collision_mode_none to continue rendering.
 
 ; Routine at 6414
 ;
@@ -2403,7 +2414,7 @@ hit_helicopter_reg:
   CALL add_points
   LD BC,(collision_result)
   CALL explode_fragment
-  JP check_missile_vs_objects_1
+  JP process_collision_hit
 
 ; Routine at 6423
 ;
@@ -2424,7 +2435,7 @@ hit_ship:
   ADD A,$04
   LD B,A
   CALL explode_fragment
-  JP check_missile_vs_objects_1
+  JP process_collision_hit
 
 ; Hit advanced helicopter
 ;
@@ -2434,7 +2445,7 @@ hit_helicopter_adv:
   CALL add_points
   LD BC,(collision_result)
   CALL explode_fragment
-  JP check_missile_vs_objects_1
+  JP process_collision_hit
 
 ; Hit fighter
 ;
@@ -2444,7 +2455,7 @@ hit_fighter:
   CALL add_points
   LD BC,(collision_result)
   CALL explode_fragment
-  JP check_missile_vs_objects_1
+  JP process_collision_hit
 
 ; Routine at 6462
 ;
@@ -2458,7 +2469,7 @@ hit_balloon:
   ADD A,$08
   LD B,A
   CALL explode_fragment
-  JP check_missile_vs_objects_1
+  JP process_collision_hit
 
 ; Routine at 6478
 ;
@@ -2484,7 +2495,7 @@ interact_with_fuel:
 
 ; Routine at 649E
 L649E:
-  JP check_missile_vs_objects_1
+  JP process_collision_hit
 
 ; Routine at 64A1
 ;
@@ -2496,7 +2507,7 @@ L64A1:
   LD HL,exploding_fragments
   LD (exploding_fragments_ptr),HL
   CALL add_fuel
-  JP L63FC
+  JP reset_gameplay_mode
 
 ; Unused
 L64B4:
@@ -7306,7 +7317,7 @@ L8C1B_0:
   OR B
   CP D
   JP NZ,jp_collision_dispatcher
-; This entry point is used by the routines at collision_dispatcher and L63FC.
+; This entry point is used by the routines at collision_dispatcher and reset_gameplay_mode.
 handle_collision_mode_none:
   LD A,(HL)
 
