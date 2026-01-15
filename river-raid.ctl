@@ -710,8 +710,7 @@ D $60A5 This routine renders the player plane sprite (in normal gameplay mode) a
   $611C Pop BC (restore loop counter and fragment counter)
   $611D Decrement B and loop if not zero
   $611F Copy final fragment counter to A
-  $6120 Store updated fragment counter to #R$5EEE
-  $6123 Return to caller
+  $6120,3 Store updated fragment counter to #R$5EEE
 @ $6124 label=calculate_fuel_gauge_offset
 c $6124 Calculate fuel gauge sprite offset
 D $6124 This routine is used by fuel consumption and refueling to calculate the sprite offset for the fuel gauge display. It performs bit manipulation on the fuel level to determine which sprite frame to display.
@@ -724,9 +723,7 @@ D $6124 This routine is used by fuel consumption and refueling to calculate the 
   $612E Pop DE (restore DE register)
   $612F Add D to A
   $6130 Store result into the middle of the next instruction (self-modifying code)
-  $6133 Rotate B left through carry
-@ $6135 nowarn
-  $6135 Return to caller
+  $6133,2 Rotate B left through carry
 @ $6136 label=collision_dispatcher
 c $6136 Collision detection dispatcher
 D $6136 This routine is called during sprite rendering (via #R$8C45) to handle collision detection. It saves the current register state, checks the collision mode, and dispatches to the appropriate collision handler. This is the central dispatcher for all collision detection in the game.
@@ -759,52 +756,22 @@ N $615E .
 N $615E If no collision is detected (any boundary check fails), jumps to #R$6401 to reset collision mode and return.
 N $615E .
 N $615E On collision: removes the fighter from the viewport, triggers two explosion fragments, awards POINTS_FIGHTER, and continues to post-collision processing at #R$6794.
-  $615E Load missile coordinates (B=Y, C=X) from #R$5EF3.
-  $6162 Load fighter coordinates (D=Y, E=X) from #R$8B0C.
-  $6166 Copy missile Y coordinate (B) into A.
-  $6167 Add 6 to missile Y.
-  $6169 Subtract fighter Y (D) from result.
-  $616A If negative (missile too far above), no collision - exit.
-  $616D Copy fighter Y (D) into A.
-  $616E Add 6 to fighter Y.
-  $6170 Subtract missile Y (B) from result.
-  $6171 If negative (missile too far below), no collision - exit.
-  $6174 Set H to 0 for 16-bit arithmetic.
-  $6176 Copy fighter X (E) into A.
-  $6177 Add 10 to fighter X.
-  $6179 Store result in L (HL = fighter X + 10).
-  $617A Set B to 0 for 16-bit subtraction.
-  $617C Clear carry flag for subtraction.
-  $617D HL = (fighter X + 10) - missile X.
-  $617F If negative (missile too far right), no collision - exit.
-  $6182 Set H to 0 for 16-bit arithmetic.
-  $6184 Reload missile coordinates from #R$5EF3.
-  $6188 Copy missile X (C) into A.
-  $6189 Increment missile X.
-  $618A Store result in L (HL = missile X + 1).
-  $618B Set B to 0 for 16-bit subtraction.
-  $618D Copy fighter X (E) into C.
-  $618E Clear carry flag for subtraction.
-  $618F HL = (missile X + 1) - fighter X.
-  $6191 If negative (missile too far left), no collision - exit.
-  $6194 Collision detected! Clean up stack (3x POP DE).
-  $6197 Copy fighter Y (D) into A.
-  $6198 Store fighter Y coordinate to #R$5EF6.
-  $619B Load current viewport pointer from #R$5F60.
-  $619E Move back 2 bytes to point to Y position in slot.
-  $61A0 Load Y position into B.
-  $61A1 Move back to X position in slot.
-  $61A2 Load X position into C.
+  $615E Load missile coordinates from #R$5EF3 and fighter coordinates from #R$8B0C.
+N $6166 Y-axis collision check.
+  $6166 Check if missile_Y + 6 >= fighter_Y; exit to #R$6401 if not.
+  $616D Check if fighter_Y + 6 >= missile_Y; exit to #R$6401 if not.
+N $6174 X-axis collision check.
+  $6174 Check if fighter_X + 10 >= missile_X; exit to #R$6401 if not.
+  $6182 Check if missile_X + 1 >= fighter_X; exit to #R$6401 if not.
+N $6194 Collision detected - process hit.
+  $6194 Clean up stack (3x POP DE).
+  $6197 Store fighter Y coordinate to #R$5EF6.
+  $619B Get object coordinates from viewport and mark slot as empty.
 @ $61A3 isub=LD (HL),SET_MARKER_EMPTY_SLOT
-  $61A3 Mark this object slot as empty.
-  $61A5 Set D to 0 (frame number for explosion).
-  $61A7 Call #R$6E9C to render first explosion fragment.
-  $61AA Subtract 6 from X position (C) to offset second explosion.
-  $61B0 Call #R$6E9C to render second explosion fragment.
+  $61A5 Spawn two explosion fragments (second offset by X-6).
 @ $61B3 isub=LD A,POINTS_FIGHTER
-  $61B3 Load POINTS_FIGHTER into A.
-  $61B5 Call #R$90E0 to add points to score.
-  $61B8 Jump to #R$6794 for post-collision processing.
+  $61B3 Award POINTS_FIGHTER to player.
+  $61B8 Finalize collision.
 @ $61BB label=check_collision
 c $61BB Check collision against bridges and viewport objects
 N $61BB Checks if the entity (missile or plane) has collided with a bridge or any viewport object. The coordinates to check are read from #R$5EF3.
@@ -814,74 +781,42 @@ N $61BB .
 N $61BB First checks if a bridge exists (#R$5F6E != 0) and whether the Y coordinate is within the bridge's vertical bounds (bridge_y - $16 to bridge_y). If the bridge is hit, awards POINTS_BRIDGE, triggers 6 explosion fragments in a 2x3 grid pattern, increments the player's bridge counter, and clears the bridge.
 N $61BB .
 N $61BB If no bridge collision, falls through to #R$62E8 to check collision against viewport objects.
-  $61BB Load entity coordinates (B=Y, C=X) from #R$5EF3.
-  $61BF Load bridge Y position from #R$5F6E.
-  $61C2 Check if a bridge exists (Y position != 0).
-  $61C4 If no bridge, jump to #R$62E8 to check viewport objects.
-  $61C7 Save bridge Y position in D.
-  $61C8 Calculate bridge_y - entity_y.
-  $61C9 If negative (entity above bridge), no collision - check objects.
-  $61CC Restore bridge Y position from D.
-  $61CD Subtract $16 (bridge height) from bridge Y.
-  $61CF Calculate (bridge_y - $16) - entity_y.
-  $61D0 If positive (entity below bridge), no collision - check objects.
+  $61BB Load entity coordinates from #R$5EF3 and bridge Y from #R$5F6E.
+  $61C2 If no bridge exists, jump to #R$62E8 to check viewport objects.
+  $61C7 Check if entity_Y <= bridge_Y; if not, check objects.
+  $61CC Check if entity_Y >= bridge_Y - $16; if not, check objects.
 @ $61D3 isub=LD A,POINTS_BRIDGE
-  $61D3 Bridge hit! Load POINTS_BRIDGE into A.
-  $61D5 Call #R$90E0 to add points to score.
-  $61D8 Load $0F into A (new activation mask after bridge destruction).
-  $61DA Store new activation mask to #R$5F5F.
-  $61DD Clean up stack (4x POP).
-  $61E1 Copy saved value (D) into A.
-  $61E2 Store to #R$5EF6.
-  $61E5 Load bridge Y position from #R$5F6E.
-  $61E8 Subtract 4 to position first explosion row.
-  $61EA Store adjusted Y in B.
-  $61EB Set X = $70 for left column of explosions.
-  $61ED Set D = 0 (explosion frame).
-  $61EF Call #R$6E9C - explosion fragment 1 (top-left).
-  $61F2 Set X = $80 for right column.
-  $61F4 Call #R$6E9C - explosion fragment 2 (top-right).
-  $61F7 Move Y up by 8 pixels for middle row.
-  $61FA Store new Y in B.
-  $61FB Call #R$6E9C - explosion fragment 3 (middle-right, X still $80).
-  $61FE Set X = $70 for left column.
-  $6200 Call #R$6E9C - explosion fragment 4 (middle-left).
-  $6203 Move Y up by 8 pixels for bottom row.
-  $6206 Store new Y in B.
-  $6207 Call #R$6E9C - explosion fragment 5 (bottom-left, X still $70).
-  $620A Set X = $80 for right column.
-  $620C Call #R$6E9C - explosion fragment 6 (bottom-right).
-  $620F Load bridge section from #R$5F6C.
-  $6212 Check if special bridge section ($02).
-  $6214 Load #R$4000 into HL.
-  $6217 If special section, call #R$6BA4 to handle terrain.
-  $621A Load bridge section from #R$5F6C again.
-  $621D Check if special bridge section ($02).
+N $61D3 Bridge hit - award points and spawn explosions.
+  $61D3 Award POINTS_BRIDGE to player.
+  $61D8 Store $0F to #R$5F5F (new activation mask).
+  $61DD Clean up stack and store hit Y to #R$5EF6.
+  $61E5 Set up first explosion row: Y = bridge_Y - 4, X = $70, D = 0.
+  $61EF Spawn explosion 1 (top-left).
+  $61F2 Move to X = $80 and spawn explosion 2 (top-right).
+  $61F7 Move Y + 8 and spawn explosion 3 (middle-right).
+  $61FE Move to X = $70 and spawn explosion 4 (middle-left).
+  $6203 Move Y + 8 and spawn explosion 5 (bottom-left).
+  $620A Move to X = $80 and spawn explosion 6 (bottom-right).
+  $620F If bridge section is $02, call #R$6BA4 with screen #R$4000.
+  $6217 (continued from above).
+@ $621A ignoreua=$4100
+  $621A If bridge section is $02, call #R$6BA4 with screen $4100.
 @ $621F keep
 @ $621F ignoreua=$4100
-  $621F Load screen address $4100 into HL.
-  $6222 If special section, call #R$6BA4 to handle terrain.
-  $6225 Load 0 into A.
-  $6227 Clear bridge Y position (#R$5F6E) - bridge destroyed.
-  $622A Load 1 into A.
-  $622C Set bridge destroyed flag (#R$5F6D).
-  $622F Load saved missile coordinates from #R$5F8D.
-  $6233 Restore missile coordinates to #R$5EF3.
-  $6237 Load current player from #R$923D.
+  $6222 (continued from above).
+  $6225 Clear bridge Y position (#R$5F6E).
+  $622A Set bridge destroyed flag (#R$5F6D).
+  $622F Restore entity coordinates from #R$5F8D to #R$5EF3.
+  $6237 Check if player 2; if so, jump to #R$6249.
 @ $623A isub=CP PLAYER_2
-  $623A Check if player 2.
-  $623C If player 2, jump to #R$6249.
+  $623C (continued from above).
 @ $623F label=next_bridge_player_1
-  $623F Load address of #R$5F6A (player 1 bridge counter).
-  $6242 Increment player 1's bridge count.
-  $6243 Call #R$64BC to print updated bridge number.
-  $6246 Jump to #R$6794 for post-collision processing.
+  $623F Increment player 1 bridge counter at #R$5F6A and print.
+  $6246 Finalize collision.
 @ $6249 label=next_bridge_player_2
 c $6249 Increment player 2's bridge counter
-  $6249 Load address of #R$5F6B (player 2 bridge counter).
-  $624C Increment player 2's bridge count.
-  $624D Call #R$64BC to print updated bridge number.
-  $6250,3 Jump to #R$6794 for post-collision processing.
+  $6249 Increment player 2 bridge counter at #R$5F6B and print.
+  $6250,3 Finalize collision.
 u $6253
 @ $6256 label=handle_collision_mode_fuel_depot
 @ $6256 isub=LD A,GAMEPLAY_MODE_REFUEL
@@ -889,82 +824,40 @@ c $6256 Handle COLLISION_MODE_FUEL_DEPOT (initiate refueling)
 N $6256 Called from the collision dispatcher when COLLISION_MODE_FUEL_DEPOT is detected. Sets gameplay mode to GAMEPLAY_MODE_REFUEL and uses the plane's coordinates (instead of missile coordinates) for collision detection.
 N $6256 .
 N $6256 This allows the plane itself to interact with fuel depots via #R$61BB.
-  $6256 Load GAMEPLAY_MODE_REFUEL into A.
-  $6258 Set gameplay mode to GAMEPLAY_MODE_REFUEL in #R$5F68.
-  $625B Load $80 (PLANE_COORDINATE_Y) into B.
-  $625D Load plane X coordinate from #R$5F72.
-  $6260 Copy X coordinate to C.
-  $6261 Store plane coordinates (BC) to #R$5EF3 for collision detection.
+  $6256 Set gameplay mode to GAMEPLAY_MODE_REFUEL in #R$5F68.
+  $625B Load plane coordinates (Y=$80, X from #R$5F72) into #R$5EF3.
   $6265 Jump to #R$61BB to check for collision with fuel depot.
 @ $6268 label=check_fragment_collision
 c $6268 Check collision with explosion fragments
 N $6268 Iterates through #R$5F2E (exploding_fragments) to check if the entity collides with any active debris. Each fragment entry is 3 bytes: X, Y, and type/state.
 N $6268 .
 N $6268 Collision uses 8x8 bounding box for the entity and 16x8 for fragments. Result stored in #R$5F8B: $02 = collision detected, $00 = no collision (end of list reached).
-  $6268 Load fragment list pointer from #R$5F62.
-  $626B Load fragment X coordinate into C.
-  $626C Advance pointer.
-  $626D Load fragment Y coordinate into B.
-  $626E Skip third byte (type/state).
-  $6270 Store updated pointer back to #R$5F62.
-  $6273 Copy X coordinate to A for comparison.
+  $6268 Load fragment coordinates (C=X, B=Y) from list pointer #R$5F62 and advance by 3.
+  $6270 Store updated pointer; copy X to A for marker check.
 @ $6274 isub=CP SET_MARKER_EMPTY_SLOT
-  $6274 Check if empty slot marker ($00).
-  $6276 If empty, skip to next fragment.
+  $6274 If empty slot marker ($00), skip to next fragment.
 @ $6279 isub=CP SET_MARKER_END_OF_SET
-  $6279 Check if end-of-list marker ($FF).
-  $627B If end, jump to #R$62CE to return no-collision result.
+  $6279 If end marker ($FF), jump to #R$62CE (no collision).
   $627E Call #R$62DA to adjust Y coordinate for scrolling.
 N $6281 Y-axis collision check (8-pixel height for both entity and fragment).
-  $6281 Load entity coordinates (D=Y, E=X) from #R$5EF3.
-  $6285 Copy entity Y to A.
-  $6286 Add 8 (entity bottom edge).
-  $6288 Clear H.
-  $628A Store in L (HL = entity_Y + 8).
-  $628B Clear D, copy fragment Y to E (DE = fragment_Y).
-  $628E (HL = entity_Y + 8, DE = fragment_Y).
-  $628F Calculate (entity_Y + 8) - fragment_Y.
-  $6291 If negative (entity above fragment), no collision - next fragment.
-  $6294 Load fragment Y into A.
-  $6295 Add 8 (fragment bottom edge).
-  $6297 Set up HL = fragment_Y + 8.
-  $629B Set up DE = entity_Y.
-  $629E Calculate (fragment_Y + 8) - entity_Y.
-  $62A0 If negative (fragment above entity), no collision - next fragment.
+  $6281 Check if entity_Y + 8 >= fragment_Y; if not, next fragment.
+  $6291 (continued).
+  $6294 Check if fragment_Y + 8 >= entity_Y; if not, next fragment.
 N $62A3 X-axis collision check (8-pixel width for entity, 16-pixel for fragment).
-  $62A3 Reload entity coordinates (D=Y, E=X) from #R$5EF3.
-  $62A7 Clear H.
-  $62A9 Copy entity X to A.
-  $62AA Add 8 (entity right edge).
-  $62AC Store in L (HL = entity_X + 8).
-  $62AD Set up DE = fragment_X.
-  $62B0 Clear carry.
-  $62B1 Calculate (entity_X + 8) - fragment_X.
-  $62B3 If negative (entity left of fragment), no collision - next fragment.
-  $62B6 Load fragment X into A.
-  $62B7 Add 16 (fragment right edge, 16 pixels wide).
-  $62B9 Reload entity X into E.
-  $62BD Set up HL = fragment_X + 16.
-  $62C1 Set up DE = entity_X.
-  $62C3 Calculate (fragment_X + 16) - entity_X.
-  $62C5 If negative (fragment right of entity), no collision - next fragment.
+  $62A3 Check if entity_X + 8 >= fragment_X; if not, next fragment.
+  $62B3 (continued).
+  $62B6 Check if fragment_X + 16 >= entity_X; if not, next fragment.
 N $62C8 Collision detected with fragment.
-  $62C8 Load $02 (collision flag).
-  $62CA Store collision result to #R$5F8B.
-  $62CD Return.
+  $62C8 Store $02 (collision) to #R$5F8B and return.
 @ $62CE label=check_fragment_collision_end
 c $62CE End of fragment list - no collision found
-  $62CE Load $00 (no collision flag).
-  $62D0 Store result to #R$5F8B.
-  $62D3 Return.
+  $62CE Store $00 (no collision) to #R$5F8B and return.
 @ $62D4 label=get_offset_balloon
 c $62D4 Get Y offset for balloon collision
-  $62D4 Load $09 into E (balloon Y offset).
-  $62D6 Return.
+  $62D4 Return $09 in E (balloon Y offset).
 @ $62D7 label=get_offset_fuel
 c $62D7 Get Y offset for fuel depot collision
-  $62D7 Load $11 into E (fuel depot Y offset).
-  $62D9,1 Return.
+  $62D7,3 Return $11 in E (fuel depot Y offset).
 @ $62DA label=advance_object
 c $62DA Increase vertical coordinate of the object by the value of #R$5F64.
 R $62DA I:B Current coordinate
@@ -982,139 +875,71 @@ N $62E8 .
 N $62E8 On hit, dispatches to type-specific handlers: #R$6414 (helicopter), #R$6423 (ship), #R$6444 (advanced helicopter), #R$6453 (fighter), #R$6462 (balloon), #R$6478 (fuel). If no known type matches, checks #R$6268 for fragment collision.
 N $62E8 .
 N $62E8 During GAMEPLAY_MODE_REFUEL, object Y coordinates are adjusted for scrolling before and after collision checks.
-  $62E8 Load object list pointer from #R$5F60.
-  $62EB Load object X coordinate into C.
-  $62EC Advance pointer.
-  $62ED Load object Y coordinate into B.
-  $62EE Skip third byte (type/state), advance pointer.
-  $62F0 Store updated pointer to #R$5F60.
-  $62F3 Copy X to A for marker check.
+  $62E8 Load object coordinates (C=X, B=Y) from list pointer #R$5F60 and advance by 3.
+  $62F0 Store updated pointer; copy X to A for marker check.
 @ $62F4 isub=CP SET_MARKER_EMPTY_SLOT
-  $62F4 Check if empty slot marker ($00).
-  $62F6 If empty, skip to next object.
+  $62F4 If empty slot marker ($00), skip to next object.
 @ $62F9 isub=CP SET_MARKER_END_OF_SET
-  $62F9 Check if end-of-list marker ($FF).
-  $62FB If end, jump to #R$63B9 for fragment collision check.
-  $62FE Load gameplay mode from #R$5F68.
+  $62F9 If end marker ($FF), jump to #R$63B9 for fragment collision check.
+  $62FE If GAMEPLAY_MODE_REFUEL, call #R$62DA to adjust object Y for scrolling.
 @ $6301 isub=CP GAMEPLAY_MODE_REFUEL
-  $6301 Check if in REFUEL mode.
-  $6303 If refueling, call #R$62DA to adjust object Y for scrolling.
 N $6306 Y-axis collision check (entity height: 9 pixels).
-  $6306 Load entity coordinates (D=Y, E=X) from #R$5EF3.
-  $630A Copy entity Y to A.
-  $630B Add 9 (entity bottom edge).
-  $630D Set up HL = entity_Y + 9.
-  $6310 Set up DE = object_Y.
-  $6314 Calculate (entity_Y + 9) - object_Y.
-  $6316 If negative (entity above object), no collision - next object.
-  $6319 Load object Y into A.
-  $631A Add 8 (base object height).
-  $631C Store in D (D = object_Y + 8).
-  $631D Clear E (height offset = 0).
-  $631F Load pointer from #R$5F60.
-  $6322 Point to type/state byte.
-  $6323 Load type/state.
+  $6306 Check if entity_Y + 9 >= object_Y; if not, next object.
+  $6316 (continued).
+  $6319 Set up D = object_Y + 8, E = 0 (height offset).
+  $631F Load object type from viewport pointer.
 @ $6324 isub=AND SLOT_MASK_OBJECT_TYPE
-  $6324 Mask to get object type.
+  $6324 If balloon, call #R$62D4 (E = 9, taller).
 @ $6326 isub=CP OBJECT_BALLOON
-  $6326 Check if balloon.
-  $6328 If balloon, call #R$62D4 (E = 9, taller).
 @ $632B isub=CP OBJECT_FUEL
-  $632B Check if fuel depot.
-  $632D If fuel, call #R$62D7 (E = 17, tallest).
-  $6330 Load D (object_Y + 8).
-  $6331 Add height offset E.
-  $6332 Load entity Y into E.
-  $6336 Set up HL = object_Y + 8 + offset.
-  $633A Set up DE = entity_Y.
-  $633C Clear carry.
-  $633D Calculate (object_Y + 8 + offset) - entity_Y.
-  $633F If negative (object above entity), no collision - next object.
+  $632B If fuel depot, call #R$62D7 (E = 17, tallest).
+  $6330 Check if object_Y + 8 + offset >= entity_Y; if not, next object.
+  $633F (continued).
 N $6342 X-axis collision check (entity width: 8 pixels).
-  $6342 Load entity coordinates (D=Y, E=X) from #R$5EF3.
-  $6346 Copy entity X to A.
-  $6347 Add 8 (entity right edge).
-  $6349 Store in E.
-  $634A Set up HL = entity_X + 8.
-  $634D Set up DE = object_X.
-  $6350 Clear carry.
-  $6351 Calculate (entity_X + 8) - object_X.
-  $6353 If negative (entity left of object), no collision - next object.
-  $6356 Load object X into A.
-  $6357 Add 10 (base object width).
-  $6359 Store in D (D = object_X + 10).
-  $635A Clear E (width offset = 0).
-  $635C Load pointer from #R$5F60.
-  $635F Point to type/state byte.
-  $6360 Load type/state.
+  $6342 Check if entity_X + 8 >= object_X; if not, next object.
+  $6353 (continued).
+  $6356 Set up D = object_X + 10, E = 0 (width offset).
+  $635C Load object type from viewport pointer.
 @ $6361 isub=AND SLOT_MASK_OBJECT_TYPE
-  $6361 Mask to get object type.
+  $6361 If ship, call #R$62D4 (E = 9, wider).
 @ $6363 isub=CP OBJECT_SHIP
-  $6363 Check if ship.
-  $6365 If ship, call #R$62D4 (E = 9, wider).
-  $6368 Load D (object_X + 10).
-  $6369 Add width offset E.
-  $636A Load entity X into E.
-  $636E Store object coordinates BC to #R$5F8B for hit handlers.
-  $6372 Set up HL = object_X + 10 + offset.
-  $6376 Set up DE = entity_X.
-  $6378 Calculate (object_X + 10 + offset) - entity_X.
-  $637A If negative (object right of entity), no collision - next object.
+  $6368 Store object coordinates to #R$5F8B for hit handlers.
+  $636E (continued).
+  $6372 Check if object_X + 10 + offset >= entity_X; if not, next object.
+  $637A (continued).
 N $637D Collision detected - prepare for type dispatch.
-  $637D Load gameplay mode from #R$5F68.
+  $637D If GAMEPLAY_MODE_REFUEL, call #R$62E0 to undo Y adjustment.
 @ $6380 isub=CP GAMEPLAY_MODE_REFUEL
-  $6380 Check if in REFUEL mode.
-  $6382 If refueling, call #R$62E0 to undo Y adjustment.
-  $6385 Store object coordinates BC to #R$5F8B (update after adjustment).
-  $6389 Load pointer from #R$5F60.
-  $638C Point to type/state byte.
-  $638D Load type/state.
-  $638E Mask to get object type.
-  $6390 Check if type is 0 (terrain/unknown).
-  $6392 If type 0, jump to #R$63DD to process collision.
-  $6395 Point to X coordinate.
-  $6397 Clear the slot (mark object as destroyed).
-  $6399 Clear D for dispatch.
+  $6385 Store object coordinates to #R$5F8B.
+  $6389 Load object type from viewport pointer.
+  $638E If type is 0, jump to #R$63DD to process collision.
+  $6395 Mark object slot as empty.
+  $6399 Clear D for type dispatch.
 @ $639B isub=CP OBJECT_HELICOPTER_REG
-  $639B Check if regular helicopter.
-  $639D If helicopter, jump to #R$6414.
+  $639B If helicopter, jump to #R$6414.
 @ $63A0 isub=CP OBJECT_SHIP
-  $63A0 Check if ship.
-  $63A2 If ship, jump to #R$6423.
+  $63A0 If ship, jump to #R$6423.
 @ $63A5 isub=CP OBJECT_HELICOPTER_ADV
-  $63A5 Check if advanced helicopter.
-  $63A7 If advanced helicopter, jump to #R$6444.
+  $63A5 If advanced helicopter, jump to #R$6444.
 @ $63AA isub=CP OBJECT_FIGHTER
-  $63AA Check if fighter.
-  $63AC If fighter, jump to #R$6453.
+  $63AA If fighter, jump to #R$6453.
 @ $63AF isub=CP OBJECT_BALLOON
-  $63AF Check if balloon.
-  $63B1 If balloon, jump to #R$6462.
+  $63AF If balloon, jump to #R$6462.
 @ $63B4 isub=CP OBJECT_FUEL
-  $63B4 Check if fuel depot.
-  $63B6 If fuel, jump to #R$6478.
+  $63B4 If fuel depot, jump to #R$6478.
 @ $63B9 label=check_missile_vs_objects_end
 N $63B9 End of object list - check fragment collision and tank shell.
-  $63B9 Call #R$6268 to check collision with explosion fragments.
-  $63BC Reset #R$5F60 to start of viewport_objects.
-  $63C2 Reset #R$5F62 to start of exploding_fragments.
-  $63C8 Load collision result from #R$5F8B.
-  $63CB Check if fragment collision detected ($02).
-  $63CD If fragment hit, jump to #R$63FC to exit.
-  $63D0 Load tank shell coordinates from #R$7385.
-  $63D4 Load plane coordinates from #R$8B0C.
-  $63D8 Compare Y coordinates.
-  $63DA If Y matches (missile hit by tank shell), jump to #R$63FC.
+  $63B9 Call #R$6268 and reset #R$5F60/#R$5F62 to list starts.
+  $63C8 If fragment collision detected ($02), jump to #R$63FC.
+  $63D0,10 Compare missile Y with tank shell Y; if equal, jump to #R$63FC.
 @ $63DD label=process_collision_hit
 N $63DD Entry point for collision hit processing. Cleans up stack and finalizes collision.
   $63DD Pop four words from stack (unwind call frames).
-  $63E1 Copy hit Y coordinate to A.
-  $63E2 Store to #R$5EF6.
-  $63E5 Reset #R$5F62 to start of exploding_fragments.
-  $63EB Reset #R$5F60 to start of viewport_objects.
+  $63E1 Store hit Y coordinate to #R$5EF6.
+  $63E5 Reset #R$5F62 and #R$5F60 to list starts.
   $63F1 Load saved coordinates from #R$5F8D.
   $63F5 Store to #R$5EF3.
-  $63F9 Jump to #R$6794 for post-collision processing.
+  $63F9 Finalize collision.
 @ $63FC label=reset_gameplay_mode
 c $63FC Reset gameplay mode to normal and exit collision system
   $63FC Load GAMEPLAY_MODE_NORMAL ($00).
@@ -1125,28 +950,70 @@ N $6401 Exit collision system with no collision detected.
   $6401 Load COLLISION_MODE_NONE ($00).
   $6403 Store to #R$5EF5.
   $6406 Restore HL, DE, BC from #R$5F85, #R$5F87, #R$5F89.
-  $6411,3 Jump to #R$8C3B to continue rendering.
+  $6411 Jump to #R$8C3B to continue rendering.
 @ $6414 label=hit_helicopter_reg
 @ $6414 isub=LD A,POINTS_HELICOPTER_REG
-c $6414
+c $6414 Handle missile hit on regular helicopter
+N $6414 Awards POINTS_HELICOPTER_REG and spawns 1 explosion fragment at the object coordinates.
+  $6414 Award POINTS_HELICOPTER_REG to player.
+  $6419 Spawn explosion at object coordinates from #R$5F8B.
+  $6420 Finalize collision.
 @ $6423 label=hit_ship
 @ $6423 isub=LD A,POINTS_SHIP
-c $6423
+c $6423 Handle missile hit on ship
+N $6423 Awards POINTS_SHIP and spawns 3 explosion fragments in a triangular pattern to cover the ship's width.
+  $6423 Award POINTS_SHIP to player.
+  $6428 Load coordinates from #R$5F8B and spawn explosion 1 (left).
+  $642F Move X+8 and spawn explosion 2 (right).
+  $6436 Move X-8, Y+4 and spawn explosion 3 (center-bottom).
+  $6441 Finalize collision.
 @ $6444 label=hit_helicopter_adv
 @ $6444 isub=LD A,POINTS_HELICOPTER_ADV
-c $6444 Hit advanced helicopter
+c $6444 Handle missile hit on advanced helicopter
+N $6444 Awards POINTS_HELICOPTER_ADV and spawns 1 explosion fragment.
+  $6444 Award POINTS_HELICOPTER_ADV to player.
+  $6449 Spawn explosion at object coordinates from #R$5F8B.
+  $6450 Finalize collision.
 @ $6453 label=hit_fighter
 @ $6453 isub=LD A,POINTS_FIGHTER
-c $6453 Hit fighter
+c $6453 Handle missile hit on fighter
+N $6453 Awards POINTS_FIGHTER and spawns 1 explosion fragment.
+  $6453 Award POINTS_FIGHTER to player.
+  $6458 Spawn explosion at object coordinates from #R$5F8B.
+  $645F Finalize collision.
 @ $6462 label=hit_balloon
 @ $6462 isub=LD A,POINTS_BALLOON
-c $6462
-@ $6478 label=interact_with_fuel
-c $6478
+c $6462 Handle missile hit on balloon
+N $6462 Awards POINTS_BALLOON and spawns 2 explosion fragments vertically (balloon is taller than other objects).
+  $6462 Award POINTS_BALLOON to player.
+  $6467 Load coordinates from #R$5F8B and spawn explosion 1 (top).
+  $646E Move Y+8 and spawn explosion 2 (bottom).
+  $6475 Finalize collision.
+@ $6478 label=hit_fuel
+c $6478 Handle collision with fuel depot
+N $6478 Handles both missile hits and plane refueling at fuel depots.
+N $6478 .
+N $6478 If in GAMEPLAY_MODE_REFUEL: marks the depot slot as empty and calls #R$6E40 to add fuel to the player's tank.
+N $6478 .
+N $6478 Otherwise (missile hit): awards POINTS_FUEL and spawns 4 explosion fragments vertically (fuel depot is the tallest object).
+  $6478 Check if in REFUEL mode; if so, jump to #R$64A1.
 @ $647B isub=CP GAMEPLAY_MODE_REFUEL
 @ $6480 isub=LD A,POINTS_FUEL
-c $649E
-c $64A1
+N $6480 Missile hit on fuel depot - destroy it.
+  $6480 Award POINTS_FUEL to player.
+  $6485 Load coordinates from #R$5F8B and spawn explosion 1.
+  $648C Move Y+8 and spawn explosion 2.
+  $6493 Move Y+8 and spawn explosion 3.
+  $649A Move Y+1 and spawn explosion 4.
+@ $649E label=hit_fuel_done
+c $649E Jump to collision finalization
+  $649E Finalize collision.
+@ $64A1 label=refuel_from_depot
+c $64A1 Handle refueling from fuel depot
+N $64A1 Called when the plane touches a fuel depot during REFUEL mode. Marks the depot slot as empty and adds fuel.
+  $64A1 Mark depot slot as empty.
+  $64A2 Reset #R$5F60 and #R$5F62 to list starts.
+  $64AE,6 Add fuel and jump to #R$63FC to reset gameplay mode.
 u $64B4
 @ $64BC label=print_bridge
 c $64BC
@@ -1242,8 +1109,7 @@ D $6587 This routine is called during overview mode to set up the Player 2 statu
   $659B,6 AT 20,...
 @ $65A1 ofix=LD DE,$8052
 @ $65A4 ofix=LD BC,$0008
-  $65A7 Print Player 2 status line text
-  $65AA Return to caller
+  $65A7,3 Print Player 2 status line text
 @ $65AB label=switch_to_player_2
 c $65AB Switch to Player 2 after Player 1 death
 D $65AB This routine is called when Player 1 dies and Player 2 has lives remaining in two-player mode. It checks if Player 2 has lives, triggers game over if not, otherwise switches to Player 2 and restarts gameplay.
@@ -1328,8 +1194,7 @@ D $6630 This shared cleanup routine is used by #R$65F3, #R$6642, and #R$6682 to 
   $6636 Load sprite data pointer from #R$8B16 (updated by render routine)
   $6639 Store updated sprite pointer to #R$5EF7
   $663C Set sprite bank selector to $04 (select banked plane sprite)
-  $663E Store sprite bank selector to #R$5F69
-  $6641 Return to caller
+  $663E,3 Store sprite bank selector to #R$5F69
 @ $6642 label=handle_left
 c $6642 Move player plane left by 2 pixels
 D $6642 This routine is called when the player presses left on the joystick or keyboard. It moves the plane 2 pixels to the left (DEC A twice), backs up the missile coordinates, renders the plane at the new position, then restores the missile coordinates and sets the sprite bank selector.
@@ -1414,90 +1279,40 @@ N $6794 .
 N $6794 If in GAMEPLAY_MODE_REFUEL, jumps to #R$650A instead.
 N $6794 .
 N $6794 The sprite frame selection uses the X coordinate's lower 3 bits to choose the correct pixel-aligned erasure frame (1-4).
-  $6794 Load missile coordinates from #R$5EF3.
-  $6798 Call #R$72EF to set blending mode to OR.
-  $679B Load gameplay mode from #R$5F68.
+  $6794 Load missile coordinates from #R$5EF3 and call #R$72EF to set OR blending.
+  $679B If GAMEPLAY_MODE_REFUEL, jump to #R$650A.
 @ $679E isub=CP GAMEPLAY_MODE_REFUEL
-  $679E Check if in GAMEPLAY_MODE_REFUEL.
-  $67A0 If refueling, jump to #R$650A.
 @ $67A3 isub=LD A,COLLISION_MODE_NONE
-  $67A3 Load COLLISION_MODE_NONE.
-  $67A5 Reset collision mode in #R$5EF5.
-  $67A8 Load sprite width (1 tile).
-  $67AA Load sprite base address #R$8451 into HL.
-  $67AD Load frame size (8 bytes) into DE.
-  $67B0 Load missile X coordinate into A.
-  $67B1 Mask lower 3 bits (pixel alignment 0-7).
-  $67B3 Divide by 2 (alignment 0-3).
-  $67B5 Add 1 (frame index 1-4).
-  $67B6 Clear carry for subtraction.
-  $67B7 Subtract one frame size from HL.
+  $67A3 Reset collision mode in #R$5EF5 to NONE.
+  $67A8 Set up sprite parameters: width=1, base=#R$8451, frame_size=8.
+  $67B0 Calculate frame index from X coordinate's lower 3 bits.
+  $67B7 Prepare for frame selection loop.
 @ $67B9 label=finalize_collision_erase_missile_loop
-  $67B9 Add frame size to HL.
-  $67BA Decrement frame counter.
-  $67BB Loop until correct frame selected.
-  $67BD Load missile pass selector from #R$673C.
-  $67C0 Check if first pass ($01).
-  $67C2 If first pass, call #R$62DA to advance object position.
-  $67C5 Store sprite pointer to #R$8B0E.
-  $67C8 Store coordinates to #R$8B0C.
-  $67CC Store coordinates to #R$8B0A (previous position).
-  $67D0 Set sprite width to 1 tile.
-  $67D2 Set frame size to 8 bytes.
-  $67D5 Set height ($08) and attributes ($0C) in DE.
-  $67D8 Load #R$82F5 (sprite_erasure) into HL.
-  $67DB Call #R$8B3C to render erasure sprite over missile.
-  $67DE Load address of #R$6BB0 (state_controls).
-  $67E1 Reset CONTROLS_BIT_SPEED_DECREASED.
-  $67E3 Reload missile coordinates from #R$5EF3.
-  $67E7 Load $0000 into HL.
-  $67EA Clear missile coordinates in #R$5EF3.
-  $67ED Load missile Y coordinate into A.
-  $67EE Subtract 6 from Y.
-  $67F0 Store adjusted Y back in B.
-  $67F1 Check if Y <= 6 (at top of screen).
-  $67F3 Return if no residue to erase.
-  $67F4 Load plane X coordinate from #R$5F72.
-  $67F7 Add 4 to center the erasure.
-  $67F9 Store in C for coordinates.
-  $67FA Load sprite base address #R$8451 into HL.
-  $67FD Load frame size (8 bytes) into DE.
-  $6800 Load X coordinate into A.
-  $6801 Mask lower 3 bits (pixel alignment).
-  $6803 Divide by 2.
-  $6805 Add 1 (frame index 1-4).
-  $6806 Clear carry for subtraction.
-  $6807 Subtract one frame size from HL.
+  $67B9 Select correct frame by adding frame_size A times.
+  $67BD If first missile pass, call #R$62DA to advance position.
+  $67C5 Store sprite pointer and coordinates to rendering vars.
+  $67D0 Set sprite dimensions: width=1, frame_size=8, height=8, attrs=$0C.
+  $67D8 Call #R$8B3C with #R$82F5 to erase missile sprite.
+  $67DE Reset CONTROLS_BIT_SPEED_DECREASED in #R$6BB0.
+  $67E3 Reload coordinates from #R$5EF3, then clear them.
+  $67EA (continued).
+  $67ED Calculate residue Y position (missile_Y - 6).
+  $67F4 Set X = plane_X + 4 for centered erasure.
+  $67FA Set up sprite parameters for residue erasure.
+  $6803 Calculate frame index from X coordinate's lower 3 bits.
 @ $6809 label=finalize_collision_erase_residue_loop
-  $6809 Add frame size to HL.
-  $680A Decrement frame counter.
-  $680B Loop until correct frame selected.
-  $680D Load saved Y offset from #R$5EF6.
-  $6810 Store in D.
-  $6811 Load 8 into A.
-  $6813 Subtract offset (remaining height).
-  $6814 Check if zero.
-  $6816 Return if nothing to erase.
-  $6817 Store height in D.
-  $6818 Set attributes ($0C) in E.
-  $681A Set sprite width to 1 tile.
-  $681C Store sprite pointer to #R$8B0E.
-  $681F Load #R$82F5 (sprite_erasure) into HL.
-  $6822 Store coordinates to #R$8B0C.
-  $6826 Store coordinates to #R$8B0A.
-  $682A Set frame size to 0 (use existing frame).
-  $682D Call #R$8B3C to render residue erasure.
-  $6830 Return.
+  $6809 Select correct frame by adding frame_size A times.
+  $680D Calculate remaining height from #R$5EF6; return if zero.
+  $6817 Set height and attributes (height in D, attrs=$0C in E).
+  $681A,22 Store sprite params and call #R$8B3C to erase residue.
 @ $6831 label=add_island_offset_800
 c $6831 Add $0800 offset to island data pointer
   $6831 Set DE to $0800
-  $6834 Add DE to HL (adjust island pointer)
-  $6835 Return to caller
+  $6834,1 Add DE to HL (adjust island pointer)
 @ $6836 label=add_island_offset_1000
 c $6836 Add $1000 offset to island data pointer
   $6836 Set DE to $1000
-  $6839 Add DE to HL (adjust island pointer)
-  $683A,1 Return to caller
+  $6839,1 Add DE to HL (adjust island pointer)
 @ $683B label=handle_island_rendering
 c $683B Handle island rendering and scrolling
 D $683B This routine manages island rendering by manipulating island data pointers based on bit flags, copying island data to screen memory, and calling render_plane when appropriate. It loops through island lines, decrementing the island counter until it reaches zero.
