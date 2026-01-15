@@ -1759,8 +1759,8 @@ g$5F87 DEFW $0000
 @label=tmp_BC
 g$5F89 DEFW $0000
 
-; Game status buffer entry at 5F8B
-@label=L5F8B
+; Collision detection result / hit object coordinates
+@label=collision_result
 g$5F8B DEFW $0000
 
 ; Game status buffer entry at 5F8D
@@ -2259,85 +2259,107 @@ c$6256 LD A,$06      ; Load GAMEPLAY_MODE_REFUEL into A.
                      ; detection.
  $6265 JP $61BB      ; Jump to #R$61BB to check for collision with fuel depot.
 
-; Fighter hits terrain
+; Check collision with explosion fragments
 ;
 ; Used by the routine at #R$62E8.
-@label=hit_terrain
-c$6268 LD HL,($5F62) ;
- $626B LD C,(HL)     ;
- $626C INC HL        ;
- $626D LD B,(HL)     ;
- $626E INC HL        ;
- $626F INC HL        ;
- $6270 LD ($5F62),HL ;
- $6273 LD A,C        ;
+;
+; .
+;
+; Iterates through #R$5F2E (exploding_fragments) to check if the entity
+; collides with any active debris. Each fragment entry is 3 bytes: X, Y, and
+; type/state.
+; .
+; .
+; .
+; Collision uses 8x8 bounding box for the entity and 16x8 for fragments. Result
+; stored in #R$5F8B: $02 = collision detected, $00 = no collision (end of list
+; reached).
+@label=check_fragment_collision
+c$6268 LD HL,($5F62) ; Load fragment list pointer from #R$5F62.
+ $626B LD C,(HL)     ; Load fragment X coordinate into C.
+ $626C INC HL        ; Advance pointer.
+ $626D LD B,(HL)     ; Load fragment Y coordinate into B.
+ $626E INC HL        ; {Skip third byte (type/state).
+ $626F INC HL        ; }
+ $6270 LD ($5F62),HL ; Store updated pointer back to #R$5F62.
+ $6273 LD A,C        ; Copy X coordinate to A for comparison.
 @isub=CP SET_MARKER_EMPTY_SLOT
- $6274 CP $00        ;
- $6276 JP Z,$6268    ;
+ $6274 CP $00        ; Check if empty slot marker ($00).
+ $6276 JP Z,$6268    ; If empty, skip to next fragment.
 @isub=CP SET_MARKER_END_OF_SET
- $6279 CP $FF        ;
- $627B JP Z,$62CE    ;
- $627E CALL $62DA    ;
- $6281 LD DE,($5EF3) ;
- $6285 LD A,D        ;
- $6286 ADD A,$08     ;
- $6288 LD H,$00      ;
- $628A LD L,A        ;
- $628B LD D,$00      ;
- $628D OR A          ;
- $628E LD E,B        ;
- $628F SBC HL,DE     ;
- $6291 JP M,$6268    ;
- $6294 LD A,B        ;
- $6295 ADD A,$08     ;
- $6297 LD H,$00      ;
+ $6279 CP $FF        ; Check if end-of-list marker ($FF).
+ $627B JP Z,$62CE    ; If end, jump to #R$62CE to return no-collision result.
+ $627E CALL $62DA    ; Call #R$62DA to adjust Y coordinate for scrolling.
+; Y-axis collision check (8-pixel height for both entity and fragment).
+ $6281 LD DE,($5EF3) ; Load entity coordinates (D=Y, E=X) from #R$5EF3.
+ $6285 LD A,D        ; Copy entity Y to A.
+ $6286 ADD A,$08     ; Add 8 (entity bottom edge).
+ $6288 LD H,$00      ; Clear H.
+ $628A LD L,A        ; Store in L (HL = entity_Y + 8).
+ $628B LD D,$00      ; {Clear D, copy fragment Y to E (DE = fragment_Y).
+ $628D OR A          ; }
+ $628E LD E,B        ; (HL = entity_Y + 8, DE = fragment_Y).
+ $628F SBC HL,DE     ; Calculate (entity_Y + 8) - fragment_Y.
+ $6291 JP M,$6268    ; If negative (entity above fragment), no collision - next
+                     ; fragment.
+ $6294 LD A,B        ; Load fragment Y into A.
+ $6295 ADD A,$08     ; Add 8 (fragment bottom edge).
+ $6297 LD H,$00      ; {Set up HL = fragment_Y + 8.
  $6299 LD L,A        ;
- $629A LD E,D        ;
- $629B LD D,$00      ;
- $629D OR A          ;
- $629E SBC HL,DE     ;
- $62A0 JP M,$6268    ;
- $62A3 LD DE,($5EF3) ;
- $62A7 LD H,$00      ;
- $62A9 LD A,E        ;
- $62AA ADD A,$08     ;
- $62AC LD L,A        ;
- $62AD LD D,$00      ;
- $62AF LD E,C        ;
- $62B0 OR A          ;
- $62B1 SBC HL,DE     ;
- $62B3 JP M,$6268    ;
- $62B6 LD A,C        ;
- $62B7 ADD A,$10     ;
- $62B9 LD DE,($5EF3) ;
- $62BD LD H,$00      ;
+ $629A LD E,D        ; }
+ $629B LD D,$00      ; {Set up DE = entity_Y.
+ $629D OR A          ; }
+ $629E SBC HL,DE     ; Calculate (fragment_Y + 8) - entity_Y.
+ $62A0 JP M,$6268    ; If negative (fragment above entity), no collision - next
+                     ; fragment.
+; X-axis collision check (8-pixel width for entity, 16-pixel for fragment).
+ $62A3 LD DE,($5EF3) ; Reload entity coordinates (D=Y, E=X) from #R$5EF3.
+ $62A7 LD H,$00      ; Clear H.
+ $62A9 LD A,E        ; Copy entity X to A.
+ $62AA ADD A,$08     ; Add 8 (entity right edge).
+ $62AC LD L,A        ; Store in L (HL = entity_X + 8).
+ $62AD LD D,$00      ; {Set up DE = fragment_X.
+ $62AF LD E,C        ; }
+ $62B0 OR A          ; Clear carry.
+ $62B1 SBC HL,DE     ; Calculate (entity_X + 8) - fragment_X.
+ $62B3 JP M,$6268    ; If negative (entity left of fragment), no collision -
+                     ; next fragment.
+ $62B6 LD A,C        ; Load fragment X into A.
+ $62B7 ADD A,$10     ; Add 16 (fragment right edge, 16 pixels wide).
+ $62B9 LD DE,($5EF3) ; Reload entity X into E.
+ $62BD LD H,$00      ; {Set up HL = fragment_X + 16.
  $62BF LD L,A        ;
- $62C0 OR A          ;
- $62C1 LD D,$00      ;
- $62C3 SBC HL,DE     ;
- $62C5 JP M,$6268    ;
- $62C8 LD A,$02      ;
- $62CA LD ($5F8B),A  ;
- $62CD RET           ;
+ $62C0 OR A          ; }
+ $62C1 LD D,$00      ; Set up DE = entity_X.
+ $62C3 SBC HL,DE     ; Calculate (fragment_X + 16) - entity_X.
+ $62C5 JP M,$6268    ; If negative (fragment right of entity), no collision -
+                     ; next fragment.
+; Collision detected with fragment.
+ $62C8 LD A,$02      ; Load $02 (collision flag).
+ $62CA LD ($5F8B),A  ; Store collision result to #R$5F8B.
+ $62CD RET           ; Return.
 
-; Routine at 62CE
+; End of fragment list - no collision found
 ;
 ; Used by the routine at #R$6268.
-c$62CE LD A,$00      ;
- $62D0 LD ($5F8B),A  ;
- $62D3 RET           ;
+@label=check_fragment_collision_end
+c$62CE LD A,$00      ; Load $00 (no collision flag).
+ $62D0 LD ($5F8B),A  ; Store result to #R$5F8B.
+ $62D3 RET           ; Return.
 
-; Routine at 62D4
+; Get Y offset for balloon collision
 ;
 ; Used by the routine at #R$62E8.
-c$62D4 LD E,$09      ;
- $62D6 RET           ;
+@label=get_offset_balloon
+c$62D4 LD E,$09      ; Load $09 into E (balloon Y offset).
+ $62D6 RET           ; Return.
 
-; Routine at 62D7
+; Get Y offset for fuel depot collision
 ;
 ; Used by the routine at #R$62E8.
-c$62D7 LD E,$11      ;
- $62D9 RET           ;
+@label=get_offset_fuel
+c$62D7 LD E,$11      ; Load $11 into E (fuel depot Y offset).
+ $62D9 RET           ; Return.
 
 ; Increase vertical coordinate of the object by the value of #R$5F64.
 ;

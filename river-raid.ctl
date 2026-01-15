@@ -583,8 +583,8 @@ W $5F87
 @ $5F89 label=tmp_BC
 g $5F89
 W $5F89
-@ $5F8B label=L5F8B
-g $5F8B
+@ $5F8B label=collision_result
+g $5F8B Collision detection result / hit object coordinates
 W $5F8B
 @ $5F8D label=L5F8D
 g $5F8D
@@ -895,14 +895,76 @@ N $6256 This allows the plane itself to interact with fuel depots via #R$61BB.
   $625D Load plane X coordinate from #R$5F72.
   $6260 Copy X coordinate to C.
   $6261 Store plane coordinates (BC) to #R$5EF3 for collision detection.
-  $6265,3 Jump to #R$61BB to check for collision with fuel depot.
-@ $6268 label=hit_terrain
-c $6268 Fighter hits terrain
+  $6265 Jump to #R$61BB to check for collision with fuel depot.
+@ $6268 label=check_fragment_collision
+c $6268 Check collision with explosion fragments
+N $6268 Iterates through #R$5F2E (exploding_fragments) to check if the entity collides with any active debris. Each fragment entry is 3 bytes: X, Y, and type/state.
+N $6268 .
+N $6268 Collision uses 8x8 bounding box for the entity and 16x8 for fragments. Result stored in #R$5F8B: $02 = collision detected, $00 = no collision (end of list reached).
+  $6268,4 Load fragment list pointer from #R$5F62.
+  $626B Load fragment X coordinate into C.
+  $626C Advance pointer.
+  $626D Load fragment Y coordinate into B.
+  $626E Skip third byte (type/state).
+  $6270 Store updated pointer back to #R$5F62.
+  $6273 Copy X coordinate to A for comparison.
 @ $6274 isub=CP SET_MARKER_EMPTY_SLOT
+  $6274 Check if empty slot marker ($00).
+  $6276 If empty, skip to next fragment.
 @ $6279 isub=CP SET_MARKER_END_OF_SET
-c $62CE
-c $62D4
-c $62D7
+  $6279 Check if end-of-list marker ($FF).
+  $627B If end, jump to #R$62CE to return no-collision result.
+  $627E Call #R$62DA to adjust Y coordinate for scrolling.
+N $6281 Y-axis collision check (8-pixel height for both entity and fragment).
+  $6281 Load entity coordinates (D=Y, E=X) from #R$5EF3.
+  $6285 Copy entity Y to A.
+  $6286 Add 8 (entity bottom edge).
+  $6288 Clear H.
+  $628A Store in L (HL = entity_Y + 8).
+  $628B Clear D, copy fragment Y to E (DE = fragment_Y).
+  $628E (HL = entity_Y + 8, DE = fragment_Y).
+  $628F Calculate (entity_Y + 8) - fragment_Y.
+  $6291 If negative (entity above fragment), no collision - next fragment.
+  $6294 Load fragment Y into A.
+  $6295 Add 8 (fragment bottom edge).
+  $6297 Set up HL = fragment_Y + 8.
+  $629B Set up DE = entity_Y.
+  $629E Calculate (fragment_Y + 8) - entity_Y.
+  $62A0 If negative (fragment above entity), no collision - next fragment.
+N $62A3 X-axis collision check (8-pixel width for entity, 16-pixel for fragment).
+  $62A3 Reload entity coordinates (D=Y, E=X) from #R$5EF3.
+  $62A7 Clear H.
+  $62A9 Copy entity X to A.
+  $62AA Add 8 (entity right edge).
+  $62AC Store in L (HL = entity_X + 8).
+  $62AD Set up DE = fragment_X.
+  $62B0 Clear carry.
+  $62B1 Calculate (entity_X + 8) - fragment_X.
+  $62B3 If negative (entity left of fragment), no collision - next fragment.
+  $62B6 Load fragment X into A.
+  $62B7 Add 16 (fragment right edge, 16 pixels wide).
+  $62B9 Reload entity X into E.
+  $62BD Set up HL = fragment_X + 16.
+  $62C1 Set up DE = entity_X.
+  $62C3 Calculate (fragment_X + 16) - entity_X.
+  $62C5 If negative (fragment right of entity), no collision - next fragment.
+N $62C8 Collision detected with fragment.
+  $62C8 Load $02 (collision flag).
+  $62CA Store collision result to #R$5F8B.
+  $62CD Return.
+@ $62CE label=check_fragment_collision_end
+c $62CE End of fragment list - no collision found
+  $62CE Load $00 (no collision flag).
+  $62D0 Store result to #R$5F8B.
+  $62D3 Return.
+@ $62D4 label=get_offset_balloon
+c $62D4 Get Y offset for balloon collision
+  $62D4 Load $09 into E (balloon Y offset).
+  $62D6 Return.
+@ $62D7 label=get_offset_fuel
+c $62D7 Get Y offset for fuel depot collision
+  $62D7 Load $11 into E (fuel depot Y offset).
+  $62D9,1 Return.
 @ $62DA label=advance_object
 c $62DA Increase vertical coordinate of the object by the value of #R$5F64.
 R $62DA I:B Current coordinate

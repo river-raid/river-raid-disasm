@@ -1680,8 +1680,8 @@ tmp_DE:
 tmp_BC:
   DEFW $0000
 
-; Game status buffer entry at 5F8B
-L5F8B:
+; Collision detection result / hit object coordinates
+collision_result:
   DEFW $0000
 
 ; Game status buffer entry at 5F8D
@@ -2119,91 +2119,101 @@ handle_collision_mode_fuel_depot:
                                           ; collision detection.
   JP check_collision                   ; Jump to check_collision to check for collision with fuel depot.
 
-; Fighter hits terrain
+; Check collision with explosion fragments
 ;
 ; Used by the routine at check_missile_vs_objects.
-hit_terrain:
-  LD HL,(exploding_fragments_ptr)
-  LD C,(HL)
-  INC HL
-  LD B,(HL)
-  INC HL
-  INC HL
-  LD (exploding_fragments_ptr),HL
-  LD A,C
-  CP SET_MARKER_EMPTY_SLOT
-  JP Z,hit_terrain
-  CP SET_MARKER_END_OF_SET
-  JP Z,L62CE
-  CALL advance_object
-  LD DE,(state_plane_missile_coordinates)
-  LD A,D
-  ADD A,$08
-  LD H,$00
-  LD L,A
-  LD D,$00
-  OR A
-  LD E,B
-  SBC HL,DE
-  JP M,hit_terrain
-  LD A,B
-  ADD A,$08
-  LD H,$00
-  LD L,A
-  LD E,D
-  LD D,$00
-  OR A
-  SBC HL,DE
-  JP M,hit_terrain
-  LD DE,(state_plane_missile_coordinates)
-  LD H,$00
-  LD A,E
-  ADD A,$08
-  LD L,A
-  LD D,$00
-  LD E,C
-  OR A
-  SBC HL,DE
-  JP M,hit_terrain
-  LD A,C
-  ADD A,$10
-  LD DE,(state_plane_missile_coordinates)
-  LD H,$00
-  LD L,A
-  OR A
-  LD D,$00
-  SBC HL,DE
-  JP M,hit_terrain
-  LD A,$02
-  LD (L5F8B),A
-  RET
-
-; Routine at 62CE
 ;
-; Used by the routine at hit_terrain.
-L62CE:
-  LD A,$00
-  LD (L5F8B),A
-  RET
+; Iterates through exploding_fragments (exploding_fragments) to check if the entity collides with any active debris.
+; Each fragment entry is 3 bytes: X, Y, and type/state.
+;
+; Collision uses 8x8 bounding box for the entity and 16x8 for fragments. Result stored in collision_result: $02 =
+; collision detected, $00 = no collision (end of list reached).
+check_fragment_collision:
+  LD HL,(exploding_fragments_ptr)      ; Load fragment list pointer from exploding_fragments_ptr.
+  LD C,(HL)                            ; Load fragment X coordinate into C.
+  INC HL                               ; Advance pointer.
+  LD B,(HL)                            ; Load fragment Y coordinate into B.
+  INC HL                               ; Skip third byte (type/state).
+  INC HL                               ;
+  LD (exploding_fragments_ptr),HL      ; Store updated pointer back to exploding_fragments_ptr.
+  LD A,C                               ; Copy X coordinate to A for comparison.
+  CP SET_MARKER_EMPTY_SLOT             ; Check if empty slot marker ($00).
+  JP Z,check_fragment_collision        ; If empty, skip to next fragment.
+  CP SET_MARKER_END_OF_SET             ; Check if end-of-list marker ($FF).
+  JP Z,check_fragment_collision_end    ; If end, jump to check_fragment_collision_end to return no-collision result.
+  CALL advance_object                  ; Call advance_object to adjust Y coordinate for scrolling.
+; Y-axis collision check (8-pixel height for both entity and fragment).
+  LD DE,(state_plane_missile_coordinates) ; Load entity coordinates (D=Y, E=X) from state_plane_missile_coordinates.
+  LD A,D                               ; Copy entity Y to A.
+  ADD A,$08                            ; Add 8 (entity bottom edge).
+  LD H,$00                             ; Clear H.
+  LD L,A                               ; Store in L (HL = entity_Y + 8).
+  LD D,$00                             ; Clear D, copy fragment Y to E (DE = fragment_Y).
+  OR A                                 ;
+  LD E,B                               ; (HL = entity_Y + 8, DE = fragment_Y).
+  SBC HL,DE                            ; Calculate (entity_Y + 8) - fragment_Y.
+  JP M,check_fragment_collision        ; If negative (entity above fragment), no collision - next fragment.
+  LD A,B                               ; Load fragment Y into A.
+  ADD A,$08                            ; Add 8 (fragment bottom edge).
+  LD H,$00                             ; Set up HL = fragment_Y + 8.
+  LD L,A                               ;
+  LD E,D                               ;
+  LD D,$00                             ; Set up DE = entity_Y.
+  OR A                                 ;
+  SBC HL,DE                            ; Calculate (fragment_Y + 8) - entity_Y.
+  JP M,check_fragment_collision        ; If negative (fragment above entity), no collision - next fragment.
+; X-axis collision check (8-pixel width for entity, 16-pixel for fragment).
+  LD DE,(state_plane_missile_coordinates) ; Reload entity coordinates (D=Y, E=X) from state_plane_missile_coordinates.
+  LD H,$00                             ; Clear H.
+  LD A,E                               ; Copy entity X to A.
+  ADD A,$08                            ; Add 8 (entity right edge).
+  LD L,A                               ; Store in L (HL = entity_X + 8).
+  LD D,$00                             ; Set up DE = fragment_X.
+  LD E,C                               ;
+  OR A                                 ; Clear carry.
+  SBC HL,DE                            ; Calculate (entity_X + 8) - fragment_X.
+  JP M,check_fragment_collision        ; If negative (entity left of fragment), no collision - next fragment.
+  LD A,C                               ; Load fragment X into A.
+  ADD A,$10                            ; Add 16 (fragment right edge, 16 pixels wide).
+  LD DE,(state_plane_missile_coordinates) ; Reload entity X into E.
+  LD H,$00                             ; Set up HL = fragment_X + 16.
+  LD L,A                               ;
+  OR A                                 ;
+  LD D,$00                             ; Set up DE = entity_X.
+  SBC HL,DE                            ; Calculate (fragment_X + 16) - entity_X.
+  JP M,check_fragment_collision        ; If negative (fragment right of entity), no collision - next fragment.
+; Collision detected with fragment.
+  LD A,$02                             ; Load $02 (collision flag).
+  LD (collision_result),A              ; Store collision result to collision_result.
+  RET                                  ; Return.
 
-; Routine at 62D4
+; End of fragment list - no collision found
+;
+; Used by the routine at check_fragment_collision.
+check_fragment_collision_end:
+  LD A,$00                             ; Load $00 (no collision flag).
+  LD (collision_result),A              ; Store result to collision_result.
+  RET                                  ; Return.
+
+; Get Y offset for balloon collision
 ;
 ; Used by the routine at check_missile_vs_objects.
-L62D4:
-  LD E,$09
-  RET
+get_offset_balloon:
+  LD E,$09                             ; Load $09 into E (balloon Y offset).
+  RET                                  ; Return.
 
-; Routine at 62D7
+; Get Y offset for fuel depot collision
 ;
 ; Used by the routine at check_missile_vs_objects.
-L62D7:
-  LD E,$11
-  RET
+get_offset_fuel:
+  LD E,$11                             ; Load $11 into E (fuel depot Y offset).
+  RET                                  ; Return.
 
 ; Increase vertical coordinate of the object by the value of state_speed.
 ;
-; Used by the routines at hit_terrain, check_missile_vs_objects, render_plane, L66EE, animate_plane_missile,
-; finalize_collision, L6FEA, operate_viewport_objects, operate_helicopter_missile and operate_tank_shell.
+; Used by the routines at check_fragment_collision, check_missile_vs_objects, render_plane, L66EE,
+; animate_plane_missile, finalize_collision, L6FEA, operate_viewport_objects, operate_helicopter_missile and
+; operate_tank_shell.
 ;
 ; I:B Current coordinate
 ; O:B New coordinate
@@ -2269,9 +2279,9 @@ check_missile_vs_objects:
   LD A,(HL)
   AND SLOT_MASK_OBJECT_TYPE
   CP OBJECT_BALLOON
-  CALL Z,L62D4
+  CALL Z,get_offset_balloon
   CP OBJECT_FUEL
-  CALL Z,L62D7
+  CALL Z,get_offset_fuel
   LD A,D
   ADD A,E
   LD DE,(state_plane_missile_coordinates)
@@ -2302,11 +2312,11 @@ check_missile_vs_objects:
   LD A,(HL)
   AND SLOT_MASK_OBJECT_TYPE
   CP OBJECT_SHIP
-  CALL Z,L62D4
+  CALL Z,get_offset_balloon
   LD A,D
   ADD A,E
   LD DE,(state_plane_missile_coordinates)
-  LD (L5F8B),BC
+  LD (collision_result),BC
   LD H,$00
   LD L,A
   OR A
@@ -2316,7 +2326,7 @@ check_missile_vs_objects:
   LD A,(state_gameplay_mode)
   CP GAMEPLAY_MODE_REFUEL
   CALL Z,retract_object
-  LD (L5F8B),BC
+  LD (collision_result),BC
   LD HL,(viewport_ptr)
   DEC HL
   LD A,(HL)
@@ -2340,12 +2350,12 @@ check_missile_vs_objects:
   CP OBJECT_FUEL
   JP Z,interact_with_fuel
 check_missile_vs_objects_0:
-  CALL hit_terrain
+  CALL check_fragment_collision
   LD HL,viewport_objects
   LD (viewport_ptr),HL
   LD HL,exploding_fragments
   LD (exploding_fragments_ptr),HL
-  LD A,(L5F8B)
+  LD A,(collision_result)
   CP $02
   JP Z,L63FC
   LD BC,(tank_shell_coordinates)
@@ -2391,7 +2401,7 @@ no_collision_exit:
 hit_helicopter_reg:
   LD A,POINTS_HELICOPTER_REG
   CALL add_points
-  LD BC,(L5F8B)
+  LD BC,(collision_result)
   CALL explode_fragment
   JP check_missile_vs_objects_1
 
@@ -2401,7 +2411,7 @@ hit_helicopter_reg:
 hit_ship:
   LD A,POINTS_SHIP
   CALL add_points
-  LD BC,(L5F8B)
+  LD BC,(collision_result)
   CALL explode_fragment
   LD A,C
   ADD A,$08
@@ -2422,7 +2432,7 @@ hit_ship:
 hit_helicopter_adv:
   LD A,POINTS_HELICOPTER_ADV
   CALL add_points
-  LD BC,(L5F8B)
+  LD BC,(collision_result)
   CALL explode_fragment
   JP check_missile_vs_objects_1
 
@@ -2432,7 +2442,7 @@ hit_helicopter_adv:
 hit_fighter:
   LD A,POINTS_FIGHTER
   CALL add_points
-  LD BC,(L5F8B)
+  LD BC,(collision_result)
   CALL explode_fragment
   JP check_missile_vs_objects_1
 
@@ -2442,7 +2452,7 @@ hit_fighter:
 hit_balloon:
   LD A,POINTS_BALLOON
   CALL add_points
-  LD BC,(L5F8B)
+  LD BC,(collision_result)
   CALL explode_fragment
   LD A,B
   ADD A,$08
@@ -2459,7 +2469,7 @@ interact_with_fuel:
   JP Z,L64A1
   LD A,POINTS_FUEL
   CALL add_points
-  LD BC,(L5F8B)
+  LD BC,(collision_result)
   CALL explode_fragment
   LD A,B
   ADD A,$08
