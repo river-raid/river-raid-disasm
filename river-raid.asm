@@ -1668,16 +1668,16 @@ L5F82:
 saved_stack_pointer:
   DEFW $0000
 
-; Game status buffer entry at 5F85
-tmp_HL:
+; Saved HL (return address) for collision dispatcher
+collision_saved_hl:
   DEFW $0000
 
-; Game status buffer entry at 5F87
-tmp_DE:
+; Saved DE for collision dispatcher
+collision_saved_de:
   DEFW $0000
 
-; Game status buffer entry at 5F89
-tmp_BC:
+; Saved BC for collision dispatcher
+collision_saved_bc:
   DEFW $0000
 
 ; Collision detection result / hit object coordinates
@@ -1921,9 +1921,9 @@ calculate_fuel_gauge_offset:
 ; the central dispatcher for all collision detection in the game.
 collision_dispatcher:
   POP HL                               ; Pop HL (get return address from stack)
-  LD (tmp_HL),HL                       ; Store return address to tmp_HL (tmp_HL)
-  LD (tmp_DE),DE                       ; Store DE to tmp_DE (tmp_DE)
-  LD (tmp_BC),BC                       ; Store BC to tmp_BC (tmp_BC)
+  LD (collision_saved_hl),HL           ; Store return address to collision_saved_hl.
+  LD (collision_saved_de),DE           ; Store DE to collision_saved_de.
+  LD (collision_saved_bc),BC           ; Store BC to collision_saved_bc.
   LD A,(state_collision_mode)          ; Load collision mode from state_collision_mode
   CP COLLISION_MODE_NONE               ; Check if collision mode is NONE ($00)
   JP Z,handle_collision_mode_none      ; If NONE, jump to handle_collision_mode_none to handle no collision
@@ -2401,9 +2401,9 @@ reset_gameplay_mode:
 no_collision_exit:
   LD A,COLLISION_MODE_NONE             ; Load COLLISION_MODE_NONE ($00).
   LD (state_collision_mode),A          ; Store to state_collision_mode.
-  LD HL,(tmp_HL)                       ; Restore HL, DE, BC from tmp_HL, tmp_DE, tmp_BC.
-  LD DE,(tmp_DE)                       ;
-  LD BC,(tmp_BC)                       ;
+  LD HL,(collision_saved_hl)           ; Restore HL, DE, BC from collision_saved_hl, collision_saved_de,
+  LD DE,(collision_saved_de)           ; collision_saved_bc.
+  LD BC,(collision_saved_bc)           ;
   JP handle_collision_mode_none        ; Jump to handle_collision_mode_none to continue rendering.
 
 ; Routine at 6414

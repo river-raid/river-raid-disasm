@@ -1747,16 +1747,16 @@ u$5F82 DEFB $00
 @label=saved_stack_pointer
 g$5F83 DEFW $0000
 
-; Game status buffer entry at 5F85
-@label=tmp_HL
+; Saved HL (return address) for collision dispatcher
+@label=collision_saved_hl
 g$5F85 DEFW $0000
 
-; Game status buffer entry at 5F87
-@label=tmp_DE
+; Saved DE for collision dispatcher
+@label=collision_saved_de
 g$5F87 DEFW $0000
 
-; Game status buffer entry at 5F89
-@label=tmp_BC
+; Saved BC for collision dispatcher
+@label=collision_saved_bc
 g$5F89 DEFW $0000
 
 ; Collision detection result / hit object coordinates
@@ -2018,9 +2018,9 @@ c$6124 LD A,$07      ; Load $07 into A
 ; the central dispatcher for all collision detection in the game.
 @label=collision_dispatcher
 c$6136 POP HL        ; Pop HL (get return address from stack)
- $6137 LD ($5F85),HL ; Store return address to #R$5F85 (tmp_HL)
- $613A LD ($5F87),DE ; Store DE to #R$5F87 (tmp_DE)
- $613E LD ($5F89),BC ; Store BC to #R$5F89 (tmp_BC)
+ $6137 LD ($5F85),HL ; Store return address to #R$5F85.
+ $613A LD ($5F87),DE ; Store DE to #R$5F87.
+ $613E LD ($5F89),BC ; Store BC to #R$5F89.
  $6142 LD A,($5EF5)  ; Load collision mode from #R$5EF5
 @isub=CP COLLISION_MODE_NONE
  $6145 CP $00        ; Check if collision mode is NONE ($00)

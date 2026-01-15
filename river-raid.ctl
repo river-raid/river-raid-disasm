@@ -574,14 +574,14 @@ u $5F82
 g $5F83 Main stack pointer saved at startup
 D $5F83 This stores the stack pointer value saved during game initialization. It is restored whenever the game needs to reset the stack, such as when starting overview mode, restarting the game, or handling game over.
 W $5F83
-@ $5F85 label=tmp_HL
-g $5F85
+@ $5F85 label=collision_saved_hl
+g $5F85 Saved HL (return address) for collision dispatcher
 W $5F85
-@ $5F87 label=tmp_DE
-g $5F87
+@ $5F87 label=collision_saved_de
+g $5F87 Saved DE for collision dispatcher
 W $5F87
-@ $5F89 label=tmp_BC
-g $5F89
+@ $5F89 label=collision_saved_bc
+g $5F89 Saved BC for collision dispatcher
 W $5F89
 @ $5F8B label=collision_result
 g $5F8B Collision detection result / hit object coordinates
@@ -731,9 +731,9 @@ D $6124 This routine is used by fuel consumption and refueling to calculate the 
 c $6136 Collision detection dispatcher
 D $6136 This routine is called during sprite rendering (via #R$8C45) to handle collision detection. It saves the current register state, checks the collision mode, and dispatches to the appropriate collision handler. This is the central dispatcher for all collision detection in the game.
   $6136 Pop HL (get return address from stack)
-  $6137 Store return address to #R$5F85 (tmp_HL)
-  $613A Store DE to #R$5F87 (tmp_DE)
-  $613E Store BC to #R$5F89 (tmp_BC)
+  $6137 Store return address to #R$5F85.
+  $613A Store DE to #R$5F87.
+  $613E Store BC to #R$5F89.
   $6142 Load collision mode from #R$5EF5
 @ $6145 isub=CP COLLISION_MODE_NONE
   $6145 Check if collision mode is NONE ($00)
