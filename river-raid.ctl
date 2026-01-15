@@ -1279,17 +1279,17 @@ c $66D0 Advance game scroll and update bridge position
 N $66D0 Called each frame to advance the vertical scroll position. Adds current speed (#R$5F64) to scroll offset (#R$5F70), updates the bridge's Y position via #R$66EE, then resets speed to SPEED_NORMAL and updates control flags.
 N $66D0 .
 N $66D0 The control bits modified are: clears CONTROLS_BIT_SPEED_ALTERED, sets CONTROLS_BIT_SPEED_DECREASED. This marks that speed has returned to normal after any joystick input.
-@ $66E1 isub=LD A,SPEED_NORMAL
   $66D0 Add speed to scroll offset and store result.
   $66DB,6 Call #R$66EE to update bridge; reset speed to SPEED_NORMAL.
+@ $66E1 isub=LD A,SPEED_NORMAL
   $66E6,7 Clear CONTROLS_BIT_SPEED_ALTERED, set CONTROLS_BIT_SPEED_DECREASED in #R$6BB0.
 @ $66EE label=update_bridge_scroll
 c $66EE Update bridge Y position during scroll
 N $66EE Adjusts the bridge's Y position (#R$5F6E) based on current scrolling. If no bridge exists (Y=0), returns immediately. If the bridge scrolls off the bottom of the screen (Y AND $88 == $88), clears it via #R$6704.
-@ $66F8 isub=AND VIEWPORT_HEIGHT
-@ $66FA isub=CP VIEWPORT_HEIGHT
   $66EE If no bridge, return; otherwise advance bridge Y via #R$62DA.
   $66F5 If bridge scrolled off screen, call #R$6704 to clear it.
+@ $66F8 isub=AND VIEWPORT_HEIGHT
+@ $66FA isub=CP VIEWPORT_HEIGHT
   $66FD,6 Store updated bridge Y and return.
 @ $6704 label=clear_bridge
 c $6704 Clear bridge when scrolled off screen
@@ -1299,33 +1299,51 @@ N $6704 Clears the bridge destroyed flag (#R$5F6D) and returns 0 in A, which the
 @ $670A isub=LD A,SPEED_FAST
 c $670A Handle up/accelerate input
 N $670A Sets speed to SPEED_FAST and updates control flags. Called when player presses up on joystick/keyboard.
-@ $6712 isub=SET CONTROLS_BIT_SPEED_ALTERED,(HL)
-@ $6714 isub=RES CONTROLS_BIT_SPEED_DECREASED,(HL)
   $670A Set speed to SPEED_FAST.
   $670F,7 Set CONTROLS_BIT_SPEED_ALTERED, clear CONTROLS_BIT_SPEED_DECREASED.
+@ $6712 isub=SET CONTROLS_BIT_SPEED_ALTERED,(HL)
+@ $6714 isub=RES CONTROLS_BIT_SPEED_DECREASED,(HL)
 @ $6717 label=handle_down
 @ $6717 isub=LD A,SPEED_SLOW
 c $6717 Handle down/decelerate input
 N $6717 Sets speed to SPEED_SLOW and updates control flags. Called when player presses down on joystick/keyboard.
-@ $671F isub=SET CONTROLS_BIT_SPEED_ALTERED,(HL)
-@ $6721 isub=SET CONTROLS_BIT_SPEED_DECREASED,(HL)
   $6717 Set speed to SPEED_SLOW.
   $671C,7 Set CONTROLS_BIT_SPEED_ALTERED and CONTROLS_BIT_SPEED_DECREASED.
+@ $671F isub=SET CONTROLS_BIT_SPEED_ALTERED,(HL)
+@ $6721 isub=SET CONTROLS_BIT_SPEED_DECREASED,(HL)
 @ $6724 label=handle_fire
 c $6724 Handle fire button input
 N $6724 Creates a new missile if none is currently active. Positions missile at plane X + 4, Y = $7E (just above plane). Sets CONTROLS_BIT_FIRE flag.
   $6724 Return if missile already active (Y != 0).
   $672A Create missile at (plane_X + 4, $7E).
   $6736,5 Set CONTROLS_BIT_FIRE in #R$6BB0.
-s $673C
+@ $673C label=missile_pass_selector
+g $673C Missile animation pass selector: $01 = first pass (adjust for scroll), $00 = second pass (no adjustment).
 @ $673D label=animate_plane_missile
-c $673D
+c $673D Animate and render player missile
+N $673D Called twice per frame (via #R$5F91) to animate the player's missile. On the first pass (#R$673C = $01), adjusts missile position for screen scrolling via #R$62DA. On both passes, moves missile up by 6 pixels.
+N $673D .
+N $673D If missile reaches top of screen (Y AND $F8 == 0), jumps to #R$6794 to finalize collision. Clears CONTROLS_BIT_FIRE when missile is in lower screen area ($70 - Y >= 0).
+N $673D .
+N $673D Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions.
+  $673D Return if no missile active (Y == 0).
+  $6743 Backup coords to #R$5F8D; if first pass, adjust for scroll.
+  $6753 Store previous position to #R$8B0A.
+  $6757 Calculate new position: X = plane_X + 4, Y = missile_Y - 6.
+  $6764 If Y reached top of screen, jump to #R$6794.
+  $6769 (continued) Store new coordinates to #R$5EF3.
+  $6770 If missile in lower area, call #R$678E to clear fire bit.
+  $6776 Store position to #R$8B0C.
 @ $677A isub=LD A,COLLISION_MODE_MISSILE
+  $677A Set COLLISION_MODE_MISSILE in #R$5EF5.
 @ $677F isub=LD DE,SPRITE_MISSILE_HEIGHT_PIXELS<<8|SPRITE_MISSILE_ATTRIBUTES
+  $677F,14 Set up sprite params and call #R$8B1E to render missile.
 @ $6785 isub=LD BC,SPRITE_MISSILE_FRAME_SIZE_BYTES
 @ $6788 isub=LD A,SPRITE_MISSILE_WIDTH_TILES
-c $678E
-  $6791,2 Reset CONTROLS_BIT_FIRE
+@ $678E label=clear_fire_bit
+c $678E Clear CONTROLS_BIT_FIRE flag
+N $678E Called when missile has moved past the plane's Y position, indicating the fire button can trigger a new missile.
+  $678E,5 Clear CONTROLS_BIT_FIRE in #R$6BB0.
 @ $6794 label=finalize_collision
 c $6794 Finalize collision and erase missile sprite
 N $6794 Called after a successful collision to clean up the game state. Erases the missile sprite from the screen, resets the collision mode to COLLISION_MODE_NONE, clears the missile coordinates, and resets CONTROLS_BIT_SPEED_DECREASED.

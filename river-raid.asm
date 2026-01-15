@@ -1709,10 +1709,10 @@ main_loop:
   CALL render_plane_and_terrain        ; Call render_plane_and_terrain to render player plane and terrain fragments
   CALL operate_viewport_objects        ; Call operate_viewport_objects to operate viewport objects
   LD A,$01                             ; Load $01 into A (first missile pass)
-  LD (L673C),A                         ; Store $01 to L673C (missile pass selector)
+  LD (missile_pass_selector),A         ; Store $01 to missile_pass_selector (missile pass selector)
   CALL animate_plane_missile           ; Call animate_plane_missile to animate plane missile (first pass)
   LD A,$00                             ; Load $00 into A (second missile pass)
-  LD (L673C),A                         ; Store $00 to L673C (missile pass selector)
+  LD (missile_pass_selector),A         ; Store $00 to missile_pass_selector (missile pass selector)
   CALL animate_plane_missile           ; Call animate_plane_missile to animate plane missile (second pass)
   CALL operate_tank_shell              ; Call operate_tank_shell to operate tank shell
   CALL operate_helicopter_missile      ; Call operate_helicopter_missile to operate helicopter missile
@@ -2997,53 +2997,63 @@ handle_fire:
   SET 0,(HL)                           ;
   RET
 
-; Unused
-L673C:
-  DEFS $01
+; Missile animation pass selector: $01 = first pass (adjust for scroll), $00 = second pass (no adjustment).
+missile_pass_selector:
+  DEFB $00
 
-; Routine at 673D
+; Animate and render player missile
 ;
 ; Used by the routine at main_loop.
+;
+; Called twice per frame (via main_loop) to animate the player's missile. On the first pass (missile_pass_selector =
+; $01), adjusts missile position for screen scrolling via advance_object. On both passes, moves missile up by 6 pixels.
+;
+; If missile reaches top of screen (Y AND $F8 == 0), jumps to finalize_collision to finalize collision. Clears
+; CONTROLS_BIT_FIRE when missile is in lower screen area ($70 - Y >= 0).
+;
+; Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions.
 animate_plane_missile:
-  LD A,(state_plane_missile_coordinates)
-  CP $00
-  RET Z
-  LD BC,(state_plane_missile_coordinates)
-  LD (L5F8D),BC
-  LD A,(L673C)
-  CP $01
-  CALL Z,advance_object
-  LD (previous_object_coordinates),BC
-  LD BC,(state_plane_missile_coordinates)
-  LD A,(state_x)
-  ADD A,$04
-  LD C,A
-  LD A,B
-  SUB $06
-  LD B,A
-  AND $F8
-  CP $00
-  JP Z,finalize_collision
-  LD (state_plane_missile_coordinates),BC
-  LD A,$70
-  SUB B
-  CALL P,L678E
-  LD (object_coordinates),BC
-  LD A,COLLISION_MODE_MISSILE
-  LD (state_collision_mode),A
-  LD DE,SPRITE_MISSILE_HEIGHT_PIXELS<<8|SPRITE_MISSILE_ATTRIBUTES
-  LD HL,sprite_missile
-  LD BC,SPRITE_MISSILE_FRAME_SIZE_BYTES
-  LD A,SPRITE_MISSILE_WIDTH_TILES
-  CALL render_sprite
+  LD A,(state_plane_missile_coordinates) ; Return if no missile active (Y == 0).
+  CP $00                                 ;
+  RET Z                                  ;
+  LD BC,(state_plane_missile_coordinates) ; Backup coords to L5F8D; if first pass, adjust for scroll.
+  LD (L5F8D),BC                           ;
+  LD A,(missile_pass_selector)            ;
+  CP $01                                  ;
+  CALL Z,advance_object                   ;
+  LD (previous_object_coordinates),BC  ; Store previous position to previous_object_coordinates.
+  LD BC,(state_plane_missile_coordinates) ; Calculate new position: X = plane_X + 4, Y = missile_Y - 6.
+  LD A,(state_x)                          ;
+  ADD A,$04                               ;
+  LD C,A                                  ;
+  LD A,B                                  ;
+  SUB $06                                 ;
+  LD B,A                               ; If Y reached top of screen, jump to finalize_collision.
+  AND $F8                              ;
+  CP $00                               ;
+  JP Z,finalize_collision                 ; (continued) Store new coordinates to state_plane_missile_coordinates.
+  LD (state_plane_missile_coordinates),BC ;
+  LD A,$70                             ; If missile in lower area, call clear_fire_bit to clear fire bit.
+  SUB B                                ;
+  CALL P,clear_fire_bit                ;
+  LD (object_coordinates),BC           ; Store position to object_coordinates.
+  LD A,COLLISION_MODE_MISSILE          ; Set COLLISION_MODE_MISSILE in state_collision_mode.
+  LD (state_collision_mode),A          ;
+  LD DE,SPRITE_MISSILE_HEIGHT_PIXELS<<8|SPRITE_MISSILE_ATTRIBUTES ; Set up sprite params and call render_sprite to
+  LD HL,sprite_missile                                            ; render missile.
+  LD BC,SPRITE_MISSILE_FRAME_SIZE_BYTES                           ;
+  LD A,SPRITE_MISSILE_WIDTH_TILES                                 ;
+  CALL render_sprite                                              ;
   RET
 
-; Routine at 678E
+; Clear CONTROLS_BIT_FIRE flag
 ;
 ; Used by the routine at animate_plane_missile.
-L678E:
-  LD HL,state_controls
-  RES 0,(HL)                           ; Reset CONTROLS_BIT_FIRE
+;
+; Called when missile has moved past the plane's Y position, indicating the fire button can trigger a new missile.
+clear_fire_bit:
+  LD HL,state_controls                 ; Clear CONTROLS_BIT_FIRE in state_controls.
+  RES 0,(HL)                           ;
   RET
 
 ; Finalize collision and erase missile sprite
@@ -3079,7 +3089,7 @@ finalize_collision_erase_missile_loop:
   ADD HL,DE                                   ; Select correct frame by adding frame_size A times.
   DEC A                                       ;
   JR NZ,finalize_collision_erase_missile_loop ;
-  LD A,(L673C)                         ; If first missile pass, call advance_object to advance position.
+  LD A,(missile_pass_selector)         ; If first missile pass, call advance_object to advance position.
   CP $01                               ;
   CALL Z,advance_object                ;
   LD (render_sprite_ptr),HL            ; Store sprite pointer and coordinates to rendering vars.
