@@ -173,7 +173,7 @@ GAMEPLAY_MODE_OVERVIEW  EQU $02
 GAMEPLAY_MODE_REFUEL    EQU $06
 
 COLLISION_MODE_NONE               EQU $00
-COLLISION_MODE_SKIP               EQU $01
+COLLISION_MODE_FUEL_DEPOT         EQU $01
 COLLISION_MODE_MISSILE            EQU $02
 COLLISION_MODE_FIGHTER            EQU $03
 COLLISION_MODE_HELICOPTER_MISSILE EQU $04
@@ -2025,12 +2025,12 @@ c$6136 POP HL        ; Pop HL (get return address from stack)
 @isub=CP COLLISION_MODE_NONE
  $6145 CP $00        ; Check if collision mode is NONE ($00)
  $6147 JP Z,$8C3B    ; If NONE, jump to #R$8C3B to handle no collision
-@isub=CP COLLISION_MODE_SKIP
- $614A CP $01        ; Check if collision mode is SKIP ($01)
- $614C JP Z,$6256    ; If SKIP, jump to #R$6256 (fuel/skip collision)
+@isub=CP COLLISION_MODE_FUEL_DEPOT
+ $614A CP $01        ; Check if collision mode is FUEL DEPOT ($01)
+ $614C JP Z,$6256    ; If FUEL DEPOT, jump to #R$6256 to handle refueling
 @isub=CP COLLISION_MODE_MISSILE
  $614F CP $02        ; Check if collision mode is MISSILE ($02)
- $6151 JP Z,$61BB    ; If MISSILE, jump to #R$61BB to handle missile collision
+ $6151 JP Z,$61BB    ; If MISSILE, jump to #R$61BB to check collision
 @isub=CP COLLISION_MODE_FIGHTER
  $6154 CP $03        ; Check if collision mode is ENEMY ($03)
  $6156 JP Z,$615E    ; If ENEMY, jump to #R$615E to handle fighter collision
@@ -2123,40 +2123,45 @@ c$615E LD BC,($5EF3) ; Load missile coordinates (B=Y, C=X) from #R$5EF3.
  $61B5 CALL $90E0    ; Call #R$90E0 to add points to score.
  $61B8 JP $6794      ; Jump to #R$6794 for post-collision processing.
 
-; Handle COLLISION_MODE_MISSILE collision detection
+; Check collision against bridges and viewport objects
 ;
 ; Used by the routines at #R$6136 and #R$6256.
 ;
 ; .
 ;
-; Checks if the player's missile has collided with a bridge or any viewport
-; object.
+; Checks if the entity (missile or plane) has collided with a bridge or any
+; viewport object. The coordinates to check are read from #R$5EF3.
 ; .
 ; .
 ; .
-; First checks if a bridge exists (#R$5F6E != 0) and whether the missile Y
-; coordinate is within the bridge's vertical bounds (bridge_y - $16 to
-; bridge_y). If the missile hits the bridge, awards POINTS_BRIDGE, triggers 6
-; explosion fragments in a 2x3 grid pattern, increments the player's bridge
-; counter, and clears the bridge.
+; Called in two contexts: (1) when COLLISION_MODE_MISSILE is set, checks
+; missile collision; (2) when called from #R$6256, checks plane collision with
+; fuel depots.
+; .
+; .
+; .
+; First checks if a bridge exists (#R$5F6E != 0) and whether the Y coordinate
+; is within the bridge's vertical bounds (bridge_y - $16 to bridge_y). If the
+; bridge is hit, awards POINTS_BRIDGE, triggers 6 explosion fragments in a 2x3
+; grid pattern, increments the player's bridge counter, and clears the bridge.
 ; .
 ; .
 ; .
 ; If no bridge collision, falls through to #R$62E8 to check collision against
 ; viewport objects.
-@label=handle_missile_collision
-c$61BB LD BC,($5EF3) ; Load missile coordinates (B=Y, C=X) from #R$5EF3.
+@label=check_collision
+c$61BB LD BC,($5EF3) ; Load entity coordinates (B=Y, C=X) from #R$5EF3.
  $61BF LD A,($5F6E)  ; Load bridge Y position from #R$5F6E.
  $61C2 CP $00        ; Check if a bridge exists (Y position != 0).
  $61C4 JP Z,$62E8    ; If no bridge, jump to #R$62E8 to check viewport objects.
  $61C7 LD D,A        ; Save bridge Y position in D.
- $61C8 SUB B         ; Calculate bridge_y - missile_y.
- $61C9 JP M,$62E8    ; If negative (missile above bridge), no collision - check
+ $61C8 SUB B         ; Calculate bridge_y - entity_y.
+ $61C9 JP M,$62E8    ; If negative (entity above bridge), no collision - check
                      ; objects.
  $61CC LD A,D        ; Restore bridge Y position from D.
  $61CD SUB $16       ; Subtract $16 (bridge height) from bridge Y.
- $61CF SUB B         ; Calculate (bridge_y - $16) - missile_y.
- $61D0 JP P,$62E8    ; If positive (missile below bridge), no collision - check
+ $61CF SUB B         ; Calculate (bridge_y - $16) - entity_y.
+ $61D0 JP P,$62E8    ; If positive (entity below bridge), no collision - check
                      ; objects.
 @isub=LD A,POINTS_BRIDGE
  $61D3 LD A,$50      ; Bridge hit! Load POINTS_BRIDGE into A.
@@ -2230,18 +2235,29 @@ c$6249 LD HL,$5F6B   ; Load address of #R$5F6B (player 2 bridge counter).
 ; Unused
 u$6253 DEFB $3E,$00,$C9
 
-; Routine at 6256
+; Handle COLLISION_MODE_FUEL_DEPOT (initiate refueling)
 ;
 ; Used by the routine at #R$6136.
-@label=fuel
+;
+; .
+;
+; Called from the collision dispatcher when COLLISION_MODE_FUEL_DEPOT is
+; detected. Sets gameplay mode to GAMEPLAY_MODE_REFUEL and uses the plane's
+; coordinates (instead of missile coordinates) for collision detection.
+; .
+; .
+; .
+; This allows the plane itself to interact with fuel depots via #R$61BB.
+@label=handle_collision_mode_fuel_depot
 @isub=LD A,GAMEPLAY_MODE_REFUEL
-c$6256 LD A,$06      ;
- $6258 LD ($5F68),A  ;
- $625B LD B,$80      ;
- $625D LD A,($5F72)  ;
- $6260 LD C,A        ;
- $6261 LD ($5EF3),BC ;
- $6265 JP $61BB      ;
+c$6256 LD A,$06      ; Load GAMEPLAY_MODE_REFUEL into A.
+ $6258 LD ($5F68),A  ; Set gameplay mode to GAMEPLAY_MODE_REFUEL in #R$5F68.
+ $625B LD B,$80      ; Load $80 (PLANE_COORDINATE_Y) into B.
+ $625D LD A,($5F72)  ; Load plane X coordinate from #R$5F72.
+ $6260 LD C,A        ; Copy X coordinate to C.
+ $6261 LD ($5EF3),BC ; Store plane coordinates (BC) to #R$5EF3 for collision
+                     ; detection.
+ $6265 JP $61BB      ; Jump to #R$61BB to check for collision with fuel depot.
 
 ; Fighter hits terrain
 ;
@@ -2901,9 +2917,9 @@ c$65F3 LD A,($5F72)  ; Load current plane X-coordinate from #R$5F72
  $6601 LD C,A        ; Copy new X-coordinate to C register for rendering
 @isub=LD B,PLANE_COORDINATE_Y
  $6602 LD B,$80      ; Set Y-coordinate to $80 (fixed vertical position)
-@isub=LD A,COLLISION_MODE_SKIP
- $6604 LD A,$01      ; Set collision mode to $01 (skip collision detection for
-                     ; sprite rendering)
+@isub=LD A,COLLISION_MODE_FUEL_DEPOT
+ $6604 LD A,$01      ; Set collision mode to FUEL (check plane vs fuel depot
+                     ; collision)
  $6606 LD ($5EF5),A  ; Store collision mode to #R$5EF5
  $6609 LD ($8B0C),BC ; Store new plane coordinates (BC) to #R$8B0C for
                      ; rendering
@@ -2966,9 +2982,9 @@ c$6642 LD A,($5F72)  ; Load current plane X-coordinate from #R$5F72
  $6650 LD C,A        ; Copy new X-coordinate to C register for rendering
 @isub=LD B,PLANE_COORDINATE_Y
  $6651 LD B,$80      ; Set Y-coordinate to $80 (fixed vertical position)
-@isub=LD A,COLLISION_MODE_SKIP
- $6653 LD A,$01      ; Set collision mode to $01 (skip collision detection for
-                     ; sprite rendering)
+@isub=LD A,COLLISION_MODE_FUEL_DEPOT
+ $6653 LD A,$01      ; Set collision mode to FUEL DEPOT (check plane vs fuel
+                     ; depot collision)
  $6655 LD ($5EF5),A  ; Store collision mode to #R$5EF5
  $6658 LD ($8B0C),BC ; Store new plane coordinates (BC) to #R$8B0C for
                      ; rendering
@@ -3010,7 +3026,7 @@ c$6682 LD A,($5F68)  ;
  $668E LD ($5F8F),HL ;
  $6691 LD C,A        ;
  $6692 LD B,$80      ;
-@isub=LD A,COLLISION_MODE_SKIP
+@isub=LD A,COLLISION_MODE_FUEL_DEPOT
  $6694 LD A,$01      ;
  $6696 LD ($5EF5),A  ;
  $6699 LD ($8B0C),BC ;

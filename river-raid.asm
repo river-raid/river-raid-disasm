@@ -171,7 +171,7 @@ GAMEPLAY_MODE_OVERVIEW  EQU $02
 GAMEPLAY_MODE_REFUEL    EQU $06
 
 COLLISION_MODE_NONE               EQU $00
-COLLISION_MODE_SKIP               EQU $01
+COLLISION_MODE_FUEL_DEPOT         EQU $01
 COLLISION_MODE_MISSILE            EQU $02
 COLLISION_MODE_FIGHTER            EQU $03
 COLLISION_MODE_HELICOPTER_MISSILE EQU $04
@@ -1927,10 +1927,10 @@ collision_dispatcher:
   LD A,(state_collision_mode)          ; Load collision mode from state_collision_mode
   CP COLLISION_MODE_NONE               ; Check if collision mode is NONE ($00)
   JP Z,handle_collision_mode_none      ; If NONE, jump to handle_collision_mode_none to handle no collision
-  CP COLLISION_MODE_SKIP               ; Check if collision mode is SKIP ($01)
-  JP Z,fuel                            ; If SKIP, jump to fuel (fuel/skip collision)
+  CP COLLISION_MODE_FUEL_DEPOT         ; Check if collision mode is FUEL DEPOT ($01)
+  JP Z,handle_collision_mode_fuel_depot ; If FUEL DEPOT, jump to handle_collision_mode_fuel_depot to handle refueling
   CP COLLISION_MODE_MISSILE            ; Check if collision mode is MISSILE ($02)
-  JP Z,handle_missile_collision        ; If MISSILE, jump to handle_missile_collision to handle missile collision
+  JP Z,check_collision                 ; If MISSILE, jump to check_collision to check collision
   CP COLLISION_MODE_FIGHTER            ; Check if collision mode is ENEMY ($03)
   JP Z,handle_collision_mode_fighter   ; If ENEMY, jump to handle_collision_mode_fighter to handle fighter collision
   CP COLLISION_MODE_HELICOPTER_MISSILE ; Check if collision mode is HELICOPTER_MISSILE ($04)
@@ -2006,29 +2006,33 @@ handle_collision_mode_fighter:
   CALL add_points                      ; Call add_points to add points to score.
   JP finalize_collision                ; Jump to finalize_collision for post-collision processing.
 
-; Handle COLLISION_MODE_MISSILE collision detection
+; Check collision against bridges and viewport objects
 ;
-; Used by the routines at collision_dispatcher and fuel.
+; Used by the routines at collision_dispatcher and handle_collision_mode_fuel_depot.
 ;
-; Checks if the player's missile has collided with a bridge or any viewport object.
+; Checks if the entity (missile or plane) has collided with a bridge or any viewport object. The coordinates to check
+; are read from state_plane_missile_coordinates.
 ;
-; First checks if a bridge exists (state_bridge_y_position != 0) and whether the missile Y coordinate is within the
-; bridge's vertical bounds (bridge_y - $16 to bridge_y). If the missile hits the bridge, awards POINTS_BRIDGE, triggers
-; 6 explosion fragments in a 2x3 grid pattern, increments the player's bridge counter, and clears the bridge.
+; Called in two contexts: (1) when COLLISION_MODE_MISSILE is set, checks missile collision; (2) when called from
+; handle_collision_mode_fuel_depot, checks plane collision with fuel depots.
+;
+; First checks if a bridge exists (state_bridge_y_position != 0) and whether the Y coordinate is within the bridge's
+; vertical bounds (bridge_y - $16 to bridge_y). If the bridge is hit, awards POINTS_BRIDGE, triggers 6 explosion
+; fragments in a 2x3 grid pattern, increments the player's bridge counter, and clears the bridge.
 ;
 ; If no bridge collision, falls through to check_missile_vs_objects to check collision against viewport objects.
-handle_missile_collision:
-  LD BC,(state_plane_missile_coordinates) ; Load missile coordinates (B=Y, C=X) from state_plane_missile_coordinates.
+check_collision:
+  LD BC,(state_plane_missile_coordinates) ; Load entity coordinates (B=Y, C=X) from state_plane_missile_coordinates.
   LD A,(state_bridge_y_position)       ; Load bridge Y position from state_bridge_y_position.
   CP $00                               ; Check if a bridge exists (Y position != 0).
   JP Z,check_missile_vs_objects        ; If no bridge, jump to check_missile_vs_objects to check viewport objects.
   LD D,A                               ; Save bridge Y position in D.
-  SUB B                                ; Calculate bridge_y - missile_y.
-  JP M,check_missile_vs_objects        ; If negative (missile above bridge), no collision - check objects.
+  SUB B                                ; Calculate bridge_y - entity_y.
+  JP M,check_missile_vs_objects        ; If negative (entity above bridge), no collision - check objects.
   LD A,D                               ; Restore bridge Y position from D.
   SUB $16                              ; Subtract $16 (bridge height) from bridge Y.
-  SUB B                                ; Calculate (bridge_y - $16) - missile_y.
-  JP P,check_missile_vs_objects        ; If positive (missile below bridge), no collision - check objects.
+  SUB B                                ; Calculate (bridge_y - $16) - entity_y.
+  JP P,check_missile_vs_objects        ; If positive (entity below bridge), no collision - check objects.
   LD A,POINTS_BRIDGE                   ; Bridge hit! Load POINTS_BRIDGE into A.
   CALL add_points                      ; Call add_points to add points to score.
   LD A,$0F                             ; Load $0F into A (new activation mask after bridge destruction).
@@ -2086,7 +2090,7 @@ next_bridge_player_1:
 
 ; Increment player 2's bridge counter
 ;
-; Used by the routine at handle_missile_collision.
+; Used by the routine at check_collision.
 next_bridge_player_2:
   LD HL,state_bridge_player_2          ; Load address of state_bridge_player_2 (player 2 bridge counter).
   INC (HL)                             ; Increment player 2's bridge count.
@@ -2097,17 +2101,23 @@ next_bridge_player_2:
 L6253:
   DEFB $3E,$00,$C9
 
-; Routine at 6256
+; Handle COLLISION_MODE_FUEL_DEPOT (initiate refueling)
 ;
 ; Used by the routine at collision_dispatcher.
-fuel:
-  LD A,GAMEPLAY_MODE_REFUEL
-  LD (state_gameplay_mode),A
-  LD B,$80
-  LD A,(state_x)
-  LD C,A
-  LD (state_plane_missile_coordinates),BC
-  JP handle_missile_collision
+;
+; Called from the collision dispatcher when COLLISION_MODE_FUEL_DEPOT is detected. Sets gameplay mode to
+; GAMEPLAY_MODE_REFUEL and uses the plane's coordinates (instead of missile coordinates) for collision detection.
+;
+; This allows the plane itself to interact with fuel depots via check_collision.
+handle_collision_mode_fuel_depot:
+  LD A,GAMEPLAY_MODE_REFUEL            ; Load GAMEPLAY_MODE_REFUEL into A.
+  LD (state_gameplay_mode),A           ; Set gameplay mode to GAMEPLAY_MODE_REFUEL in state_gameplay_mode.
+  LD B,$80                             ; Load $80 (PLANE_COORDINATE_Y) into B.
+  LD A,(state_x)                       ; Load plane X coordinate from state_x.
+  LD C,A                               ; Copy X coordinate to C.
+  LD (state_plane_missile_coordinates),BC ; Store plane coordinates (BC) to state_plane_missile_coordinates for
+                                          ; collision detection.
+  JP check_collision                   ; Jump to check_collision to check for collision with fuel depot.
 
 ; Fighter hits terrain
 ;
@@ -2219,7 +2229,7 @@ retract_object:
 
 ; Check missile collision against viewport objects
 ;
-; Used by the routine at handle_missile_collision.
+; Used by the routine at check_collision.
 ;
 ; Iterates through viewport_objects checking if the player's missile collides with any object. On hit, dispatches to
 ; type-specific handlers: hit_helicopter_reg (helicopter), hit_ship (ship), hit_helicopter_adv (advanced helicopter),
@@ -2484,7 +2494,7 @@ L64B4:
 
 ; Routine at 64BC
 ;
-; Used by the routines at play, handle_missile_collision, next_bridge_player_2, setup_player_2_display and overview.
+; Used by the routines at play, check_collision, next_bridge_player_2, setup_player_2_display and overview.
 print_bridge:
   LD A,(state_player)
   CP PLAYER_2
@@ -2712,7 +2722,7 @@ handle_right:
   LD (state_x),A                       ; Store new X-coordinate back to state_x
   LD C,A                               ; Copy new X-coordinate to C register for rendering
   LD B,PLANE_COORDINATE_Y              ; Set Y-coordinate to $80 (fixed vertical position)
-  LD A,COLLISION_MODE_SKIP             ; Set collision mode to $01 (skip collision detection for sprite rendering)
+  LD A,COLLISION_MODE_FUEL_DEPOT       ; Set collision mode to FUEL (check plane vs fuel depot collision)
   LD (state_collision_mode),A          ; Store collision mode to state_collision_mode
   LD (object_coordinates),BC           ; Store new plane coordinates (BC) to object_coordinates for rendering
   DEC C                                ; Decrement C to calculate previous X position (first pixel back)
@@ -2762,7 +2772,7 @@ handle_left:
   LD (state_x),A                       ; Store new X-coordinate back to state_x
   LD C,A                               ; Copy new X-coordinate to C register for rendering
   LD B,PLANE_COORDINATE_Y              ; Set Y-coordinate to $80 (fixed vertical position)
-  LD A,COLLISION_MODE_SKIP             ; Set collision mode to $01 (skip collision detection for sprite rendering)
+  LD A,COLLISION_MODE_FUEL_DEPOT       ; Set collision mode to FUEL DEPOT (check plane vs fuel depot collision)
   LD (state_collision_mode),A          ; Store collision mode to state_collision_mode
   LD (object_coordinates),BC           ; Store new plane coordinates (BC) to object_coordinates for rendering
   INC C                                ; Increment C to calculate previous X position (first pixel right)
@@ -2795,7 +2805,7 @@ render_plane:
   LD (state_plane_missile_coordinates_backup),HL
   LD C,A
   LD B,$80
-  LD A,COLLISION_MODE_SKIP
+  LD A,COLLISION_MODE_FUEL_DEPOT
   LD (state_collision_mode),A
   LD (object_coordinates),BC
   CALL advance_object
@@ -2955,8 +2965,8 @@ L678E:
 
 ; Finalize collision and erase missile sprite
 ;
-; Used by the routines at handle_collision_mode_fighter, handle_missile_collision, next_bridge_player_2,
-; check_missile_vs_objects and animate_plane_missile.
+; Used by the routines at handle_collision_mode_fighter, check_collision, next_bridge_player_2, check_missile_vs_objects
+; and animate_plane_missile.
 ;
 ; Called after a successful collision to clean up the game state. Erases the missile sprite from the screen, resets the
 ; collision mode to COLLISION_MODE_NONE, clears the missile coordinates, and resets CONTROLS_BIT_SPEED_DECREASED.
@@ -3661,7 +3671,7 @@ handle_special_terrain_fragment_continue:
   CP $00
   RET Z
   LD HL,(screen_ptr)
-; This entry point is used by the routine at handle_missile_collision.
+; This entry point is used by the routine at check_collision.
 handle_special_terrain_fragment_0:
   LD DE,$000E
   LD B,$04
@@ -4172,7 +4182,7 @@ signal_fuel_level_excessive:
 
 ; Explode a single fragment
 ;
-; Used by the routines at handle_collision_mode_fighter, handle_missile_collision, hit_helicopter_reg, hit_ship,
+; Used by the routines at handle_collision_mode_fighter, check_collision, hit_helicopter_reg, hit_ship,
 ; hit_helicopter_adv, hit_fighter, hit_balloon, interact_with_fuel, handle_no_fuel and L74EE.
 ;
 ; I:BC Pointer to the fragment to explode.
@@ -7565,7 +7575,7 @@ L90CE:
 
 ; Add score points for a hit target
 ;
-; Used by the routines at handle_collision_mode_fighter, handle_missile_collision, hit_helicopter_reg, hit_ship,
+; Used by the routines at handle_collision_mode_fighter, check_collision, hit_helicopter_reg, hit_ship,
 ; hit_helicopter_adv, hit_fighter, hit_balloon, interact_with_fuel and L74EE.
 ;
 ; I:A Number of points to add divided by 10.
