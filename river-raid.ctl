@@ -1613,7 +1613,7 @@ N $6B7B After copying the 32-byte sprite to screen, sets state_bridge_section fo
   $6B98 If state_bridge_destroyed = 0, return (bridge intact).
   $6BA1 Load screen_ptr for destroyed bridge clearing.
 @ $6BA4 label=clear_destroyed_bridge
-  $6BA4,6 Clear 4 bytes at offset $0E (punch hole in destroyed bridge).
+  $6BA4,11 Clear 4 bytes at offset $0E (punch hole in destroyed bridge).
 @ $6BB0 label=state_controls
 g $6BB0 Bitmask of the CONTROLS_BIT_* bits containing the current controls and other information.
 @ $6BB1 label=pause
@@ -1731,22 +1731,47 @@ D $6CF4 #LIST { Decrements #R$5F65 each frame, wrapping at $7F (0-127 range) } {
   $6D04 Delay loop: wait D iterations where D = period (from E).
   $6D08 Turn speaker OFF.
   $6D0C Delay loop: wait D iterations (symmetric wave).
-  $6D11,6 Decrement cycle counter, loop for 3 cycles. Jump to #R$6C24 when done.
+  $6D11 Decrement cycle counter, loop for 3 cycles. Jump to #R$6C24 when done.
 @ $6D17 label=overview
-c $6D17
+c $6D17 Level overview screen
+D $6D17 Displays a preview fly-over of the upcoming terrain before the game starts. Shows scrolling terrain with game number and scrolling title text. Player can press Enter to start the game early, or wait for 5 scroll units to auto-start.
+D $6D17 #LIST { Initializes screen with PAPER BLUE, INK GREEN } { Prints status line and "GAME n" where n is the game mode (1-4) } { Runs a main loop that scrolls terrain and displays title text } { Exits to game start after 5 scroll increments or Enter key } LIST#
+  $6D17,9 Initialize scroll position (#R$5F70 = $0010) and scroll speed (#R$5EFD = $10).
 @ $6D23 isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
-C $6D23,2 PAPER BLUE; INK GREEN
+  $6D23 Set screen colors (PAPER BLUE, INK GREEN) via #R$940A.
+  $6D28 Clear/initialize screen via #R$8A33.
+  $6D2B Print status line 1 (#R$8000, length $31 bytes) using ROM PR_STRING ($203C).
 @ $6D2E isub=LD BC,status_line_2 - status_line_1
+  $6D34 Initialize gameplay: call #R$64BC, #R$6587, #R$6DEB (init_starting_bridge).
+  $6D3D Call #R$68E9 to initialize terrain rendering.
+  $6D40,11 Print "GAME" text (#R$805A, length 5) using ROM PR_STRING.
 @ $6D48 isub=LD BC,data_unused_805F - status_line_4
+  $6D4E Print game number: load game mode from #R$923A, add '1' ($31) for ASCII digit, output via RST $10.
+  $6D54,13 Initialize state: store 'h' ($68) in last key, clear #R$5F7D, save initial scroll value to #R$5D43.
+@ $6D64 label=overview_loop
+  $6D64 Check Enter key (row 6, bit 0). Call #R$6BBF if pressed.
+  $6D6D Check if 5 scroll units passed: if (#R$5EF0 - #R$5D43) == 5, jump to #R$5D06 to start game.
+  $6D7A Render frame: call delay, scroll, increment counter, render terrain/objects.
+  $6D8D Call #R$66D0 for rendering.
+  $6D90,10 Call delay, increment frame counter #R$5F81, call ROM KEYBOARD ($02BF), enable interrupts.
+  $6D9B Check if Enter ($0D) was pressed. If so, jump to #R$5DA6.
+  $6DA3,7 Check frame counter AND 3: if not zero, loop back to overview_loop.
+  $6DAD Select upper screen channel via ROM CHAN_OPEN ($1601).
 @ $6DB2 isub=LD A,EXT_ATTR_INK
-  $6DB2 INK BLACK
+  $6DB2 Set INK BLACK for title text area.
 @ $6DB5 isub=LD A,COLOR_BLACK
 @ $6DB8 isub=LD A,EXT_ATTR_PAPER
-  $6DB8 PAPER BLACK
+  $6DB8 Set PAPER BLACK for title text area.
 @ $6DBB isub=LD A,COLOR_BLACK
 @ $6DBE isub=LD A,EXT_ATTR_AT
-  $6DBE,9 AT 1,31
-c $6DDD
+  $6DBE Position cursor AT row 1, column 31.
+  $6DC7 Advance text pointer (#R$5F7E), get next character.
+  $6DD1,9 If character is $FF (end of text), jump to #R$6DDD to reset. Otherwise print character and continue loop.
+@ $6DDD label=reset_scroll_text
+c $6DDD Reset scrolling title text
+D $6DDD Resets the scrolling text pointer to the beginning of the title text at #R$8182 and continues the overview loop.
+  $6DDD Reset text pointer #R$5F7E to #R$8182 (start of title text).
+  $6DE5,6 Clear #R$5F6D and jump back to overview_loop.
 @ $6DEB label=init_starting_bridge
 c $6DEB
 c $6DEB

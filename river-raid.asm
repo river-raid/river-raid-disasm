@@ -3802,13 +3802,13 @@ handle_special_terrain_fragment_continue:
   LD HL,(screen_ptr)                   ; Load screen_ptr for destroyed bridge clearing.
 ; This entry point is used by the routine at check_collision.
 clear_destroyed_bridge:
-  LD DE,$000E                          ; Clear 4 bytes at offset $0E (punch hole in destroyed bridge).
-  LD B,$04                             ;
-  ADD HL,DE                            ;
+  LD DE,$000E                            ; Clear 4 bytes at offset $0E (punch hole in destroyed bridge).
+  LD B,$04                               ;
+  ADD HL,DE                              ;
 handle_special_terrain_fragment_0:
-  LD (HL),$00
-  INC HL
-  DJNZ handle_special_terrain_fragment_0
+  LD (HL),$00                            ;
+  INC HL                                 ;
+  DJNZ handle_special_terrain_fragment_0 ;
   RET
 
 ; Bitmask of the CONTROLS_BIT_* bits containing the current controls and other information.
@@ -4134,106 +4134,112 @@ do_low_fuel_1:
   JP NZ,do_low_fuel_loop               ; Decrement cycle counter, loop for 3 cycles. Jump to int_return when done.
   JP int_return                        ;
 
-; Routine at 6D17
+; Level overview screen
 ;
-; Used by the routine at start_overview.
+; Displays a preview fly-over of the upcoming terrain before the game starts. Shows scrolling terrain with game number
+; and scrolling title text. Player can press Enter to start the game early, or wait for 5 scroll units to auto-start.
+;
+; * Initializes screen with PAPER BLUE, INK GREEN
+; * Prints status line and "GAME n" where n is the game mode (1-4)
+; * Runs a main loop that scrolls terrain and displays title text
+; * Exits to game start after 5 scroll increments or Enter key
 overview:
-  LD BC,$0010
-  LD (state_scroll_offset),BC
-  LD A,$10
+  LD BC,$0010                          ; Initialize scroll position (state_scroll_offset = $0010) and scroll speed
+  LD (state_scroll_offset),BC          ; (state_island_line_idx = $10).
+  LD A,$10                             ;
   LD (state_island_line_idx),A
-  LD D,COLOR_BLUE<<3|COLOR_GREEN       ; PAPER BLUE; INK GREEN
-  CALL clear_screen
-  CALL init_udg
-  LD DE,status_line_1
-  LD BC,status_line_2 - status_line_1
+  LD D,COLOR_BLUE<<3|COLOR_GREEN       ; Set screen colors (PAPER BLUE, INK GREEN) via clear_screen.
+  CALL clear_screen                    ;
+  CALL init_udg                        ; Clear/initialize screen via init_udg.
+  LD DE,status_line_1                  ; Print status line 1 (status_line_1, length $31 bytes) using ROM PR_STRING
+  LD BC,status_line_2 - status_line_1  ; ($203C).
+  CALL PR_STRING                       ;
+  CALL print_bridge                    ; Initialize gameplay: call print_bridge, setup_player_2_display,
+  CALL setup_player_2_display          ; init_starting_bridge (init_starting_bridge).
+  CALL init_starting_bridge            ;
+  CALL init_current_bridge             ; Call init_current_bridge to initialize terrain rendering.
+  LD A,$04                               ; Print "GAME" text (status_line_4, length 5) using ROM PR_STRING.
+  LD (state_terrain_fragment_counter),A  ;
+  LD DE,status_line_4                    ;
+  LD BC,data_unused_805F - status_line_4 ;
   CALL PR_STRING
-  CALL print_bridge
-  CALL setup_player_2_display
-  CALL init_starting_bridge
-  CALL init_current_bridge
-  LD A,$04
-  LD (state_terrain_fragment_counter),A
-  LD DE,status_line_4
-  LD BC,data_unused_805F - status_line_4
-  CALL PR_STRING
-  LD A,(state_game_mode)
-  ADD A,$31
-  RST $10
-  LD A,$68
-  LD (LAST_K),A
-  LD A,$00
-  LD (state_terrain_position),A
-  LD A,(state_bridge_index)
+  LD A,(state_game_mode)               ; Print game number: load game mode from state_game_mode, add '1' ($31) for ASCII
+  ADD A,$31                            ; digit, output via RST $10.
+  RST $10                              ;
+  LD A,$68                             ; Initialize state: store 'h' ($68) in last key, clear state_terrain_position,
+  LD (LAST_K),A                        ; save initial scroll value to L5D43.
+  LD A,$00                             ;
+  LD (state_terrain_position),A        ;
+  LD A,(state_bridge_index)            ;
   LD (L5D43),A
-; This entry point is used by the routine at L6DDD.
-overview_0:
-  LD A,$BF
-  IN A,($FE)
-  BIT 0,A
-  CALL Z,handle_enter
-  LD A,(L5D43)
-  LD B,A
-  LD A,(state_bridge_index)
-  SUB B
-  CP $05
-  JP Z,return_to_control_selection
-  CALL L8A1B
-  CALL render_plane_and_terrain
-  LD HL,state_metronome
-  INC (HL)
-  CALL operate_viewport_objects
-  CALL operate_tank_shell
-  CALL operate_helicopter_missile
-  CALL advance_scroll
-  CALL L8A1B
-  LD HL,L5F81
-  INC (HL)
-  CALL KEYBOARD
+; This entry point is used by the routine at reset_scroll_text.
+overview_loop:
+  LD A,$BF                             ; Check Enter key (row 6, bit 0). Call handle_enter if pressed.
+  IN A,($FE)                           ;
+  BIT 0,A                              ;
+  CALL Z,handle_enter                  ;
+  LD A,(L5D43)                         ; Check if 5 scroll units passed: if (state_bridge_index - L5D43) == 5, jump to
+  LD B,A                               ; return_to_control_selection to start game.
+  LD A,(state_bridge_index)            ;
+  SUB B                                ;
+  CP $05                               ;
+  JP Z,return_to_control_selection     ;
+  CALL L8A1B                           ; Render frame: call delay, scroll, increment counter, render terrain/objects.
+  CALL render_plane_and_terrain        ;
+  LD HL,state_metronome                ;
+  INC (HL)                             ;
+  CALL operate_viewport_objects        ;
+  CALL operate_tank_shell              ;
+  CALL operate_helicopter_missile      ;
+  CALL advance_scroll                  ; Call advance_scroll for rendering.
+  CALL L8A1B                           ; Call delay, increment frame counter L5F81, call ROM KEYBOARD ($02BF), enable
+  LD HL,L5F81                          ; interrupts.
+  INC (HL)                             ;
+  CALL KEYBOARD                        ;
   EI
-  LD A,(LAST_K)
-  CP $0D
-  JP Z,play
-  LD A,(L5F81)
-  AND $03
-  CP $00
-  JP NZ,overview_0
-  LD A,$01
-  CALL CHAN_OPEN
-  LD A,EXT_ATTR_INK                    ; INK BLACK
+  LD A,(LAST_K)                        ; Check if Enter ($0D) was pressed. If so, jump to play.
+  CP $0D                               ;
+  JP Z,play                            ;
+  LD A,(L5F81)                         ; Check frame counter AND 3: if not zero, loop back to overview_loop.
+  AND $03                              ;
+  CP $00                               ;
+  JP NZ,overview_loop
+  LD A,$01                             ; Select upper screen channel via ROM CHAN_OPEN ($1601).
+  CALL CHAN_OPEN                       ;
+  LD A,EXT_ATTR_INK                    ; Set INK BLACK for title text area.
   RST $10                              ;
   LD A,COLOR_BLACK                     ;
   RST $10                              ;
-  LD A,EXT_ATTR_PAPER                  ; PAPER BLACK
+  LD A,EXT_ATTR_PAPER                  ; Set PAPER BLACK for title text area.
   RST $10                              ;
   LD A,COLOR_BLACK                     ;
   RST $10                              ;
-  LD A,EXT_ATTR_AT                     ; AT 1,31
+  LD A,EXT_ATTR_AT                     ; Position cursor AT row 1, column 31.
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
   LD A,$1F                             ;
   RST $10                              ;
-  LD HL,(ptr_scroller)
-  INC HL
-  LD (ptr_scroller),HL
-  LD A,(HL)
-  CP $FF
-  JP Z,L6DDD
-  RST $10
-  LD A,$02
-  CALL CHAN_OPEN
-  JP overview_0
+  LD HL,(ptr_scroller)                 ; Advance text pointer (ptr_scroller), get next character.
+  INC HL                               ;
+  LD (ptr_scroller),HL                 ;
+  LD A,(HL)                            ;
+  CP $FF                               ;
+  JP Z,reset_scroll_text               ; If character is $FF (end of text), jump to reset_scroll_text to reset.
+  RST $10                              ; Otherwise print character and continue loop.
+  LD A,$02                             ;
+  CALL CHAN_OPEN                       ;
+  JP overview_loop
 
-; Routine at 6DDD
+; Reset scrolling title text
 ;
-; Used by the routine at overview.
-L6DDD:
-  LD HL,msg_credits
-  LD (ptr_scroller),HL
-  LD A,$00
-  LD (state_bridge_destroyed),A
-  JP overview_0
+; Resets the scrolling text pointer to the beginning of the title text at msg_credits and continues the overview loop.
+reset_scroll_text:
+  LD HL,msg_credits                    ; Reset text pointer ptr_scroller to msg_credits (start of title text).
+  LD (ptr_scroller),HL                 ;
+  LD A,$00                             ;
+  LD (state_bridge_destroyed),A        ; Clear state_bridge_destroyed and jump back to overview_loop.
+  JP overview_loop                     ;
 
 ; Initializes the starting bridge based on the value of state_game_mode using starting_bridges for the lookup.
 ;

@@ -4200,10 +4200,10 @@ c$6B7B CP $80        ; {Dispatch: $80=#R$6B63, $E0=#R$6B6B, $F0=#R$6B73,
 @label=clear_destroyed_bridge
 *$6BA4 LD DE,$000E   ; {Clear 4 bytes at offset $0E (punch hole in destroyed
  $6BA7 LD B,$04      ; bridge).
- $6BA9 ADD HL,DE     ; }
+ $6BA9 ADD HL,DE     ;
 *$6BAA LD (HL),$00   ;
  $6BAC INC HL        ;
- $6BAD DJNZ $6BAA    ;
+ $6BAD DJNZ $6BAA    ; }
  $6BAF RET           ;
 
 ; Bitmask of the CONTROLS_BIT_* bits containing the current controls and other
@@ -4541,112 +4541,125 @@ c$6CF4 LD C,$03      ; Loop counter: 3 cycles of waveform.
  $6D11 JP NZ,$6CF6   ; {Decrement cycle counter, loop for 3 cycles. Jump to
  $6D14 JP $6C24      ; #R$6C24 when done.}
 
-; Routine at 6D17
+; Level overview screen
 ;
-; Used by the routine at #R$5D2B.
+; Displays a preview fly-over of the upcoming terrain before the game starts.
+; Shows scrolling terrain with game number and scrolling title text. Player can
+; press Enter to start the game early, or wait for 5 scroll units to
+; auto-start.
+; .
+; #LIST
+; { Initializes screen with PAPER BLUE, INK GREEN }
+; { Prints status line and "GAME n" where n is the game mode (1-4) }
+; { Runs a main loop that scrolls terrain and displays title text }
+; { Exits to game start after 5 scroll increments or Enter key }
+; LIST#
 @label=overview
-c$6D17 LD BC,$0010   ;
- $6D1A LD ($5F70),BC ;
- $6D1E LD A,$10      ;
+c$6D17 LD BC,$0010   ; {Initialize scroll position (#R$5F70 = $0010) and scroll
+ $6D1A LD ($5F70),BC ; speed (#R$5EFD = $10).
+ $6D1E LD A,$10      ; }
  $6D20 LD ($5EFD),A  ;
 @isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
- $6D23 LD D,$0C      ; PAPER BLUE; INK GREEN
- $6D25 CALL $940A    ;
- $6D28 CALL $8A33    ;
- $6D2B LD DE,$8000   ;
+ $6D23 LD D,$0C      ; {Set screen colors (PAPER BLUE, INK GREEN) via #R$940A.
+ $6D25 CALL $940A    ; }
+ $6D28 CALL $8A33    ; Clear/initialize screen via #R$8A33.
+ $6D2B LD DE,$8000   ; {Print status line 1 (#R$8000, length $31 bytes) using
 @isub=LD BC,status_line_2 - status_line_1
- $6D2E LD BC,$0031   ;
- $6D31 CALL $203C    ;
- $6D34 CALL $64BC    ;
- $6D37 CALL $6587    ;
- $6D3A CALL $6DEB    ;
- $6D3D CALL $68E9    ;
- $6D40 LD A,$04      ;
- $6D42 LD ($5EEE),A  ;
+ $6D2E LD BC,$0031   ; ROM PR_STRING ($203C).
+ $6D31 CALL $203C    ; }
+ $6D34 CALL $64BC    ; {Initialize gameplay: call #R$64BC, #R$6587, #R$6DEB
+ $6D37 CALL $6587    ; (init_starting_bridge).
+ $6D3A CALL $6DEB    ; }
+ $6D3D CALL $68E9    ; Call #R$68E9 to initialize terrain rendering.
+ $6D40 LD A,$04      ; {Print "GAME" text (#R$805A, length 5) using ROM
+ $6D42 LD ($5EEE),A  ; PR_STRING.
  $6D45 LD DE,$805A   ;
 @isub=LD BC,data_unused_805F - status_line_4
- $6D48 LD BC,$0005   ;
+ $6D48 LD BC,$0005   ; }
  $6D4B CALL $203C    ;
- $6D4E LD A,($923A)  ;
- $6D51 ADD A,$31     ;
- $6D53 RST $10       ;
- $6D54 LD A,$68      ;
- $6D56 LD ($5C08),A  ;
+ $6D4E LD A,($923A)  ; {Print game number: load game mode from #R$923A, add '1'
+ $6D51 ADD A,$31     ; ($31) for ASCII digit, output via RST $10.
+ $6D53 RST $10       ; }
+ $6D54 LD A,$68      ; {Initialize state: store 'h' ($68) in last key, clear
+ $6D56 LD ($5C08),A  ; #R$5F7D, save initial scroll value to #R$5D43.
  $6D59 LD A,$00      ;
  $6D5B LD ($5F7D),A  ;
- $6D5E LD A,($5EF0)  ;
+ $6D5E LD A,($5EF0)  ; }
  $6D61 LD ($5D43),A  ;
 ; This entry point is used by the routine at #R$6DDD.
-*$6D64 LD A,$BF      ;
- $6D66 IN A,($FE)    ;
+@label=overview_loop
+*$6D64 LD A,$BF      ; {Check Enter key (row 6, bit 0). Call #R$6BBF if
+ $6D66 IN A,($FE)    ; pressed.
  $6D68 BIT 0,A       ;
- $6D6A CALL Z,$6BBF  ;
- $6D6D LD A,($5D43)  ;
- $6D70 LD B,A        ;
+ $6D6A CALL Z,$6BBF  ; }
+ $6D6D LD A,($5D43)  ; {Check if 5 scroll units passed: if (#R$5EF0 - #R$5D43)
+ $6D70 LD B,A        ; == 5, jump to #R$5D06 to start game.
  $6D71 LD A,($5EF0)  ;
  $6D74 SUB B         ;
  $6D75 CP $05        ;
- $6D77 JP Z,$5D06    ;
- $6D7A CALL $8A1B    ;
- $6D7D CALL $60A5    ;
+ $6D77 JP Z,$5D06    ; }
+ $6D7A CALL $8A1B    ; {Render frame: call delay, scroll, increment counter,
+ $6D7D CALL $60A5    ; render terrain/objects.
  $6D80 LD HL,$5EEF   ;
  $6D83 INC (HL)      ;
  $6D84 CALL $708E    ;
  $6D87 CALL $7441    ;
- $6D8A CALL $7393    ;
- $6D8D CALL $66D0    ;
- $6D90 CALL $8A1B    ;
- $6D93 LD HL,$5F81   ;
+ $6D8A CALL $7393    ; }
+ $6D8D CALL $66D0    ; Call #R$66D0 for rendering.
+ $6D90 CALL $8A1B    ; {Call delay, increment frame counter #R$5F81, call ROM
+ $6D93 LD HL,$5F81   ; KEYBOARD ($02BF), enable interrupts.
  $6D96 INC (HL)      ;
- $6D97 CALL $02BF    ;
+ $6D97 CALL $02BF    ; }
  $6D9A EI            ;
- $6D9B LD A,($5C08)  ;
- $6D9E CP $0D        ;
- $6DA0 JP Z,$5DA6    ;
- $6DA3 LD A,($5F81)  ;
- $6DA6 AND $03       ;
- $6DA8 CP $00        ;
+ $6D9B LD A,($5C08)  ; {Check if Enter ($0D) was pressed. If so, jump to
+ $6D9E CP $0D        ; #R$5DA6.
+ $6DA0 JP Z,$5DA6    ; }
+ $6DA3 LD A,($5F81)  ; {Check frame counter AND 3: if not zero, loop back to
+ $6DA6 AND $03       ; overview_loop.
+ $6DA8 CP $00        ; }
  $6DAA JP NZ,$6D64   ;
- $6DAD LD A,$01      ;
- $6DAF CALL $1601    ;
+ $6DAD LD A,$01      ; {Select upper screen channel via ROM CHAN_OPEN ($1601).
+ $6DAF CALL $1601    ; }
 @isub=LD A,EXT_ATTR_INK
- $6DB2 LD A,$10      ; {INK BLACK
+ $6DB2 LD A,$10      ; {Set INK BLACK for title text area.
  $6DB4 RST $10       ;
 @isub=LD A,COLOR_BLACK
  $6DB5 LD A,$00      ;
  $6DB7 RST $10       ; }
 @isub=LD A,EXT_ATTR_PAPER
- $6DB8 LD A,$11      ; {PAPER BLACK
+ $6DB8 LD A,$11      ; {Set PAPER BLACK for title text area.
  $6DBA RST $10       ;
 @isub=LD A,COLOR_BLACK
  $6DBB LD A,$00      ;
  $6DBD RST $10       ; }
 @isub=LD A,EXT_ATTR_AT
- $6DBE LD A,$16      ; {AT 1,31
+ $6DBE LD A,$16      ; {Position cursor AT row 1, column 31.
  $6DC0 RST $10       ;
  $6DC1 LD A,$01      ;
  $6DC3 RST $10       ;
  $6DC4 LD A,$1F      ;
  $6DC6 RST $10       ; }
- $6DC7 LD HL,($5F7E) ;
+ $6DC7 LD HL,($5F7E) ; {Advance text pointer (#R$5F7E), get next character.
  $6DCA INC HL        ;
  $6DCB LD ($5F7E),HL ;
  $6DCE LD A,(HL)     ;
- $6DCF CP $FF        ;
- $6DD1 JP Z,$6DDD    ;
- $6DD4 RST $10       ;
+ $6DCF CP $FF        ; }
+ $6DD1 JP Z,$6DDD    ; {If character is $FF (end of text), jump to #R$6DDD to
+ $6DD4 RST $10       ; reset. Otherwise print character and continue loop.
  $6DD5 LD A,$02      ;
- $6DD7 CALL $1601    ;
+ $6DD7 CALL $1601    ; }
  $6DDA JP $6D64      ;
 
-; Routine at 6DDD
+; Reset scrolling title text
 ;
-; Used by the routine at #R$6D17.
-c$6DDD LD HL,$8182   ;
- $6DE0 LD ($5F7E),HL ;
- $6DE3 LD A,$00      ;
- $6DE5 LD ($5F6D),A  ;
- $6DE8 JP $6D64      ;
+; Resets the scrolling text pointer to the beginning of the title text at
+; #R$8182 and continues the overview loop.
+@label=reset_scroll_text
+c$6DDD LD HL,$8182   ; {Reset text pointer #R$5F7E to #R$8182 (start of title
+ $6DE0 LD ($5F7E),HL ; text).
+ $6DE3 LD A,$00      ; }
+ $6DE5 LD ($5F6D),A  ; {Clear #R$5F6D and jump back to overview_loop.
+ $6DE8 JP $6D64      ; }
 
 ; Initializes the starting bridge based on the value of #R$923A using #R$5D3F
 ; for the lookup.
