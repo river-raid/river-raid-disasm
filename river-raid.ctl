@@ -1781,25 +1781,54 @@ c $6DEB Initializes the starting bridge based on the value of #R$923A using #R$5
   $6DF3 Advance to the element corresponding to the game mode.
   $6DF7,1 Get the starting bridge number
 @ $6DFF label=consume_fuel
-c $6DFF
+c $6DFF Consume fuel and update gauge display
+D $6DFF Decrements fuel level and updates the fuel gauge. Called each frame during gameplay. Fuel only decreases on even frames, and the gauge only updates every 4th decrement.
+D $6DFF #LIST { Fuel level stored in #R$5F66 (0-255) } { Low fuel warning when top 2 bits = 0 (fuel < $40) } { Empty fuel (fuel = 0) triggers game over via #R$650A } { Gauge position: column = (fuel >> 2) + $40, row = $A8 } LIST#
+  $6DFF Skip if odd frame (fuel only consumed on even frames).
 @ $6E02 isub=AND METRONOME_INTERVAL_CONSUME_FUEL
+  $6E07 Decrement fuel level in #R$5F66.
 @ $6E0E isub=AND FUEL_CHECK_INTERVAL
+  $6E0E Skip gauge update unless (fuel AND 3) == 0 (every 4th decrement).
+  $6E13 If fuel == 0, game over (jump to #R$650A).
 @ $6E16 isub=CP FUEL_LEVEL_EMPTY
 @ $6E1B isub=AND FUEL_LEVEL_LOW
+  $6E1B If fuel low (top 2 bits = 0), call #R$6E86 to set low fuel warning.
+@ $6E22 label=update_fuel_gauge
+  $6E22 Calculate gauge position: B = $A8 (row), C = (fuel >> 2) + $40 (column).
+  $6E2E Call #R$8A4E to compute screen address from B,C coordinates.
+@ $6E31 label=draw_fuel_gauge_loop
+  $6E31 Loop counter: 8 rows of gauge.
+  $6E33,12 Draw 8 rows of fuel gauge with pixel pattern $86. Increment H to move down one row.
 @ $6E40 label=add_fuel
-c $6E40
+c $6E40 Add fuel during refueling
+D $6E40 Called when plane is over a fuel depot. Adds FUEL_INTAKE_AMOUNT (4) to fuel level, plays refueling sound, and updates gauge.
+D $6E40 #LIST { Returns immediately if #R$5F69 == 4 (refueling complete?) } { Plays high-pitched refuel sound via ROM BEEPER } { If fuel almost full ($FC), plays different sound via #R$6E92 } { Clears low fuel warning if fuel now sufficient } LIST#
+  $6E40 Check if #R$5F69 == 4 (refuel limit), return if so.
+  $6E46 Check if fuel almost full (AND $FC == $FC). If so, jump to #R$6E92 for tank full sound.
 @ $6E49 isub=AND FUEL_LEVEL_ALMOST_FULL
 @ $6E4B isub=CP FUEL_LEVEL_ALMOST_FULL
+  $6E50 Play refueling sound: BEEPER with DE=$0007, HL=$0333.
+  $6E59,12 Add 4 to fuel level. If now sufficient (AND $C0 != 0), call #R$6E8C to clear low fuel warning.
 @ $6E5C isub=ADD A,FUEL_INTAKE_AMOUNT
 @ $6E61 isub=AND FUEL_LEVEL_LOW
+@ $6E68 label=update_fuel_gauge_refuel
+  $6E68 Calculate gauge position: B = $A8, C = (fuel >> 2) + $3F.
+  $6E74 Call #R$8A4E to compute screen address.
+  $6E77 Loop counter: 8 rows.
+  $6E79,12 Draw 8 rows of fuel gauge with pattern $C6 (filled). Increment H each row.
+@ $6E7B label=draw_fuel_gauge_refuel_loop
 @ $6E86 label=register_low_fuel
-c $6E86 Register low fuel level
-  $6E89,2 Set CONTROLS_BIT_LOW_FUEL
+c $6E86 Set low fuel warning flag
+D $6E86 Sets CONTROLS_BIT_LOW_FUEL in #R$6BB0 to trigger the warbling low fuel warning sound.
+  $6E86,5 Set CONTROLS_BIT_LOW_FUEL (bit 3) in controls state.
 @ $6E8C label=register_sufficient_fuel
-c $6E8C Register sufficient fuel level
-  $6E8F,2 Reset CONTROLS_BIT_LOW_FUEL
+c $6E8C Clear low fuel warning flag
+D $6E8C Clears CONTROLS_BIT_LOW_FUEL in #R$6BB0 to stop the low fuel warning sound.
+  $6E8C,5 Clear CONTROLS_BIT_LOW_FUEL (bit 3) in controls state.
 @ $6E92 label=signal_fuel_level_excessive
-c $6E92
+c $6E92 Play tank full sound
+D $6E92 Plays a different beep when fuel tank is already full and cannot accept more fuel.
+  $6E92,9 Play tank full sound: BEEPER with DE=$0008, HL=$0111.
 @ $6E9C label=explode_fragment
 c $6E9C Explode a single fragment
 R $6E9C I:BC Pointer to the fragment to explode.

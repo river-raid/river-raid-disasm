@@ -4679,111 +4679,135 @@ c$6DEB LD A,($923A)  ;
  $6DFB LD ($5F6B),A  ;
  $6DFE RET           ;
 
-; Routine at 6DFF
+; Consume fuel and update gauge display
 ;
-; Used by the routine at #R$5F91.
+; Decrements fuel level and updates the fuel gauge. Called each frame during
+; gameplay. Fuel only decreases on even frames, and the gauge only updates
+; every 4th decrement.
+; .
+; #LIST
+; { Fuel level stored in #R$5F66 (0-255) }
+; { Low fuel warning when top 2 bits = 0 (fuel < $40) }
+; { Empty fuel (fuel = 0) triggers game over via #R$650A }
+; { Gauge position: column = (fuel >> 2) + $40, row = $A8 }
+; LIST#
 @label=consume_fuel
-c$6DFF LD A,($5EEF)  ;
+c$6DFF LD A,($5EEF)  ; {Skip if odd frame (fuel only consumed on even frames).
 @isub=AND METRONOME_INTERVAL_CONSUME_FUEL
  $6E02 AND $01       ;
  $6E04 CP $00        ;
- $6E06 RET NZ        ;
- $6E07 LD A,($5F66)  ;
+ $6E06 RET NZ        ; }
+ $6E07 LD A,($5F66)  ; {Decrement fuel level in #R$5F66.
  $6E0A DEC A         ;
- $6E0B LD ($5F66),A  ;
+ $6E0B LD ($5F66),A  ; }
 @isub=AND FUEL_CHECK_INTERVAL
- $6E0E AND $03       ;
- $6E10 CP $00        ;
- $6E12 RET NZ        ;
- $6E13 LD A,($5F66)  ;
+ $6E0E AND $03       ; {Skip gauge update unless (fuel AND 3) == 0 (every 4th
+ $6E10 CP $00        ; decrement).
+ $6E12 RET NZ        ; }
+ $6E13 LD A,($5F66)  ; {If fuel == 0, game over (jump to #R$650A).
 @isub=CP FUEL_LEVEL_EMPTY
  $6E16 CP $00        ;
- $6E18 JP Z,$650A    ;
+ $6E18 JP Z,$650A    ; }
 @isub=AND FUEL_LEVEL_LOW
- $6E1B AND $C0       ;
- $6E1D CP $00        ;
- $6E1F CALL Z,$6E86  ;
- $6E22 LD A,($5F66)  ;
- $6E25 LD B,$A8      ;
+ $6E1B AND $C0       ; {If fuel low (top 2 bits = 0), call #R$6E86 to set low
+ $6E1D CP $00        ; fuel warning.
+ $6E1F CALL Z,$6E86  ; }
+@label=update_fuel_gauge
+ $6E22 LD A,($5F66)  ; {Calculate gauge position: B = $A8 (row), C = (fuel >>
+ $6E25 LD B,$A8      ; 2) + $40 (column).
  $6E27 SRL A         ;
  $6E29 SRL A         ;
  $6E2B ADD A,$40     ;
- $6E2D LD C,A        ;
- $6E2E CALL $8A4E    ;
- $6E31 LD A,$08      ;
- $6E33 LD D,$86      ;
-*$6E35 PUSH AF       ;
+ $6E2D LD C,A        ; }
+ $6E2E CALL $8A4E    ; Call #R$8A4E to compute screen address from B,C
+                     ; coordinates.
+@label=draw_fuel_gauge_loop
+ $6E31 LD A,$08      ; Loop counter: 8 rows of gauge.
+ $6E33 LD D,$86      ; {Draw 8 rows of fuel gauge with pixel pattern $86.
+*$6E35 PUSH AF       ; Increment H to move down one row.
  $6E36 CALL $6124    ;
  $6E39 INC H         ;
  $6E3A POP AF        ;
  $6E3B DEC A         ;
- $6E3C JP NZ,$6E35   ;
+ $6E3C JP NZ,$6E35   ; }
  $6E3F RET           ;
 
-; Routine at 6E40
+; Add fuel during refueling
 ;
-; Used by the routine at #R$64A1.
+; Called when plane is over a fuel depot. Adds FUEL_INTAKE_AMOUNT (4) to fuel
+; level, plays refueling sound, and updates gauge.
+; .
+; #LIST
+; { Returns immediately if #R$5F69 == 4 (refueling complete?) }
+; { Plays high-pitched refuel sound via ROM BEEPER }
+; { If fuel almost full ($FC), plays different sound via #R$6E92 }
+; { Clears low fuel warning if fuel now sufficient }
+; LIST#
 @label=add_fuel
-c$6E40 LD A,($5F69)  ;
+c$6E40 LD A,($5F69)  ; {Check if #R$5F69 == 4 (refuel limit), return if so.
  $6E43 CP $04        ;
- $6E45 RET Z         ;
- $6E46 LD A,($5F66)  ;
+ $6E45 RET Z         ; }
+ $6E46 LD A,($5F66)  ; {Check if fuel almost full (AND $FC == $FC). If so, jump
 @isub=AND FUEL_LEVEL_ALMOST_FULL
- $6E49 AND $FC       ;
+ $6E49 AND $FC       ; to #R$6E92 for tank full sound.
 @isub=CP FUEL_LEVEL_ALMOST_FULL
  $6E4B CP $FC        ;
- $6E4D JP Z,$6E92    ;
- $6E50 LD DE,$0007   ;
+ $6E4D JP Z,$6E92    ; }
+ $6E50 LD DE,$0007   ; {Play refueling sound: BEEPER with DE=$0007, HL=$0333.
  $6E53 LD HL,$0333   ;
- $6E56 CALL $03B5    ;
- $6E59 LD A,($5F66)  ;
+ $6E56 CALL $03B5    ; }
+ $6E59 LD A,($5F66)  ; {Add 4 to fuel level. If now sufficient (AND $C0 != 0),
 @isub=ADD A,FUEL_INTAKE_AMOUNT
- $6E5C ADD A,$04     ;
+ $6E5C ADD A,$04     ; call #R$6E8C to clear low fuel warning.
  $6E5E LD ($5F66),A  ;
 @isub=AND FUEL_LEVEL_LOW
  $6E61 AND $C0       ;
- $6E63 CP $00        ;
+ $6E63 CP $00        ; }
  $6E65 CALL NZ,$6E8C ;
- $6E68 LD A,($5F66)  ;
- $6E6B LD B,$A8      ;
+@label=update_fuel_gauge_refuel
+ $6E68 LD A,($5F66)  ; {Calculate gauge position: B = $A8, C = (fuel >> 2) +
+ $6E6B LD B,$A8      ; $3F.
  $6E6D SRL A         ;
  $6E6F SRL A         ;
  $6E71 ADD A,$3F     ;
- $6E73 LD C,A        ;
- $6E74 CALL $8A4E    ;
- $6E77 LD A,$08      ;
- $6E79 LD D,$C6      ;
-*$6E7B PUSH AF       ;
+ $6E73 LD C,A        ; }
+ $6E74 CALL $8A4E    ; Call #R$8A4E to compute screen address.
+ $6E77 LD A,$08      ; Loop counter: 8 rows.
+ $6E79 LD D,$C6      ; {Draw 8 rows of fuel gauge with pattern $C6 (filled).
+@label=draw_fuel_gauge_refuel_loop
+*$6E7B PUSH AF       ; Increment H each row.
  $6E7C CALL $6124    ;
  $6E7F INC H         ;
  $6E80 POP AF        ;
  $6E81 DEC A         ;
- $6E82 JP NZ,$6E7B   ;
+ $6E82 JP NZ,$6E7B   ; }
  $6E85 RET           ;
 
-; Register low fuel level
+; Set low fuel warning flag
 ;
-; Used by the routine at #R$6DFF.
+; Sets CONTROLS_BIT_LOW_FUEL in #R$6BB0 to trigger the warbling low fuel
+; warning sound.
 @label=register_low_fuel
-c$6E86 LD HL,$6BB0   ;
- $6E89 SET 3,(HL)    ; Set CONTROLS_BIT_LOW_FUEL
+c$6E86 LD HL,$6BB0   ; {Set CONTROLS_BIT_LOW_FUEL (bit 3) in controls state.
+ $6E89 SET 3,(HL)    ; }
  $6E8B RET           ;
 
-; Register sufficient fuel level
+; Clear low fuel warning flag
 ;
-; Used by the routine at #R$6E40.
+; Clears CONTROLS_BIT_LOW_FUEL in #R$6BB0 to stop the low fuel warning sound.
 @label=register_sufficient_fuel
-c$6E8C LD HL,$6BB0   ;
- $6E8F RES 3,(HL)    ; Reset CONTROLS_BIT_LOW_FUEL
+c$6E8C LD HL,$6BB0   ; {Clear CONTROLS_BIT_LOW_FUEL (bit 3) in controls state.
+ $6E8F RES 3,(HL)    ; }
  $6E91 RET           ;
 
-; Routine at 6E92
+; Play tank full sound
 ;
-; Used by the routine at #R$6E40.
+; Plays a different beep when fuel tank is already full and cannot accept more
+; fuel.
 @label=signal_fuel_level_excessive
-c$6E92 LD DE,$0008   ;
+c$6E92 LD DE,$0008   ; {Play tank full sound: BEEPER with DE=$0008, HL=$0111.
  $6E95 LD HL,$0111   ;
- $6E98 CALL $03B5    ;
+ $6E98 CALL $03B5    ; }
  $6E9B RET           ;
 
 ; Explode a single fragment

@@ -4257,105 +4257,120 @@ init_starting_bridge:
   LD (state_bridge_player_2),A
   RET
 
-; Routine at 6DFF
+; Consume fuel and update gauge display
 ;
-; Used by the routine at main_loop.
+; Decrements fuel level and updates the fuel gauge. Called each frame during gameplay. Fuel only decreases on even
+; frames, and the gauge only updates every 4th decrement.
+;
+; * Fuel level stored in state_fuel (0-255)
+; * Low fuel warning when top 2 bits = 0 (fuel < $40)
+; * Empty fuel (fuel = 0) triggers game over via handle_no_fuel
+; * Gauge position: column = (fuel >> 2) + $40, row = $A8
 consume_fuel:
-  LD A,(state_metronome)
-  AND METRONOME_INTERVAL_CONSUME_FUEL
-  CP $00
-  RET NZ
-  LD A,(state_fuel)
-  DEC A
-  LD (state_fuel),A
-  AND FUEL_CHECK_INTERVAL
-  CP $00
-  RET NZ
-  LD A,(state_fuel)
-  CP FUEL_LEVEL_EMPTY
-  JP Z,handle_no_fuel
-  AND FUEL_LEVEL_LOW
-  CP $00
-  CALL Z,register_low_fuel
-  LD A,(state_fuel)
-  LD B,$A8
-  SRL A
-  SRL A
-  ADD A,$40
-  LD C,A
-  CALL calculate_pixel_address
-  LD A,$08
-  LD D,$86
+  LD A,(state_metronome)               ; Skip if odd frame (fuel only consumed on even frames).
+  AND METRONOME_INTERVAL_CONSUME_FUEL  ;
+  CP $00                               ;
+  RET NZ                               ;
+  LD A,(state_fuel)                    ; Decrement fuel level in state_fuel.
+  DEC A                                ;
+  LD (state_fuel),A                    ;
+  AND FUEL_CHECK_INTERVAL              ; Skip gauge update unless (fuel AND 3) == 0 (every 4th decrement).
+  CP $00                               ;
+  RET NZ                               ;
+  LD A,(state_fuel)                    ; If fuel == 0, game over (jump to handle_no_fuel).
+  CP FUEL_LEVEL_EMPTY                  ;
+  JP Z,handle_no_fuel                  ;
+  AND FUEL_LEVEL_LOW                   ; If fuel low (top 2 bits = 0), call register_low_fuel to set low fuel warning.
+  CP $00                               ;
+  CALL Z,register_low_fuel             ;
+update_fuel_gauge:
+  LD A,(state_fuel)                    ; Calculate gauge position: B = $A8 (row), C = (fuel >> 2) + $40 (column).
+  LD B,$A8                             ;
+  SRL A                                ;
+  SRL A                                ;
+  ADD A,$40                            ;
+  LD C,A                               ;
+  CALL calculate_pixel_address         ; Call calculate_pixel_address to compute screen address from B,C coordinates.
+draw_fuel_gauge_loop:
+  LD A,$08                             ; Loop counter: 8 rows of gauge.
+  LD D,$86                             ; Draw 8 rows of fuel gauge with pixel pattern $86. Increment H to move down one
 consume_fuel_0:
-  PUSH AF
-  CALL calculate_fuel_gauge_offset
-  INC H
-  POP AF
-  DEC A
-  JP NZ,consume_fuel_0
+  PUSH AF                              ; row.
+  CALL calculate_fuel_gauge_offset     ;
+  INC H                                ;
+  POP AF                               ;
+  DEC A                                ;
+  JP NZ,consume_fuel_0                 ;
   RET
 
-; Routine at 6E40
+; Add fuel during refueling
 ;
-; Used by the routine at refuel_from_depot.
+; Called when plane is over a fuel depot. Adds FUEL_INTAKE_AMOUNT (4) to fuel level, plays refueling sound, and updates
+; gauge.
+;
+; * Returns immediately if state_plane_sprite_bank == 4 (refueling complete?)
+; * Plays high-pitched refuel sound via ROM BEEPER
+; * If fuel almost full ($FC), plays different sound via signal_fuel_level_excessive
+; * Clears low fuel warning if fuel now sufficient
 add_fuel:
-  LD A,(state_plane_sprite_bank)
-  CP $04
-  RET Z
-  LD A,(state_fuel)
-  AND FUEL_LEVEL_ALMOST_FULL
-  CP FUEL_LEVEL_ALMOST_FULL
-  JP Z,signal_fuel_level_excessive
-  LD DE,$0007
-  LD HL,$0333
-  CALL BEEPER
-  LD A,(state_fuel)
-  ADD A,FUEL_INTAKE_AMOUNT
-  LD (state_fuel),A
-  AND FUEL_LEVEL_LOW
-  CP $00
+  LD A,(state_plane_sprite_bank)       ; Check if state_plane_sprite_bank == 4 (refuel limit), return if so.
+  CP $04                               ;
+  RET Z                                ;
+  LD A,(state_fuel)                    ; Check if fuel almost full (AND $FC == $FC). If so, jump to
+  AND FUEL_LEVEL_ALMOST_FULL           ; signal_fuel_level_excessive for tank full sound.
+  CP FUEL_LEVEL_ALMOST_FULL            ;
+  JP Z,signal_fuel_level_excessive     ;
+  LD DE,$0007                          ; Play refueling sound: BEEPER with DE=$0007, HL=$0333.
+  LD HL,$0333                          ;
+  CALL BEEPER                          ;
+  LD A,(state_fuel)                    ; Add 4 to fuel level. If now sufficient (AND $C0 != 0), call
+  ADD A,FUEL_INTAKE_AMOUNT             ; register_sufficient_fuel to clear low fuel warning.
+  LD (state_fuel),A                    ;
+  AND FUEL_LEVEL_LOW                   ;
+  CP $00                               ;
   CALL NZ,register_sufficient_fuel
-  LD A,(state_fuel)
-  LD B,$A8
-  SRL A
-  SRL A
-  ADD A,$3F
-  LD C,A
-  CALL calculate_pixel_address
-  LD A,$08
-  LD D,$C6
-add_fuel_0:
-  PUSH AF
-  CALL calculate_fuel_gauge_offset
-  INC H
-  POP AF
-  DEC A
-  JP NZ,add_fuel_0
+update_fuel_gauge_refuel:
+  LD A,(state_fuel)                    ; Calculate gauge position: B = $A8, C = (fuel >> 2) + $3F.
+  LD B,$A8                             ;
+  SRL A                                ;
+  SRL A                                ;
+  ADD A,$3F                            ;
+  LD C,A                               ;
+  CALL calculate_pixel_address         ; Call calculate_pixel_address to compute screen address.
+  LD A,$08                             ; Loop counter: 8 rows.
+  LD D,$C6                             ; Draw 8 rows of fuel gauge with pattern $C6 (filled). Increment H each row.
+draw_fuel_gauge_refuel_loop:
+  PUSH AF                              ;
+  CALL calculate_fuel_gauge_offset     ;
+  INC H                                ;
+  POP AF                               ;
+  DEC A                                ;
+  JP NZ,draw_fuel_gauge_refuel_loop    ;
   RET
 
-; Register low fuel level
+; Set low fuel warning flag
 ;
-; Used by the routine at consume_fuel.
+; Sets CONTROLS_BIT_LOW_FUEL in state_controls to trigger the warbling low fuel warning sound.
 register_low_fuel:
-  LD HL,state_controls
-  SET 3,(HL)                           ; Set CONTROLS_BIT_LOW_FUEL
+  LD HL,state_controls                 ; Set CONTROLS_BIT_LOW_FUEL (bit 3) in controls state.
+  SET 3,(HL)                           ;
   RET
 
-; Register sufficient fuel level
+; Clear low fuel warning flag
 ;
-; Used by the routine at add_fuel.
+; Clears CONTROLS_BIT_LOW_FUEL in state_controls to stop the low fuel warning sound.
 register_sufficient_fuel:
-  LD HL,state_controls
-  RES 3,(HL)                           ; Reset CONTROLS_BIT_LOW_FUEL
+  LD HL,state_controls                 ; Clear CONTROLS_BIT_LOW_FUEL (bit 3) in controls state.
+  RES 3,(HL)                           ;
   RET
 
-; Routine at 6E92
+; Play tank full sound
 ;
-; Used by the routine at add_fuel.
+; Plays a different beep when fuel tank is already full and cannot accept more fuel.
 signal_fuel_level_excessive:
-  LD DE,$0008
-  LD HL,$0111
-  CALL BEEPER
+  LD DE,$0008                          ; Play tank full sound: BEEPER with DE=$0008, HL=$0111.
+  LD HL,$0111                          ;
+  CALL BEEPER                          ;
   RET
 
 ; Explode a single fragment
