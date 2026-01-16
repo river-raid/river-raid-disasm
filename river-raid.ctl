@@ -1474,10 +1474,15 @@ R $694D O:A Always set to 0
 c $6963
   $6963,5 Reset bridge index
 @ $696B label=handle_island
-c $696B
-R $696B I:A The six highest bits of the fourth byte of the terrain element.
+c $696B Initialize island state from terrain data
+D $696B Called when terrain data indicates an island should appear. Looks up island parameters from data_islands table and stores them to state variables for use during island line rendering.
+R $696B I:A Island index (upper 6 bits of terrain byte, will be divided by 4).
+  $696B Convert input to island table index and prepare lookup.
 @ $6978 label=locate_island_element
+  $6978 Locate island entry in data_islands (3 bytes per entry).
 @ $697A ofix=JR NZ,$6978
+  $697C Store island profile index and width offset to state.
+  $6986,9 Store extra byte and reset island line counter.
 @ $6990 label=render_island_line
 c $6990
   $6990,7 Next island line.

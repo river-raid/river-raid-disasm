@@ -3373,32 +3373,33 @@ next_bridge_index_overflow:
   LD A,$00
   RET
 
-; Routine at 696B
+; Initialize island state from terrain data
 ;
-; Used by the routine at render_terrain_row.
+; Called when terrain data indicates an island should appear. Looks up island parameters from data_islands table and
+; stores them to state variables for use during island line rendering.
 ;
-; I:A The six highest bits of the fourth byte of the terrain element.
+; I:A Island index (upper 6 bits of terrain byte, will be divided by 4).
 handle_island:
-  LD HL,data_islands
-  LD DE,$0003
-  SRL A
-  SRL A
-  OR A
-  SBC HL,DE
+  LD HL,data_islands                   ; Convert input to island table index and prepare lookup.
+  LD DE,$0003                          ;
+  SRL A                                ;
+  SRL A                                ;
+  OR A                                 ;
+  SBC HL,DE                            ;
 locate_island_element:
-  ADD HL,DE
-  DEC A
-  JR NZ,locate_island_element
-  LD A,(HL)
-  LD (state_island_profile_idx),A
-  INC HL
-  LD A,(HL)
-  LD (state_island_byte_2),A
-  INC HL
-  LD A,(HL)
-  LD (state_island_byte_3),A
-  LD A,$00
-  LD (state_island_line_idx),A
+  ADD HL,DE                            ; Locate island entry in data_islands (3 bytes per entry).
+  DEC A                                ;
+  JR NZ,locate_island_element          ;
+  LD A,(HL)                            ; Store island profile index and width offset to state.
+  LD (state_island_profile_idx),A      ;
+  INC HL                               ;
+  LD A,(HL)                            ;
+  LD (state_island_byte_2),A           ;
+  INC HL                               ;
+  LD A,(HL)                            ; Store extra byte and reset island line counter.
+  LD (state_island_byte_3),A           ;
+  LD A,$00                             ;
+  LD (state_island_line_idx),A         ;
   RET
 
 ; Routine at 6990

@@ -3726,33 +3726,35 @@ c$6963 LD A,$01      ; {Reset bridge index
  $6968 LD A,$00      ;
  $696A RET           ;
 
-; Routine at 696B
+; Initialize island state from terrain data
 ;
-; Used by the routine at #R$6A4F.
+; Called when terrain data indicates an island should appear. Looks up island
+; parameters from data_islands table and stores them to state variables for use
+; during island line rendering.
 ;
-; I:A The six highest bits of the fourth byte of the terrain element.
+; I:A Island index (upper 6 bits of terrain byte, will be divided by 4).
 @label=handle_island
-c$696B LD HL,$C600   ;
+c$696B LD HL,$C600   ; {Convert input to island table index and prepare lookup.
  $696E LD DE,$0003   ;
  $6971 SRL A         ;
  $6973 SRL A         ;
  $6975 OR A          ;
- $6976 SBC HL,DE     ;
+ $6976 SBC HL,DE     ; }
 @label=locate_island_element
- $6978 ADD HL,DE     ;
- $6979 DEC A         ;
+ $6978 ADD HL,DE     ; {Locate island entry in data_islands (3 bytes per
+ $6979 DEC A         ; entry).
 @ofix=JR NZ,$6978
- $697A JR NZ,$6977   ;
- $697C LD A,(HL)     ;
+ $697A JR NZ,$6977   ; }
+ $697C LD A,(HL)     ; {Store island profile index and width offset to state.
  $697D LD ($5EFA),A  ;
  $6980 INC HL        ;
  $6981 LD A,(HL)     ;
  $6982 LD ($5EFB),A  ;
- $6985 INC HL        ;
- $6986 LD A,(HL)     ;
+ $6985 INC HL        ; }
+ $6986 LD A,(HL)     ; {Store extra byte and reset island line counter.
  $6987 LD ($5EFC),A  ;
  $698A LD A,$00      ;
- $698C LD ($5EFD),A  ;
+ $698C LD ($5EFD),A  ; }
  $698F RET           ;
 
 ; Routine at 6990
