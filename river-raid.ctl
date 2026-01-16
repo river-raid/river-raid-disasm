@@ -1484,14 +1484,40 @@ R $696B I:A Island index (upper 6 bits of terrain byte, will be divided by 4).
   $697C Store island profile index and width offset to state.
   $6986,9 Store extra byte and reset island line counter.
 @ $6990 label=render_island_line
-c $6990
-  $6990,7 Next island line.
-  $6994
-@ $69A0 label=L6990_locate_sprite
-  $69A0 Point #REGhl to the element of #R$8063 with the index defined by #R$5EFA.
-  $69A4,9 Point #REGhl to the profile line with the index defined by #R$5F7D.
-c $6A3F
-c $6A45
+c $6990 Render one line of island terrain
+D $6990 Renders the left and right edges of an island on the current screen line. Islands are rendered as two diagonal edges (left and right) with solid terrain ($FF) filling the space from screen edge to each diagonal edge.
+N $6990 .
+N $6990 The left edge X position is calculated as: state_island_byte_2 + profile_value + $80. The $80 centers the coordinate system (screen center). The profile_value comes from #R$8063 indexed by state_island_profile_idx and state_terrain_position.
+N $6990 .
+N $6990 The right edge position depends on state_island_byte_3: 0=use byte_3 directly, 1=mirror around center (2*$3C - left), 2=offset from left ($3C + left). $3C (60) is the default river half-width.
+  $6990 Increment island line counter.
+  $6994 Set up lookup: HL=data_terrain_profiles, DE=$10 (profile size).
+@ $69A0 label=locate_island_profile
+  $69A0 Locate 16-byte profile entry by state_island_profile_idx.
+  $69A4 Index into profile by (state_terrain_position AND $0F) to get edge offset byte.
+  $69AD Left edge X = state_island_byte_2 + profile_byte + $80. Save X on stack.
+  $69BA Look up 2-byte edge sprite from terrain_edge_left using (X AND $06) as sprite index.
+  $69C5 Calculate screen address = screen_ptr + (X >> 3). Copy 2-byte edge sprite via LDIR.
+  $69D8 Calculate fill count = (X >> 3) - 16. This is number of solid tiles left of edge.
+  $69EA Fill leftward with $FF bytes (solid terrain) for fill count iterations.
+@ $69EC label=fill_left_terrain_loop
+@ $69F0 label=prepare_right_edge
+  $69F0 Restore left X from stack. Set D=left X, C=$3C (river half-width), B=state_island_byte_2.
+  $69FA Dispatch based on state_island_byte_3: 1=#R$6A3F, 2=#R$6A45, else use byte_3 as right X.
+@ $6A0A label=draw_right_edge
+  $6A0A Look up 2-byte edge sprite from terrain_edge_right using (right X AND $06) as index.
+  $6A18 Calculate screen address = screen_ptr + (right X >> 3). Copy 2-byte edge sprite via LDIR.
+  $6A26 Calculate fill count = 15 - (right X >> 3). This is number of solid tiles right of edge.
+  $6A38,6 Fill rightward with $FF bytes (solid terrain) for fill count iterations.
+@ $6A3A label=fill_right_terrain_loop
+@ $6A3F label=calc_mirrored_edge
+c $6A3F Calculate mirrored right edge position
+D $6A3F For symmetric islands (state_island_byte_3=1). Right edge = 2*$3C - left = 120 - left. This mirrors the left edge around screen center, creating a symmetric island shape.
+  $6A3F A = 2*C - D = 120 - left_x, then jump to draw_right_edge.
+@ $6A45 label=calc_offset_edge
+c $6A45 Calculate offset right edge position
+D $6A45 For offset islands (state_island_byte_3=2). Right edge = $3C + left. This creates an asymmetric island where right edge follows left edge with fixed river width.
+  $6A45 A = C + D = 60 + left_x, then jump to draw_right_edge.
 @ $6A4A label=get_player_2_bridge
 c $6A4A Get player 2's bridge progress
 D $6A4A Helper routine that loads player 2's bridge progress into B, replacing player 1's value.

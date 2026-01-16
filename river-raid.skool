@@ -3757,43 +3757,60 @@ c$696B LD HL,$C600   ; {Convert input to island table index and prepare lookup.
  $698C LD ($5EFD),A  ; }
  $698F RET           ;
 
-; Routine at 6990
+; Render one line of island terrain
 ;
-; Used by the routine at #R$6A4F.
+; Renders the left and right edges of an island on the current screen line.
+; Islands are rendered as two diagonal edges (left and right) with solid
+; terrain ($FF) filling the space from screen edge to each diagonal edge.
+;
+; .
+;
+; .
+; .
+; The left edge X position is calculated as: state_island_byte_2 +
+; profile_value + $80. The $80 centers the coordinate system (screen center).
+; The profile_value comes from #R$8063 indexed by state_island_profile_idx and
+; state_terrain_position.
+; .
+; .
+; .
+; The right edge position depends on state_island_byte_3: 0=use byte_3
+; directly, 1=mirror around center (2*$3C - left), 2=offset from left ($3C +
+; left). $3C (60) is the default river half-width.
 @label=render_island_line
-c$6990 LD HL,$5EFD   ; {Next island line.
+c$6990 LD HL,$5EFD   ; {Increment island line counter.
  $6993 INC (HL)      ; }
- $6994 LD A,($5EFA)  ;
- $6997 LD HL,$8063   ;
+ $6994 LD A,($5EFA)  ; {Set up lookup: HL=data_terrain_profiles, DE=$10
+ $6997 LD HL,$8063   ; (profile size).
  $699A LD DE,$0010   ;
  $699D OR A          ;
- $699E SBC HL,DE     ;
-@label=L6990_locate_sprite
-*$69A0 ADD HL,DE     ; {Point #REGhl to the element of #R$8063 with the index
- $69A1 DEC A         ; defined by #R$5EFA.
+ $699E SBC HL,DE     ; }
+@label=locate_island_profile
+*$69A0 ADD HL,DE     ; {Locate 16-byte profile entry by
+ $69A1 DEC A         ; state_island_profile_idx.
  $69A2 JR NZ,$69A0   ; }
- $69A4 LD A,($5F7D)  ; {Point #REGhl to the profile line with the index defined
- $69A7 AND $0F       ; by #R$5F7D.
+ $69A4 LD A,($5F7D)  ; {Index into profile by (state_terrain_position AND $0F)
+ $69A7 AND $0F       ; to get edge offset byte.
  $69A9 LD D,$00      ;
  $69AB LD E,A        ;
  $69AC ADD HL,DE     ; }
- $69AD LD A,($5EFB)  ;
- $69B0 ADD A,(HL)    ;
+ $69AD LD A,($5EFB)  ; {Left edge X = state_island_byte_2 + profile_byte + $80.
+ $69B0 ADD A,(HL)    ; Save X on stack.
  $69B1 PUSH AF       ;
  $69B2 LD B,$00      ;
  $69B4 ADD A,$80     ;
  $69B6 LD D,A        ;
- $69B7 LD HL,$89F2   ;
- $69BA LD A,D        ;
- $69BB AND $07       ;
+ $69B7 LD HL,$89F2   ; }
+ $69BA LD A,D        ; {Look up 2-byte edge sprite from terrain_edge_left using
+ $69BB AND $07       ; (X AND $06) as sprite index.
  $69BD SRL A         ;
  $69BF LD C,A        ;
  $69C0 SLA C         ;
  $69C2 LD A,D        ;
  $69C3 ADD HL,BC     ;
- $69C4 EX DE,HL      ;
- $69C5 LD C,A        ;
- $69C6 LD HL,($5F7B) ;
+ $69C4 EX DE,HL      ; }
+ $69C5 LD C,A        ; {Calculate screen address = screen_ptr + (X >> 3). Copy
+ $69C6 LD HL,($5F7B) ; 2-byte edge sprite via LDIR.
  $69C9 LD B,$00      ;
  $69CB SRL C         ;
  $69CD SRL C         ;
@@ -3801,9 +3818,9 @@ c$6990 LD HL,$5EFD   ; {Next island line.
  $69D1 ADD HL,BC     ;
  $69D2 EX DE,HL      ;
  $69D3 LD BC,$0002   ;
- $69D6 LDIR          ;
- $69D8 DEC DE        ;
- $69D9 DEC DE        ;
+ $69D6 LDIR          ; }
+ $69D8 DEC DE        ; {Calculate fill count = (X >> 3) - 16. This is number of
+ $69D9 DEC DE        ; solid tiles left of edge.
  $69DA SRL A         ;
  $69DC SRL A         ;
  $69DE SRL A         ;
@@ -3811,26 +3828,29 @@ c$6990 LD HL,$5EFD   ; {Next island line.
  $69E2 AND $0F       ;
  $69E4 LD B,A        ;
  $69E5 CP $00        ;
- $69E7 JP Z,$69F0    ;
- $69EA LD A,$FF      ;
-*$69EC DEC DE        ;
+ $69E7 JP Z,$69F0    ; }
+ $69EA LD A,$FF      ; {Fill leftward with $FF bytes (solid terrain) for fill
+@label=fill_left_terrain_loop
+*$69EC DEC DE        ; count iterations.
  $69ED LD (DE),A     ;
- $69EE DJNZ $69EC    ;
-*$69F0 POP AF        ;
- $69F1 LD B,$00      ;
+ $69EE DJNZ $69EC    ; }
+@label=prepare_right_edge
+*$69F0 POP AF        ; {Restore left X from stack. Set D=left X, C=$3C (river
+ $69F1 LD B,$00      ; half-width), B=state_island_byte_2.
  $69F3 LD D,A        ;
  $69F4 LD C,$3C      ;
  $69F6 LD A,($5EFB)  ;
- $69F9 LD B,A        ;
- $69FA LD A,($5EFC)  ;
- $69FD CP $01        ;
+ $69F9 LD B,A        ; }
+ $69FA LD A,($5EFC)  ; {Dispatch based on state_island_byte_3: 1=#R$6A3F,
+ $69FD CP $01        ; 2=#R$6A45, else use byte_3 as right X.
  $69FF JP Z,$6A3F    ;
  $6A02 LD A,($5EFC)  ;
  $6A05 CP $02        ;
- $6A07 JP Z,$6A45    ;
+ $6A07 JP Z,$6A45    ; }
 ; This entry point is used by the routines at #R$6A3F and #R$6A45.
-*$6A0A LD D,A        ;
- $6A0B LD HL,$89FA   ;
+@label=draw_right_edge
+*$6A0A LD D,A        ; {Look up 2-byte edge sprite from terrain_edge_right
+ $6A0B LD HL,$89FA   ; using (right X AND $06) as index.
  $6A0E LD A,D        ;
  $6A0F AND $06       ;
  $6A11 LD C,A        ;
@@ -3838,16 +3858,16 @@ c$6990 LD HL,$5EFD   ; {Next island line.
  $6A14 LD A,D        ;
  $6A15 ADD HL,BC     ;
  $6A16 EX DE,HL      ;
- $6A17 LD C,A        ;
- $6A18 LD HL,($5F7B) ;
- $6A1B SRL C         ;
+ $6A17 LD C,A        ; }
+ $6A18 LD HL,($5F7B) ; {Calculate screen address = screen_ptr + (right X >> 3).
+ $6A1B SRL C         ; Copy 2-byte edge sprite via LDIR.
  $6A1D SRL C         ;
  $6A1F SRL C         ;
  $6A21 ADD HL,BC     ;
  $6A22 EX DE,HL      ;
- $6A23 LD BC,$0002   ;
- $6A26 LDIR          ;
- $6A28 LD B,A        ;
+ $6A23 LD BC,$0002   ; }
+ $6A26 LDIR          ; {Calculate fill count = 15 - (right X >> 3). This is
+ $6A28 LD B,A        ; number of solid tiles right of edge.
  $6A29 SRL B         ;
  $6A2B SRL B         ;
  $6A2D SRL B         ;
@@ -3856,27 +3876,34 @@ c$6990 LD HL,$5EFD   ; {Next island line.
  $6A32 LD B,A        ;
  $6A33 AND $0F       ;
  $6A35 CP $00        ;
- $6A37 RET Z         ;
- $6A38 LD A,$FF      ;
-*$6A3A LD (DE),A     ;
+ $6A37 RET Z         ; }
+ $6A38 LD A,$FF      ; {Fill rightward with $FF bytes (solid terrain) for fill
+@label=fill_right_terrain_loop
+*$6A3A LD (DE),A     ; count iterations.
  $6A3B INC DE        ;
- $6A3C DJNZ $6A3A    ;
+ $6A3C DJNZ $6A3A    ; }
  $6A3E RET           ;
 
-; Routine at 6A3F
+; Calculate mirrored right edge position
 ;
-; Used by the routine at #R$6990.
-c$6A3F LD A,C        ;
- $6A40 SUB D         ;
+; For symmetric islands (state_island_byte_3=1). Right edge = 2*$3C - left =
+; 120 - left. This mirrors the left edge around screen center, creating a
+; symmetric island shape.
+@label=calc_mirrored_edge
+c$6A3F LD A,C        ; {A = 2*C - D = 120 - left_x, then jump to
+ $6A40 SUB D         ; draw_right_edge.
  $6A41 ADD A,C       ;
- $6A42 JP $6A0A      ;
+ $6A42 JP $6A0A      ; }
 
-; Routine at 6A45
+; Calculate offset right edge position
 ;
-; Used by the routine at #R$6990.
-c$6A45 LD A,C        ;
+; For offset islands (state_island_byte_3=2). Right edge = $3C + left. This
+; creates an asymmetric island where right edge follows left edge with fixed
+; river width.
+@label=calc_offset_edge
+c$6A45 LD A,C        ; {A = C + D = 60 + left_x, then jump to draw_right_edge.
  $6A46 ADD A,D       ;
- $6A47 JP $6A0A      ;
+ $6A47 JP $6A0A      ; }
 
 ; Get player 2's bridge progress
 ;
