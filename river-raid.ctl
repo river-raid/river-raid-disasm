@@ -1388,6 +1388,24 @@ c $6836 Add $1000 offset to island data pointer
 @ $683B label=handle_island_rendering
 c $683B Handle island rendering and scrolling
 D $683B This routine manages island rendering by manipulating island data pointers based on bit flags, copying island data to screen memory, and calling render_plane when appropriate. It loops through island lines, decrementing the island counter until it reaches zero.
+  $683B,2 Initialize island line counter to $8F (143).
+@ $683D label=process_island_line
+  $6840 Mask to get lower 6 bits (index 0-63).
+  $6842,8 Look up pointer in table at #R$5B00 (index × 2).
+  $684B Load pointer into HL.
+  $684F Reload island counter.
+  $6852 If bit 7 set, add $1000 offset to island pointer.
+  $6857 If bit 6 set, add $0800 offset to island pointer.
+  $685C Save adjusted island pointer.
+  $685D,15 Look up pointer for (counter - speed) in table at #R$5B00.
+  $6873 Load pointer into HL.
+  $6874 Calculate (counter - speed).
+  $687C If bit 7 set, add $1000 offset to island pointer.
+  $6881 If bit 6 set, add $0800 offset to island pointer.
+  $6886 Copy 32 bytes backward from first to second island line.
+  $688C,6 Decrement island counter and check if finished.
+  $6895 If counter is $7F, render plane.
+  $689A Continue with next island line.
 @ $68A1 label=finalize_island_rendering
 c $68A1 Finalize island rendering
 @ $68B7 label=scroll_attributes

@@ -3164,59 +3164,59 @@ add_island_offset_1000:
 ; screen memory, and calling render_plane when appropriate. It loops through island lines, decrementing the island
 ; counter until it reaches zero.
 handle_island_rendering:
-  LD A,$8F
-handle_island_rendering_0:
+  LD A,$8F                             ; Initialize island line counter to $8F (143).
+process_island_line:
   LD (L5EF9),A
-  AND $3F
-  LD HL,L5B00
+  AND $3F                              ; Mask to get lower 6 bits (index 0-63).
+  LD HL,L5B00                          ; Look up pointer in table at L5B00 (index × 2).
+  LD C,A                               ;
+  SLA C                                ;
+  LD B,$00                             ;
+  ADD HL,BC
+  LD E,(HL)                            ; Load pointer into HL.
+  INC HL                               ;
+  LD D,(HL)                            ;
+  EX DE,HL                             ;
+  LD A,(L5EF9)                         ; Reload island counter.
+  BIT 7,A                              ; If bit 7 set, add $1000 offset to island pointer.
+  CALL NZ,add_island_offset_1000       ;
+  BIT 6,A                              ; If bit 6 set, add $0800 offset to island pointer.
+  CALL NZ,add_island_offset_800        ;
+  PUSH HL                              ; Save adjusted island pointer.
+  LD HL,L5B00                          ; Look up pointer for (counter - speed) in table at L5B00.
+  LD A,(state_speed)                   ;
+  LD B,A                               ;
+  LD A,(L5EF9)                         ;
+  SUB B                                ;
+  AND $3F                              ;
+  LD B,$00                             ;
   LD C,A
   SLA C
-  LD B,$00
   ADD HL,BC
   LD E,(HL)
   INC HL
   LD D,(HL)
-  EX DE,HL
-  LD A,(L5EF9)
-  BIT 7,A
-  CALL NZ,add_island_offset_1000
-  BIT 6,A
-  CALL NZ,add_island_offset_800
-  PUSH HL
-  LD HL,L5B00
-  LD A,(state_speed)
-  LD B,A
-  LD A,(L5EF9)
-  SUB B
-  AND $3F
-  LD B,$00
-  LD C,A
-  SLA C
-  ADD HL,BC
-  LD E,(HL)
-  INC HL
-  LD D,(HL)
-  EX DE,HL
-  LD A,(state_speed)
-  LD D,A
-  LD A,(L5EF9)
-  SUB D
-  BIT 7,A
-  CALL NZ,add_island_offset_1000
-  BIT 6,A
-  CALL NZ,add_island_offset_800
-  POP DE
-  LD BC,$0020
-  LDDR
-  LD A,(L5EF9)
-  DEC A
-  CP $00
+  EX DE,HL                             ; Load pointer into HL.
+  LD A,(state_speed)                   ; Calculate (counter - speed).
+  LD D,A                               ;
+  LD A,(L5EF9)                         ;
+  SUB D                                ;
+  BIT 7,A                              ; If bit 7 set, add $1000 offset to island pointer.
+  CALL NZ,add_island_offset_1000       ;
+  BIT 6,A                              ; If bit 6 set, add $0800 offset to island pointer.
+  CALL NZ,add_island_offset_800        ;
+  POP DE                               ; Copy 32 bytes backward from first to second island line.
+  LD BC,$0020                          ;
+  LDDR                                 ;
+  LD A,(L5EF9)                         ; Decrement island counter and check if finished.
+  DEC A                                ;
+  CP $00                               ;
   JP Z,finalize_island_rendering
-  CP $7F
-  CALL Z,render_plane
-  LD A,(L5EF9)
-  DEC A
-  JP handle_island_rendering_0
+  CP $7F                               ; If counter is $7F, render plane.
+  CALL Z,render_plane                  ;
+  LD A,(L5EF9)                         ; Continue with next island line.
+  DEC A                                ;
+  JP process_island_line               ;
 
 ; Finalize island rendering
 ;

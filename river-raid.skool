@@ -3506,58 +3506,59 @@ c$6836 LD DE,$1000   ; Set DE to $1000
 ; render_plane when appropriate. It loops through island lines, decrementing
 ; the island counter until it reaches zero.
 @label=handle_island_rendering
-c$683B LD A,$8F      ;
+c$683B LD A,$8F      ; Initialize island line counter to $8F (143).
+@label=process_island_line
 *$683D LD ($5EF9),A  ;
- $6840 AND $3F       ;
- $6842 LD HL,$5B00   ;
+ $6840 AND $3F       ; Mask to get lower 6 bits (index 0-63).
+ $6842 LD HL,$5B00   ; {Look up pointer in table at #R$5B00 (index × 2).
  $6845 LD C,A        ;
  $6846 SLA C         ;
- $6848 LD B,$00      ;
+ $6848 LD B,$00      ; }
  $684A ADD HL,BC     ;
- $684B LD E,(HL)     ;
+ $684B LD E,(HL)     ; {Load pointer into HL.
  $684C INC HL        ;
  $684D LD D,(HL)     ;
- $684E EX DE,HL      ;
- $684F LD A,($5EF9)  ;
- $6852 BIT 7,A       ;
- $6854 CALL NZ,$6836 ;
- $6857 BIT 6,A       ;
- $6859 CALL NZ,$6831 ;
- $685C PUSH HL       ;
- $685D LD HL,$5B00   ;
- $6860 LD A,($5F64)  ;
+ $684E EX DE,HL      ; }
+ $684F LD A,($5EF9)  ; Reload island counter.
+ $6852 BIT 7,A       ; {If bit 7 set, add $1000 offset to island pointer.
+ $6854 CALL NZ,$6836 ; }
+ $6857 BIT 6,A       ; {If bit 6 set, add $0800 offset to island pointer.
+ $6859 CALL NZ,$6831 ; }
+ $685C PUSH HL       ; Save adjusted island pointer.
+ $685D LD HL,$5B00   ; {Look up pointer for (counter - speed) in table at
+ $6860 LD A,($5F64)  ; #R$5B00.
  $6863 LD B,A        ;
  $6864 LD A,($5EF9)  ;
  $6867 SUB B         ;
  $6868 AND $3F       ;
- $686A LD B,$00      ;
+ $686A LD B,$00      ; }
  $686C LD C,A        ;
  $686D SLA C         ;
  $686F ADD HL,BC     ;
  $6870 LD E,(HL)     ;
  $6871 INC HL        ;
  $6872 LD D,(HL)     ;
- $6873 EX DE,HL      ;
- $6874 LD A,($5F64)  ;
+ $6873 EX DE,HL      ; Load pointer into HL.
+ $6874 LD A,($5F64)  ; {Calculate (counter - speed).
  $6877 LD D,A        ;
  $6878 LD A,($5EF9)  ;
- $687B SUB D         ;
- $687C BIT 7,A       ;
- $687E CALL NZ,$6836 ;
- $6881 BIT 6,A       ;
- $6883 CALL NZ,$6831 ;
- $6886 POP DE        ;
- $6887 LD BC,$0020   ;
- $688A LDDR          ;
- $688C LD A,($5EF9)  ;
+ $687B SUB D         ; }
+ $687C BIT 7,A       ; {If bit 7 set, add $1000 offset to island pointer.
+ $687E CALL NZ,$6836 ; }
+ $6881 BIT 6,A       ; {If bit 6 set, add $0800 offset to island pointer.
+ $6883 CALL NZ,$6831 ; }
+ $6886 POP DE        ; {Copy 32 bytes backward from first to second island
+ $6887 LD BC,$0020   ; line.
+ $688A LDDR          ; }
+ $688C LD A,($5EF9)  ; {Decrement island counter and check if finished.
  $688F DEC A         ;
- $6890 CP $00        ;
+ $6890 CP $00        ; }
  $6892 JP Z,$68A1    ;
- $6895 CP $7F        ;
- $6897 CALL Z,$6682  ;
- $689A LD A,($5EF9)  ;
+ $6895 CP $7F        ; {If counter is $7F, render plane.
+ $6897 CALL Z,$6682  ; }
+ $689A LD A,($5EF9)  ; {Continue with next island line.
  $689D DEC A         ;
- $689E JP $683D      ;
+ $689E JP $683D      ; }
 
 ; Finalize island rendering
 ;
