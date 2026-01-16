@@ -1866,27 +1866,51 @@ R $6EBC I:HL Pointer to slot in set
   $6EC1,4 If replacing end marker, write new $FF marker after entry.
 @ $6EC5 isub=LD (HL),SET_MARKER_END_OF_SET
 @ $6EC8 label=render_explosions
-c $6EC8
+c $6EC8 Process and render all active explosions
+D $6EC8 Iterates through the explosions set at #R$5F2E via pointer #R$5F62. Each explosion has 6 animation frames before being removed. Adjusts Y position based on scroll speed.
+D $6EC8 #LIST { Entry format: [X_pos, Y_offset, frame_counter] where frame_counter bits 0-6 = frame (1-6), bit 7 = erase flag } { Frame 1,5: small explosion (#R$6F63) } { Frame 2,4: medium explosion (#R$6F67) } { Frame 3: large explosion (#R$6F6B) } { Frame 6: erase explosion (#R$6F6F) then remove entry } LIST#
+  $6EC8 Load 3-byte entry from set: C=X, B=Y offset, D=frame. Advance pointer #R$5F62.
+  $6ED4 Skip empty entries ($00), continue to next.
 @ $6ED5 isub=CP SET_MARKER_EMPTY_SLOT
 @ $6EDA isub=CP SET_MARKER_END_OF_SET
+  $6EDA If end marker ($FF), jump to #R$6F73 to reset pointer.
+  $6EDF Add scroll speed (#R$5F64) to Y offset, store back.
+  $6EE6 Extract frame number (bits 0-6), increment. If frame == 7, entry complete.
+  $6EEF Increment frame counter and store back.
+  $6EF3 Check if Y position is off-screen (AND $88 == $88). Skip if so.
 @ $6EF4 isub=AND VIEWPORT_HEIGHT
 @ $6EF6 isub=CP VIEWPORT_HEIGHT
+  $6EFB Check if Y position is off-screen (AND $90 == $90). Skip if so.
+  $6F03 Get frame number. Load sprite for frame 1.
+  $6F08 Load sprite for frame 2.
+  $6F0D Load sprite for frame 3.
+  $6F12 Load sprite for frame 4 (same as 2).
+  $6F17 Load sprite for frame 5 (same as 1).
+  $6F1C Load erasure sprite for frame 6.
+  $6F24 Set up sprite rendering: store sprite pointer, set collision mode to none, configure rendering parameters.
 @ $6F30 isub=LD A,COLLISION_MODE_NONE
+  $6F46 Check bit 7 of frame. If set, skip first render call.
+  $6F52 Call first sprite rendering pass.
+  $6F57,12 Call second sprite rendering pass, loop to next entry.
 @ $6F63 label=ld_sprite_explosion_f1
-c $6F63 Load frame 1 of the explosion sprite.
-R $6F63 O:DE Pointer to the sprite.
+c $6F63 Load frame 1/5 explosion sprite
+R $6F63 O:DE Pointer to small explosion sprite at #R$8471.
 @ $6F67 label=ld_sprite_explosion_f2
-c $6F67 Load frame 2 of the explosion sprite.
-R $6F67 O:DE Pointer to the sprite.
+c $6F67 Load frame 2/4 explosion sprite
+R $6F67 O:DE Pointer to medium explosion sprite at #R$8481.
 @ $6F6B label=ld_sprite_explosion_f3
-c $6F6B Load frame 3 of the explosion sprite.
-R $6F6B O:DE Pointer to the sprite.
+c $6F6B Load frame 3 explosion sprite
+R $6F6B O:DE Pointer to large explosion sprite at #R$8491.
 @ $6F6F label=ld_sprite_explosion_erasure
-c $6F6F Load explosion erasure sprite.
-R $6F6F O:DE Pointer to the sprite.
-@ $6F73 label=init_exploding_fragments_ptr
-c $6F73
-c $6F7A
+c $6F6F Load explosion erasure sprite
+R $6F6F O:DE Pointer to erasure sprite at #R$82F5.
+@ $6F73 label=reset_explosions_pointer
+c $6F73 Reset explosions set pointer
+D $6F73 Resets #R$5F62 to point to start of explosions set at #R$5F2E.
+  $6F73,7 Reset pointer and return.
+@ $6F7A label=remove_explosion_entry
+c $6F7A Remove completed explosion from set
+D $6F7A Marks the current explosion entry as empty ($00) and renders the final erasure frame.
 @ $6F80 isub=LD A,COLLISION_MODE_NONE
 @ $6F80 label=next_row
 c $6F80 This routine gets called when the screen scrolls by another fragment

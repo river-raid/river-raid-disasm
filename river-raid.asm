@@ -4440,138 +4440,145 @@ write_object_to_set:
   LD (HL),SET_MARKER_END_OF_SET
   RET
 
-; Routine at 6EC8
+; Process and render all active explosions
 ;
-; Used by the routines at main_loop, handle_no_fuel and L6F7A.
+; Iterates through the explosions set at exploding_fragments via pointer exploding_fragments_ptr. Each explosion has 6
+; animation frames before being removed. Adjusts Y position based on scroll speed.
+;
+; * Entry format: [X_pos, Y_offset, frame_counter] where frame_counter bits 0-6 = frame (1-6), bit 7 = erase flag
+; * Frame 1,5: small explosion (ld_sprite_explosion_f1)
+; * Frame 2,4: medium explosion (ld_sprite_explosion_f2)
+; * Frame 3: large explosion (ld_sprite_explosion_f3)
+; * Frame 6: erase explosion (ld_sprite_explosion_erasure) then remove entry
 render_explosions:
-  LD HL,(exploding_fragments_ptr)
-  LD C,(HL)
-  INC HL
-  LD B,(HL)
-  INC HL
-  LD D,(HL)
-  INC HL
-  LD (exploding_fragments_ptr),HL
-  LD A,C
-  CP SET_MARKER_EMPTY_SLOT
-  JP Z,render_explosions
-  CP SET_MARKER_END_OF_SET
-  JP Z,init_exploding_fragments_ptr
-  LD A,(state_speed)
-  ADD A,B
-  DEC HL
-  DEC HL
-  LD (HL),A
-  LD A,D
-  AND $7F
-  INC A
-  CP $07
-  JP Z,L6F7A
-  LD A,D
-  INC A
-  INC HL
-  LD (HL),A
-  LD A,B
-  AND VIEWPORT_HEIGHT
-  CP VIEWPORT_HEIGHT
-  JP Z,render_explosions
-  LD A,B
-  AND $90
-  CP $90
-  JP Z,render_explosions
-  LD A,(HL)
-  AND $7F
-  CP $01
-  CALL Z,ld_sprite_explosion_f1
-  CP $02
-  CALL Z,ld_sprite_explosion_f2
-  CP $03
-  CALL Z,ld_sprite_explosion_f3
-  CP $04
-  CALL Z,ld_sprite_explosion_f2
-  CP $05
-  CALL Z,ld_sprite_explosion_f1
-  CP $06
-  CALL Z,ld_sprite_explosion_erasure
-  LD A,(HL)
-  LD HL,all_ff
-  LD (render_sprite_ptr),HL
-  LD (L8B10),DE
-  LD D,A
-  LD A,COLLISION_MODE_NONE
-  LD (state_collision_mode),A
-  LD A,$02
-  LD (render_object_width),A
-  LD A,D
-  LD DE,$080C
-  LD (previous_object_coordinates),BC
-  LD (object_coordinates),BC
-  LD BC,$0000
-  BIT 7,A
-  JP NZ,render_explosions_0
-  PUSH DE
-  PUSH BC
-  PUSH AF
-  PUSH HL
-  LD A,$02
-  CALL L928D
-  POP HL
-  POP AF
-  POP BC
-  POP DE
+  LD HL,(exploding_fragments_ptr)      ; Load 3-byte entry from set: C=X, B=Y offset, D=frame. Advance pointer
+  LD C,(HL)                            ; exploding_fragments_ptr.
+  INC HL                               ;
+  LD B,(HL)                            ;
+  INC HL                               ;
+  LD D,(HL)                            ;
+  INC HL                               ;
+  LD (exploding_fragments_ptr),HL      ;
+  LD A,C                               ; Skip empty entries ($00), continue to next.
+  CP SET_MARKER_EMPTY_SLOT             ;
+  JP Z,render_explosions               ;
+  CP SET_MARKER_END_OF_SET             ; If end marker ($FF), jump to reset_explosions_pointer to reset pointer.
+  JP Z,reset_explosions_pointer        ;
+  LD A,(state_speed)                   ; Add scroll speed (state_speed) to Y offset, store back.
+  ADD A,B                              ;
+  DEC HL                               ;
+  DEC HL                               ;
+  LD (HL),A                            ;
+  LD A,D                               ; Extract frame number (bits 0-6), increment. If frame == 7, entry complete.
+  AND $7F                              ;
+  INC A                                ;
+  CP $07                               ;
+  JP Z,remove_explosion_entry          ;
+  LD A,D                               ; Increment frame counter and store back.
+  INC A                                ;
+  INC HL                               ;
+  LD (HL),A                            ;
+  LD A,B                               ; Check if Y position is off-screen (AND $88 == $88). Skip if so.
+  AND VIEWPORT_HEIGHT                  ;
+  CP VIEWPORT_HEIGHT                   ;
+  JP Z,render_explosions               ;
+  LD A,B                               ; Check if Y position is off-screen (AND $90 == $90). Skip if so.
+  AND $90                              ;
+  CP $90                               ;
+  JP Z,render_explosions               ;
+  LD A,(HL)                            ; Get frame number. Load sprite for frame 1.
+  AND $7F                              ;
+  CP $01                               ;
+  CALL Z,ld_sprite_explosion_f1        ; Load sprite for frame 2.
+  CP $02                               ;
+  CALL Z,ld_sprite_explosion_f2        ; Load sprite for frame 3.
+  CP $03                               ;
+  CALL Z,ld_sprite_explosion_f3        ; Load sprite for frame 4 (same as 2).
+  CP $04                               ;
+  CALL Z,ld_sprite_explosion_f2        ; Load sprite for frame 5 (same as 1).
+  CP $05                               ;
+  CALL Z,ld_sprite_explosion_f1        ; Load erasure sprite for frame 6.
+  CP $06                               ;
+  CALL Z,ld_sprite_explosion_erasure   ;
+  LD A,(HL)                            ; Set up sprite rendering: store sprite pointer, set collision mode to none,
+  LD HL,all_ff                         ; configure rendering parameters.
+  LD (render_sprite_ptr),HL            ;
+  LD (L8B10),DE                        ;
+  LD D,A                               ;
+  LD A,COLLISION_MODE_NONE             ;
+  LD (state_collision_mode),A          ;
+  LD A,$02                             ;
+  LD (render_object_width),A           ;
+  LD A,D                               ;
+  LD DE,$080C                          ;
+  LD (previous_object_coordinates),BC  ;
+  LD (object_coordinates),BC           ;
+  LD BC,$0000                          ; Check bit 7 of frame. If set, skip first render call.
+  BIT 7,A                              ;
+  JP NZ,render_explosions_0            ;
+  PUSH DE                              ;
+  PUSH BC                              ;
+  PUSH AF                              ;
+  PUSH HL                              ;
+  LD A,$02                             ; Call first sprite rendering pass.
+  CALL L928D                           ;
+  POP HL                               ; Call second sprite rendering pass, loop to next entry.
+  POP AF                               ;
+  POP BC                               ;
+  POP DE                               ;
 render_explosions_0:
-  LD A,$02
-  CALL render_object_1
-  JP render_explosions
+  LD A,$02                             ;
+  CALL render_object_1                 ;
+  JP render_explosions                 ;
 
-; Load frame 1 of the explosion sprite.
+; Load frame 1/5 explosion sprite
 ;
 ; Used by the routine at render_explosions.
 ;
-; O:DE Pointer to the sprite.
+; O:DE Pointer to small explosion sprite at sprite_explosion_f1.
 ld_sprite_explosion_f1:
   LD DE,sprite_explosion_f1
   RET
 
-; Load frame 2 of the explosion sprite.
+; Load frame 2/4 explosion sprite
 ;
 ; Used by the routine at render_explosions.
 ;
-; O:DE Pointer to the sprite.
+; O:DE Pointer to medium explosion sprite at sprite_explosion_f2.
 ld_sprite_explosion_f2:
   LD DE,sprite_explosion_f2
   RET
 
-; Load frame 3 of the explosion sprite.
+; Load frame 3 explosion sprite
 ;
 ; Used by the routine at render_explosions.
 ;
-; O:DE Pointer to the sprite.
+; O:DE Pointer to large explosion sprite at sprite_explosion_f3.
 ld_sprite_explosion_f3:
   LD DE,sprite_explosion_f3
   RET
 
-; Load explosion erasure sprite.
+; Load explosion erasure sprite
 ;
 ; Used by the routine at render_explosions.
 ;
-; O:DE Pointer to the sprite.
+; O:DE Pointer to erasure sprite at sprite_erasure.
 ld_sprite_explosion_erasure:
   LD DE,sprite_erasure
   RET
 
-; Routine at 6F73
+; Reset explosions set pointer
 ;
-; Used by the routine at render_explosions.
-init_exploding_fragments_ptr:
-  LD HL,exploding_fragments
-  LD (exploding_fragments_ptr),HL
-  RET
+; Resets exploding_fragments_ptr to point to start of explosions set at exploding_fragments.
+reset_explosions_pointer:
+  LD HL,exploding_fragments            ; Reset pointer and return.
+  LD (exploding_fragments_ptr),HL      ;
+  RET                                  ;
 
-; Routine at 6F7A
+; Remove completed explosion from set
 ;
-; Used by the routine at render_explosions.
-L6F7A:
+; Marks the current explosion entry as empty ($00) and renders the final erasure frame.
+remove_explosion_entry:
   DEC HL
   LD (HL),$00
   JP render_explosions

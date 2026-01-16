@@ -4887,65 +4887,76 @@ c$6EBC LD (HL),C     ; {Write 3-byte entry: [C, B, D] = [X, Y_offset, type].
  $6EC5 LD (HL),$FF   ;
  $6EC7 RET           ;
 
-; Routine at 6EC8
+; Process and render all active explosions
 ;
-; Used by the routines at #R$5F91, #R$650A and #R$6F7A.
+; Iterates through the explosions set at #R$5F2E via pointer #R$5F62. Each
+; explosion has 6 animation frames before being removed. Adjusts Y position
+; based on scroll speed.
+; .
+; #LIST
+; { Entry format: [X_pos, Y_offset, frame_counter] where frame_counter bits 0-6
+; = frame (1-6), bit 7 = erase flag }
+; { Frame 1,5: small explosion (#R$6F63) }
+; { Frame 2,4: medium explosion (#R$6F67) }
+; { Frame 3: large explosion (#R$6F6B) }
+; { Frame 6: erase explosion (#R$6F6F) then remove entry }
+; LIST#
 @label=render_explosions
-c$6EC8 LD HL,($5F62) ;
- $6ECB LD C,(HL)     ;
+c$6EC8 LD HL,($5F62) ; {Load 3-byte entry from set: C=X, B=Y offset, D=frame.
+ $6ECB LD C,(HL)     ; Advance pointer #R$5F62.
  $6ECC INC HL        ;
  $6ECD LD B,(HL)     ;
  $6ECE INC HL        ;
  $6ECF LD D,(HL)     ;
  $6ED0 INC HL        ;
- $6ED1 LD ($5F62),HL ;
- $6ED4 LD A,C        ;
+ $6ED1 LD ($5F62),HL ; }
+ $6ED4 LD A,C        ; {Skip empty entries ($00), continue to next.
 @isub=CP SET_MARKER_EMPTY_SLOT
  $6ED5 CP $00        ;
- $6ED7 JP Z,$6EC8    ;
+ $6ED7 JP Z,$6EC8    ; }
 @isub=CP SET_MARKER_END_OF_SET
- $6EDA CP $FF        ;
- $6EDC JP Z,$6F73    ;
- $6EDF LD A,($5F64)  ;
+ $6EDA CP $FF        ; {If end marker ($FF), jump to #R$6F73 to reset pointer.
+ $6EDC JP Z,$6F73    ; }
+ $6EDF LD A,($5F64)  ; {Add scroll speed (#R$5F64) to Y offset, store back.
  $6EE2 ADD A,B       ;
  $6EE3 DEC HL        ;
  $6EE4 DEC HL        ;
- $6EE5 LD (HL),A     ;
- $6EE6 LD A,D        ;
- $6EE7 AND $7F       ;
+ $6EE5 LD (HL),A     ; }
+ $6EE6 LD A,D        ; {Extract frame number (bits 0-6), increment. If frame ==
+ $6EE7 AND $7F       ; 7, entry complete.
  $6EE9 INC A         ;
  $6EEA CP $07        ;
- $6EEC JP Z,$6F7A    ;
- $6EEF LD A,D        ;
+ $6EEC JP Z,$6F7A    ; }
+ $6EEF LD A,D        ; {Increment frame counter and store back.
  $6EF0 INC A         ;
  $6EF1 INC HL        ;
- $6EF2 LD (HL),A     ;
- $6EF3 LD A,B        ;
+ $6EF2 LD (HL),A     ; }
+ $6EF3 LD A,B        ; {Check if Y position is off-screen (AND $88 == $88).
 @isub=AND VIEWPORT_HEIGHT
- $6EF4 AND $88       ;
+ $6EF4 AND $88       ; Skip if so.
 @isub=CP VIEWPORT_HEIGHT
  $6EF6 CP $88        ;
- $6EF8 JP Z,$6EC8    ;
- $6EFB LD A,B        ;
- $6EFC AND $90       ;
+ $6EF8 JP Z,$6EC8    ; }
+ $6EFB LD A,B        ; {Check if Y position is off-screen (AND $90 == $90).
+ $6EFC AND $90       ; Skip if so.
  $6EFE CP $90        ;
- $6F00 JP Z,$6EC8    ;
- $6F03 LD A,(HL)     ;
+ $6F00 JP Z,$6EC8    ; }
+ $6F03 LD A,(HL)     ; {Get frame number. Load sprite for frame 1.
  $6F04 AND $7F       ;
- $6F06 CP $01        ;
- $6F08 CALL Z,$6F63  ;
- $6F0B CP $02        ;
- $6F0D CALL Z,$6F67  ;
- $6F10 CP $03        ;
- $6F12 CALL Z,$6F6B  ;
- $6F15 CP $04        ;
- $6F17 CALL Z,$6F67  ;
- $6F1A CP $05        ;
- $6F1C CALL Z,$6F63  ;
+ $6F06 CP $01        ; }
+ $6F08 CALL Z,$6F63  ; {Load sprite for frame 2.
+ $6F0B CP $02        ; }
+ $6F0D CALL Z,$6F67  ; {Load sprite for frame 3.
+ $6F10 CP $03        ; }
+ $6F12 CALL Z,$6F6B  ; {Load sprite for frame 4 (same as 2).
+ $6F15 CP $04        ; }
+ $6F17 CALL Z,$6F67  ; {Load sprite for frame 5 (same as 1).
+ $6F1A CP $05        ; }
+ $6F1C CALL Z,$6F63  ; {Load erasure sprite for frame 6.
  $6F1F CP $06        ;
- $6F21 CALL Z,$6F6F  ;
- $6F24 LD A,(HL)     ;
- $6F25 LD HL,$82C5   ;
+ $6F21 CALL Z,$6F6F  ; }
+ $6F24 LD A,(HL)     ; {Set up sprite rendering: store sprite pointer, set
+ $6F25 LD HL,$82C5   ; collision mode to none, configure rendering parameters.
  $6F28 LD ($8B0E),HL ;
  $6F2B LD ($8B10),DE ;
  $6F2F LD D,A        ;
@@ -4957,71 +4968,73 @@ c$6EC8 LD HL,($5F62) ;
  $6F3A LD A,D        ;
  $6F3B LD DE,$080C   ;
  $6F3E LD ($8B0A),BC ;
- $6F42 LD ($8B0C),BC ;
- $6F46 LD BC,$0000   ;
+ $6F42 LD ($8B0C),BC ; }
+ $6F46 LD BC,$0000   ; {Check bit 7 of frame. If set, skip first render call.
  $6F49 BIT 7,A       ;
  $6F4B JP NZ,$6F5B   ;
  $6F4E PUSH DE       ;
  $6F4F PUSH BC       ;
  $6F50 PUSH AF       ;
- $6F51 PUSH HL       ;
- $6F52 LD A,$02      ;
- $6F54 CALL $928D    ;
- $6F57 POP HL        ;
+ $6F51 PUSH HL       ; }
+ $6F52 LD A,$02      ; {Call first sprite rendering pass.
+ $6F54 CALL $928D    ; }
+ $6F57 POP HL        ; {Call second sprite rendering pass, loop to next entry.
  $6F58 POP AF        ;
  $6F59 POP BC        ;
  $6F5A POP DE        ;
 *$6F5B LD A,$02      ;
  $6F5D CALL $8B58    ;
- $6F60 JP $6EC8      ;
+ $6F60 JP $6EC8      ; }
 
-; Load frame 1 of the explosion sprite.
+; Load frame 1/5 explosion sprite
 ;
 ; Used by the routine at #R$6EC8.
 ;
-; O:DE Pointer to the sprite.
+; O:DE Pointer to small explosion sprite at #R$8471.
 @label=ld_sprite_explosion_f1
 c$6F63 LD DE,$8471   ;
  $6F66 RET           ;
 
-; Load frame 2 of the explosion sprite.
+; Load frame 2/4 explosion sprite
 ;
 ; Used by the routine at #R$6EC8.
 ;
-; O:DE Pointer to the sprite.
+; O:DE Pointer to medium explosion sprite at #R$8481.
 @label=ld_sprite_explosion_f2
 c$6F67 LD DE,$8481   ;
  $6F6A RET           ;
 
-; Load frame 3 of the explosion sprite.
+; Load frame 3 explosion sprite
 ;
 ; Used by the routine at #R$6EC8.
 ;
-; O:DE Pointer to the sprite.
+; O:DE Pointer to large explosion sprite at #R$8491.
 @label=ld_sprite_explosion_f3
 c$6F6B LD DE,$8491   ;
  $6F6E RET           ;
 
-; Load explosion erasure sprite.
+; Load explosion erasure sprite
 ;
 ; Used by the routine at #R$6EC8.
 ;
-; O:DE Pointer to the sprite.
+; O:DE Pointer to erasure sprite at #R$82F5.
 @label=ld_sprite_explosion_erasure
 c$6F6F LD DE,$82F5   ;
  $6F72 RET           ;
 
-; Routine at 6F73
+; Reset explosions set pointer
 ;
-; Used by the routine at #R$6EC8.
-@label=init_exploding_fragments_ptr
-c$6F73 LD HL,$5F2E   ;
+; Resets #R$5F62 to point to start of explosions set at #R$5F2E.
+@label=reset_explosions_pointer
+c$6F73 LD HL,$5F2E   ; {Reset pointer and return.
  $6F76 LD ($5F62),HL ;
- $6F79 RET           ;
+ $6F79 RET           ; }
 
-; Routine at 6F7A
+; Remove completed explosion from set
 ;
-; Used by the routine at #R$6EC8.
+; Marks the current explosion entry as empty ($00) and renders the final
+; erasure frame.
+@label=remove_explosion_entry
 c$6F7A DEC HL        ;
  $6F7B LD (HL),$00   ;
  $6F7D JP $6EC8      ;
