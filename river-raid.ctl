@@ -1947,11 +1947,14 @@ R $6FBB I:E X position
   $6FDD,8 Set dimensions: A=3 (width in tiles), D=$10 (height 16 pixels), E=$14 (attributes). Call #R$8B3C to render.
 @ $6FDF isub=LD DE,SPRITE_ROCK_HEIGHT_PIXELS<<8|SPRITE_ROCK_ATTRIBUTES
 @ $6FE6 label=ld_enemy_sprites_right
-c $6FE6 Load array of arrays of enemy headed right sprites.
-R $6FE6 O:HL Pointer to the array of arrays of sprites.
+c $6FE6 Load pointer to right-facing enemy sprites
+D $6FE6 Returns pointer to sprite array for enemies facing right. Used by #R$75BA to select sprite direction based on enemy movement.
+R $6FE6 O:HL Pointer to right-facing enemy sprite array at #R$8793.
+  $6FE6 Load HL with #R$8793 (right-facing sprites base address).
 @ $6FEA label=setup_object_position
-c $6FEA Set up object screen position
-D $6FEA Helper routine that calls #R$62DA to calculate screen position and stores the result in sprite rendering state.
+c $6FEA Set up object screen position for rendering
+D $6FEA Calculates screen coordinates via #R$62DA and stores the result in both #R$8B0A and #R$8B0C for sprite rendering.
+  $6FEA,12 Call #R$62DA to calculate position, store result BC in both position registers.
 @ $6FF6 label=render_enemy
 @ $6FF6 isub=CP OBJECT_BALLOON
 c $6FF6 Spawn and render enemy on screen

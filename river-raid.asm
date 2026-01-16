@@ -4659,23 +4659,25 @@ locate_rock_sprite:
   CALL render_object                                        ;
   RET
 
-; Load array of arrays of enemy headed right sprites.
+; Load pointer to right-facing enemy sprites
 ;
-; Used by the routine at ld_enemy_sprites.
+; Returns pointer to sprite array for enemies facing right. Used by ld_enemy_sprites to select sprite direction based on
+; enemy movement.
 ;
-; O:HL Pointer to the array of arrays of sprites.
+; O:HL Pointer to right-facing enemy sprite array at sprite_enemies_right.
 ld_enemy_sprites_right:
-  LD HL,sprite_enemies_right
-  RET
+  LD HL,sprite_enemies_right           ; Load HL with sprite_enemies_right (right-facing sprites base address).
+  RET                                  ;
 
-; Set up object screen position
+; Set up object screen position for rendering
 ;
-; Helper routine that calls advance_object to calculate screen position and stores the result in sprite rendering state.
+; Calculates screen coordinates via advance_object and stores the result in both previous_object_coordinates and
+; object_coordinates for sprite rendering.
 setup_object_position:
-  CALL advance_object
-  LD (object_coordinates),BC
-  LD (previous_object_coordinates),BC
-  RET
+  CALL advance_object                  ; Call advance_object to calculate position, store result BC in both position
+  LD (object_coordinates),BC           ; registers.
+  LD (previous_object_coordinates),BC  ;
+  RET                                  ;
 
 ; Spawn and render enemy on screen
 ;

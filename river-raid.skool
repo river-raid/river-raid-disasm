@@ -5131,24 +5131,25 @@ c$6FBB LD A,D        ; {Extract rock frame index: A = D AND $07. Set flags with
  $6FE2 CALL $8B3C    ; }
  $6FE5 RET           ;
 
-; Load array of arrays of enemy headed right sprites.
+; Load pointer to right-facing enemy sprites
 ;
-; Used by the routine at #R$75BA.
+; Returns pointer to sprite array for enemies facing right. Used by #R$75BA to
+; select sprite direction based on enemy movement.
 ;
-; O:HL Pointer to the array of arrays of sprites.
+; O:HL Pointer to right-facing enemy sprite array at #R$8793.
 @label=ld_enemy_sprites_right
-c$6FE6 LD HL,$8793   ;
- $6FE9 RET           ;
+c$6FE6 LD HL,$8793   ; {Load HL with #R$8793 (right-facing sprites base
+ $6FE9 RET           ; address).}
 
-; Set up object screen position
+; Set up object screen position for rendering
 ;
-; Helper routine that calls #R$62DA to calculate screen position and stores the
-; result in sprite rendering state.
+; Calculates screen coordinates via #R$62DA and stores the result in both
+; #R$8B0A and #R$8B0C for sprite rendering.
 @label=setup_object_position
-c$6FEA CALL $62DA    ;
- $6FED LD ($8B0C),BC ;
+c$6FEA CALL $62DA    ; {Call #R$62DA to calculate position, store result BC in
+ $6FED LD ($8B0C),BC ; both position registers.
  $6FF1 LD ($8B0A),BC ;
- $6FF5 RET           ;
+ $6FF5 RET           ; }
 
 ; Spawn and render enemy on screen
 ;
