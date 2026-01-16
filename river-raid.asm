@@ -4583,48 +4583,54 @@ remove_explosion_entry:
   LD (HL),$00
   JP render_explosions
 
-; This routine gets called when the screen scrolls by another fragment
+; Process objects for newly scrolled row
 ;
-; Used by the routines at update_bottom_row and render_bridge_attributes.
+; Called when screen scrolls by one fragment. Reads the level data slot for the current scroll position and spawns the
+; appropriate object (rock, fuel depot, or enemy).
+;
+; * Level data starts at level_objects, with SIZE_LEVEL_SLOTS ($100) bytes per level
+; * Slot format: 2 bytes [D, E] where E = X position (0 = empty), D = type/flags
+; * D bit 3: rock flag, D bits 0-2: object type (7 = fuel depot)
 next_row:
-  LD A,COLLISION_MODE_NONE
-  LD (state_collision_mode),A
-  LD HL,level_objects
-  LD DE,SIZE_LEVEL_SLOTS
-  LD A,(state_bridge_index)
+  LD A,COLLISION_MODE_NONE             ; Clear collision mode (state_collision_mode).
+  LD (state_collision_mode),A          ;
+  LD HL,level_objects                  ; Calculate level base address: HL = level_objects + (state_bridge_index *
+  LD DE,SIZE_LEVEL_SLOTS               ; SIZE_LEVEL_SLOTS).
+  LD A,(state_bridge_index)            ;
   OR A
   SBC HL,DE
 locate_level:
-  ADD HL,DE                            ; Have HL point to the level defined by A
+  ADD HL,DE                            ; Loop: advance HL by SIZE_LEVEL_SLOTS for each level up to current.
   DEC A                                ;
   JR NZ,locate_level                   ;
-  LD BC,(state_scroll_offset)
-  SRL B
-  RR C
-  SRL B
-  RR C
-  RES 0,C
-  ADD HL,BC
+  LD BC,(state_scroll_offset)          ; Calculate slot offset: BC = (state_scroll_offset >> 2) with bit 0 cleared. Read
+  SRL B                                ; [D, E] from (HL + BC).
+  RR C                                 ;
+  SRL B                                ;
+  RR C                                 ;
+  RES 0,C                              ;
+  ADD HL,BC                            ;
   LD D,(HL)
   INC HL
   LD E,(HL)
-  LD A,E
-  CP $00
-  RET Z
-  BIT SLOT_BIT_ROCK,D
-  JP NZ,render_rock
-  LD A,D
-  AND SLOT_MASK_OBJECT_TYPE
-  CP OBJECT_FUEL
-  JP Z,render_fuel
-  JP render_enemy
+  LD A,E                               ; If E == 0 (empty slot), return.
+  CP $00                               ;
+  RET Z                                ;
+  BIT SLOT_BIT_ROCK,D                  ; If D bit 3 set (rock), jump to render_rock.
+  JP NZ,render_rock                    ;
+  LD A,D                               ; Get object type (D AND $07). If type == OBJECT_FUEL (7), jump to render_fuel.
+  AND SLOT_MASK_OBJECT_TYPE            ;
+  CP OBJECT_FUEL                       ;
+  JP Z,render_fuel                     ; Otherwise spawn enemy via render_enemy.
+  JP render_enemy                      ;
 
-; Render rock
+; Render rock sprite
 ;
-; Used by the routine at next_row.
+; Renders a rock obstacle at the specified position. Rock sprites are stored in an array at sprite_rock with
+; SPRITE_ROCK_FRAME_SIZE ($30) bytes per frame.
 ;
-; I:D Some info (probably, sprite array index)
-; I:E Some info (probably, position)
+; I:D Object type byte (bits 0-2 = rock frame index)
+; I:E X position
 render_rock:
   LD A,D
   AND SLOT_MASK_OBJECT_TYPE

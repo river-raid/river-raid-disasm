@@ -5039,53 +5039,64 @@ c$6F7A DEC HL        ;
  $6F7B LD (HL),$00   ;
  $6F7D JP $6EC8      ;
 
-; This routine gets called when the screen scrolls by another fragment
+; Process objects for newly scrolled row
 ;
-; Used by the routines at #R$68C5 and #R$6927.
+; Called when screen scrolls by one fragment. Reads the level data slot for the
+; current scroll position and spawns the appropriate object (rock, fuel depot,
+; or enemy).
+; .
+; #LIST
+; { Level data starts at #R$C800, with SIZE_LEVEL_SLOTS ($100) bytes per level
+; }
+; { Slot format: 2 bytes [D, E] where E = X position (0 = empty), D =
+; type/flags }
+; { D bit 3: rock flag, D bits 0-2: object type (7 = fuel depot) }
+; LIST#
 @isub=LD A,COLLISION_MODE_NONE
 @label=next_row
-c$6F80 LD A,$00      ;
- $6F82 LD ($5EF5),A  ;
- $6F85 LD HL,$C800   ;
+c$6F80 LD A,$00      ; {Clear collision mode (#R$5EF5).
+ $6F82 LD ($5EF5),A  ; }
+ $6F85 LD HL,$C800   ; {Calculate level base address: HL = #R$C800 + (#R$5EF0 *
 @isub=LD DE,SIZE_LEVEL_SLOTS
- $6F88 LD DE,$0100   ;
- $6F8B LD A,($5EF0)  ;
+ $6F88 LD DE,$0100   ; SIZE_LEVEL_SLOTS).
+ $6F8B LD A,($5EF0)  ; }
  $6F8E OR A          ;
  $6F8F SBC HL,DE     ;
 @label=locate_level
-*$6F91 ADD HL,DE     ; {Have #REGhl point to the level defined by #REGa
- $6F92 DEC A         ;
+*$6F91 ADD HL,DE     ; {Loop: advance HL by SIZE_LEVEL_SLOTS for each level up
+ $6F92 DEC A         ; to current.
  $6F93 JR NZ,$6F91   ; }
- $6F95 LD BC,($5F70) ;
- $6F99 SRL B         ;
+ $6F95 LD BC,($5F70) ; {Calculate slot offset: BC = (#R$5F70 >> 2) with bit 0
+ $6F99 SRL B         ; cleared. Read [D, E] from (HL + BC).
  $6F9B RR C          ;
  $6F9D SRL B         ;
  $6F9F RR C          ;
  $6FA1 RES 0,C       ;
- $6FA3 ADD HL,BC     ;
+ $6FA3 ADD HL,BC     ; }
  $6FA4 LD D,(HL)     ;
  $6FA5 INC HL        ;
  $6FA6 LD E,(HL)     ;
- $6FA7 LD A,E        ;
+ $6FA7 LD A,E        ; {If E == 0 (empty slot), return.
  $6FA8 CP $00        ;
- $6FAA RET Z         ;
+ $6FAA RET Z         ; }
 @isub=BIT SLOT_BIT_ROCK,D
- $6FAB BIT 3,D       ;
- $6FAD JP NZ,$6FBB   ;
- $6FB0 LD A,D        ;
+ $6FAB BIT 3,D       ; {If D bit 3 set (rock), jump to #R$6FBB.
+ $6FAD JP NZ,$6FBB   ; }
+ $6FB0 LD A,D        ; {Get object type (D AND $07). If type == OBJECT_FUEL
 @isub=AND SLOT_MASK_OBJECT_TYPE
- $6FB1 AND $07       ;
+ $6FB1 AND $07       ; (7), jump to #R$7051.
 @isub=CP OBJECT_FUEL
- $6FB3 CP $07        ;
- $6FB5 JP Z,$7051    ;
- $6FB8 JP $6FF6      ;
+ $6FB3 CP $07        ; }
+ $6FB5 JP Z,$7051    ; {Otherwise spawn enemy via #R$6FF6.
+ $6FB8 JP $6FF6      ; }
 
-; Render rock
+; Render rock sprite
 ;
-; Used by the routine at #R$6F80.
+; Renders a rock obstacle at the specified position. Rock sprites are stored in
+; an array at #R$84A1 with SPRITE_ROCK_FRAME_SIZE ($30) bytes per frame.
 ;
-; I:D Some info (probably, sprite array index)
-; I:E Some info (probably, position)
+; I:D Object type byte (bits 0-2 = rock frame index)
+; I:E X position
 @label=render_rock
 c$6FBB LD A,D        ;
 @isub=AND SLOT_MASK_OBJECT_TYPE

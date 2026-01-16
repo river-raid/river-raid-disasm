@@ -1913,17 +1913,27 @@ c $6F7A Remove completed explosion from set
 D $6F7A Marks the current explosion entry as empty ($00) and renders the final erasure frame.
 @ $6F80 isub=LD A,COLLISION_MODE_NONE
 @ $6F80 label=next_row
-c $6F80 This routine gets called when the screen scrolls by another fragment
+c $6F80 Process objects for newly scrolled row
+D $6F80 Called when screen scrolls by one fragment. Reads the level data slot for the current scroll position and spawns the appropriate object (rock, fuel depot, or enemy).
+D $6F80 #LIST { Level data starts at #R$C800, with SIZE_LEVEL_SLOTS ($100) bytes per level } { Slot format: 2 bytes [D, E] where E = X position (0 = empty), D = type/flags } { D bit 3: rock flag, D bits 0-2: object type (7 = fuel depot) } LIST#
+  $6F80 Clear collision mode (#R$5EF5).
+  $6F85,9 Calculate level base address: HL = #R$C800 + (#R$5EF0 * SIZE_LEVEL_SLOTS).
 @ $6F88 isub=LD DE,SIZE_LEVEL_SLOTS
 @ $6F91 label=locate_level
-  $6F91,4 Have #REGhl point to the level defined by #REGa
+  $6F91 Loop: advance HL by SIZE_LEVEL_SLOTS for each level up to current.
+  $6F95,15 Calculate slot offset: BC = (#R$5F70 >> 2) with bit 0 cleared. Read [D, E] from (HL + BC).
+  $6FA7 If E == 0 (empty slot), return.
 @ $6FAB isub=BIT SLOT_BIT_ROCK,D
+  $6FAB If D bit 3 set (rock), jump to #R$6FBB.
+  $6FB0 Get object type (D AND $07). If type == OBJECT_FUEL (7), jump to #R$7051.
 @ $6FB1 isub=AND SLOT_MASK_OBJECT_TYPE
 @ $6FB3 isub=CP OBJECT_FUEL
+  $6FB5,6 Otherwise spawn enemy via #R$6FF6.
 @ $6FBB label=render_rock
-c $6FBB Render rock
-R $6FBB I:D Some info (probably, sprite array index)
-R $6FBB I:E Some info (probably, position)
+c $6FBB Render rock sprite
+D $6FBB Renders a rock obstacle at the specified position. Rock sprites are stored in an array at #R$84A1 with SPRITE_ROCK_FRAME_SIZE ($30) bytes per frame.
+R $6FBB I:D Object type byte (bits 0-2 = rock frame index)
+R $6FBB I:E X position
 @ $6FBC isub=AND SLOT_MASK_OBJECT_TYPE
 @ $6FC2 isub=LD BC,SPRITE_ROCK_FRAME_SIZE
 @ $6FC8 label=locate_rock_element
