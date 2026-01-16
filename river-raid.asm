@@ -4685,42 +4685,42 @@ setup_object_position:
 ; balloon) with appropriate sprites and attributes.
 ;
 ; * Balloon (type 6) uses separate routine render_balloon
-; * Fighter/Tank (types 4,5) need directional setup via blending_mode_xor_nop
+; * Fighter/Tank (types 4,5) need blending mode setup via blending_mode_xor_nop
 ; * Adds enemy to active objects set at viewport_objects
-; * Uses type-specific attributes: ship ($38), fighter ($3E), tank ($16)
+; * Sprite size: 3 tiles wide, 8 pixels high ($18 bytes per frame)
 ;
 ; I:A Object type (from D AND $07)
 ; I:D Object definition byte from level data
 ; I:E X position
 render_enemy:
-  CP OBJECT_BALLOON
-  JP Z,render_balloon
-  CP OBJECT_FIGHTER
-  CALL Z,blending_mode_xor_nop
-  CP OBJECT_TANK
-  CALL Z,blending_mode_xor_nop
-  CALL ld_enemy_sprites
-  LD B,$00
-  LD C,E
-  PUSH HL
-  LD HL,viewport_objects
-  CALL add_object_to_set
+  CP OBJECT_BALLOON                    ; If balloon (type 6), use separate balloon renderer at render_balloon.
+  JP Z,render_balloon                  ;
+  CP OBJECT_FIGHTER                    ; If fighter (type 5), set XOR blending mode via blending_mode_xor_nop.
+  CALL Z,blending_mode_xor_nop         ;
+  CP OBJECT_TANK                       ; If tank (type 4), set XOR blending mode via blending_mode_xor_nop.
+  CALL Z,blending_mode_xor_nop         ;
+  CALL ld_enemy_sprites                ; Call ld_enemy_sprites to get sprite pointer based on enemy direction.
+  LD B,$00                             ; Add enemy to active objects set: BC = (0, X_pos), call add_object_to_set with
+  LD C,E                               ; HL = viewport_objects.
+  PUSH HL                              ;
+  LD HL,viewport_objects               ;
+  CALL add_object_to_set               ;
   POP HL
-  CALL setup_object_position
-  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
-  LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES
-  LD A,D
-  AND SLOT_MASK_OBJECT_TYPE
-  CP OBJECT_SHIP
-  CALL Z,ld_attributes_ship
-  CP OBJECT_FIGHTER
-  CALL Z,ld_attributes_fighter
-  CP OBJECT_TANK
-  CALL Z,ld_attributes_tank
-  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
-  LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
-  CALL render_sprite
-  CALL blenging_mode_or_or
+  CALL setup_object_position           ; Call setup_object_position to set up screen position.
+  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE   ; Set sprite frame size ($18 = 24 bytes) and default attributes ($0E).
+  LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES    ;
+  LD A,D                               ; Get object type (D AND $07). Load type-specific attributes:
+  AND SLOT_MASK_OBJECT_TYPE            ; ship=ld_attributes_ship ($0D), fighter=ld_attributes_fighter ($00),
+  CP OBJECT_SHIP                       ; tank=ld_attributes_tank ($00/$04).
+  CALL Z,ld_attributes_ship            ;
+  CP OBJECT_FIGHTER                    ;
+  CALL Z,ld_attributes_fighter         ;
+  CP OBJECT_TANK                       ;
+  CALL Z,ld_attributes_tank            ;
+  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES   ; Set sprite dimensions: A=3 (width tiles), D=8 (height pixels). Call
+  LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS ; render_sprite and blenging_mode_or_or to render.
+  CALL render_sprite                   ;
+  CALL blenging_mode_or_or             ;
   RET
 
 ; Load ship screen attributes.

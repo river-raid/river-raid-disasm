@@ -1954,24 +1954,33 @@ R $6FE6 O:HL Pointer to right-facing enemy sprite array at #R$8793.
 @ $6FEA label=setup_object_position
 c $6FEA Set up object screen position for rendering
 D $6FEA Calculates screen coordinates via #R$62DA and stores the result in both #R$8B0A and #R$8B0C for sprite rendering.
-  $6FEA,12 Call #R$62DA to calculate position, store result BC in both position registers.
+  $6FEA Call #R$62DA to calculate position, store result BC in both position registers.
 @ $6FF6 label=render_enemy
 @ $6FF6 isub=CP OBJECT_BALLOON
 c $6FF6 Spawn and render enemy on screen
 D $6FF6 Creates a new enemy from level data and renders it. Handles different enemy types (helicopter, ship, tank, fighter, balloon) with appropriate sprites and attributes.
-D $6FF6 #LIST { Balloon (type 6) uses separate routine #R$706C } { Fighter/Tank (types 4,5) need directional setup via #R$7046 } { Adds enemy to active objects set at #R$5F00 } { Uses type-specific attributes: ship ($38), fighter ($3E), tank ($16) } LIST#
+D $6FF6 #LIST { Balloon (type 6) uses separate routine #R$706C } { Fighter/Tank (types 4,5) need blending mode setup via #R$7046 } { Adds enemy to active objects set at #R$5F00 } { Sprite size: 3 tiles wide, 8 pixels high ($18 bytes per frame) } LIST#
 R $6FF6 I:A Object type (from D AND $07)
 R $6FF6 I:D Object definition byte from level data
 R $6FF6 I:E X position
+  $6FF6 If balloon (type 6), use separate balloon renderer at #R$706C.
 @ $6FFB isub=CP OBJECT_FIGHTER
+  $6FFB If fighter (type 5), set XOR blending mode via #R$7046.
 @ $7000 isub=CP OBJECT_TANK
+  $7000 If tank (type 4), set XOR blending mode via #R$7046.
+  $7005 Call #R$75BA to get sprite pointer based on enemy direction.
+  $7008,10 Add enemy to active objects set: BC = (0, X_pos), call #R$6EAB with HL = #R$5F00.
+  $7013 Call #R$6FEA to set up screen position.
 @ $7016 isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
+  $7016 Set sprite frame size ($18 = 24 bytes) and default attributes ($0E).
 @ $7019 isub=LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES
+  $701B Get object type (D AND $07). Load type-specific attributes: ship=#R$7038 ($0D), fighter=#R$703B ($00), tank=#R$703E ($00/$04).
 @ $701C isub=AND SLOT_MASK_OBJECT_TYPE
 @ $701E isub=CP OBJECT_SHIP
 @ $7023 isub=CP OBJECT_FIGHTER
 @ $7028 isub=CP OBJECT_TANK
 @ $702D isub=LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
+  $702D,10 Set sprite dimensions: A=3 (width tiles), D=8 (height pixels). Call #R$8B1E and #R$72EF to render.
 @ $702F isub=LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
 @ $7038 isub=LD E,SPRITE_SHIP_ATTRIBUTES
 @ $7038 label=ld_attributes_ship

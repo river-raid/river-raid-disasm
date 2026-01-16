@@ -5159,9 +5159,9 @@ c$6FEA CALL $62DA    ; {Call #R$62DA to calculate position, store result BC in
 ; .
 ; #LIST
 ; { Balloon (type 6) uses separate routine #R$706C }
-; { Fighter/Tank (types 4,5) need directional setup via #R$7046 }
+; { Fighter/Tank (types 4,5) need blending mode setup via #R$7046 }
 ; { Adds enemy to active objects set at #R$5F00 }
-; { Uses type-specific attributes: ship ($38), fighter ($3E), tank ($16) }
+; { Sprite size: 3 tiles wide, 8 pixels high ($18 bytes per frame) }
 ; LIST#
 ;
 ; I:A Object type (from D AND $07)
@@ -5169,44 +5169,45 @@ c$6FEA CALL $62DA    ; {Call #R$62DA to calculate position, store result BC in
 ; I:E X position
 @label=render_enemy
 @isub=CP OBJECT_BALLOON
-c$6FF6 CP $06        ;
- $6FF8 JP Z,$706C    ;
+c$6FF6 CP $06        ; {If balloon (type 6), use separate balloon renderer at
+ $6FF8 JP Z,$706C    ; #R$706C.}
 @isub=CP OBJECT_FIGHTER
- $6FFB CP $05        ;
- $6FFD CALL Z,$7046  ;
+ $6FFB CP $05        ; {If fighter (type 5), set XOR blending mode via #R$7046.
+ $6FFD CALL Z,$7046  ; }
 @isub=CP OBJECT_TANK
- $7000 CP $04        ;
- $7002 CALL Z,$7046  ;
- $7005 CALL $75BA    ;
- $7008 LD B,$00      ;
- $700A LD C,E        ;
+ $7000 CP $04        ; {If tank (type 4), set XOR blending mode via #R$7046.
+ $7002 CALL Z,$7046  ; }
+ $7005 CALL $75BA    ; Call #R$75BA to get sprite pointer based on enemy
+                     ; direction.
+ $7008 LD B,$00      ; {Add enemy to active objects set: BC = (0, X_pos), call
+ $700A LD C,E        ; #R$6EAB with HL = #R$5F00.
  $700B PUSH HL       ;
  $700C LD HL,$5F00   ;
- $700F CALL $6EAB    ;
+ $700F CALL $6EAB    ; }
  $7012 POP HL        ;
- $7013 CALL $6FEA    ;
+ $7013 CALL $6FEA    ; Call #R$6FEA to set up screen position.
 @isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
- $7016 LD BC,$0018   ;
+ $7016 LD BC,$0018   ; {Set sprite frame size ($18 = 24 bytes) and default
 @isub=LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES
- $7019 LD E,$0E      ;
- $701B LD A,D        ;
+ $7019 LD E,$0E      ; attributes ($0E).}
+ $701B LD A,D        ; {Get object type (D AND $07). Load type-specific
 @isub=AND SLOT_MASK_OBJECT_TYPE
- $701C AND $07       ;
+ $701C AND $07       ; attributes: ship=#R$7038 ($0D), fighter=#R$703B ($00),
 @isub=CP OBJECT_SHIP
- $701E CP $02        ;
+ $701E CP $02        ; tank=#R$703E ($00/$04).
  $7020 CALL Z,$7038  ;
 @isub=CP OBJECT_FIGHTER
  $7023 CP $05        ;
  $7025 CALL Z,$703B  ;
 @isub=CP OBJECT_TANK
  $7028 CP $04        ;
- $702A CALL Z,$703E  ;
+ $702A CALL Z,$703E  ; }
 @isub=LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
- $702D LD A,$03      ;
+ $702D LD A,$03      ; {Set sprite dimensions: A=3 (width tiles), D=8 (height
 @isub=LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
- $702F LD D,$08      ;
+ $702F LD D,$08      ; pixels). Call #R$8B1E and #R$72EF to render.
  $7031 CALL $8B1E    ;
- $7034 CALL $72EF    ;
+ $7034 CALL $72EF    ; }
  $7037 RET           ;
 
 ; Load ship screen attributes.
