@@ -2213,8 +2213,8 @@ get_offset_fuel:
 ; Increase vertical coordinate of the object by the value of state_speed.
 ;
 ; Used by the routines at check_fragment_collision, check_missile_vs_objects, render_plane, update_bridge_scroll,
-; animate_plane_missile, finalize_collision, L6FEA, operate_viewport_objects, operate_helicopter_missile and
-; operate_tank_shell.
+; animate_plane_missile, finalize_collision, setup_object_position, operate_viewport_objects, operate_helicopter_missile
+; and operate_tank_shell.
 ;
 ; I:B Current coordinate
 ; O:B New coordinate
@@ -4663,22 +4663,28 @@ ld_enemy_sprites_right:
   LD HL,sprite_enemies_right
   RET
 
-; Routine at 6FEA
+; Set up object screen position
 ;
-; Used by the routines at render_enemy, render_fuel and render_balloon.
-L6FEA:
+; Helper routine that calls advance_object to calculate screen position and stores the result in sprite rendering state.
+setup_object_position:
   CALL advance_object
   LD (object_coordinates),BC
   LD (previous_object_coordinates),BC
   RET
 
-; Render enemy
+; Spawn and render enemy on screen
 ;
-; Used by the routine at next_row.
+; Creates a new enemy from level data and renders it. Handles different enemy types (helicopter, ship, tank, fighter,
+; balloon) with appropriate sprites and attributes.
 ;
-; I:A Object type
-; I:D Object definition
-; I:E Object X-position
+; * Balloon (type 6) uses separate routine render_balloon
+; * Fighter/Tank (types 4,5) need directional setup via blending_mode_xor_nop
+; * Adds enemy to active objects set at viewport_objects
+; * Uses type-specific attributes: ship ($38), fighter ($3E), tank ($16)
+;
+; I:A Object type (from D AND $07)
+; I:D Object definition byte from level data
+; I:E X position
 render_enemy:
   CP OBJECT_BALLOON
   JP Z,render_balloon
@@ -4693,7 +4699,7 @@ render_enemy:
   LD HL,viewport_objects
   CALL add_object_to_set
   POP HL
-  CALL L6FEA
+  CALL setup_object_position
   LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
   LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES
   LD A,D
@@ -4762,7 +4768,7 @@ render_fuel:
   LD HL,viewport_objects
   CALL add_object_to_set
   LD HL,sprite_fuel
-  CALL L6FEA
+  CALL setup_object_position
   LD BC,SPRITE_FUEL_STATION_FRAME_SIZE
   LD A,SPRITE_FUEL_STATION_WIDTH_TILES
   LD DE,SPRITE_FUEL_STATION_HEIGHT_PIXELS<<8|SPRITE_FUEL_STATION_ATTRIBUTES
@@ -4784,7 +4790,7 @@ render_balloon:
   LD HL,viewport_objects
   CALL add_object_to_set
   POP HL
-  CALL L6FEA
+  CALL setup_object_position
   LD BC,SPRITE_BALLOON_FRAME_SIZE
   LD A,SPRITE_BALLOON_WIDTH_TILES
   LD DE,SPRITE_BALLOON_HEIGHT_PIXELS<<8|SPRITE_BALLOON_ATTRIBUTES

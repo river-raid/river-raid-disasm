@@ -5133,21 +5133,32 @@ c$6FBB LD A,D        ;
 c$6FE6 LD HL,$8793   ;
  $6FE9 RET           ;
 
-; Routine at 6FEA
+; Set up object screen position
 ;
-; Used by the routines at #R$6FF6, #R$7051 and #R$706C.
+; Helper routine that calls #R$62DA to calculate screen position and stores the
+; result in sprite rendering state.
+@label=setup_object_position
 c$6FEA CALL $62DA    ;
  $6FED LD ($8B0C),BC ;
  $6FF1 LD ($8B0A),BC ;
  $6FF5 RET           ;
 
-; Render enemy
+; Spawn and render enemy on screen
 ;
-; Used by the routine at #R$6F80.
+; Creates a new enemy from level data and renders it. Handles different enemy
+; types (helicopter, ship, tank, fighter, balloon) with appropriate sprites and
+; attributes.
+; .
+; #LIST
+; { Balloon (type 6) uses separate routine #R$706C }
+; { Fighter/Tank (types 4,5) need directional setup via #R$7046 }
+; { Adds enemy to active objects set at #R$5F00 }
+; { Uses type-specific attributes: ship ($38), fighter ($3E), tank ($16) }
+; LIST#
 ;
-; I:A Object type
-; I:D Object definition
-; I:E Object X-position
+; I:A Object type (from D AND $07)
+; I:D Object definition byte from level data
+; I:E X position
 @label=render_enemy
 @isub=CP OBJECT_BALLOON
 c$6FF6 CP $06        ;

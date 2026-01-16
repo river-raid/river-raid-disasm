@@ -1942,13 +1942,17 @@ R $6FBB I:E X position
 @ $6FE6 label=ld_enemy_sprites_right
 c $6FE6 Load array of arrays of enemy headed right sprites.
 R $6FE6 O:HL Pointer to the array of arrays of sprites.
-c $6FEA
+@ $6FEA label=setup_object_position
+c $6FEA Set up object screen position
+D $6FEA Helper routine that calls #R$62DA to calculate screen position and stores the result in sprite rendering state.
 @ $6FF6 label=render_enemy
 @ $6FF6 isub=CP OBJECT_BALLOON
-c $6FF6 Render enemy
-R $6FF6 I:A Object type
-R $6FF6 I:D Object definition
-R $6FF6 I:E Object X-position
+c $6FF6 Spawn and render enemy on screen
+D $6FF6 Creates a new enemy from level data and renders it. Handles different enemy types (helicopter, ship, tank, fighter, balloon) with appropriate sprites and attributes.
+D $6FF6 #LIST { Balloon (type 6) uses separate routine #R$706C } { Fighter/Tank (types 4,5) need directional setup via #R$7046 } { Adds enemy to active objects set at #R$5F00 } { Uses type-specific attributes: ship ($38), fighter ($3E), tank ($16) } LIST#
+R $6FF6 I:A Object type (from D AND $07)
+R $6FF6 I:D Object definition byte from level data
+R $6FF6 I:E X position
 @ $6FFB isub=CP OBJECT_FIGHTER
 @ $7000 isub=CP OBJECT_TANK
 @ $7016 isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
