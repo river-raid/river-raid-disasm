@@ -3248,26 +3248,29 @@ scroll_attributes:
   LDDR                                 ; Copy attributes backward (LDDR)
   LD HL,$5BDF                          ; Load address $5BDF into HL (bottom attribute row)
 
-; Routine at 68C5
-scroll_attributes_continue:
-  LD DE,$5820
-  LD BC,$0020
-  LDIR
-  LD A,(state_bridge_section)
-  CP $01
-  JP Z,L6927
-  CP $02
-  JP Z,L6927
+; Update bottom attribute row after scrolling
+;
+; Copies the bottom attribute row to the top of the screen, then fills the bottom row with either river (green) or
+; bridge attributes depending on state_bridge_section.
+update_bottom_row:
+  LD DE,$5820                          ; Copy bottom attribute row to top of screen.
+  LD BC,$0020                          ;
+  LDIR                                 ;
+  LD A,(state_bridge_section)          ; If bridge section 1 or 2, jump to render bridge attributes.
+  CP $01                               ;
+  JP Z,render_bridge_attributes        ;
+  CP $02                               ;
+  JP Z,render_bridge_attributes        ;
 ; This entry point is used by the routine at init_current_bridge.
-scroll_attributes_continue_0:
-  LD DE,$5BDF
-  LD A,$0C
-  LD B,$20
-scroll_attributes_continue_1:
-  LD (DE),A
-  INC DE
-  DJNZ scroll_attributes_continue_1
-  CALL next_row
+fill_river_attributes:
+  LD DE,$5BDF                          ; Initialize bottom row fill with river attribute (green).
+  LD A,$0C                             ;
+  LD B,$20                             ;
+fill_attribute_loop:
+  LD (DE),A                            ; Store attribute, advance pointer, loop 32 times.
+  INC DE                               ;
+  DJNZ fill_attribute_loop             ;
+  CALL next_row                        ; Call next_row to spawn objects for new row.
   RET
 
 ; Routine at 68E9
@@ -3307,19 +3310,19 @@ init_current_bridge_1:
   LD A,L
   INC A
   LD (state_bridge_index),A
-  JP scroll_attributes_continue_0
+  JP fill_river_attributes
 
-; Routine at 6927
+; Render bridge attributes to bottom row
 ;
-; Used by the routine at scroll_attributes_continue.
-L6927:
-  LD DE,$5BDF
-  LD HL,sprite_road_attributes
-  LD BC,$0020
-  LDIR
-  LD A,$00
-  LD (state_bridge_section),A
-  CALL next_row
+; Copies road/bridge attributes to the bottom attribute row and clears the bridge section flag.
+render_bridge_attributes:
+  LD DE,$5BDF                          ; Copy bridge/road attributes to bottom row.
+  LD HL,sprite_road_attributes         ;
+  LD BC,$0020                          ;
+  LDIR                                 ;
+  LD A,$00                             ; Clear bridge section flag and spawn objects for new row.
+  LD (state_bridge_section),A          ;
+  CALL next_row                        ;
   RET
 
 ; Unused
@@ -4466,7 +4469,7 @@ L6F7A:
 
 ; This routine gets called when the screen scrolls by another fragment
 ;
-; Used by the routines at scroll_attributes_continue and L6927.
+; Used by the routines at update_bottom_row and render_bridge_attributes.
 next_row:
   LD A,COLLISION_MODE_NONE
   LD (state_collision_mode),A

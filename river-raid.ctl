@@ -1425,15 +1425,27 @@ D $68B7 This routine is called every 8 terrain fragments to scroll the screen at
   $68BD Set BC to $020C (524 bytes to copy)
   $68C0 Copy attributes backward (LDDR)
 @ $68C2 ignoreua=$5BDF
-  $68C2,3 Load address $5BDF into HL (bottom attribute row)
+  $68C2 Load address $5BDF into HL (bottom attribute row)
 @ $68C5 nowarn
-@ $68C5 label=scroll_attributes_continue
-c $68C5
+@ $68C5 label=update_bottom_row
+c $68C5 Update bottom attribute row after scrolling
+D $68C5 Copies the bottom attribute row to the top of the screen, then fills the bottom row with either river (green) or bridge attributes depending on state_bridge_section.
+  $68C5 Copy bottom attribute row to top of screen.
+  $68CD If bridge section 1 or 2, jump to render bridge attributes.
+@ $68DA label=fill_river_attributes
+  $68DA Initialize bottom row fill with river attribute (green).
+@ $68E1 label=fill_attribute_loop
+  $68E1 Store attribute, advance pointer, loop 32 times.
+  $68E5,3 Call #R$6F80 to spawn objects for new row.
 @ $68E9 label=init_current_bridge
 c $68E9
 @ $68EE label=init_current_bridge_loop
 @ $6900 isub=CP PLAYER_2
-c $6927
+@ $6927 label=render_bridge_attributes
+c $6927 Render bridge attributes to bottom row
+D $6927 Copies road/bridge attributes to the bottom attribute row and clears the bridge section flag.
+  $6927 Copy bridge/road attributes to bottom row.
+  $6932,8 Clear bridge section flag and spawn objects for new row.
 s $693B
 @ $693C label=handle_terrain_element_1_eq_3
 c $693C

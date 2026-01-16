@@ -3596,25 +3596,31 @@ c$68B7 LD HL,$5A1F   ; Load source address $5A1F into HL (attribute row)
 @ignoreua=$5BDF
  $68C2 LD HL,$5BDF   ; Load address $5BDF into HL (bottom attribute row)
 
-; Routine at 68C5
+; Update bottom attribute row after scrolling
+;
+; Copies the bottom attribute row to the top of the screen, then fills the
+; bottom row with either river (green) or bridge attributes depending on
+; state_bridge_section.
 @nowarn
-@label=scroll_attributes_continue
-c$68C5 LD DE,$5820   ;
+@label=update_bottom_row
+c$68C5 LD DE,$5820   ; {Copy bottom attribute row to top of screen.
  $68C8 LD BC,$0020   ;
- $68CB LDIR          ;
- $68CD LD A,($5F6C)  ;
- $68D0 CP $01        ;
+ $68CB LDIR          ; }
+ $68CD LD A,($5F6C)  ; {If bridge section 1 or 2, jump to render bridge
+ $68D0 CP $01        ; attributes.
  $68D2 JP Z,$6927    ;
  $68D5 CP $02        ;
- $68D7 JP Z,$6927    ;
+ $68D7 JP Z,$6927    ; }
 ; This entry point is used by the routine at #R$68E9.
-*$68DA LD DE,$5BDF   ;
- $68DD LD A,$0C      ;
- $68DF LD B,$20      ;
-*$68E1 LD (DE),A     ;
+@label=fill_river_attributes
+*$68DA LD DE,$5BDF   ; {Initialize bottom row fill with river attribute
+ $68DD LD A,$0C      ; (green).
+ $68DF LD B,$20      ; }
+@label=fill_attribute_loop
+*$68E1 LD (DE),A     ; {Store attribute, advance pointer, loop 32 times.
  $68E2 INC DE        ;
- $68E3 DJNZ $68E1    ;
- $68E5 CALL $6F80    ;
+ $68E3 DJNZ $68E1    ; }
+ $68E5 CALL $6F80    ; Call #R$6F80 to spawn objects for new row.
  $68E8 RET           ;
 
 ; Routine at 68E9
@@ -3655,16 +3661,18 @@ c$68E9 LD HL,$5800   ;
  $6921 LD ($5EF0),A  ;
  $6924 JP $68DA      ;
 
-; Routine at 6927
+; Render bridge attributes to bottom row
 ;
-; Used by the routine at #R$68C5.
-c$6927 LD DE,$5BDF   ;
+; Copies road/bridge attributes to the bottom attribute row and clears the
+; bridge section flag.
+@label=render_bridge_attributes
+c$6927 LD DE,$5BDF   ; {Copy bridge/road attributes to bottom row.
  $692A LD HL,$8371   ;
  $692D LD BC,$0020   ;
- $6930 LDIR          ;
- $6932 LD A,$00      ;
- $6934 LD ($5F6C),A  ;
- $6937 CALL $6F80    ;
+ $6930 LDIR          ; }
+ $6932 LD A,$00      ; {Clear bridge section flag and spawn objects for new
+ $6934 LD ($5F6C),A  ; row.
+ $6937 CALL $6F80    ; }
  $693A RET           ;
 
 ; Unused
