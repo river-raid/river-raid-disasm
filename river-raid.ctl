@@ -1438,9 +1438,20 @@ D $68C5 Copies the bottom attribute row to the top of the screen, then fills the
   $68E1 Store attribute, advance pointer, loop 32 times.
   $68E5,3 Call #R$6F80 to spawn objects for new row.
 @ $68E9 label=init_current_bridge
-c $68E9
-@ $68EE label=init_current_bridge_loop
+c $68E9 Initialize bridge state for current player
+D $68E9 Clears the top attribute row, removes any active tank shell, and calculates the starting bridge index based on the current player's saved progress. The algorithm handles wraparound for players who have progressed past bridge 48.
+  $68E9 Initialize to clear top attribute row (32 bytes).
+@ $68EE label=clear_top_attributes_loop
+  $68EE Clear byte, advance pointer, loop 32 times.
+  $68F3 Clear tank shell and helicopter missile state.
+  $68F9 Load current player's bridge progress (swaps for player 2).
 @ $6900 isub=CP PLAYER_2
+  $6905 Check if progress exceeds initial section threshold (48).
+  $6913 Load section size (15) for division.
+@ $6915 label=divide_progress_loop
+  $6915 Divide excess progress by 15 to find wraparound offset.
+@ $691E label=finalize_bridge_index
+  $691E Calculate final bridge index and fill river attributes.
 @ $6927 label=render_bridge_attributes
 c $6927 Render bridge attributes to bottom row
 D $6927 Copies road/bridge attributes to the bottom attribute row and clears the bridge section flag.
@@ -1474,7 +1485,10 @@ c $6990
   $69A4,9 Point #REGhl to the profile line with the index defined by #R$5F7D.
 c $6A3F
 c $6A45
-c $6A4A
+@ $6A4A label=get_player_2_bridge
+c $6A4A Get player 2's bridge progress
+D $6A4A Helper routine that loads player 2's bridge progress into B, replacing player 1's value.
+  $6A4A,4 Load player 2's bridge progress into B.
 @ $6A4F label=render_terrain_row
 c $6A4F
   $6A54 Point #REGhl to the #R$9500 array.

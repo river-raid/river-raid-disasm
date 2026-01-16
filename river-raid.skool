@@ -3623,43 +3623,47 @@ c$68C5 LD DE,$5820   ; {Copy bottom attribute row to top of screen.
  $68E5 CALL $6F80    ; Call #R$6F80 to spawn objects for new row.
  $68E8 RET           ;
 
-; Routine at 68E9
+; Initialize bridge state for current player
 ;
-; Used by the routines at #R$5DA6 and #R$6D17.
+; Clears the top attribute row, removes any active tank shell, and calculates
+; the starting bridge index based on the current player's saved progress. The
+; algorithm handles wraparound for players who have progressed past bridge 48.
 @label=init_current_bridge
-c$68E9 LD HL,$5800   ;
- $68EC LD B,$20      ;
-@label=init_current_bridge_loop
-*$68EE LD (HL),$00   ;
+c$68E9 LD HL,$5800   ; {Initialize to clear top attribute row (32 bytes).
+ $68EC LD B,$20      ; }
+@label=clear_top_attributes_loop
+*$68EE LD (HL),$00   ; {Clear byte, advance pointer, loop 32 times.
  $68F0 INC HL        ;
- $68F1 DJNZ $68EE    ;
- $68F3 CALL $74E4    ;
- $68F6 LD ($5F73),HL ;
- $68F9 LD A,($5F6A)  ;
- $68FC LD B,A        ;
+ $68F1 DJNZ $68EE    ; }
+ $68F3 CALL $74E4    ; {Clear tank shell and helicopter missile state.
+ $68F6 LD ($5F73),HL ; }
+ $68F9 LD A,($5F6A)  ; {Load current player's bridge progress (swaps for player
+ $68FC LD B,A        ; 2).
  $68FD LD A,($923D)  ;
 @isub=CP PLAYER_2
  $6900 CP $02        ;
- $6902 CALL Z,$6A4A  ;
- $6905 LD A,B        ;
- $6906 DEC A         ;
+ $6902 CALL Z,$6A4A  ; }
+ $6905 LD A,B        ; {Check if progress exceeds initial section threshold
+ $6906 DEC A         ; (48).
  $6907 LD DE,$0030   ;
  $690A LD H,$00      ;
  $690C LD L,A        ;
  $690D OR A          ;
  $690E SBC HL,DE     ;
- $6910 JP M,$691E    ;
- $6913 LD E,$0F      ;
-*$6915 OR A          ;
+ $6910 JP M,$691E    ; }
+ $6913 LD E,$0F      ; Load section size (15) for division.
+@label=divide_progress_loop
+*$6915 OR A          ; {Divide excess progress by 15 to find wraparound offset.
  $6916 SBC HL,DE     ;
  $6918 JP P,$6915    ;
  $691B ADD HL,DE     ;
- $691C LD E,$21      ;
-*$691E ADD HL,DE     ;
+ $691C LD E,$21      ; }
+@label=finalize_bridge_index
+*$691E ADD HL,DE     ; {Calculate final bridge index and fill river attributes.
  $691F LD A,L        ;
  $6920 INC A         ;
  $6921 LD ($5EF0),A  ;
- $6924 JP $68DA      ;
+ $6924 JP $68DA      ; }
 
 ; Render bridge attributes to bottom row
 ;
@@ -3871,11 +3875,13 @@ c$6A45 LD A,C        ;
  $6A46 ADD A,D       ;
  $6A47 JP $6A0A      ;
 
-; Routine at 6A4A
+; Get player 2's bridge progress
 ;
-; Used by the routine at #R$68E9.
-c$6A4A LD A,($5F6B)  ;
- $6A4D LD B,A        ;
+; Helper routine that loads player 2's bridge progress into B, replacing player
+; 1's value.
+@label=get_player_2_bridge
+c$6A4A LD A,($5F6B)  ; {Load player 2's bridge progress into B.
+ $6A4D LD B,A        ; }
  $6A4E RET           ;
 
 ; Routine at 6A4F

@@ -3273,44 +3273,45 @@ fill_attribute_loop:
   CALL next_row                        ; Call next_row to spawn objects for new row.
   RET
 
-; Routine at 68E9
+; Initialize bridge state for current player
 ;
-; Used by the routines at play and overview.
+; Clears the top attribute row, removes any active tank shell, and calculates the starting bridge index based on the
+; current player's saved progress. The algorithm handles wraparound for players who have progressed past bridge 48.
 init_current_bridge:
-  LD HL,screen_attributes
-  LD B,$20
-init_current_bridge_loop:
-  LD (HL),$00
-  INC HL
-  DJNZ init_current_bridge_loop
-  CALL remove_tank_shell
-  LD (helicopter_missile_coordinates_ptr),HL
-  LD A,(state_bridge_player_1)
-  LD B,A
-  LD A,(state_player)
-  CP PLAYER_2
-  CALL Z,L6A4A
-  LD A,B
-  DEC A
-  LD DE,$0030
-  LD H,$00
-  LD L,A
-  OR A
-  SBC HL,DE
-  JP M,init_current_bridge_1
-  LD E,$0F
-init_current_bridge_0:
-  OR A
-  SBC HL,DE
-  JP P,init_current_bridge_0
-  ADD HL,DE
-  LD E,$21
-init_current_bridge_1:
-  ADD HL,DE
-  LD A,L
-  INC A
-  LD (state_bridge_index),A
-  JP fill_river_attributes
+  LD HL,screen_attributes              ; Initialize to clear top attribute row (32 bytes).
+  LD B,$20                             ;
+clear_top_attributes_loop:
+  LD (HL),$00                          ; Clear byte, advance pointer, loop 32 times.
+  INC HL                               ;
+  DJNZ clear_top_attributes_loop       ;
+  CALL remove_tank_shell                     ; Clear tank shell and helicopter missile state.
+  LD (helicopter_missile_coordinates_ptr),HL ;
+  LD A,(state_bridge_player_1)         ; Load current player's bridge progress (swaps for player 2).
+  LD B,A                               ;
+  LD A,(state_player)                  ;
+  CP PLAYER_2                          ;
+  CALL Z,get_player_2_bridge           ;
+  LD A,B                               ; Check if progress exceeds initial section threshold (48).
+  DEC A                                ;
+  LD DE,$0030                          ;
+  LD H,$00                             ;
+  LD L,A                               ;
+  OR A                                 ;
+  SBC HL,DE                            ;
+  JP M,finalize_bridge_index           ;
+  LD E,$0F                             ; Load section size (15) for division.
+divide_progress_loop:
+  OR A                                 ; Divide excess progress by 15 to find wraparound offset.
+  SBC HL,DE                            ;
+  JP P,divide_progress_loop            ;
+  ADD HL,DE                            ;
+  LD E,$21                             ;
+finalize_bridge_index:
+  ADD HL,DE                            ; Calculate final bridge index and fill river attributes.
+  LD A,L                               ;
+  INC A                                ;
+  LD (state_bridge_index),A            ;
+  JP fill_river_attributes             ;
 
 ; Render bridge attributes to bottom row
 ;
@@ -3527,12 +3528,12 @@ L6A45:
   ADD A,D
   JP render_island_line_2
 
-; Routine at 6A4A
+; Get player 2's bridge progress
 ;
-; Used by the routine at init_current_bridge.
-L6A4A:
-  LD A,(state_bridge_player_2)
-  LD B,A
+; Helper routine that loads player 2's bridge progress into B, replacing player 1's value.
+get_player_2_bridge:
+  LD A,(state_bridge_player_2)         ; Load player 2's bridge progress into B.
+  LD B,A                               ;
   RET
 
 ; Routine at 6A4F
