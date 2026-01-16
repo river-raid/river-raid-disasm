@@ -5092,36 +5092,43 @@ c$6F80 LD A,$00      ; {Clear collision mode (#R$5EF5).
 
 ; Render rock sprite
 ;
-; Renders a rock obstacle at the specified position. Rock sprites are stored in
-; an array at #R$84A1 with SPRITE_ROCK_FRAME_SIZE ($30) bytes per frame.
+; Renders a rock obstacle at the specified position. Rocks use 3x2 tile sprites
+; (24x16 pixels) stored sequentially at #R$84A1 with $30 bytes per frame.
+; .
+; #LIST
+; { Sprite address = #R$84A1 + (frame_index * $30) }
+; { Frame index from bits 0-2 of D (0-7 rock variants) }
+; { Sprite stored at #R$8B0E, position at #R$8B0A and #R$8B0C }
+; { Renders via #R$8B3C with width=3 tiles, height=16 pixels }
+; LIST#
 ;
 ; I:D Object type byte (bits 0-2 = rock frame index)
 ; I:E X position
 @label=render_rock
-c$6FBB LD A,D        ;
+c$6FBB LD A,D        ; {Extract rock frame index: A = D AND $07. Set flags with
 @isub=AND SLOT_MASK_OBJECT_TYPE
- $6FBC AND $07       ;
- $6FBE OR A          ;
- $6FBF LD HL,$84A1   ;
+ $6FBC AND $07       ; OR A.
+ $6FBE OR A          ; }
+ $6FBF LD HL,$84A1   ; {Load sprite base address #R$84A1 and frame size $30.
 @isub=LD BC,SPRITE_ROCK_FRAME_SIZE
- $6FC2 LD BC,$0030   ;
- $6FC5 INC A         ;
- $6FC6 SBC HL,BC     ;
-@label=locate_rock_element
-*$6FC8 ADD HL,BC     ;
- $6FC9 DEC A         ;
- $6FCA JR NZ,$6FC8   ;
- $6FCC LD B,$00      ;
- $6FCE LD C,E        ;
- $6FCF LD ($8B0E),HL ;
- $6FD2 LD HL,$82F5   ;
- $6FD5 LD ($8B0C),BC ;
- $6FD9 LD ($8B0A),BC ;
+ $6FC2 LD BC,$0030   ; Prepare loop: INC A, subtract BC once to offset the
+ $6FC5 INC A         ; first ADD.
+ $6FC6 SBC HL,BC     ; }
+@label=locate_rock_sprite
+*$6FC8 ADD HL,BC     ; {Loop: HL += $30 for each frame index. Result: HL =
+ $6FC9 DEC A         ; #R$84A1 + (frame * $30).
+ $6FCA JR NZ,$6FC8   ; }
+ $6FCC LD B,$00      ; {Set BC = X position (B=0, C=E from input).
+ $6FCE LD C,E        ; }
+ $6FCF LD ($8B0E),HL ; {Store rendering state: sprite pointer at #R$8B0E, X
+ $6FD2 LD HL,$82F5   ; position at #R$8B0C and #R$8B0A (duplicated). Load erase
+ $6FD5 LD ($8B0C),BC ; sprite #R$82F5.
+ $6FD9 LD ($8B0A),BC ; }
 @isub=LD A,SPRITE_ROCK_WIDTH_TILES
- $6FDD LD A,$03      ;
+ $6FDD LD A,$03      ; {Set dimensions: A=3 (width in tiles), D=$10 (height 16
 @isub=LD DE,SPRITE_ROCK_HEIGHT_PIXELS<<8|SPRITE_ROCK_ATTRIBUTES
- $6FDF LD DE,$1014   ;
- $6FE2 CALL $8B3C    ;
+ $6FDF LD DE,$1014   ; pixels), E=$14 (attributes). Call #R$8B3C to render.
+ $6FE2 CALL $8B3C    ; }
  $6FE5 RET           ;
 
 ; Load array of arrays of enemy headed right sprites.

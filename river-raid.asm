@@ -4626,32 +4626,37 @@ locate_level:
 
 ; Render rock sprite
 ;
-; Renders a rock obstacle at the specified position. Rock sprites are stored in an array at sprite_rock with
-; SPRITE_ROCK_FRAME_SIZE ($30) bytes per frame.
+; Renders a rock obstacle at the specified position. Rocks use 3x2 tile sprites (24x16 pixels) stored sequentially at
+; sprite_rock with $30 bytes per frame.
+;
+; * Sprite address = sprite_rock + (frame_index * $30)
+; * Frame index from bits 0-2 of D (0-7 rock variants)
+; * Sprite stored at render_sprite_ptr, position at previous_object_coordinates and object_coordinates
+; * Renders via render_object with width=3 tiles, height=16 pixels
 ;
 ; I:D Object type byte (bits 0-2 = rock frame index)
 ; I:E X position
 render_rock:
-  LD A,D
-  AND SLOT_MASK_OBJECT_TYPE
-  OR A
-  LD HL,sprite_rock
-  LD BC,SPRITE_ROCK_FRAME_SIZE
-  INC A
-  SBC HL,BC
-locate_rock_element:
-  ADD HL,BC
-  DEC A
-  JR NZ,locate_rock_element
-  LD B,$00
-  LD C,E
-  LD (render_sprite_ptr),HL
-  LD HL,sprite_erasure
-  LD (object_coordinates),BC
-  LD (previous_object_coordinates),BC
-  LD A,SPRITE_ROCK_WIDTH_TILES
-  LD DE,SPRITE_ROCK_HEIGHT_PIXELS<<8|SPRITE_ROCK_ATTRIBUTES
-  CALL render_object
+  LD A,D                               ; Extract rock frame index: A = D AND $07. Set flags with OR A.
+  AND SLOT_MASK_OBJECT_TYPE            ;
+  OR A                                 ;
+  LD HL,sprite_rock                    ; Load sprite base address sprite_rock and frame size $30. Prepare loop: INC A,
+  LD BC,SPRITE_ROCK_FRAME_SIZE         ; subtract BC once to offset the first ADD.
+  INC A                                ;
+  SBC HL,BC                            ;
+locate_rock_sprite:
+  ADD HL,BC                            ; Loop: HL += $30 for each frame index. Result: HL = sprite_rock + (frame * $30).
+  DEC A                                ;
+  JR NZ,locate_rock_sprite             ;
+  LD B,$00                             ; Set BC = X position (B=0, C=E from input).
+  LD C,E                               ;
+  LD (render_sprite_ptr),HL            ; Store rendering state: sprite pointer at render_sprite_ptr, X position at
+  LD HL,sprite_erasure                 ; object_coordinates and previous_object_coordinates (duplicated). Load erase
+  LD (object_coordinates),BC           ; sprite sprite_erasure.
+  LD (previous_object_coordinates),BC  ;
+  LD A,SPRITE_ROCK_WIDTH_TILES                              ; Set dimensions: A=3 (width in tiles), D=$10 (height 16
+  LD DE,SPRITE_ROCK_HEIGHT_PIXELS<<8|SPRITE_ROCK_ATTRIBUTES ; pixels), E=$14 (attributes). Call render_object to render.
+  CALL render_object                                        ;
   RET
 
 ; Load array of arrays of enemy headed right sprites.

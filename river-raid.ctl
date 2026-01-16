@@ -1928,16 +1928,23 @@ D $6F80 #LIST { Level data starts at #R$C800, with SIZE_LEVEL_SLOTS ($100) bytes
   $6FB0 Get object type (D AND $07). If type == OBJECT_FUEL (7), jump to #R$7051.
 @ $6FB1 isub=AND SLOT_MASK_OBJECT_TYPE
 @ $6FB3 isub=CP OBJECT_FUEL
-  $6FB5,6 Otherwise spawn enemy via #R$6FF6.
+  $6FB5 Otherwise spawn enemy via #R$6FF6.
 @ $6FBB label=render_rock
 c $6FBB Render rock sprite
-D $6FBB Renders a rock obstacle at the specified position. Rock sprites are stored in an array at #R$84A1 with SPRITE_ROCK_FRAME_SIZE ($30) bytes per frame.
+D $6FBB Renders a rock obstacle at the specified position. Rocks use 3x2 tile sprites (24x16 pixels) stored sequentially at #R$84A1 with $30 bytes per frame.
+D $6FBB #LIST { Sprite address = #R$84A1 + (frame_index * $30) } { Frame index from bits 0-2 of D (0-7 rock variants) } { Sprite stored at #R$8B0E, position at #R$8B0A and #R$8B0C } { Renders via #R$8B3C with width=3 tiles, height=16 pixels } LIST#
 R $6FBB I:D Object type byte (bits 0-2 = rock frame index)
 R $6FBB I:E X position
+  $6FBB Extract rock frame index: A = D AND $07. Set flags with OR A.
 @ $6FBC isub=AND SLOT_MASK_OBJECT_TYPE
+  $6FBF Load sprite base address #R$84A1 and frame size $30. Prepare loop: INC A, subtract BC once to offset the first ADD.
 @ $6FC2 isub=LD BC,SPRITE_ROCK_FRAME_SIZE
-@ $6FC8 label=locate_rock_element
+@ $6FC8 label=locate_rock_sprite
+  $6FC8 Loop: HL += $30 for each frame index. Result: HL = #R$84A1 + (frame * $30).
+  $6FCC Set BC = X position (B=0, C=E from input).
+  $6FCF Store rendering state: sprite pointer at #R$8B0E, X position at #R$8B0C and #R$8B0A (duplicated). Load erase sprite #R$82F5.
 @ $6FDD isub=LD A,SPRITE_ROCK_WIDTH_TILES
+  $6FDD,8 Set dimensions: A=3 (width in tiles), D=$10 (height 16 pixels), E=$14 (attributes). Call #R$8B3C to render.
 @ $6FDF isub=LD DE,SPRITE_ROCK_HEIGHT_PIXELS<<8|SPRITE_ROCK_ATTRIBUTES
 @ $6FE6 label=ld_enemy_sprites_right
 c $6FE6 Load array of arrays of enemy headed right sprites.
