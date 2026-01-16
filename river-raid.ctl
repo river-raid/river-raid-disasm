@@ -1984,24 +1984,31 @@ R $6FF6 I:E X position
 @ $702F isub=LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
 @ $7038 isub=LD E,SPRITE_SHIP_ATTRIBUTES
 @ $7038 label=ld_attributes_ship
-c $7038 Load ship screen attributes.
-R $7038 O:E Attributes
+c $7038 Load ship screen attributes
+D $7038 Returns SPRITE_SHIP_ATTRIBUTES ($0D) = PAPER BLACK, INK MAGENTA, BRIGHT.
+R $7038 O:E Attributes value $0D.
+  $7038 Load E with $0D (ship attributes).
 @ $703B isub=LD E,SPRITE_FIGHTER_ATTRIBUTES
 @ $703B label=ld_attributes_fighter
-c $703B Load fighter screen attributes.
-R $703B O:E Attributes
+c $703B Load fighter screen attributes
+D $703B Returns SPRITE_FIGHTER_ATTRIBUTES ($00) = PAPER BLACK, INK BLACK (invisible/XOR mode).
+R $703B O:E Attributes value $00.
+  $703B Load E with $00 (fighter attributes).
 @ $703E isub=LD E,SPRITE_TANK_ATTRIBUTES
 @ $703E label=ld_attributes_tank
-c $703E Load tank screen attributes.
-R $703E O:E Attributes
+c $703E Load tank screen attributes
+D $703E Returns tank attributes: $00 normally, $04 if tank is on river bank (bit 5 of D set).
+R $703E I:D Object definition byte (bit 5 = tank on bank flag).
+R $703E O:E Attributes value $00 or $04.
+  $703E Load E=$00. If D bit 5 set (tank on bank), load E=$04 instead.
 @ $7040 isub=BIT SLOT_BIT_TANK_ON_BANK,D
 @ $7043 isub=LD E,SPRITE_TANK_ON_BANK_ATTRIBUTES
 @ $7046 label=blending_mode_xor_nop
-c $7046
+c $7046 Set XOR blending mode for sprite rendering
+D $7046 Modifies sprite rendering code via self-modifying instructions. Patches #R$8C3C with XOR B and #R$8C1B with NOP to enable XOR blending mode for fighters/tanks.
+  $7046,11 Patch XOR B ($A8) into #R$8C3C and NOP ($00) into #R$8C1B for XOR rendering.
 @ $7048 nowarn
-  $7048,3 Put "XOR B" into #R$8C3C
 @ $704D nowarn
-  $704D,3 Put "NOP" into #R$8C1B
 @ $7051 label=render_fuel
 c $7051 Render fuel station
 R $7051 I:E X position

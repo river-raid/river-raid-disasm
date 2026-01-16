@@ -5210,53 +5210,57 @@ c$6FF6 CP $06        ; {If balloon (type 6), use separate balloon renderer at
  $7034 CALL $72EF    ; }
  $7037 RET           ;
 
-; Load ship screen attributes.
+; Load ship screen attributes
 ;
-; Used by the routines at #R$65F3, #R$6642, #R$6682, #R$6FF6, #R$7113 and
-; #R$75D0.
+; Returns SPRITE_SHIP_ATTRIBUTES ($0D) = PAPER BLACK, INK MAGENTA, BRIGHT.
 ;
-; O:E Attributes
+; O:E Attributes value $0D.
 @isub=LD E,SPRITE_SHIP_ATTRIBUTES
 @label=ld_attributes_ship
-c$7038 LD E,$0D      ;
- $703A RET           ;
+c$7038 LD E,$0D      ; {Load E with $0D (ship attributes).
+ $703A RET           ; }
 
-; Load fighter screen attributes.
+; Load fighter screen attributes
 ;
-; Used by the routine at #R$6FF6.
+; Returns SPRITE_FIGHTER_ATTRIBUTES ($00) = PAPER BLACK, INK BLACK
+; (invisible/XOR mode).
 ;
-; O:E Attributes
+; O:E Attributes value $00.
 @isub=LD E,SPRITE_FIGHTER_ATTRIBUTES
 @label=ld_attributes_fighter
-c$703B LD E,$00      ;
- $703D RET           ;
+c$703B LD E,$00      ; {Load E with $00 (fighter attributes).
+ $703D RET           ; }
 
-; Load tank screen attributes.
+; Load tank screen attributes
 ;
-; Used by the routine at #R$6FF6.
+; Returns tank attributes: $00 normally, $04 if tank is on river bank (bit 5 of
+; D set).
 ;
-; O:E Attributes
+; I:D Object definition byte (bit 5 = tank on bank flag).
+; O:E Attributes value $00 or $04.
 @isub=LD E,SPRITE_TANK_ATTRIBUTES
 @label=ld_attributes_tank
-c$703E LD E,$00      ;
+c$703E LD E,$00      ; {Load E=$00. If D bit 5 set (tank on bank), load E=$04
 @isub=BIT SLOT_BIT_TANK_ON_BANK,D
- $7040 BIT 5,D       ;
+ $7040 BIT 5,D       ; instead.
  $7042 RET Z         ;
 @isub=LD E,SPRITE_TANK_ON_BANK_ATTRIBUTES
  $7043 LD E,$04      ;
- $7045 RET           ;
+ $7045 RET           ; }
 
-; Routine at 7046
+; Set XOR blending mode for sprite rendering
 ;
-; Used by the routine at #R$6FF6.
+; Modifies sprite rendering code via self-modifying instructions. Patches
+; #R$8C3C with XOR B and #R$8C1B with NOP to enable XOR blending mode for
+; fighters/tanks.
 @label=blending_mode_xor_nop
-c$7046 LD A,$A8      ;
+c$7046 LD A,$A8      ; {Patch XOR B ($A8) into #R$8C3C and NOP ($00) into
 @nowarn
- $7048 LD ($8C3C),A  ; Put "XOR B" into #R$8C3C
+ $7048 LD ($8C3C),A  ; #R$8C1B for XOR rendering.
  $704B LD A,$00      ;
 @nowarn
- $704D LD ($8C1B),A  ; Put "NOP" into #R$8C1B
- $7050 RET           ;
+ $704D LD ($8C1B),A  ;
+ $7050 RET           ; }
 
 ; Render fuel station
 ;

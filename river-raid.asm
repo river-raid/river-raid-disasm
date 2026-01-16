@@ -4723,46 +4723,47 @@ render_enemy:
   CALL blenging_mode_or_or             ;
   RET
 
-; Load ship screen attributes.
+; Load ship screen attributes
 ;
-; Used by the routines at handle_right, handle_left, render_plane, render_enemy, ship_or_helicopter_left_advance and
-; handle_object_proximity.
+; Returns SPRITE_SHIP_ATTRIBUTES ($0D) = PAPER BLACK, INK MAGENTA, BRIGHT.
 ;
-; O:E Attributes
+; O:E Attributes value $0D.
 ld_attributes_ship:
-  LD E,SPRITE_SHIP_ATTRIBUTES
-  RET
+  LD E,SPRITE_SHIP_ATTRIBUTES          ; Load E with $0D (ship attributes).
+  RET                                  ;
 
-; Load fighter screen attributes.
+; Load fighter screen attributes
 ;
-; Used by the routine at render_enemy.
+; Returns SPRITE_FIGHTER_ATTRIBUTES ($00) = PAPER BLACK, INK BLACK (invisible/XOR mode).
 ;
-; O:E Attributes
+; O:E Attributes value $00.
 ld_attributes_fighter:
-  LD E,SPRITE_FIGHTER_ATTRIBUTES
-  RET
+  LD E,SPRITE_FIGHTER_ATTRIBUTES       ; Load E with $00 (fighter attributes).
+  RET                                  ;
 
-; Load tank screen attributes.
+; Load tank screen attributes
 ;
-; Used by the routine at render_enemy.
+; Returns tank attributes: $00 normally, $04 if tank is on river bank (bit 5 of D set).
 ;
-; O:E Attributes
+; I:D Object definition byte (bit 5 = tank on bank flag).
+; O:E Attributes value $00 or $04.
 ld_attributes_tank:
-  LD E,SPRITE_TANK_ATTRIBUTES
-  BIT SLOT_BIT_TANK_ON_BANK,D
-  RET Z
-  LD E,SPRITE_TANK_ON_BANK_ATTRIBUTES
-  RET
+  LD E,SPRITE_TANK_ATTRIBUTES          ; Load E=$00. If D bit 5 set (tank on bank), load E=$04 instead.
+  BIT SLOT_BIT_TANK_ON_BANK,D          ;
+  RET Z                                ;
+  LD E,SPRITE_TANK_ON_BANK_ATTRIBUTES  ;
+  RET                                  ;
 
-; Routine at 7046
+; Set XOR blending mode for sprite rendering
 ;
-; Used by the routine at render_enemy.
+; Modifies sprite rendering code via self-modifying instructions. Patches L8C3C with XOR B and L8C1B with NOP to enable
+; XOR blending mode for fighters/tanks.
 blending_mode_xor_nop:
-  LD A,$A8
-  LD (L8C3C),A                         ; Put "XOR B" into L8C3C
-  LD A,$00
-  LD (L8C1B),A                         ; Put "NOP" into L8C1B
-  RET
+  LD A,$A8                             ; Patch XOR B ($A8) into L8C3C and NOP ($00) into L8C1B for XOR rendering.
+  LD (L8C3C),A                         ;
+  LD A,$00                             ;
+  LD (L8C1B),A                         ;
+  RET                                  ;
 
 ; Render fuel station
 ;
