@@ -3211,29 +3211,30 @@ process_island_line:
   LD A,(L5EF9)                         ; Decrement island counter and check if finished.
   DEC A                                ;
   CP $00                               ;
-  JP Z,finalize_island_rendering
+  JP Z,clear_top_rows
   CP $7F                               ; If counter is $7F, render plane.
   CALL Z,render_plane                  ;
   LD A,(L5EF9)                         ; Continue with next island line.
   DEC A                                ;
   JP process_island_line               ;
 
-; Finalize island rendering
+; Clear top screen rows after scrolling
 ;
-; Used by the routine at handle_island_rendering.
-finalize_island_rendering:
-  LD HL,screen_pixels
-  LD DE,$00E0
-  LD A,(state_speed)
-finalize_island_rendering_0:
-  LD B,$20
-finalize_island_rendering_1:
-  LD (HL),$00
-  INC HL
-  DJNZ finalize_island_rendering_1
-  ADD HL,DE
-  DEC A
-  JP NZ,finalize_island_rendering_0
+; Clears the top rows of the screen based on scroll speed. After island data scrolls upward, the topmost rows contain
+; old data that needs to be zeroed.
+clear_top_rows:
+  LD HL,screen_pixels                  ; Initialize screen pointer, row offset, and row count from speed.
+  LD DE,$00E0                          ;
+  LD A,(state_speed)                   ;
+clear_row_loop:
+  LD B,$20                             ; Set bytes per row (32).
+clear_byte_loop:
+  LD (HL),$00                          ; Clear byte, advance pointer, loop 32 times.
+  INC HL                               ;
+  DJNZ clear_byte_loop                 ;
+  ADD HL,DE                            ; Advance to next row and loop until all rows cleared.
+  DEC A                                ;
+  JP NZ,clear_row_loop                 ;
   RET
 
 ; Scroll screen attributes up by one row

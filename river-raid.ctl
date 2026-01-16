@@ -1406,8 +1406,15 @@ D $683B This routine manages island rendering by manipulating island data pointe
   $688C,6 Decrement island counter and check if finished.
   $6895 If counter is $7F, render plane.
   $689A Continue with next island line.
-@ $68A1 label=finalize_island_rendering
-c $68A1 Finalize island rendering
+@ $68A1 label=clear_top_rows
+c $68A1 Clear top screen rows after scrolling
+D $68A1 Clears the top rows of the screen based on scroll speed. After island data scrolls upward, the topmost rows contain old data that needs to be zeroed.
+  $68A1 Initialize screen pointer, row offset, and row count from speed.
+@ $68AA label=clear_row_loop
+  $68AA Set bytes per row (32).
+@ $68AC label=clear_byte_loop
+  $68AC Clear byte, advance pointer, loop 32 times.
+  $68B1,5 Advance to next row and loop until all rows cleared.
 @ $68B7 label=scroll_attributes
 @ $68B7 ignoreua=$5A1F
 c $68B7 Scroll screen attributes up by one row

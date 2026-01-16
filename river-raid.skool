@@ -3560,20 +3560,23 @@ c$683B LD A,$8F      ; Initialize island line counter to $8F (143).
  $689D DEC A         ;
  $689E JP $683D      ; }
 
-; Finalize island rendering
+; Clear top screen rows after scrolling
 ;
-; Used by the routine at #R$683B.
-@label=finalize_island_rendering
-c$68A1 LD HL,$4000   ;
- $68A4 LD DE,$00E0   ;
- $68A7 LD A,($5F64)  ;
-*$68AA LD B,$20      ;
-*$68AC LD (HL),$00   ;
+; Clears the top rows of the screen based on scroll speed. After island data
+; scrolls upward, the topmost rows contain old data that needs to be zeroed.
+@label=clear_top_rows
+c$68A1 LD HL,$4000   ; {Initialize screen pointer, row offset, and row count
+ $68A4 LD DE,$00E0   ; from speed.
+ $68A7 LD A,($5F64)  ; }
+@label=clear_row_loop
+*$68AA LD B,$20      ; Set bytes per row (32).
+@label=clear_byte_loop
+*$68AC LD (HL),$00   ; {Clear byte, advance pointer, loop 32 times.
  $68AE INC HL        ;
- $68AF DJNZ $68AC    ;
- $68B1 ADD HL,DE     ;
+ $68AF DJNZ $68AC    ; }
+ $68B1 ADD HL,DE     ; {Advance to next row and loop until all rows cleared.
  $68B2 DEC A         ;
- $68B3 JP NZ,$68AA   ;
+ $68B3 JP NZ,$68AA   ; }
  $68B6 RET           ;
 
 ; Scroll screen attributes up by one row
