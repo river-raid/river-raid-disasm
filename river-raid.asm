@@ -3883,15 +3883,16 @@ handle_controls:
   AND $06                              ; Distill the state down to CONTROLS_BIT_SPEED_DECREASED and
                                        ; CONTROLS_BIT_SPEED_ALTERED.
   CP $02                               ; Check if only CONTROLS_BIT_SPEED_DECREASED is set.
-  JP Z,L6C5D                           ;
+  JP Z,beep_speed_decreased            ;
   CP $04                               ; Check if only CONTROLS_BIT_SPEED_ALTERED is set.
-  JP Z,L6CB8                           ;
+  JP Z,beep_speed_increased            ;
   CP $06                               ; Check if both bits are set.
-  JP Z,L6CD6                           ;
+  JP Z,beep_speed_combined             ;
 
 ; Return from the non-maskable interrupt handler
 ;
-; Used by the routines at handle_controls, L6C5D, L6CB8, L6CD6 and do_low_fuel.
+; Used by the routines at handle_controls, beep_speed_decreased, beep_speed_increased, beep_speed_combined and
+; do_low_fuel.
 int_return:
   POP AF
   POP BC
@@ -3946,129 +3947,159 @@ bonus_life_sound_done:
   RES 4,(HL)                           ;
   RET
 
-; Routine at 6C5D
+; Play deceleration engine sound
 ;
-; Used by the routine at handle_controls.
-L6C5D:
-  LD A,(HL)
-  AND $0F
-  LD E,A
-  LD C,$08
-L6C5D_0:
-  LD A,$10
-  OUT ($FE),A
-  LD D,E
-L6C5D_1:
-  DEC D
-  JR NZ,L6C5D_1
-  LD A,$00
-  OUT ($FE),A
-  LD D,E
-L6C5D_2:
-  DEC D
-  JR NZ,L6C5D_2
-  DEC C
-  JP NZ,L6C5D_0
-  JP int_return
+; Generates an engine sound when player is decelerating. Called when only CONTROLS_BIT_SPEED_DECREASED is set in
+; state_controls. HL points to the controls byte on entry.
+;
+; * Period = (controls_byte AND $0F), used for both on and off delays
+; * Symmetric square wave: same delay for high and low phases
+; * Loops 8 cycles then returns via int_return
+;
+; I:HL Pointer to state_controls (controls state byte)
+beep_speed_decreased:
+  LD A,(HL)                            ; Extract period from low 4 bits of controls byte. Higher value = lower pitch.
+  AND $0F                              ;
+  LD E,A                               ;
+  LD C,$08                             ; Loop counter: 8 cycles of the waveform.
+beep_speed_decreased_loop:
+  LD A,$10                             ; Turn speaker ON (bit 4 of port $FE).
+  OUT ($FE),A                          ;
+  LD D,E                               ; Delay loop: wait D iterations where D = period (from E).
+beep_speed_decreased_0:
+  DEC D                                ;
+  JR NZ,beep_speed_decreased_0         ;
+  LD A,$00                             ; Turn speaker OFF.
+  OUT ($FE),A                          ;
+  LD D,E                               ; Delay loop: wait D iterations (same period for symmetric wave).
+beep_speed_decreased_1:
+  DEC D                                ;
+  JR NZ,beep_speed_decreased_1         ;
+  DEC C                                ; Decrement cycle counter, loop if not zero. Jump to int_return when done.
+  JP NZ,beep_speed_decreased_loop      ;
+  JP int_return                        ;
 
-; Explosion frame counter
+; Explosion sound frame counter (counts down from $18 to 0)
 explosion_counter:
   DEFB $18
 
-; Render explosion
+; Play explosion sound effect
 ;
-; Used by the routine at handle_controls.
+; Generates an explosion sound that plays over 24 frames ($18). Called once per frame while CONTROLS_BIT_EXPLODING is
+; set. DE points to some game state byte that affects pitch.
+;
+; * Counter decrements from $18 (24) to 0 over successive frames
+; * ON delay = ((DE) AND $07) << 3 + $10, range $10-$48 (16-72)
+; * OFF delay = counter value, decreasing each frame (sound speeds up)
+; * 4 cycles of waveform per frame
+; * As counter decreases, OFF delay shortens, making sound more rapid/urgent
+;
+; I:DE Pointer to game state byte affecting pitch
 beep_explosion:
-  LD A,(explosion_counter)
-  DEC A
+  LD A,(explosion_counter)             ; Decrement explosion counter.
+  DEC A                                ;
   LD (explosion_counter),A
-  CP $00
-  JP Z,explosion_render_finish
-  LD A,(DE)
-  AND $07
-  SLA A
-  SLA A
-  SLA A
-  ADD A,$10
-  LD E,A
-  LD C,$04
+  CP $00                               ; If counter reached 0, jump to explosion_render_finish to finish.
+  JP Z,explosion_render_finish         ;
+  LD A,(DE)                            ; Calculate ON delay: ((DE) AND $07) << 3 + $10. Gives value $10-$48 based on low
+  AND $07                              ; 3 bits of (DE).
+  SLA A                                ;
+  SLA A                                ;
+  SLA A                                ;
+  ADD A,$10                            ;
+  LD E,A                               ; Set ON delay in E, loop counter = 4 cycles.
+  LD C,$04                             ;
+beep_explosion_loop:
+  LD A,$10                             ; Turn speaker ON (bit 4 of port $FE).
+  OUT ($FE),A                          ;
+  LD D,E                               ; Delay loop: wait D iterations using calculated ON delay (from E).
 beep_explosion_0:
-  LD A,$10
-  OUT ($FE),A
-  LD D,E
+  DEC D                                ;
+  JR NZ,beep_explosion_0               ;
+  LD A,$00                             ; Turn speaker OFF.
+  OUT ($FE),A                          ;
+  LD A,(explosion_counter)             ; Delay loop: OFF delay = current counter value. Sound speeds up as counter
+  LD D,A                               ; decreases.
 beep_explosion_1:
-  DEC D
-  JR NZ,beep_explosion_1
-  LD A,$00
-  OUT ($FE),A
-  LD A,(explosion_counter)
-  LD D,A
-beep_explosion_2:
-  DEC D
-  JR NZ,beep_explosion_2
-  DEC C
-  JP NZ,beep_explosion_0
-  RET
+  DEC D                                ;
+  JR NZ,beep_explosion_1               ;
+  DEC C                                ; Decrement cycle counter, loop for 4 cycles per frame.
+  JP NZ,beep_explosion_loop            ;
+  RET                                  ;
 
-; Finish rendering explosion
+; Complete explosion sound sequence
 ;
-; Used by the routine at beep_explosion.
+; Resets the explosion counter and clears CONTROLS_BIT_EXPLODING flag.
 explosion_render_finish:
-  LD A,$18
-  LD (explosion_counter),A
-  LD HL,state_controls
-  RES CONTROLS_BIT_EXPLODING,(HL)
+  LD A,$18                             ; Reset explosion counter to $18 (24) for next explosion.
+  LD (explosion_counter),A             ;
+  LD HL,state_controls                 ; Clear CONTROLS_BIT_EXPLODING in state_controls.
+  RES CONTROLS_BIT_EXPLODING,(HL)      ;
   RET
 
-; Routine at 6CB8
+; Play acceleration engine sound
 ;
-; Used by the routine at handle_controls.
-L6CB8:
-  LD A,(HL)
-  AND $07
-  LD E,A
-  LD C,$08
-L6CB8_0:
-  LD A,$10
-  OUT ($FE),A
-  LD D,E
-L6CB8_1:
-  DEC D
-  JR NZ,L6CB8_1
-  LD A,$00
-  OUT ($FE),A
-  LD D,$04
-L6CB8_2:
-  DEC D
-  JR NZ,L6CB8_2
-  DEC C
-  JP NZ,L6CB8_0
-  JP int_return
+; Generates an engine sound when player is accelerating. Called when only CONTROLS_BIT_SPEED_ALTERED is set in
+; state_controls. HL points to the controls byte on entry.
+;
+; * Period = (controls_byte AND $07), used for speaker ON delay
+; * Fixed OFF delay of 4 iterations (shorter than ON = asymmetric wave)
+; * Asymmetric wave gives a different timbre than deceleration sound
+;
+; I:HL Pointer to state_controls (controls state byte)
+beep_speed_increased:
+  LD A,(HL)                            ; Extract period from low 3 bits of controls byte.
+  AND $07                              ;
+  LD E,A                               ;
+  LD C,$08                             ; Loop counter: 8 cycles of the waveform.
+beep_speed_increased_loop:
+  LD A,$10                             ; Turn speaker ON (bit 4 of port $FE).
+  OUT ($FE),A                          ;
+  LD D,E                               ; Delay loop: wait D iterations where D = period (from E).
+beep_speed_increased_0:
+  DEC D                                ;
+  JR NZ,beep_speed_increased_0         ;
+  LD A,$00                             ; Turn speaker OFF.
+  OUT ($FE),A                          ;
+  LD D,$04                             ; Fixed short delay: 4 iterations (asymmetric wave).
+beep_speed_increased_1:
+  DEC D                                ;
+  JR NZ,beep_speed_increased_1         ;
+  DEC C                                ; Decrement cycle counter, loop if not zero. Jump to int_return when done.
+  JP NZ,beep_speed_increased_loop      ;
+  JP int_return                        ;
 
-; Routine at 6CD6
+; Play combined speed change sound
 ;
-; Used by the routine at handle_controls.
-L6CD6:
-  LD A,(HL)
-  AND $17
-  LD E,A
-  LD C,$08
-L6CD6_0:
-  LD A,$10
-  OUT ($FE),A
-  LD D,E
-L6CD6_1:
-  DEC D
-  JR NZ,L6CD6_1
-  LD A,$00
-  OUT ($FE),A
-  LD D,$0C
-L6CD6_2:
-  DEC D
-  JR NZ,L6CD6_2
-  DEC C
-  JP NZ,L6CD6_0
-  JP int_return
+; Generates a sound when both CONTROLS_BIT_SPEED_DECREASED and CONTROLS_BIT_SPEED_ALTERED are set. HL points to the
+; controls byte on entry.
+;
+; * Period = (controls_byte AND $17), uses bits 0-2 and bit 4
+; * Fixed OFF delay of $0C (12) iterations (longer than acceleration sound)
+; * Different timbre from both acceleration and deceleration
+;
+; I:HL Pointer to state_controls (controls state byte)
+beep_speed_combined:
+  LD A,(HL)                            ; Extract period from bits 0-2 and bit 4 of controls byte.
+  AND $17                              ;
+  LD E,A                               ;
+  LD C,$08                             ; Loop counter: 8 cycles of the waveform.
+beep_speed_combined_loop:
+  LD A,$10                             ; Turn speaker ON (bit 4 of port $FE).
+  OUT ($FE),A                          ;
+  LD D,E                               ; Delay loop: wait D iterations where D = period (from E).
+beep_speed_combined_0:
+  DEC D                                ;
+  JR NZ,beep_speed_combined_0          ;
+  LD A,$00                             ; Turn speaker OFF.
+  OUT ($FE),A                          ;
+  LD D,$0C                             ; Fixed delay: $0C (12) iterations.
+beep_speed_combined_1:
+  DEC D                                ;
+  JR NZ,beep_speed_combined_1          ;
+  DEC C                                ; Decrement cycle counter, loop if not zero. Jump to int_return when done.
+  JP NZ,beep_speed_combined_loop       ;
+  JP int_return                        ;
 
 ; Render the low fuel signal
 ;
