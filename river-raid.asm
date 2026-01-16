@@ -1560,8 +1560,8 @@ exploding_fragments_ptr:
 state_speed:
   DEFB $02
 
-; Game status buffer entry at 5F65
-L5F65:
+; Low fuel warning sound period (decrements to create warbling effect)
+low_fuel_sound_period:
   DEFB $00
 
 ; Fuel level
@@ -4101,32 +4101,38 @@ beep_speed_combined_1:
   JP NZ,beep_speed_combined_loop       ;
   JP int_return                        ;
 
-; Render the low fuel signal
+; Play low fuel warning sound
 ;
-; Used by the routine at handle_controls.
+; Generates a warbling warning sound when fuel is low. Called once per frame while CONTROLS_BIT_LOW_FUEL is set. The
+; sound pitch varies each frame creating an urgent warbling effect.
+;
+; * Decrements low_fuel_sound_period each frame, wrapping at $7F (0-127 range)
+; * Uses this value as period for symmetric square wave
+; * 3 cycles of waveform per invocation
+; * As period decrements, pitch rises then resets, creating warble
 do_low_fuel:
-  LD C,$03
+  LD C,$03                             ; Loop counter: 3 cycles of waveform.
+do_low_fuel_loop:
+  LD A,(low_fuel_sound_period)         ; Decrement period (low_fuel_sound_period), wrap at $7F. Store new period in E.
+  DEC A                                ;
+  AND $7F                              ;
+  LD (low_fuel_sound_period),A         ;
+  LD E,A                               ; Turn speaker ON (bit 4 of port $FE).
+  LD A,$10                             ;
+  OUT ($FE),A                          ;
+  LD D,E                               ; Delay loop: wait D iterations where D = period (from E).
 do_low_fuel_0:
-  LD A,(L5F65)
-  DEC A
-  AND $7F
-  LD (L5F65),A
-  LD E,A
-  LD A,$10
-  OUT ($FE),A
-  LD D,E
+  DEC D                                ;
+  JR NZ,do_low_fuel_0                  ;
+  LD A,$00                             ; Turn speaker OFF.
+  OUT ($FE),A                          ;
+  LD D,E                               ; Delay loop: wait D iterations (symmetric wave).
 do_low_fuel_1:
-  DEC D
-  JR NZ,do_low_fuel_1
-  LD A,$00
-  OUT ($FE),A
-  LD D,E
-do_low_fuel_2:
-  DEC D
-  JR NZ,do_low_fuel_2
-  DEC C
-  JP NZ,do_low_fuel_0
-  JP int_return
+  DEC D                                ;
+  JR NZ,do_low_fuel_1                  ;
+  DEC C                                ;
+  JP NZ,do_low_fuel_loop               ; Decrement cycle counter, loop for 3 cycles. Jump to int_return when done.
+  JP int_return                        ;
 
 ; Routine at 6D17
 ;

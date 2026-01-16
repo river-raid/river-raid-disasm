@@ -1637,8 +1637,8 @@ g$5F62 DEFW $0000
 @label=state_speed
 g$5F64 DEFB $02
 
-; Game status buffer entry at 5F65
-@label=L5F65
+; Low fuel warning sound period (decrements to create warbling effect)
+@label=low_fuel_sound_period
 g$5F65 DEFB $00
 
 ; Fuel level
@@ -4507,29 +4507,39 @@ c$6CD6 LD A,(HL)     ; {Extract period from bits 0-2 and bit 4 of controls
  $6CEE JP NZ,$6CDC   ; #R$6C24 when done.
  $6CF1 JP $6C24      ; }
 
-; Render the low fuel signal
+; Play low fuel warning sound
 ;
-; Used by the routine at #R$6BED.
+; Generates a warbling warning sound when fuel is low. Called once per frame
+; while CONTROLS_BIT_LOW_FUEL is set. The sound pitch varies each frame
+; creating an urgent warbling effect.
+; .
+; #LIST
+; { Decrements #R$5F65 each frame, wrapping at $7F (0-127 range) }
+; { Uses this value as period for symmetric square wave }
+; { 3 cycles of waveform per invocation }
+; { As period decrements, pitch rises then resets, creating warble }
+; LIST#
 @label=do_low_fuel
-c$6CF4 LD C,$03      ;
-*$6CF6 LD A,($5F65)  ;
- $6CF9 DEC A         ;
+c$6CF4 LD C,$03      ; Loop counter: 3 cycles of waveform.
+@label=do_low_fuel_loop
+*$6CF6 LD A,($5F65)  ; {Decrement period (#R$5F65), wrap at $7F. Store new
+ $6CF9 DEC A         ; period in E.
  $6CFA AND $7F       ;
- $6CFC LD ($5F65),A  ;
- $6CFF LD E,A        ;
+ $6CFC LD ($5F65),A  ; }
+ $6CFF LD E,A        ; {Turn speaker ON (bit 4 of port $FE).
  $6D00 LD A,$10      ;
- $6D02 OUT ($FE),A   ;
- $6D04 LD D,E        ;
-*$6D05 DEC D         ;
- $6D06 JR NZ,$6D05   ;
- $6D08 LD A,$00      ;
- $6D0A OUT ($FE),A   ;
- $6D0C LD D,E        ;
+ $6D02 OUT ($FE),A   ; }
+ $6D04 LD D,E        ; {Delay loop: wait D iterations where D = period (from
+*$6D05 DEC D         ; E).
+ $6D06 JR NZ,$6D05   ; }
+ $6D08 LD A,$00      ; {Turn speaker OFF.
+ $6D0A OUT ($FE),A   ; }
+ $6D0C LD D,E        ; {Delay loop: wait D iterations (symmetric wave).
 *$6D0D DEC D         ;
  $6D0E JR NZ,$6D0D   ;
- $6D10 DEC C         ;
- $6D11 JP NZ,$6CF6   ;
- $6D14 JP $6C24      ;
+ $6D10 DEC C         ; }
+ $6D11 JP NZ,$6CF6   ; {Decrement cycle counter, loop for 3 cycles. Jump to
+ $6D14 JP $6C24      ; #R$6C24 when done.}
 
 ; Routine at 6D17
 ;

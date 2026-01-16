@@ -519,8 +519,8 @@ g $5F62 Pointer to a slot from #R$5F2E
 W $5F62
 @ $5F64 label=state_speed
 g $5F64 Current speed
-@ $5F65 label=L5F65
-g $5F65
+@ $5F65 label=low_fuel_sound_period
+g $5F65 Low fuel warning sound period (decrements to create warbling effect)
 @ $5F66 label=state_fuel
 g $5F66 Fuel level
 @ $5F67 label=state_input_interface
@@ -1719,9 +1719,19 @@ R $6CD6 I:HL Pointer to #R$6BB0 (controls state byte)
   $6CE0 Delay loop: wait D iterations where D = period (from E).
   $6CE4 Turn speaker OFF.
   $6CE8 Fixed delay: $0C (12) iterations.
-  $6CED,7 Decrement cycle counter, loop if not zero. Jump to #R$6C24 when done.
+  $6CED Decrement cycle counter, loop if not zero. Jump to #R$6C24 when done.
 @ $6CF4 label=do_low_fuel
-c $6CF4 Render the low fuel signal
+c $6CF4 Play low fuel warning sound
+D $6CF4 Generates a warbling warning sound when fuel is low. Called once per frame while CONTROLS_BIT_LOW_FUEL is set. The sound pitch varies each frame creating an urgent warbling effect.
+D $6CF4 #LIST { Decrements #R$5F65 each frame, wrapping at $7F (0-127 range) } { Uses this value as period for symmetric square wave } { 3 cycles of waveform per invocation } { As period decrements, pitch rises then resets, creating warble } LIST#
+  $6CF4 Loop counter: 3 cycles of waveform.
+@ $6CF6 label=do_low_fuel_loop
+  $6CF6 Decrement period (#R$5F65), wrap at $7F. Store new period in E.
+  $6CFF Turn speaker ON (bit 4 of port $FE).
+  $6D04 Delay loop: wait D iterations where D = period (from E).
+  $6D08 Turn speaker OFF.
+  $6D0C Delay loop: wait D iterations (symmetric wave).
+  $6D11,6 Decrement cycle counter, loop for 3 cycles. Jump to #R$6C24 when done.
 @ $6D17 label=overview
 c $6D17
 @ $6D23 isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
