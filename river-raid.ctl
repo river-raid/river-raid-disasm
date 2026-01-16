@@ -1459,11 +1459,16 @@ D $6927 Copies road/bridge attributes to the bottom attribute row and clears the
   $6932,8 Clear bridge section flag and spawn objects for new row.
 @ $693B label=terrain_edge_counter
 b $693B Terrain edge rendering counter
-  $693B,1 Incremented each time terrain edge is rendered.
-@ $693C label=handle_terrain_element_1_eq_3
-c $693C
-@ $6947 label=handle_terrain_element_1_eq_2
-c $6947
+  $693B Incremented each time terrain edge is rendered.
+@ $693C label=init_bridge_approach
+c $693C Initialize bridge approach state
+D $693C Called when terrain profile byte is $03, indicating the start of a bridge approach section. Sets up the bridge Y position counter and fragment counter for the upcoming bridge.
+  $693C Set state_bridge_y_position = 1 (bridge is approaching).
+  $6941,5 Set state_terrain_fragment_counter = 6 (countdown to bridge).
+@ $6947 label=clear_bridge_destroyed
+c $6947 Clear bridge destroyed flag
+D $6947 Called when terrain profile byte is $02, indicating bridge structure. Clears the destroyed flag so the bridge renders intact (unless player has destroyed it).
+  $6947,5 Set state_bridge_destroyed = 0.
 @ $694D label=increase_bridge_index
 c $694D Increase bridge index and handle overflow by resetting to the first bridge.
 R $694D O:A Always set to 0
@@ -1523,66 +1528,92 @@ c $6A4A Get player 2's bridge progress
 D $6A4A Helper routine that loads player 2's bridge progress into B, replacing player 1's value.
   $6A4A,4 Load player 2's bridge progress into B.
 @ $6A4F label=render_terrain_row
-c $6A4F
-  $6A54 Point #REGhl to the #R$9500 array.
-  $6A57,3 Level terrain array size (64 elements × 4 bytes each)
+c $6A4F Load next terrain fragment and initialize rendering state
+D $6A4F Called when a terrain fragment finishes (after 16 pixel lines). Loads the next 4-byte terrain fragment from level_terrains[bridge_index][fragment_number] and initializes state for rendering.
+N $6A4F .
+N $6A4F Terrain fragment format (4 bytes): byte 0 = profile number (index into #R$8063), bytes 1-2 = row offset (added to profile values), byte 3 = upper 6 bits: island index (0=no island), lower 2 bits: edge calculation mode.
+N $6A4F .
+N $6A4F Profile numbers 2 and 3 have special meaning: 2 = bridge structure (clears destroyed flag), 3 = bridge approach (sets countdown). Fragment number wraps at 64, incrementing bridge_index.
+  $6A4F Reset state_terrain_position to $FF (will be incremented to 0).
+  $6A54,10 Set up level_terrains lookup: HL = #R$9500, DE = $100 (level size).
 @ $6A60 label=locate_level_terrain
-  $6A60 Point #REGhl to the element of #R$9500 with the index defined by #R$5EF0.
-  $6A64 Next fragment
-  $6A6D If it's the last fragment, advance to the next level
-  $6A72,3 Terrain fragment size (4 bytes)
+  $6A60 Locate level_terrains[state_bridge_index] (256 bytes per level).
+  $6A64 Increment fragment number (0-63), store to state_level_fragment_number.
+  $6A6D If fragment wrapped to 0, call #R$694D to advance to next bridge/level.
+  $6A72 Set up fragment lookup: DE = 4 (fragment size).
 @ $6A79 label=locate_level_terrain_fragment
-  $6A79,4 Point #REGhl to the fragment of the current #R$9500 element with the index defined by #R$5F76.
+  $6A79 Locate fragment within level: level_terrains[bridge][fragment].
+  $6A7D Load byte 0 (profile number) to state_terrain_profile_number. Handle special values.
+  $6A86 Load bytes 1-2 (row offset) to state_terrain_element_23.
+  $6A8B Byte 3: if upper 6 bits non-zero, call #R$696B to initialize island.
+  $6A94,6 Store lower 2 bits of byte 3 to state_terrain_extras (edge mode: 0=direct, 1=mirrored, 2=offset).
 @ $6AA3 label=render_terrain_fragment
-@ $6AAF label=locate_terrain_fragment
-  $6AAF Point #REGhl to the element of #R$8063 with the index defined by #R$5F77.
-  $6AB3 Next line
-  $6ABA If it's the last line, advance to the next fragment.
-  $6ABF Point #REGhl to byte of the current terrain fragment defined by #R$5F7D.
-  $6AC5 Load the value of the current terrain row offset into #REGb. The value loaded into #REGc is unused.
-  $6AC9 Load the value of the current terrain profile byte into #REGa.
-  $6ACA Jump to handling a special terrain fragment.
-  $6ACF,1 Now #REGa contains the coordinate of the left terrain edge.
-  $6AD3 For some reason, subtract 16 from the coordinate of the left terrain edge.
-  $6AD5,1 Store the result in #REGd to reuse it in multiple operations with #REGa.
-  $6ADA Point #REGhl to #R$89F2.
-  $6ADD Restore the coordinate of the left terrain edge into #REGa.
-  $6ADE Use only the lowest three bits of the coordinate.
-  $6AE0 Shift the remaining bits right and left effectively discarding the lowest bit and store the result into #REGc. Why not just make AND 6 instead of AND 7 above?
-  $6AE5 Restore the coordinate of the left terrain edge into #REGa.
-  $6AE6 Point #REGhl to the element of #R$89F2 defined by #REGc.
-  $6AE7 Temporarily store the pointer in #REGde.
-  $6AE8 Copy the coordinate of the left terrain edge into #REGc.
-  $6AE9,3 Point #REGhl screen address of the beginning of the terrain line being currently rendered.
-  $6AEE Calculate the number of full tiles corresponding to the coordinate of the left terrain edge.
-  $6AF4 Calculate the address where the terrain edge needs to be rendered.
-  $6AF5 Now #REGhl points to the element of #R$89F2 to be rendered, and #REGde contains the address of the screen where it needs to be rendered.
-  $6AF6 Why on earth is the edge represented by two bytes?
-  $6AF9 Copy the bytes. The 0th element of #R$89F2 contains a 10px sprite, the 1th one contains a 12px sprite and so on. So effectively by extracting 16 from the edge coordinate earlier and adding 10 later we are rendering the terrain edge of the size 6px less than defined. Why?
-  $6AFB Restore #REGde back to the screen address of beginning of the edge.
-  $6AFD Copy the coordinate of the left terrain edge into #REGb.
-  $6AFE,6 Again, calculate the number of full tiles corresponding to the coordinate of the left edge.
+c $6AA3 Render one pixel line of terrain
+D $6AA3 Renders a single pixel line of the current terrain fragment. Called 16 times per fragment (lines 0-15). Draws left edge sprite, fills left terrain, draws right edge sprite, fills right terrain. Handles special fragments (bridges/roads) separately.
+N $6AA3 .
+N $6AA3 Left edge X = profile_byte + row_offset - 16. The profile_byte comes from #R$8063[profile_number][line]. The -16 adjusts for the edge sprite width. Right edge depends on state_terrain_extras mode.
+  $6AA3 Set up profile lookup: HL = #R$8063, DE = $10 (profile size).
+@ $6AAF label=locate_terrain_profile
+  $6AAF Locate profile: data_terrain_profiles[state_terrain_profile_number].
+  $6AB3 Increment state_terrain_position (line 0-15).
+  $6ABA If line reached 16, jump to #R$6A4F to load next fragment.
+  $6ABF Index into profile: HL = profile_base + (line AND $0F).
+  $6AC5 Load row offset (B) from state_terrain_element_23 and profile byte (A).
+  $6ACA If bit 7 of profile byte set, jump to #R$6B7B (special fragment).
+  $6ACF Left edge X = profile_byte + row_offset - 16. Save original X, work with adjusted X.
+  $6AD5 Increment terrain_edge_counter. Set up sprite lookup from #R$89F2.
+  $6ADA Sprite index = (X AND $06). Look up 2-byte edge sprite from terrain_edge_left.
+  $6AE5,11 Screen address = screen_ptr + (X >> 3). Copy 2-byte sprite via LDIR.
+  $6AF4 Fill count = X >> 3. Fill leftward with $FF (solid terrain).
+  $6AFB,15 Restore original X. Dispatch based on state_terrain_extras: 1=#R$6B58, 2=#R$6B5E.
 @ $6B06 label=fill_terrain_left_loop
+@ $6B06 label=fill_terrain_left_loop
+  $6B10 Right sprite index = (right_X AND $06). Look up from #R$89FA.
+@ $6B20 label=draw_terrain_right_edge
+  $6B21 Screen address = screen_ptr + (right_X >> 3). Copy 2-byte sprite via LDIR.
+  $6B31,13 Fill count = 30 - (right_X >> 3). Fill rightward with $FF.
+  $6B45,13 If island active (state_island_line_idx != 16), call #R$6990.
 @ $6B4B label=fill_terrain_right_loop
-@ $6B58 label=state_terrain_element_4_eq_1
-c $6B58 A=2C-D
-R $6B58 I:C TODO: what is the meaning of this parameter?
-R $6B58 I:D Left terrain coordinate.
-R $6B58 O:A Right terrain coordinate.
-@ $6B5E label=state_terrain_element_4_eq_2
-c $6B5E A=C+D
-R $6B5E I:C River width.
-R $6B5E I:D Left terrain coordinate.
-R $6B5E O:A Right terrain coordinate.
-@ $6B63 label=ld_fragment_canal_adjacent_to_river
-c $6B63 Load the sprite and the attributes of the line of the half of the canal adjacent to the river.
-@ $6B6B label=ld_fragment_canal_adjacent_to_road
-c $6B6B Load the sprite and the attributes of the line of the half of the canal adjacent to the road.
-@ $6B73 label=ld_fragment_road
-c $6B73 Load the sprite and the attributes of the line of the road and bridge.
+@ $6B4B label=fill_terrain_right_loop
+@ $6B58 label=calc_terrain_right_mirrored
+c $6B58 Calculate mirrored right edge (terrain extras mode 1)
+D $6B58 For symmetric river sections. Right edge = 2*C - D where C is the default river width from state_terrain_element_23 low byte and D is the left edge coordinate. This mirrors the left edge around the river center.
+R $6B58 I:C River center position (from state_terrain_element_23 low byte).
+R $6B58 I:D Left terrain edge coordinate.
+R $6B58 O:A Right terrain edge coordinate = 2*C - D.
+  $6B58 A = 2*C - D (mirror left around center), jump to #R$6B20.
+@ $6B5E label=calc_terrain_right_offset
+c $6B5E Calculate offset right edge (terrain extras mode 2)
+D $6B5E For fixed-width river sections. Right edge = C + D where C is the river width and D is the left edge coordinate. This maintains constant river width regardless of left edge position.
+R $6B5E I:C River width (from state_terrain_element_23 low byte).
+R $6B5E I:D Left terrain edge coordinate.
+R $6B5E O:A Right terrain edge coordinate = C + D.
+  $6B5E A = C + D (fixed width from left), jump to #R$6B20.
+@ $6B63 label=load_canal_river_side
+c $6B63 Load canal sprite (river-adjacent side)
+D $6B63 Helper for special terrain: loads canal/water transition sprite for the side adjacent to the river. Sets bridge_section = 0 (no special attributes).
+  $6B63 A = 0 (no special section), HL = sprite_terrain_pre_post_bridge, jump to continue.
+@ $6B6B label=load_canal_road_side
+c $6B6B Load canal sprite (road-adjacent side)
+D $6B6B Helper for special terrain: loads canal sprite for the side adjacent to the road. Sets bridge_section = 2 (road attributes).
+  $6B6B A = 2 (road section), HL = sprite_terrain_pre_post_bridge, jump to continue.
+@ $6B73 label=load_road_sprite
+c $6B73 Load road/bridge sprite
+D $6B73 Helper for special terrain: loads the road and bridge crossing sprite. Sets bridge_section = 2 (road attributes).
+  $6B73 A = 2 (road section), HL = sprite_road_and_bridge_pixels, jump to continue.
 @ $6B7B label=handle_special_terrain_fragment
-c $6B7B Handle special terrain fragments (pre and post-bridge canal and the road with the bridge) which have different color attributes than the rest of the terrain fragments.
+c $6B7B Render special terrain fragment (bridge/road area)
+D $6B7B Handles terrain lines with bit 7 set in profile byte, indicating bridge/road sections. These use full-width 32-byte sprites instead of edge rendering. Dispatches based on profile byte value: $80 = canal (river side), $E0 = canal (road side), $F0 = road, else = bridge.
+N $6B7B .
+N $6B7B After copying the 32-byte sprite to screen, sets state_bridge_section for attribute handling. If bridge was destroyed, clears a 4-byte hole in the middle of the road sprite.
+  $6B7B Dispatch: $80=#R$6B63, $E0=#R$6B6B, $F0=#R$6B73, else=bridge (A=1).
+  $6B8A Load bridge sprite (sprite_road_and_bridge_pixels), A = 1 (bridge section).
 @ $6B8F label=handle_special_terrain_fragment_continue
+  $6B8F Copy 32-byte sprite row to screen via LDIR. Store A to state_bridge_section.
+  $6B98 If state_bridge_destroyed = 0, return (bridge intact).
+  $6BA1 Load screen_ptr for destroyed bridge clearing.
+@ $6BA4 label=clear_destroyed_bridge
+  $6BA4,6 Clear 4 bytes at offset $0E (punch hole in destroyed bridge).
 @ $6BB0 label=state_controls
 g $6BB0 Bitmask of the CONTROLS_BIT_* bits containing the current controls and other information.
 @ $6BB1 label=pause

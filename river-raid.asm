@@ -2067,14 +2067,14 @@ check_collision:
   CALL explode_fragment                ;
   LD C,$80                             ; Move to X = $80 and spawn explosion 6 (bottom-right).
   CALL explode_fragment                ;
-  LD A,(state_bridge_section)          ; If bridge section is $02, call handle_special_terrain_fragment_0 with screen
+  LD A,(state_bridge_section)          ; If bridge section is $02, call clear_destroyed_bridge with screen
   CP $02                               ; screen_pixels.
   LD HL,screen_pixels                  ;
-  CALL Z,handle_special_terrain_fragment_0 ; (continued from above).
-  LD A,(state_bridge_section)          ; If bridge section is $02, call handle_special_terrain_fragment_0 with screen
-  CP $02                               ; $4100.
+  CALL Z,clear_destroyed_bridge        ; (continued from above).
+  LD A,(state_bridge_section)          ; If bridge section is $02, call clear_destroyed_bridge with screen $4100.
+  CP $02                               ;
   LD HL,$4100                          ;
-  CALL Z,handle_special_terrain_fragment_0 ; (continued from above).
+  CALL Z,clear_destroyed_bridge        ; (continued from above).
   LD A,$00                             ; Clear bridge Y position (state_bridge_y_position).
   LD (state_bridge_y_position),A       ;
   LD A,$01                             ; Set bridge destroyed flag (state_bridge_destroyed).
@@ -3330,22 +3330,24 @@ render_bridge_attributes:
 terrain_edge_counter:
   DEFB $00                             ; Incremented each time terrain edge is rendered.
 
-; Routine at 693C
+; Initialize bridge approach state
 ;
-; Used by the routine at render_terrain_row.
-handle_terrain_element_1_eq_3:
-  LD A,$01
-  LD (state_bridge_y_position),A
-  LD A,$06
-  LD (state_terrain_fragment_counter),A
+; Called when terrain profile byte is $03, indicating the start of a bridge approach section. Sets up the bridge Y
+; position counter and fragment counter for the upcoming bridge.
+init_bridge_approach:
+  LD A,$01                             ; Set state_bridge_y_position = 1 (bridge is approaching).
+  LD (state_bridge_y_position),A       ;
+  LD A,$06                              ; Set state_terrain_fragment_counter = 6 (countdown to bridge).
+  LD (state_terrain_fragment_counter),A ;
   RET
 
-; Routine at 6947
+; Clear bridge destroyed flag
 ;
-; Used by the routine at render_terrain_row.
-handle_terrain_element_1_eq_2:
-  LD A,$00
-  LD (state_bridge_destroyed),A
+; Called when terrain profile byte is $02, indicating bridge structure. Clears the destroyed flag so the bridge renders
+; intact (unless player has destroyed it).
+clear_bridge_destroyed:
+  LD A,$00                             ; Set state_bridge_destroyed = 0.
+  LD (state_bridge_destroyed),A        ;
   RET
 
 ; Increase bridge index and handle overflow by resetting to the first bridge.
@@ -3547,248 +3549,266 @@ get_player_2_bridge:
   LD B,A                               ;
   RET
 
-; Routine at 6A4F
+; Load next terrain fragment and initialize rendering state
+;
+; Called when a terrain fragment finishes (after 16 pixel lines). Loads the next 4-byte terrain fragment from
+; level_terrains[bridge_index][fragment_number] and initializes state for rendering.
+;
+; Terrain fragment format (4 bytes): byte 0 = profile number (index into data_terrain_profiles), bytes 1-2 = row offset
+; (added to profile values), byte 3 = upper 6 bits: island index (0=no island), lower 2 bits: edge calculation mode.
+;
+; Profile numbers 2 and 3 have special meaning: 2 = bridge structure (clears destroyed flag), 3 = bridge approach (sets
+; countdown). Fragment number wraps at 64, incrementing bridge_index.
 render_terrain_row:
-  LD A,$FF
-  LD (state_terrain_position),A
-  LD HL,level_terrains                 ; Point HL to the level_terrains array.
-  LD DE,$0100                          ; Level terrain array size (64 elements × 4 bytes each)
-  LD A,(state_bridge_index)
-  OR A
+  LD A,$FF                             ; Reset state_terrain_position to $FF (will be incremented to 0).
+  LD (state_terrain_position),A        ;
+  LD HL,level_terrains                 ; Set up level_terrains lookup: HL = level_terrains, DE = $100 (level size).
+  LD DE,$0100                          ;
+  LD A,(state_bridge_index)            ;
+  OR A                                 ;
   SBC HL,DE
 locate_level_terrain:
-  ADD HL,DE                            ; Point HL to the element of level_terrains with the index defined by
-  DEC A                                ; state_bridge_index.
+  ADD HL,DE                            ; Locate level_terrains[state_bridge_index] (256 bytes per level).
+  DEC A                                ;
   JR NZ,locate_level_terrain           ;
-  LD A,(state_level_fragment_number)   ; Next fragment
+  LD A,(state_level_fragment_number)   ; Increment fragment number (0-63), store to state_level_fragment_number.
   INC A                                ;
   AND $3F                              ;
   LD (state_level_fragment_number),A   ;
-  CP $00                               ; If it's the last fragment, advance to the next level
-  CALL Z,increase_bridge_index         ;
-  LD DE,$0004                          ; Terrain fragment size (4 bytes)
-  INC A
-  OR A
-  SBC HL,DE
+  CP $00                               ; If fragment wrapped to 0, call increase_bridge_index to advance to next
+  CALL Z,increase_bridge_index         ; bridge/level.
+  LD DE,$0004                          ; Set up fragment lookup: DE = 4 (fragment size).
+  INC A                                ;
+  OR A                                 ;
+  SBC HL,DE                            ;
 locate_level_terrain_fragment:
-  ADD HL,DE                            ; Point HL to the fragment of the current level_terrains element with the index
-  DEC A                                ; defined by state_level_fragment_number.
+  ADD HL,DE                            ; Locate fragment within level: level_terrains[bridge][fragment].
+  DEC A                                ;
   JR NZ,locate_level_terrain_fragment  ;
-  LD A,(HL)
-  LD (state_terrain_profile_number),A
-  CP $03
-  CALL Z,handle_terrain_element_1_eq_3
-  CP $02
-  CALL Z,handle_terrain_element_1_eq_2
-  INC HL
-  LD C,(HL)
-  INC HL
-  LD B,(HL)
-  INC HL
-  LD (state_terrain_element_23),BC
-  LD A,(HL)
-  PUSH AF
-  AND $FC
-  CP $00
+  LD A,(HL)                            ; Load byte 0 (profile number) to state_terrain_profile_number. Handle special
+  LD (state_terrain_profile_number),A  ; values.
+  CP $03                               ;
+  CALL Z,init_bridge_approach          ;
+  CP $02                               ; Load bytes 1-2 (row offset) to state_terrain_element_23.
+  CALL Z,clear_bridge_destroyed        ;
+  INC HL                               ; Byte 3: if upper 6 bits non-zero, call handle_island to initialize island.
+  LD C,(HL)                            ;
+  INC HL                               ;
+  LD B,(HL)                            ;
+  INC HL                               ;
+  LD (state_terrain_element_23),BC     ;
+  LD A,(HL)                            ; Store lower 2 bits of byte 3 to state_terrain_extras (edge mode: 0=direct,
+  PUSH AF                              ; 1=mirrored, 2=offset).
+  AND $FC                              ;
+  CP $00                               ;
   CALL NZ,handle_island
   POP AF
   AND $03
   LD (state_terrain_extras),A
-; This entry point is used by the routine at render_plane_and_terrain.
+
+; Render one pixel line of terrain
+;
+; Renders a single pixel line of the current terrain fragment. Called 16 times per fragment (lines 0-15). Draws left
+; edge sprite, fills left terrain, draws right edge sprite, fills right terrain. Handles special fragments
+; (bridges/roads) separately.
+;
+; Left edge X = profile_byte + row_offset - 16. The profile_byte comes from data_terrain_profiles[profile_number][line].
+; The -16 adjusts for the edge sprite width. Right edge depends on state_terrain_extras mode.
 render_terrain_fragment:
-  LD A,(state_terrain_profile_number)
-  LD HL,data_terrain_profiles
-  LD DE,$0010
-  OR A
-  SBC HL,DE
-locate_terrain_fragment:
-  ADD HL,DE                            ; Point HL to the element of data_terrain_profiles with the index defined by
-  DEC A                                ; state_terrain_profile_number.
-  JR NZ,locate_terrain_fragment        ;
-  LD A,(state_terrain_position)        ; Next line
+  LD A,(state_terrain_profile_number)  ; Set up profile lookup: HL = data_terrain_profiles, DE = $10 (profile size).
+  LD HL,data_terrain_profiles          ;
+  LD DE,$0010                          ;
+  OR A                                 ;
+  SBC HL,DE                            ;
+locate_terrain_profile:
+  ADD HL,DE                            ; Locate profile: data_terrain_profiles[state_terrain_profile_number].
+  DEC A                                ;
+  JR NZ,locate_terrain_profile         ;
+  LD A,(state_terrain_position)        ; Increment state_terrain_position (line 0-15).
   INC A                                ;
   LD (state_terrain_position),A        ;
-  CP $10                               ; If it's the last line, advance to the next fragment.
+  CP $10                               ; If line reached 16, jump to render_terrain_row to load next fragment.
   JP Z,render_terrain_row              ;
-  AND $0F                              ; Point HL to byte of the current terrain fragment defined by
-  LD D,$00                             ; state_terrain_position.
+  AND $0F                              ; Index into profile: HL = profile_base + (line AND $0F).
+  LD D,$00                             ;
   LD E,A                               ;
   ADD HL,DE                            ;
-  LD BC,(state_terrain_element_23)     ; Load the value of the current terrain row offset into B. The value loaded into
-                                       ; C is unused.
-  LD A,(HL)                            ; Load the value of the current terrain profile byte into A.
-  BIT 7,A                               ; Jump to handling a special terrain fragment.
-  JP NZ,handle_special_terrain_fragment ;
-  ADD A,B                              ; Now A contains the coordinate of the left terrain edge.
-  PUSH AF
-  LD B,$00
-  SUB $10                              ; For some reason, subtract 16 from the coordinate of the left terrain edge.
-  LD D,A                               ; Store the result in D to reuse it in multiple operations with A.
-  LD HL,terrain_edge_counter
-  INC (HL)
-  LD HL,terrain_edge_left              ; Point HL to terrain_edge_left.
-  LD A,D                               ; Restore the coordinate of the left terrain edge into A.
-  AND $07                              ; Use only the lowest three bits of the coordinate.
-  SRL A                                ; Shift the remaining bits right and left effectively discarding the lowest bit
-  LD C,A                               ; and store the result into C. Why not just make AND 6 instead of AND 7 above?
+  LD BC,(state_terrain_element_23)     ; Load row offset (B) from state_terrain_element_23 and profile byte (A).
+  LD A,(HL)                            ;
+  BIT 7,A                               ; If bit 7 of profile byte set, jump to handle_special_terrain_fragment (special
+  JP NZ,handle_special_terrain_fragment ; fragment).
+  ADD A,B                              ; Left edge X = profile_byte + row_offset - 16. Save original X, work with
+  PUSH AF                              ; adjusted X.
+  LD B,$00                             ;
+  SUB $10                              ;
+  LD D,A                               ; Increment terrain_edge_counter. Set up sprite lookup from terrain_edge_left.
+  LD HL,terrain_edge_counter           ;
+  INC (HL)                             ;
+  LD HL,terrain_edge_left              ; Sprite index = (X AND $06). Look up 2-byte edge sprite from terrain_edge_left.
+  LD A,D                               ;
+  AND $07                              ;
+  SRL A                                ;
+  LD C,A                               ;
   SLA C                                ;
-  LD A,D                               ; Restore the coordinate of the left terrain edge into A.
-  ADD HL,BC                            ; Point HL to the element of terrain_edge_left defined by C.
-  EX DE,HL                             ; Temporarily store the pointer in DE.
-  LD C,A                               ; Copy the coordinate of the left terrain edge into C.
-  LD HL,(screen_ptr)                   ; Point HL screen address of the beginning of the terrain line being currently
-                                       ; rendered.
-  LD B,$00
-  SRL C                                ; Calculate the number of full tiles corresponding to the coordinate of the left
-  SRL C                                ; terrain edge.
+  LD A,D                               ; Screen address = screen_ptr + (X >> 3). Copy 2-byte sprite via LDIR.
+  ADD HL,BC                            ;
+  EX DE,HL                             ;
+  LD C,A                               ;
+  LD HL,(screen_ptr)                   ;
+  LD B,$00                             ;
   SRL C                                ;
-  ADD HL,BC                            ; Calculate the address where the terrain edge needs to be rendered.
-  EX DE,HL                             ; Now HL points to the element of terrain_edge_left to be rendered, and DE
-                                       ; contains the address of the screen where it needs to be rendered.
-  LD BC,$0002                          ; Why on earth is the edge represented by two bytes?
-  LDIR                                 ; Copy the bytes. The 0th element of terrain_edge_left contains a 10px sprite,
-                                       ; the 1th one contains a 12px sprite and so on. So effectively by extracting 16
-                                       ; from the edge coordinate earlier and adding 10 later we are rendering the
-                                       ; terrain edge of the size 6px less than defined. Why?
-  DEC DE                               ; Restore DE back to the screen address of beginning of the edge.
-  DEC DE                               ;
-  LD B,A                               ; Copy the coordinate of the left terrain edge into B.
-  SRL B                                ; Again, calculate the number of full tiles corresponding to the coordinate of
-  SRL B                                ; the left edge.
+  SRL C
+  SRL C
+  ADD HL,BC                            ; Fill count = X >> 3. Fill leftward with $FF (solid terrain).
+  EX DE,HL                             ;
+  LD BC,$0002                          ;
+  LDIR                                 ;
+  DEC DE                               ; Restore original X. Dispatch based on state_terrain_extras:
+  DEC DE                               ; 1=calc_terrain_right_mirrored, 2=calc_terrain_right_offset.
+  LD B,A                               ;
   SRL B                                ;
-  LD A,$FF
+  SRL B                                ;
+  SRL B                                ;
+  LD A,$FF                             ;
 fill_terrain_left_loop:
-  DEC DE
-  LD (DE),A
-  DJNZ fill_terrain_left_loop
+  DEC DE                               ;
+  LD (DE),A                            ;
+  DJNZ fill_terrain_left_loop          ;
   POP AF
   LD D,A
   LD BC,(state_terrain_element_23)
-  LD A,(state_terrain_extras)
-  CP $01
-  JP Z,state_terrain_element_4_eq_1
-  LD A,(state_terrain_extras)
-  CP $02
-  JP Z,state_terrain_element_4_eq_2
-; This entry point is used by the routines at state_terrain_element_4_eq_1 and state_terrain_element_4_eq_2.
-render_terrain_row_0:
-  LD D,A
-  LD B,$00
-  LD HL,terrain_edge_right
-  LD A,D
-  AND $06
-  LD C,A
-  LD A,D
-  ADD HL,BC
-  EX DE,HL
-  LD C,A
-  LD HL,(screen_ptr)
-  SRL C
-  SRL C
-  SRL C
-  ADD HL,BC
-  EX DE,HL
-  LD BC,$0002
-  LDIR
+  LD A,(state_terrain_extras)          ; Right sprite index = (right_X AND $06). Look up from terrain_edge_right.
+  CP $01                               ;
+  JP Z,calc_terrain_right_mirrored     ;
+  LD A,(state_terrain_extras)          ;
+  CP $02                               ;
+  JP Z,calc_terrain_right_offset       ;
+; This entry point is used by the routines at calc_terrain_right_mirrored and calc_terrain_right_offset.
+draw_terrain_right_edge:
+  LD D,A                               ; }
+  LD B,$00                             ; Screen address = screen_ptr + (right_X >> 3). Copy 2-byte sprite via LDIR.
+  LD HL,terrain_edge_right             ;
+  LD A,D                               ;
+  AND $06                              ;
+  LD C,A                               ;
+  LD A,D                               ;
+  ADD HL,BC                            ;
+  EX DE,HL                             ;
+  LD C,A                               ;
+  LD HL,(screen_ptr)                   ;
+  SRL C                                ; Fill count = 30 - (right_X >> 3). Fill rightward with $FF.
+  SRL C                                ;
+  SRL C                                ;
+  ADD HL,BC                            ;
+  EX DE,HL                             ;
+  LD BC,$0002                          ;
+  LDIR                                 ;
   LD B,A
   SRL B
   SRL B
   SRL B
-  LD A,$1E
-  SUB B
-  LD B,A
-  LD A,$FF
+  LD A,$1E                             ; If island active (state_island_line_idx != 16), call render_island_line.
+  SUB B                                ;
+  LD B,A                               ;
+  LD A,$FF                             ;
 fill_terrain_right_loop:
-  LD (DE),A
-  INC DE
-  DJNZ fill_terrain_right_loop
-  LD A,(state_island_line_idx)
+  LD (DE),A                            ;
+  INC DE                               ;
+  DJNZ fill_terrain_right_loop         ;
+  LD A,(state_island_line_idx)         ;
   CP $10
   CALL NZ,render_island_line
   RET
 
-; A=2C-D
+; Calculate mirrored right edge (terrain extras mode 1)
 ;
-; Used by the routine at render_terrain_row.
+; For symmetric river sections. Right edge = 2*C - D where C is the default river width from state_terrain_element_23
+; low byte and D is the left edge coordinate. This mirrors the left edge around the river center.
 ;
-; I:C TODO: what is the meaning of this parameter?
-; I:D Left terrain coordinate.
-; O:A Right terrain coordinate.
-state_terrain_element_4_eq_1:
-  LD A,C
-  SUB D
-  ADD A,C
-  JP render_terrain_row_0
+; I:C River center position (from state_terrain_element_23 low byte).
+; I:D Left terrain edge coordinate.
+; O:A Right terrain edge coordinate = 2*C - D.
+calc_terrain_right_mirrored:
+  LD A,C                               ; A = 2*C - D (mirror left around center), jump to draw_terrain_right_edge.
+  SUB D                                ;
+  ADD A,C                              ;
+  JP draw_terrain_right_edge           ;
 
-; A=C+D
+; Calculate offset right edge (terrain extras mode 2)
 ;
-; Used by the routine at render_terrain_row.
+; For fixed-width river sections. Right edge = C + D where C is the river width and D is the left edge coordinate. This
+; maintains constant river width regardless of left edge position.
 ;
-; I:C River width.
-; I:D Left terrain coordinate.
-; O:A Right terrain coordinate.
-state_terrain_element_4_eq_2:
-  LD A,C
-  ADD A,D
-  JP render_terrain_row_0
+; I:C River width (from state_terrain_element_23 low byte).
+; I:D Left terrain edge coordinate.
+; O:A Right terrain edge coordinate = C + D.
+calc_terrain_right_offset:
+  LD A,C                               ; A = C + D (fixed width from left), jump to draw_terrain_right_edge.
+  ADD A,D                              ;
+  JP draw_terrain_right_edge           ;
 
-; Load the sprite and the attributes of the line of the half of the canal adjacent to the river.
+; Load canal sprite (river-adjacent side)
 ;
-; Used by the routine at handle_special_terrain_fragment.
-ld_fragment_canal_adjacent_to_river:
-  LD A,$00
-  LD HL,sprite_terrain_pre_post_bridge
-  JP handle_special_terrain_fragment_continue
+; Helper for special terrain: loads canal/water transition sprite for the side adjacent to the river. Sets
+; bridge_section = 0 (no special attributes).
+load_canal_river_side:
+  LD A,$00                                    ; A = 0 (no special section), HL = sprite_terrain_pre_post_bridge, jump to
+  LD HL,sprite_terrain_pre_post_bridge        ; continue.
+  JP handle_special_terrain_fragment_continue ;
 
-; Load the sprite and the attributes of the line of the half of the canal adjacent to the road.
+; Load canal sprite (road-adjacent side)
 ;
-; Used by the routine at handle_special_terrain_fragment.
-ld_fragment_canal_adjacent_to_road:
-  LD A,$02
-  LD HL,sprite_terrain_pre_post_bridge
-  JP handle_special_terrain_fragment_continue
+; Helper for special terrain: loads canal sprite for the side adjacent to the road. Sets bridge_section = 2 (road
+; attributes).
+load_canal_road_side:
+  LD A,$02                                    ; A = 2 (road section), HL = sprite_terrain_pre_post_bridge, jump to
+  LD HL,sprite_terrain_pre_post_bridge        ; continue.
+  JP handle_special_terrain_fragment_continue ;
 
-; Load the sprite and the attributes of the line of the road and bridge.
+; Load road/bridge sprite
 ;
-; Used by the routine at handle_special_terrain_fragment.
-ld_fragment_road:
-  LD A,$02
-  LD HL,sprite_road_and_bridge_pixels
-  JP handle_special_terrain_fragment_continue
+; Helper for special terrain: loads the road and bridge crossing sprite. Sets bridge_section = 2 (road attributes).
+load_road_sprite:
+  LD A,$02                                    ; A = 2 (road section), HL = sprite_road_and_bridge_pixels, jump to
+  LD HL,sprite_road_and_bridge_pixels         ; continue.
+  JP handle_special_terrain_fragment_continue ;
 
-; Handle special terrain fragments (pre and post-bridge canal and the road with the bridge) which have different color
-; attributes than the rest of the terrain fragments.
+; Render special terrain fragment (bridge/road area)
 ;
-; Used by the routine at render_terrain_row.
+; Handles terrain lines with bit 7 set in profile byte, indicating bridge/road sections. These use full-width 32-byte
+; sprites instead of edge rendering. Dispatches based on profile byte value: $80 = canal (river side), $E0 = canal (road
+; side), $F0 = road, else = bridge.
+;
+; After copying the 32-byte sprite to screen, sets state_bridge_section for attribute handling. If bridge was destroyed,
+; clears a 4-byte hole in the middle of the road sprite.
 handle_special_terrain_fragment:
-  CP $80
-  JP Z,ld_fragment_canal_adjacent_to_river
-  CP $E0
-  JP Z,ld_fragment_canal_adjacent_to_road
-  CP $F0
-  JP Z,ld_fragment_road
-  LD A,$01
-  LD HL,sprite_road_and_bridge_pixels
-; This entry point is used by the routines at ld_fragment_canal_adjacent_to_river, ld_fragment_canal_adjacent_to_road
-; and ld_fragment_road.
+  CP $80                               ; Dispatch: $80=load_canal_river_side, $E0=load_canal_road_side,
+  JP Z,load_canal_river_side           ; $F0=load_road_sprite, else=bridge (A=1).
+  CP $E0                               ;
+  JP Z,load_canal_road_side            ;
+  CP $F0                               ;
+  JP Z,load_road_sprite                ;
+  LD A,$01                             ; Load bridge sprite (sprite_road_and_bridge_pixels), A = 1 (bridge section).
+  LD HL,sprite_road_and_bridge_pixels  ;
+; This entry point is used by the routines at load_canal_river_side, load_canal_road_side and load_road_sprite.
 handle_special_terrain_fragment_continue:
-  LD DE,(screen_ptr)
-  LD BC,$0020
-  LDIR
-  LD (state_bridge_section),A
-  LD A,(state_bridge_destroyed)
-  CP $00
-  RET Z
-  LD HL,(screen_ptr)
+  LD DE,(screen_ptr)                   ; Copy 32-byte sprite row to screen via LDIR. Store A to state_bridge_section.
+  LD BC,$0020                          ;
+  LDIR                                 ;
+  LD (state_bridge_section),A          ; If state_bridge_destroyed = 0, return (bridge intact).
+  LD A,(state_bridge_destroyed)        ;
+  CP $00                               ;
+  RET Z                                ;
+  LD HL,(screen_ptr)                   ; Load screen_ptr for destroyed bridge clearing.
 ; This entry point is used by the routine at check_collision.
+clear_destroyed_bridge:
+  LD DE,$000E                          ; Clear 4 bytes at offset $0E (punch hole in destroyed bridge).
+  LD B,$04                             ;
+  ADD HL,DE                            ;
 handle_special_terrain_fragment_0:
-  LD DE,$000E
-  LD B,$04
-  ADD HL,DE
-handle_special_terrain_fragment_1:
   LD (HL),$00
   INC HL
-  DJNZ handle_special_terrain_fragment_1
+  DJNZ handle_special_terrain_fragment_0
   RET
 
 ; Bitmask of the CONTROLS_BIT_* bits containing the current controls and other information.
