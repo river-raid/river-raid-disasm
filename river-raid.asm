@@ -3904,40 +3904,46 @@ int_return:
 L6C2B:
   DEFB $ED,$56,$C3,$08,$00
 
-; Bit4 frame counter
-state_bit4_counter:
+; Bonus life sound progress counter (0-64)
+bonus_life_sound_counter:
   DEFB $00
 
-; Do something about bit4
+; Play bonus life sound effect
 ;
-; Used by the routine at handle_controls.
+; Generates a rising pitch sound effect when player earns an extra life. Called once per frame while
+; CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 frames.
+;
+; * Counter increments from 0 to 64 over successive frames
+; * Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases
+; * Lower pitch values = higher frequency, so sound rises in pitch
+; * Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001
 do_bonus_life:
-  LD A,(state_bit4_counter)
-  INC A
-  LD (state_bit4_counter),A
-  CP $40
-  JP Z,bit4_finish
-  LD B,A
-  LD A,$40
-  SUB B
-  LD L,$FF
-  LD H,A
-  SRL H
-  SRL H
-  SRL H
-  LD DE,$0001
-  CALL BEEPER
-  DI
+  LD A,(bonus_life_sound_counter)      ; Increment counter and check if reached $40 (64). If so, sound is complete.
+  INC A                                ;
+  LD (bonus_life_sound_counter),A      ;
+  CP $40                               ; Check if counter reached $40 (64 frames). Jump to bonus_life_sound_done to
+  JP Z,bonus_life_sound_done           ; finish if done.
+  LD B,A                               ; Calculate pitch: pitch = $40 - counter. Store counter in B, load $40 into A,
+  LD A,$40                             ; subtract.
+  SUB B                                ;
+  LD L,$FF                             ; Set up BEEPER parameters: H = pitch >> 3 (range 7-0), L = $FF (duration).
+  LD H,A                               ;
+  SRL H                                ;
+  SRL H                                ;
+  SRL H                                ;
+  LD DE,$0001                          ; Call ROM BEEPER at $03B5 with DE=$0001 (one iteration). Disable interrupts
+  CALL BEEPER                          ; after.
+  DI                                   ;
   RET
 
-; Finish doing something about bit4
+; Complete bonus life sound sequence
 ;
-; Used by the routine at do_bonus_life.
-bit4_finish:
-  LD A,$00
-  LD (state_bit4_counter),A
-  LD HL,state_controls
-  RES 4,(HL)                           ; Reset CONTROLS_BIT_BONUS_LIFE
+; Resets the sound counter and clears the CONTROLS_BIT_BONUS_LIFE flag to stop the sound effect.
+bonus_life_sound_done:
+  LD A,$00                             ; Reset counter to 0.
+  LD (bonus_life_sound_counter),A      ;
+  LD HL,state_controls                 ; Clear CONTROLS_BIT_BONUS_LIFE in state_controls to indicate sound is complete.
+  RES 4,(HL)                           ;
   RET
 
 ; Routine at 6C5D

@@ -4303,40 +4303,50 @@ c$6C24 POP AF        ;
 ; Unused
 u$6C2B DEFB $ED,$56,$C3,$08,$00
 
-; Bit4 frame counter
-@label=state_bit4_counter
+; Bonus life sound progress counter (0-64)
+@label=bonus_life_sound_counter
 g$6C30 DEFB $00
 
-; Do something about bit4
+; Play bonus life sound effect
 ;
-; Used by the routine at #R$6BED.
+; Generates a rising pitch sound effect when player earns an extra life. Called
+; once per frame while CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64
+; frames.
+; .
+; #LIST
+; { Counter increments from 0 to 64 over successive frames }
+; { Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases }
+; { Lower pitch values = higher frequency, so sound rises in pitch }
+; { Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001 }
+; LIST#
 @label=do_bonus_life
-c$6C31 LD A,($6C30)  ;
- $6C34 INC A         ;
- $6C35 LD ($6C30),A  ;
- $6C38 CP $40        ;
- $6C3A JP Z,$6C52    ;
- $6C3D LD B,A        ;
- $6C3E LD A,$40      ;
- $6C40 SUB B         ;
- $6C41 LD L,$FF      ;
- $6C43 LD H,A        ;
+c$6C31 LD A,($6C30)  ; {Increment counter and check if reached $40 (64). If so,
+ $6C34 INC A         ; sound is complete.
+ $6C35 LD ($6C30),A  ; }
+ $6C38 CP $40        ; {Check if counter reached $40 (64 frames). Jump to
+ $6C3A JP Z,$6C52    ; #R$6C52 to finish if done.}
+ $6C3D LD B,A        ; {Calculate pitch: pitch = $40 - counter. Store counter
+ $6C3E LD A,$40      ; in B, load $40 into A, subtract.
+ $6C40 SUB B         ; }
+ $6C41 LD L,$FF      ; {Set up BEEPER parameters: H = pitch >> 3 (range 7-0), L
+ $6C43 LD H,A        ; = $FF (duration).
  $6C44 SRL H         ;
  $6C46 SRL H         ;
- $6C48 SRL H         ;
- $6C4A LD DE,$0001   ;
- $6C4D CALL $03B5    ;
- $6C50 DI            ;
+ $6C48 SRL H         ; }
+ $6C4A LD DE,$0001   ; {Call ROM BEEPER at $03B5 with DE=$0001 (one iteration).
+ $6C4D CALL $03B5    ; Disable interrupts after.
+ $6C50 DI            ; }
  $6C51 RET           ;
 
-; Finish doing something about bit4
+; Complete bonus life sound sequence
 ;
-; Used by the routine at #R$6C31.
-@label=bit4_finish
-c$6C52 LD A,$00      ;
- $6C54 LD ($6C30),A  ;
- $6C57 LD HL,$6BB0   ;
- $6C5A RES 4,(HL)    ; Reset CONTROLS_BIT_BONUS_LIFE
+; Resets the sound counter and clears the CONTROLS_BIT_BONUS_LIFE flag to stop
+; the sound effect.
+@label=bonus_life_sound_done
+c$6C52 LD A,$00      ; {Reset counter to 0.
+ $6C54 LD ($6C30),A  ; }
+ $6C57 LD HL,$6BB0   ; {Clear CONTROLS_BIT_BONUS_LIFE in #R$6BB0 to indicate
+ $6C5A RES 4,(HL)    ; sound is complete.}
  $6C5C RET           ;
 
 ; Routine at 6C5D

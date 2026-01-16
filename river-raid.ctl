@@ -1642,13 +1642,22 @@ c $6BED
 @ $6C24 label=int_return
 c $6C24 Return from the non-maskable interrupt handler
 u $6C2B
-@ $6C30 label=state_bit4_counter
-g $6C30 Bit4 frame counter
+@ $6C30 label=bonus_life_sound_counter
+g $6C30 Bonus life sound progress counter (0-64)
 @ $6C31 label=do_bonus_life
-c $6C31 Do something about bit4
-@ $6C52 label=bit4_finish
-c $6C52 Finish doing something about bit4
-  $6C5A,2 Reset CONTROLS_BIT_BONUS_LIFE
+c $6C31 Play bonus life sound effect
+D $6C31 Generates a rising pitch sound effect when player earns an extra life. Called once per frame while CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 frames.
+D $6C31 #LIST { Counter increments from 0 to 64 over successive frames } { Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases } { Lower pitch values = higher frequency, so sound rises in pitch } { Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001 } LIST#
+  $6C31 Increment counter and check if reached $40 (64). If so, sound is complete.
+  $6C38 Check if counter reached $40 (64 frames). Jump to #R$6C52 to finish if done.
+  $6C3D Calculate pitch: pitch = $40 - counter. Store counter in B, load $40 into A, subtract.
+  $6C41 Set up BEEPER parameters: H = pitch >> 3 (range 7-0), L = $FF (duration).
+  $6C4A,7 Call ROM BEEPER at $03B5 with DE=$0001 (one iteration). Disable interrupts after.
+@ $6C52 label=bonus_life_sound_done
+c $6C52 Complete bonus life sound sequence
+D $6C52 Resets the sound counter and clears the CONTROLS_BIT_BONUS_LIFE flag to stop the sound effect.
+  $6C52 Reset counter to 0.
+  $6C57,5 Clear CONTROLS_BIT_BONUS_LIFE in #R$6BB0 to indicate sound is complete.
 c $6C5D
 @ $6C7A label=explosion_counter
 g $6C7A Explosion frame counter
