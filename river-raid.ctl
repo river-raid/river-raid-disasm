@@ -1457,7 +1457,9 @@ c $6927 Render bridge attributes to bottom row
 D $6927 Copies road/bridge attributes to the bottom attribute row and clears the bridge section flag.
   $6927 Copy bridge/road attributes to bottom row.
   $6932,8 Clear bridge section flag and spawn objects for new row.
-s $693B
+@ $693B label=terrain_edge_counter
+b $693B Terrain edge rendering counter
+  $693B,1 Incremented each time terrain edge is rendered.
 @ $693C label=handle_terrain_element_1_eq_3
 c $693C
 @ $6947 label=handle_terrain_element_1_eq_2

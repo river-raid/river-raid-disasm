@@ -3679,8 +3679,9 @@ c$6927 LD DE,$5BDF   ; {Copy bridge/road attributes to bottom row.
  $6937 CALL $6F80    ; }
  $693A RET           ;
 
-; Unused
-s$693B DEFS $01
+; Terrain edge rendering counter
+@label=terrain_edge_counter
+b$693B DEFB $00      ; Incremented each time terrain edge is rendered.
 
 ; Routine at 693C
 ;

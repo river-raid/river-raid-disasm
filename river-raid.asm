@@ -3326,9 +3326,9 @@ render_bridge_attributes:
   CALL next_row                        ;
   RET
 
-; Unused
-L693B:
-  DEFS $01
+; Terrain edge rendering counter
+terrain_edge_counter:
+  DEFB $00                             ; Incremented each time terrain edge is rendered.
 
 ; Routine at 693C
 ;
@@ -3613,7 +3613,7 @@ locate_terrain_fragment:
   LD B,$00
   SUB $10                              ; For some reason, subtract 16 from the coordinate of the left terrain edge.
   LD D,A                               ; Store the result in D to reuse it in multiple operations with A.
-  LD HL,L693B
+  LD HL,terrain_edge_counter
   INC (HL)
   LD HL,terrain_edge_left              ; Point HL to terrain_edge_left.
   LD A,D                               ; Restore the coordinate of the left terrain edge into A.
