@@ -4373,57 +4373,70 @@ signal_fuel_level_excessive:
   CALL BEEPER                          ;
   RET
 
-; Explode a single fragment
+; Create explosion at fragment position
 ;
-; Used by the routines at handle_collision_mode_fighter, check_collision, hit_helicopter_reg, hit_ship,
-; hit_helicopter_adv, hit_fighter, hit_balloon, hit_fuel, handle_no_fuel and L74EE.
+; Called when an enemy is destroyed or the player collides. Sets up explosion state and adds an explosion entry to the
+; explosions set at exploding_fragments.
 ;
-; I:BC Pointer to the fragment to explode.
+; * Sets CONTROLS_BIT_EXPLODING to trigger explosion sound
+; * Clears CONTROLS_BIT_FIRE to prevent firing during explosion
+; * Resets explosion_counter (explosion counter) to $18 (24 frames)
+; * Falls through to add_object_to_set to add explosion to set
+;
+; I:BC BC contains fragment position: B=Y offset, C=X position
+; I:D Object type/definition byte
 explode_fragment:
-  LD HL,state_controls
-  SET CONTROLS_BIT_EXPLODING,(HL)
-  RES 0,(HL)                           ; Reset CONTROLS_BIT_FIRE
-  LD A,$18
-  LD (explosion_counter),A
-  LD HL,exploding_fragments
+  LD HL,state_controls                 ; Set CONTROLS_BIT_EXPLODING (bit 5) in state_controls.
+  SET CONTROLS_BIT_EXPLODING,(HL)      ;
+  RES 0,(HL)                           ; Clear CONTROLS_BIT_FIRE (bit 0).
+  LD A,$18                             ; Reset explosion counter to $18 (24 frames).
+  LD (explosion_counter),A             ;
+  LD HL,exploding_fragments            ; Point HL to explosions set at exploding_fragments, fall through to
+                                       ; add_object_to_set.
 
-; Adds object bytes to the set in the following order: C, B, D.
+; Add object entry to a set
 ;
-; Used by the routines at render_enemy, render_fuel, render_balloon and render_tank_shell_explosion.
+; Finds an empty slot or end-of-set marker in the object set and writes a 3-byte entry (C, B, D). Each entry represents
+; an object with X position, Y offset, and type.
 ;
-; I:B Mostly $00
-; I:C Object X-position
-; I:D Object definition
-; I:HL Pointer to viewport_objects
+; * Searches forward through set, 3 bytes per entry
+; * Empty slot marker = $00, end-of-set marker = $FF
+; * Skips non-empty entries until finding $00 or $FF
+;
+; I:B Y offset (usually 0 for new objects)
+; I:C X position
+; I:D Object type/definition
+; I:HL Pointer to start of object set
 add_object_to_set:
-  LD A,(HL)
-  CP SET_MARKER_EMPTY_SLOT
-  JP Z,write_object_to_set
-  CP SET_MARKER_END_OF_SET
-  JP Z,write_object_to_set
-  INC HL
-  INC HL
-  INC HL
-  JP add_object_to_set
+  LD A,(HL)                            ; Load current entry's first byte. If empty slot ($00), jump to write.
+  CP SET_MARKER_EMPTY_SLOT             ;
+  JP Z,write_object_to_set             ;
+  CP SET_MARKER_END_OF_SET             ; If end-of-set marker ($FF), jump to write (will extend set).
+  JP Z,write_object_to_set             ;
+  INC HL                               ; Entry occupied: advance HL by 3 bytes and loop.
+  INC HL                               ;
+  INC HL                               ;
+  JP add_object_to_set                 ;
 
-; Routine at 6EBC
+; Write object entry to set
 ;
-; Used by the routine at add_object_to_set.
+; Writes a 3-byte object entry at the current position. If replacing the end-of-set marker, writes a new end marker
+; after the entry.
 ;
-; I:A Current value at the address
-; I:B Mostly $00
-; I:C Object X-position
-; I:D Object definition
-; I:HL Pointer to the element of viewport_objects
+; I:A Previous value at slot (used to check if extending set)
+; I:B Y offset
+; I:C X position
+; I:D Object type
+; I:HL Pointer to slot in set
 write_object_to_set:
-  LD (HL),C
-  INC HL
-  LD (HL),B
-  INC HL
-  LD (HL),D
-  CP SET_MARKER_END_OF_SET
-  RET NZ
-  INC HL
+  LD (HL),C                            ; Write 3-byte entry: [C, B, D] = [X, Y_offset, type].
+  INC HL                               ;
+  LD (HL),B                            ;
+  INC HL                               ;
+  LD (HL),D                            ;
+  CP SET_MARKER_END_OF_SET             ; If replacing end marker, write new $FF marker after entry.
+  RET NZ                               ;
+  INC HL                               ;
   LD (HL),SET_MARKER_END_OF_SET
   RET
 

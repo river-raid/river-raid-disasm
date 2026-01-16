@@ -4810,61 +4810,79 @@ c$6E92 LD DE,$0008   ; {Play tank full sound: BEEPER with DE=$0008, HL=$0111.
  $6E98 CALL $03B5    ; }
  $6E9B RET           ;
 
-; Explode a single fragment
+; Create explosion at fragment position
 ;
-; Used by the routines at #R$615E, #R$61BB, #R$6414, #R$6423, #R$6444, #R$6453,
-; #R$6462, #R$6478, #R$650A and #R$74EE.
+; Called when an enemy is destroyed or the player collides. Sets up explosion
+; state and adds an explosion entry to the explosions set at #R$5F2E.
+; .
+; #LIST
+; { Sets CONTROLS_BIT_EXPLODING to trigger explosion sound }
+; { Clears CONTROLS_BIT_FIRE to prevent firing during explosion }
+; { Resets #R$6C7A (explosion counter) to $18 (24 frames) }
+; { Falls through to #R$6EAB to add explosion to set }
+; LIST#
 ;
-; I:BC Pointer to the fragment to explode.
+; I:BC BC contains fragment position: B=Y offset, C=X position
+; I:D Object type/definition byte
 @label=explode_fragment
-c$6E9C LD HL,$6BB0   ;
+c$6E9C LD HL,$6BB0   ; {Set CONTROLS_BIT_EXPLODING (bit 5) in #R$6BB0.
 @isub=SET CONTROLS_BIT_EXPLODING,(HL)
- $6E9F SET 5,(HL)    ;
- $6EA1 RES 0,(HL)    ; Reset CONTROLS_BIT_FIRE
- $6EA3 LD A,$18      ;
- $6EA5 LD ($6C7A),A  ;
- $6EA8 LD HL,$5F2E   ;
+ $6E9F SET 5,(HL)    ; }
+ $6EA1 RES 0,(HL)    ; Clear CONTROLS_BIT_FIRE (bit 0).
+ $6EA3 LD A,$18      ; {Reset explosion counter to $18 (24 frames).
+ $6EA5 LD ($6C7A),A  ; }
+ $6EA8 LD HL,$5F2E   ; Point HL to explosions set at #R$5F2E, fall through to
+                     ; add_object_to_set.
 
-; Adds object bytes to the set in the following order: C, B, D.
+; Add object entry to a set
 ;
-; Used by the routines at #R$6FF6, #R$7051, #R$706C and #R$74C6.
+; Finds an empty slot or end-of-set marker in the object set and writes a
+; 3-byte entry (C, B, D). Each entry represents an object with X position, Y
+; offset, and type.
+; .
+; #LIST
+; { Searches forward through set, 3 bytes per entry }
+; { Empty slot marker = $00, end-of-set marker = $FF }
+; { Skips non-empty entries until finding $00 or $FF }
+; LIST#
 ;
-; I:B Mostly $00
-; I:C Object X-position
-; I:D Object definition
-; I:HL Pointer to #R$5F00
+; I:B Y offset (usually 0 for new objects)
+; I:C X position
+; I:D Object type/definition
+; I:HL Pointer to start of object set
 @label=add_object_to_set
-c$6EAB LD A,(HL)     ;
+c$6EAB LD A,(HL)     ; {Load current entry's first byte. If empty slot ($00),
 @isub=CP SET_MARKER_EMPTY_SLOT
- $6EAC CP $00        ;
- $6EAE JP Z,$6EBC    ;
+ $6EAC CP $00        ; jump to write.
+ $6EAE JP Z,$6EBC    ; }
 @isub=CP SET_MARKER_END_OF_SET
- $6EB1 CP $FF        ;
- $6EB3 JP Z,$6EBC    ;
- $6EB6 INC HL        ;
+ $6EB1 CP $FF        ; {If end-of-set marker ($FF), jump to write (will extend
+ $6EB3 JP Z,$6EBC    ; set).}
+ $6EB6 INC HL        ; {Entry occupied: advance HL by 3 bytes and loop.
  $6EB7 INC HL        ;
  $6EB8 INC HL        ;
- $6EB9 JP $6EAB      ;
+ $6EB9 JP $6EAB      ; }
 
-; Routine at 6EBC
+; Write object entry to set
 ;
-; Used by the routine at #R$6EAB.
+; Writes a 3-byte object entry at the current position. If replacing the
+; end-of-set marker, writes a new end marker after the entry.
 ;
-; I:A Current value at the address
-; I:B Mostly $00
-; I:C Object X-position
-; I:D Object definition
-; I:HL Pointer to the element of #R$5F00
+; I:A Previous value at slot (used to check if extending set)
+; I:B Y offset
+; I:C X position
+; I:D Object type
+; I:HL Pointer to slot in set
 @label=write_object_to_set
-c$6EBC LD (HL),C     ;
+c$6EBC LD (HL),C     ; {Write 3-byte entry: [C, B, D] = [X, Y_offset, type].
  $6EBD INC HL        ;
  $6EBE LD (HL),B     ;
  $6EBF INC HL        ;
- $6EC0 LD (HL),D     ;
+ $6EC0 LD (HL),D     ; }
 @isub=CP SET_MARKER_END_OF_SET
- $6EC1 CP $FF        ;
- $6EC3 RET NZ        ;
- $6EC4 INC HL        ;
+ $6EC1 CP $FF        ; {If replacing end marker, write new $FF marker after
+ $6EC3 RET NZ        ; entry.
+ $6EC4 INC HL        ; }
 @isub=LD (HL),SET_MARKER_END_OF_SET
  $6EC5 LD (HL),$FF   ;
  $6EC7 RET           ;

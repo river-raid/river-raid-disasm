@@ -1830,27 +1830,40 @@ c $6E92 Play tank full sound
 D $6E92 Plays a different beep when fuel tank is already full and cannot accept more fuel.
   $6E92,9 Play tank full sound: BEEPER with DE=$0008, HL=$0111.
 @ $6E9C label=explode_fragment
-c $6E9C Explode a single fragment
-R $6E9C I:BC Pointer to the fragment to explode.
+c $6E9C Create explosion at fragment position
+D $6E9C Called when an enemy is destroyed or the player collides. Sets up explosion state and adds an explosion entry to the explosions set at #R$5F2E.
+D $6E9C #LIST { Sets CONTROLS_BIT_EXPLODING to trigger explosion sound } { Clears CONTROLS_BIT_FIRE to prevent firing during explosion } { Resets #R$6C7A (explosion counter) to $18 (24 frames) } { Falls through to #R$6EAB to add explosion to set } LIST#
+R $6E9C I:BC BC contains fragment position: B=Y offset, C=X position
+R $6E9C I:D Object type/definition byte
+  $6E9C Set CONTROLS_BIT_EXPLODING (bit 5) in #R$6BB0.
 @ $6E9F isub=SET CONTROLS_BIT_EXPLODING,(HL)
-  $6EA1,2 Reset CONTROLS_BIT_FIRE
+  $6EA1 Clear CONTROLS_BIT_FIRE (bit 0).
+  $6EA3 Reset explosion counter to $18 (24 frames).
+  $6EA8 Point HL to explosions set at #R$5F2E, fall through to add_object_to_set.
 @ $6EAB label=add_object_to_set
-c $6EAB Adds object bytes to the set in the following order: C, B, D.
-R $6EAB I:B Mostly $00
-R $6EAB I:C Object X-position
-R $6EAB I:D Object definition
-R $6EAB I:HL Pointer to #R$5F00
+c $6EAB Add object entry to a set
+D $6EAB Finds an empty slot or end-of-set marker in the object set and writes a 3-byte entry (C, B, D). Each entry represents an object with X position, Y offset, and type.
+D $6EAB #LIST { Searches forward through set, 3 bytes per entry } { Empty slot marker = $00, end-of-set marker = $FF } { Skips non-empty entries until finding $00 or $FF } LIST#
+R $6EAB I:B Y offset (usually 0 for new objects)
+R $6EAB I:C X position
+R $6EAB I:D Object type/definition
+R $6EAB I:HL Pointer to start of object set
+  $6EAB Load current entry's first byte. If empty slot ($00), jump to write.
 @ $6EAC isub=CP SET_MARKER_EMPTY_SLOT
+  $6EB1 If end-of-set marker ($FF), jump to write (will extend set).
 @ $6EB1 isub=CP SET_MARKER_END_OF_SET
+  $6EB6 Entry occupied: advance HL by 3 bytes and loop.
 @ $6EBC label=write_object_to_set
-c $6EBC
-c $6EBC
-R $6EBC I:A Current value at the address
-R $6EBC I:B Mostly $00
-R $6EBC I:C Object X-position
-R $6EBC I:D Object definition
-R $6EBC I:HL Pointer to the element of #R$5F00
+c $6EBC Write object entry to set
+D $6EBC Writes a 3-byte object entry at the current position. If replacing the end-of-set marker, writes a new end marker after the entry.
+R $6EBC I:A Previous value at slot (used to check if extending set)
+R $6EBC I:B Y offset
+R $6EBC I:C X position
+R $6EBC I:D Object type
+R $6EBC I:HL Pointer to slot in set
+  $6EBC Write 3-byte entry: [C, B, D] = [X, Y_offset, type].
 @ $6EC1 isub=CP SET_MARKER_END_OF_SET
+  $6EC1,4 If replacing end marker, write new $FF marker after entry.
 @ $6EC5 isub=LD (HL),SET_MARKER_END_OF_SET
 @ $6EC8 label=render_explosions
 c $6EC8
