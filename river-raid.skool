@@ -6136,184 +6136,216 @@ c$73D0 LD BC,$0000   ; {Set #R$5F73 to $0000.
  $73D3 LD ($5F73),BC ; }
  $73D7 RET           ;
 
-; Routine at 73D8
+; Add X offset for right-facing missile spawn
 ;
-; Used by the routine at #R$73DD.
-c$73D8 LD A,C        ;
+; Adds $08 to X position for spawning missile from right-facing helicopter.
+@label=add_missile_x_offset
+c$73D8 LD A,C        ; {C = C + $08.
  $73D9 ADD A,$08     ;
- $73DB LD C,A        ;
+ $73DB LD C,A        ; }
  $73DC RET           ;
 
-; Routine at 73DD
+; Render helicopter missile (spawn new)
 ;
-; Used by the routine at #R$708E.
+; Spawns a new helicopter missile from an advanced helicopter. Called when
+; processing OBJECT_HELICOPTER_ADV in the viewport loop. Plays a sound and
+; initializes missile trajectory.
+; .
+; #LIST
+; { Returns immediately during GAMEPLAY_MODE_SCROLL_IN }
+; { Returns if missile already active (B != 0) }
+; { Plays missile launch sound via ROM BEEPER }
+; { Extracts helicopter position and orientation }
+; { Stores initial missile coordinates to #R$5F73 }
+; LIST#
 @label=render_helicopter_missile
-c$73DD LD A,($5F68)  ;
+c$73DD LD A,($5F68)  ; {Return if in GAMEPLAY_MODE_SCROLL_IN.
 @isub=CP GAMEPLAY_MODE_SCROLL_IN
  $73E0 CP $01        ;
- $73E2 RET Z         ;
- $73E3 LD BC,($5F73) ;
- $73E7 LD A,B        ;
- $73E8 CP $00        ;
+ $73E2 RET Z         ; }
+ $73E3 LD BC,($5F73) ; {Load missile coords from #R$5F73. Return if missile
+ $73E7 LD A,B        ; active (B != 0).
+ $73E8 CP $00        ; }
  $73EA RET NZ        ;
- $73EB LD DE,$0001   ;
- $73EE LD HL,$2800   ;
- $73F1 CALL $03B5    ;
- $73F4 LD HL,($5F60) ;
- $73F7 DEC HL        ;
+ $73EB LD DE,$0001   ; {Play missile launch sound: BEEPER with DE=$0001,
+ $73EE LD HL,$2800   ; HL=$2800.
+ $73F1 CALL $03B5    ; }
+ $73F4 LD HL,($5F60) ; {Load viewport_ptr, extract [D, B, C] from helicopter's
+ $73F7 DEC HL        ; slot.
  $73F8 LD D,(HL)     ;
  $73F9 DEC HL        ;
  $73FA LD B,(HL)     ;
  $73FB DEC HL        ;
- $73FC LD C,(HL)     ;
- $73FD LD A,C        ;
- $73FE AND $F8       ;
+ $73FC LD C,(HL)     ; }
+ $73FD LD A,C        ; {Align X to 8-pixel boundary (AND $F8), extract
+ $73FE AND $F8       ; orientation bit.
  $7400 LD C,A        ;
  $7401 LD A,D        ;
- $7402 AND $40       ;
- $7404 LD ($5F75),A  ;
- $7407 BIT 6,A       ;
- $7409 CALL Z,$73D8  ;
- $740C INC B         ;
+ $7402 AND $40       ; }
+ $7404 LD ($5F75),A  ; {Store orientation to #R$5F75. If right-facing, add
+ $7407 BIT 6,A       ; offset via #R$73D8.
+ $7409 CALL Z,$73D8  ; }
+ $740C INC B         ; {Add 4 to Y position (INC B × 4), store to #R$5F73.
  $740D INC B         ;
  $740E INC B         ;
  $740F INC B         ;
- $7410 LD ($5F73),BC ;
+ $7410 LD ($5F73),BC ; }
  $7414 RET           ;
 
-; Routine at 7415
+; Handle helicopter missile collision
 ;
-; Used by the routine at #R$6136.
+; Checks if helicopter missile hit the player. Called from collision handler
+; when COLLISION_MODE_HELICOPTER_MISSILE is active.
+; .
+; #LIST
+; { Checks missile position against player position }
+; { If collision detected, jumps to #R$650A (player hit) }
+; { Clears missile and pops return addresses to abort collision chain }
+; LIST#
 @label=handle_collision_mode_helicopter_missile
-c$7415 LD BC,($5F73) ;
- $7419 BIT 7,B       ;
- $741B JP Z,$7435    ;
- $741E RES 7,B       ;
+c$7415 LD BC,($5F73) ; {Load missile coords. If Y bit 7 clear, clear missile
+ $7419 BIT 7,B       ; and return.}
+ $741B JP Z,$7435    ; {Clear Y bit 7, check if Y-8 is negative (missile above
+ $741E RES 7,B       ; screen).
  $7420 LD A,B        ;
- $7421 SUB $08       ;
- $7423 JP P,$7435    ;
- $7426 LD A,($5F72)  ;
+ $7421 SUB $08       ; }
+ $7423 JP P,$7435    ; {Compare missile X with player X (from #R$5F72). If
+ $7426 LD A,($5F72)  ; match, player hit.
  $7429 AND $F8       ;
  $742B CP C          ;
- $742C JP Z,$650A    ;
- $742F ADD A,$08     ;
+ $742C JP Z,$650A    ; }
+ $742F ADD A,$08     ; {Check adjacent X position. If match, player hit.
  $7431 CP C          ;
- $7432 JP Z,$650A    ;
-*$7435 LD BC,$0000   ;
+ $7432 JP Z,$650A    ; }
+*$7435 LD BC,$0000   ; {Clear missile coords, pop 4 return addresses, return.
  $7438 LD ($5F73),BC ;
  $743C POP DE        ;
  $743D POP DE        ;
  $743E POP DE        ;
- $743F POP DE        ;
+ $743F POP DE        ; }
  $7440 RET           ;
 
-; Routine at 7441
+; Operate tank shell
 ;
-; Used by the routines at #R$5F91 and #R$6D17.
+; Advances the tank shell along its trajectory and renders it. Shell moves in a
+; parabolic arc based on speed and step count.
+; .
+; #LIST
+; { Returns if shell not flying (bit 7 of #R$7383) }
+; { Increments trajectory step, explodes at step 8 }
+; { Plays descending pitch sound based on step }
+; { Moves shell based on speed and orientation }
+; { Renders shell sprite or triggers explosion }
+; LIST#
 @label=operate_tank_shell
-c$7441 LD A,($7383)  ;
+c$7441 LD A,($7383)  ; {Return if TANK_SHELL_BIT_FLYING not set.
 @isub=BIT TANK_SHELL_BIT_FLYING,A
- $7444 BIT 7,A       ;
+ $7444 BIT 7,A       ; }
  $7446 RET Z         ;
- $7447 LD BC,($7385) ;
- $744B LD A,($7384)  ;
+ $7447 LD BC,($7385) ; {Load shell coords, increment trajectory step, store.
+ $744B LD A,($7384)  ; }
  $744E INC A         ;
  $744F LD ($7384),A  ;
 @isub=CP TANK_SHELL_TRAJECTORY_MAX_STEP
- $7452 CP $08        ;
- $7454 JP Z,$74C6    ;
- $7457 LD DE,$0002   ;
+ $7452 CP $08        ; {If step == 8 (max), explode via #R$74C6.
+ $7454 JP Z,$74C6    ; }
+ $7457 LD DE,$0002   ; {Play shell whistle: BEEPER with DE=$0002, HL=(step, 0).
  $745A LD H,A        ;
  $745B LD L,$00      ;
- $745D CALL $03B5    ;
- $7460 LD BC,($7385) ;
- $7464 CALL $62DA    ;
+ $745D CALL $03B5    ; }
+ $7460 LD BC,($7385) ; {Reload shell coords, advance Y position, store to
+ $7464 CALL $62DA    ; #R$8B0A.}
  $7467 LD ($8B0A),BC ;
- $746B LD A,($7383)  ;
+ $746B LD A,($7383)  ; {Get shell speed from state, add speed×2 to X position.
  $746E LD D,A        ;
 @isub=AND TANK_SHELL_MASK_SPEED
  $746F AND $07       ;
  $7471 LD E,A        ;
  $7472 LD A,C        ;
  $7473 ADD A,E       ;
- $7474 ADD A,E       ;
+ $7474 ADD A,E       ; }
  $7475 LD C,A        ;
 @isub=BIT SLOT_BIT_ORIENTATION,D
- $7476 BIT 6,D       ;
- $7478 CALL NZ,$7387 ;
- $747B INC B         ;
+ $7476 BIT 6,D       ; {If left-facing, invert X delta via #R$7387.
+ $7478 CALL NZ,$7387 ; }
+ $747B INC B         ; {Increment Y, store position to #R$8B0C and #R$7385.
  $747C LD ($8B0C),BC ;
- $7480 LD ($7385),BC ;
+ $7480 LD ($7385),BC ; }
 @isub=LD A,COLLISION_MODE_NONE
- $7484 LD A,$00      ;
- $7486 LD ($5EF5),A  ;
- $7489 LD A,B        ;
+ $7484 LD A,$00      ; {Set collision mode to COLLISION_MODE_NONE.
+ $7486 LD ($5EF5),A  ; }
+ $7489 LD A,B        ; {Check viewport boundary. If off-screen, handle via
 @isub=AND VIEWPORT_HEIGHT
- $748A AND $88       ;
+ $748A AND $88       ; #R$74A0.
 @isub=CP VIEWPORT_HEIGHT
  $748C CP $88        ;
- $748E JP Z,$74A0    ;
- $7491 LD HL,$8431   ;
+ $748E JP Z,$74A0    ; }
+ $7491 LD HL,$8431   ; {Load shell sprite #R$8431, set params: height=1,
 @isub=LD DE,SPRITE_SHELL_HEIGHT_PIXELS<<8|SPRITE_SHELL_ATTRIBUTES
- $7494 LD DE,$0100   ;
+ $7494 LD DE,$0100   ; width=1, frame=$08. Render via #R$8B1E.
 @isub=LD A,SPRITE_SHELL_WIDTH_TILES
  $7497 LD A,$01      ;
 @isub=LD BC,SPRITE_SHELL_FRAME_SIZE_BYTES
  $7499 LD BC,$0008   ;
- $749C CALL $8B1E    ;
+ $749C CALL $8B1E    ; }
  $749F RET           ;
 
-; Routine at 74A0
+; Erase off-screen tank shell
 ;
-; Used by the routine at #R$7441.
-c$74A0 LD BC,($8B0A) ;
- $74A4 LD HL,$8431   ;
- $74A7 LD A,C        ;
- $74A8 AND $06       ;
+; Erases the tank shell sprite when it goes off-screen and removes it from the
+; game.
+@label=erase_tank_shell_offscreen
+c$74A0 LD BC,($8B0A) ; {Load shell position from #R$8B0A, shell sprite #R$8431.
+ $74A4 LD HL,$8431   ; }
+ $74A7 LD A,C        ; {Calculate sprite frame offset from X position: (X AND
+ $74A8 AND $06       ; 6) << 2.
  $74AA SLA A         ;
  $74AC SLA A         ;
  $74AE LD D,$00      ;
  $74B0 LD E,A        ;
- $74B1 ADD HL,DE     ;
- $74B2 LD ($8B0E),HL ;
- $74B5 LD HL,$82F5   ;
- $74B8 LD DE,$0100   ;
+ $74B1 ADD HL,DE     ; }
+ $74B2 LD ($8B0E),HL ; {Add offset to sprite address, store to #R$8B0E. Load
+ $74B5 LD HL,$82F5   ; erase sprite #R$82F5.}
+ $74B8 LD DE,$0100   ; {Set sprite params, render via #R$8B3C, remove shell.
  $74BB LD A,$01      ;
  $74BD LD BC,$0008   ;
- $74C0 CALL $8B3C    ;
- $74C3 JP $74E4      ;
+ $74C0 CALL $8B3C    ; }
+ $74C3 JP $74E4      ; Remove shell via #R$74E4.
 
-; Routine at 74C6
+; Trigger tank shell explosion
 ;
-; Used by the routine at #R$7441.
+; Converts the flying tank shell into an explosion. Clears flying bit, sets
+; exploding bit, and adds explosion to viewport objects.
 @label=render_tank_shell_explosion
-c$74C6 LD D,$80      ;
- $74C8 LD HL,$0000   ;
- $74CB LD ($7385),HL ;
- $74CE LD A,($7383)  ;
+c$74C6 LD D,$80      ; {Set D=$80 (explosion marker), clear shell coordinates.
+ $74C8 LD HL,$0000   ; }
+ $74CB LD ($7385),HL ; Store $0000 to #R$7385.
+ $74CE LD A,($7383)  ; {Load shell state, clear FLYING bit, set EXPLODING bit.
 @isub=RES TANK_SHELL_BIT_FLYING,A
  $74D1 RES 7,A       ;
 @isub=SET TANK_SHELL_BIT_EXPLODING,A
- $74D3 SET 5,A       ;
- $74D5 LD ($7383),A  ;
- $74D8 LD HL,$5F00   ;
- $74DB CALL $6EAB    ;
- $74DE LD A,$00      ;
- $74E0 LD ($7384),A  ;
+ $74D3 SET 5,A       ; }
+ $74D5 LD ($7383),A  ; {Store updated state, add explosion to #R$5F00 objects
+ $74D8 LD HL,$5F00   ; set.
+ $74DB CALL $6EAB    ; }
+ $74DE LD A,$00      ; {Reset trajectory step to 0.
+ $74E0 LD ($7384),A  ; }
  $74E3 RET           ;
 
-; Routine at 74E4
+; Remove tank shell from game
 ;
-; Used by the routines at #R$68E9, #R$7358, #R$74A0 and #R$762E.
+; Clears all tank shell state variables to remove it from the game.
 @label=remove_tank_shell
-c$74E4 LD HL,$0000   ;
- $74E7 LD ($7383),HL ;
- $74EA LD ($7385),HL ;
+c$74E4 LD HL,$0000   ; {Clear #R$7383 (state) and #R$7385 (coordinates) to
+ $74E7 LD ($7383),HL ; $0000.
+ $74EA LD ($7385),HL ; }
  $74ED RET           ;
 
-; Routine at 74EE
+; Handle tank reaching river boundary
 ;
-; Used by the routine at #R$7296.
+; Called when a tank on the river reaches the viewport boundary. Reverses
+; direction or removes the tank.
+@label=handle_tank_at_boundary
 c$74EE LD HL,($5F60) ;
  $74F1 DEC HL        ;
  $74F2 DEC HL        ;

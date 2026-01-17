@@ -4821,7 +4821,7 @@ render_balloon:
 ;
 ; Used by the routines at play, main_loop, overview, operate_ship_or_helicopter_continue, operate_fighter_continue,
 ; operate_tank_shell_explosion, handle_inactive_object, animate_object, animate_helicopter, operate_tank,
-; operate_tank_on_bank, cancel_and_remove_shell, L74EE, operate_fuel, handle_object_proximity,
+; operate_tank_on_bank, cancel_and_remove_shell, handle_tank_at_boundary, operate_fuel, handle_object_proximity,
 ; remove_object_from_viewport, operate_baloon, jp_operate_viewport_objects and L76DA.
 ;
 ; Iterates through the viewport_objects array, processing each active object. Each object slot is a 3-byte structure: [X
@@ -5253,11 +5253,11 @@ operate_tank:
   PUSH BC
   BIT SLOT_BIT_TANK_ON_BANK,D          ; If SLOT_BIT_TANK_ON_BANK set, handle via operate_tank_on_bank.
   JP NZ,operate_tank_on_bank           ;
-  POP BC                               ; Pop regs. If state_bridge_destroyed != 0, jump to L74EE.
+  POP BC                               ; Pop regs. If state_bridge_destroyed != 0, jump to handle_tank_at_boundary.
   POP DE                               ;
   LD A,(state_bridge_destroyed)        ;
   CP $00                               ;
-  JP NZ,L74EE                          ;
+  JP NZ,handle_tank_at_boundary        ;
 ; This entry point is used by the routine at operate_tank_on_bank.
 operate_tank_0:
   DEC C                                ; Move tank: DEC C twice (left), then INC C × 4 if right-facing.
@@ -5510,175 +5510,195 @@ remove_helicopter_missile:
   LD (helicopter_missile_coordinates_ptr),BC ;
   RET
 
-; Routine at 73D8
+; Add X offset for right-facing missile spawn
 ;
-; Used by the routine at render_helicopter_missile.
-L73D8:
-  LD A,C
-  ADD A,$08
-  LD C,A
+; Adds $08 to X position for spawning missile from right-facing helicopter.
+add_missile_x_offset:
+  LD A,C                               ; C = C + $08.
+  ADD A,$08                            ;
+  LD C,A                               ;
   RET
 
-; Routine at 73DD
+; Render helicopter missile (spawn new)
 ;
-; Used by the routine at operate_viewport_objects.
+; Spawns a new helicopter missile from an advanced helicopter. Called when processing OBJECT_HELICOPTER_ADV in the
+; viewport loop. Plays a sound and initializes missile trajectory.
+;
+; * Returns immediately during GAMEPLAY_MODE_SCROLL_IN
+; * Returns if missile already active (B != 0)
+; * Plays missile launch sound via ROM BEEPER
+; * Extracts helicopter position and orientation
+; * Stores initial missile coordinates to helicopter_missile_coordinates_ptr
 render_helicopter_missile:
-  LD A,(state_gameplay_mode)
-  CP GAMEPLAY_MODE_SCROLL_IN
-  RET Z
-  LD BC,(helicopter_missile_coordinates_ptr)
-  LD A,B
-  CP $00
+  LD A,(state_gameplay_mode)           ; Return if in GAMEPLAY_MODE_SCROLL_IN.
+  CP GAMEPLAY_MODE_SCROLL_IN           ;
+  RET Z                                ;
+  LD BC,(helicopter_missile_coordinates_ptr) ; Load missile coords from helicopter_missile_coordinates_ptr. Return if
+  LD A,B                                     ; missile active (B != 0).
+  CP $00                                     ;
   RET NZ
-  LD DE,$0001
-  LD HL,$2800
-  CALL BEEPER
-  LD HL,(viewport_ptr)
-  DEC HL
-  LD D,(HL)
-  DEC HL
-  LD B,(HL)
-  DEC HL
-  LD C,(HL)
-  LD A,C
-  AND $F8
-  LD C,A
-  LD A,D
-  AND $40
-  LD (helicopter_missile_state),A
-  BIT 6,A
-  CALL Z,L73D8
-  INC B
-  INC B
-  INC B
-  INC B
-  LD (helicopter_missile_coordinates_ptr),BC
+  LD DE,$0001                          ; Play missile launch sound: BEEPER with DE=$0001, HL=$2800.
+  LD HL,$2800                          ;
+  CALL BEEPER                          ;
+  LD HL,(viewport_ptr)                 ; Load viewport_ptr, extract [D, B, C] from helicopter's slot.
+  DEC HL                               ;
+  LD D,(HL)                            ;
+  DEC HL                               ;
+  LD B,(HL)                            ;
+  DEC HL                               ;
+  LD C,(HL)                            ;
+  LD A,C                               ; Align X to 8-pixel boundary (AND $F8), extract orientation bit.
+  AND $F8                              ;
+  LD C,A                               ;
+  LD A,D                               ;
+  AND $40                              ;
+  LD (helicopter_missile_state),A      ; Store orientation to helicopter_missile_state. If right-facing, add offset via
+  BIT 6,A                              ; add_missile_x_offset.
+  CALL Z,add_missile_x_offset          ;
+  INC B                                      ; Add 4 to Y position (INC B × 4), store to
+  INC B                                      ; helicopter_missile_coordinates_ptr.
+  INC B                                      ;
+  INC B                                      ;
+  LD (helicopter_missile_coordinates_ptr),BC ;
   RET
 
-; Routine at 7415
+; Handle helicopter missile collision
 ;
-; Used by the routine at collision_dispatcher.
+; Checks if helicopter missile hit the player. Called from collision handler when COLLISION_MODE_HELICOPTER_MISSILE is
+; active.
+;
+; * Checks missile position against player position
+; * If collision detected, jumps to handle_no_fuel (player hit)
+; * Clears missile and pops return addresses to abort collision chain
 handle_collision_mode_helicopter_missile:
-  LD BC,(helicopter_missile_coordinates_ptr)
-  BIT 7,B
-  JP Z,handle_collision_mode_helicopter_missile_0
-  RES 7,B
-  LD A,B
-  SUB $08
-  JP P,handle_collision_mode_helicopter_missile_0
-  LD A,(state_x)
-  AND $F8
-  CP C
-  JP Z,handle_no_fuel
-  ADD A,$08
-  CP C
-  JP Z,handle_no_fuel
+  LD BC,(helicopter_missile_coordinates_ptr) ; Load missile coords. If Y bit 7 clear, clear missile and return.
+  BIT 7,B                                    ;
+  JP Z,handle_collision_mode_helicopter_missile_0 ; Clear Y bit 7, check if Y-8 is negative (missile above screen).
+  RES 7,B                                         ;
+  LD A,B                                          ;
+  SUB $08                                         ;
+  JP P,handle_collision_mode_helicopter_missile_0 ; Compare missile X with player X (from state_x). If match, player
+  LD A,(state_x)                                  ; hit.
+  AND $F8                                         ;
+  CP C                                            ;
+  JP Z,handle_no_fuel                             ;
+  ADD A,$08                            ; Check adjacent X position. If match, player hit.
+  CP C                                 ;
+  JP Z,handle_no_fuel                  ;
 handle_collision_mode_helicopter_missile_0:
-  LD BC,$0000
-  LD (helicopter_missile_coordinates_ptr),BC
-  POP DE
-  POP DE
-  POP DE
-  POP DE
+  LD BC,$0000                                ; Clear missile coords, pop 4 return addresses, return.
+  LD (helicopter_missile_coordinates_ptr),BC ;
+  POP DE                                     ;
+  POP DE                                     ;
+  POP DE                                     ;
+  POP DE                                     ;
   RET
 
-; Routine at 7441
+; Operate tank shell
 ;
-; Used by the routines at main_loop and overview.
+; Advances the tank shell along its trajectory and renders it. Shell moves in a parabolic arc based on speed and step
+; count.
+;
+; * Returns if shell not flying (bit 7 of tank_shell_state)
+; * Increments trajectory step, explodes at step 8
+; * Plays descending pitch sound based on step
+; * Moves shell based on speed and orientation
+; * Renders shell sprite or triggers explosion
 operate_tank_shell:
-  LD A,(tank_shell_state)
-  BIT TANK_SHELL_BIT_FLYING,A
+  LD A,(tank_shell_state)              ; Return if TANK_SHELL_BIT_FLYING not set.
+  BIT TANK_SHELL_BIT_FLYING,A          ;
   RET Z
-  LD BC,(tank_shell_coordinates)
-  LD A,(tank_shell_trajectory_step)
+  LD BC,(tank_shell_coordinates)       ; Load shell coords, increment trajectory step, store.
+  LD A,(tank_shell_trajectory_step)    ;
   INC A
   LD (tank_shell_trajectory_step),A
-  CP TANK_SHELL_TRAJECTORY_MAX_STEP
-  JP Z,render_tank_shell_explosion
-  LD DE,$0002
-  LD H,A
-  LD L,$00
-  CALL BEEPER
-  LD BC,(tank_shell_coordinates)
-  CALL advance_object
+  CP TANK_SHELL_TRAJECTORY_MAX_STEP    ; If step == 8 (max), explode via render_tank_shell_explosion.
+  JP Z,render_tank_shell_explosion     ;
+  LD DE,$0002                          ; Play shell whistle: BEEPER with DE=$0002, HL=(step, 0).
+  LD H,A                               ;
+  LD L,$00                             ;
+  CALL BEEPER                          ;
+  LD BC,(tank_shell_coordinates)       ; Reload shell coords, advance Y position, store to previous_object_coordinates.
+  CALL advance_object                  ;
   LD (previous_object_coordinates),BC
-  LD A,(tank_shell_state)
-  LD D,A
-  AND TANK_SHELL_MASK_SPEED
-  LD E,A
-  LD A,C
-  ADD A,E
-  ADD A,E
+  LD A,(tank_shell_state)              ; Get shell speed from state, add speed×2 to X position.
+  LD D,A                               ;
+  AND TANK_SHELL_MASK_SPEED            ;
+  LD E,A                               ;
+  LD A,C                               ;
+  ADD A,E                              ;
+  ADD A,E                              ;
   LD C,A
-  BIT SLOT_BIT_ORIENTATION,D
-  CALL NZ,invert_shell_coordinate_delta
-  INC B
-  LD (object_coordinates),BC
-  LD (tank_shell_coordinates),BC
-  LD A,COLLISION_MODE_NONE
-  LD (state_collision_mode),A
-  LD A,B
-  AND VIEWPORT_HEIGHT
-  CP VIEWPORT_HEIGHT
-  JP Z,L74A0
-  LD HL,sprite_missile
-  LD DE,SPRITE_SHELL_HEIGHT_PIXELS<<8|SPRITE_SHELL_ATTRIBUTES
-  LD A,SPRITE_SHELL_WIDTH_TILES
-  LD BC,SPRITE_SHELL_FRAME_SIZE_BYTES
-  CALL render_sprite
+  BIT SLOT_BIT_ORIENTATION,D            ; If left-facing, invert X delta via invert_shell_coordinate_delta.
+  CALL NZ,invert_shell_coordinate_delta ;
+  INC B                                ; Increment Y, store position to object_coordinates and tank_shell_coordinates.
+  LD (object_coordinates),BC           ;
+  LD (tank_shell_coordinates),BC       ;
+  LD A,COLLISION_MODE_NONE             ; Set collision mode to COLLISION_MODE_NONE.
+  LD (state_collision_mode),A          ;
+  LD A,B                               ; Check viewport boundary. If off-screen, handle via erase_tank_shell_offscreen.
+  AND VIEWPORT_HEIGHT                  ;
+  CP VIEWPORT_HEIGHT                   ;
+  JP Z,erase_tank_shell_offscreen      ;
+  LD HL,sprite_missile                                        ; Load shell sprite sprite_missile, set params: height=1,
+  LD DE,SPRITE_SHELL_HEIGHT_PIXELS<<8|SPRITE_SHELL_ATTRIBUTES ; width=1, frame=$08. Render via render_sprite.
+  LD A,SPRITE_SHELL_WIDTH_TILES                               ;
+  LD BC,SPRITE_SHELL_FRAME_SIZE_BYTES                         ;
+  CALL render_sprite                                          ;
   RET
 
-; Routine at 74A0
+; Erase off-screen tank shell
 ;
-; Used by the routine at operate_tank_shell.
-L74A0:
-  LD BC,(previous_object_coordinates)
-  LD HL,sprite_missile
-  LD A,C
-  AND $06
-  SLA A
-  SLA A
-  LD D,$00
-  LD E,A
-  ADD HL,DE
-  LD (render_sprite_ptr),HL
-  LD HL,sprite_erasure
-  LD DE,$0100
-  LD A,$01
-  LD BC,$0008
-  CALL render_object
-  JP remove_tank_shell
+; Erases the tank shell sprite when it goes off-screen and removes it from the game.
+erase_tank_shell_offscreen:
+  LD BC,(previous_object_coordinates)  ; Load shell position from previous_object_coordinates, shell sprite
+  LD HL,sprite_missile                 ; sprite_missile.
+  LD A,C                               ; Calculate sprite frame offset from X position: (X AND 6) << 2.
+  AND $06                              ;
+  SLA A                                ;
+  SLA A                                ;
+  LD D,$00                             ;
+  LD E,A                               ;
+  ADD HL,DE                            ;
+  LD (render_sprite_ptr),HL            ; Add offset to sprite address, store to render_sprite_ptr. Load erase sprite
+  LD HL,sprite_erasure                 ; sprite_erasure.
+  LD DE,$0100                          ; Set sprite params, render via render_object, remove shell.
+  LD A,$01                             ;
+  LD BC,$0008                          ;
+  CALL render_object                   ;
+  JP remove_tank_shell                 ; Remove shell via remove_tank_shell.
 
-; Routine at 74C6
+; Trigger tank shell explosion
 ;
-; Used by the routine at operate_tank_shell.
+; Converts the flying tank shell into an explosion. Clears flying bit, sets exploding bit, and adds explosion to
+; viewport objects.
 render_tank_shell_explosion:
-  LD D,$80
-  LD HL,$0000
-  LD (tank_shell_coordinates),HL
-  LD A,(tank_shell_state)
-  RES TANK_SHELL_BIT_FLYING,A
-  SET TANK_SHELL_BIT_EXPLODING,A
-  LD (tank_shell_state),A
-  LD HL,viewport_objects
-  CALL add_object_to_set
-  LD A,$00
-  LD (tank_shell_trajectory_step),A
+  LD D,$80                             ; Set D=$80 (explosion marker), clear shell coordinates.
+  LD HL,$0000                          ;
+  LD (tank_shell_coordinates),HL       ; Store $0000 to tank_shell_coordinates.
+  LD A,(tank_shell_state)              ; Load shell state, clear FLYING bit, set EXPLODING bit.
+  RES TANK_SHELL_BIT_FLYING,A          ;
+  SET TANK_SHELL_BIT_EXPLODING,A       ;
+  LD (tank_shell_state),A              ; Store updated state, add explosion to viewport_objects objects set.
+  LD HL,viewport_objects               ;
+  CALL add_object_to_set               ;
+  LD A,$00                             ; Reset trajectory step to 0.
+  LD (tank_shell_trajectory_step),A    ;
   RET
 
-; Routine at 74E4
+; Remove tank shell from game
 ;
-; Used by the routines at init_current_bridge, cancel_and_remove_shell, L74A0 and remove_object_from_viewport.
+; Clears all tank shell state variables to remove it from the game.
 remove_tank_shell:
-  LD HL,$0000
-  LD (tank_shell_state),HL
-  LD (tank_shell_coordinates),HL
+  LD HL,$0000                          ; Clear tank_shell_state (state) and tank_shell_coordinates (coordinates) to
+  LD (tank_shell_state),HL             ; $0000.
+  LD (tank_shell_coordinates),HL       ;
   RET
 
-; Routine at 74EE
+; Handle tank reaching river boundary
 ;
-; Used by the routine at operate_tank.
-L74EE:
+; Called when a tank on the river reaches the viewport boundary. Reverses direction or removes the tank.
+handle_tank_at_boundary:
   LD HL,(viewport_ptr)
   DEC HL
   DEC HL
@@ -5692,14 +5712,14 @@ L74EE:
   LD E,A
   OR A
   SBC HL,DE
-  JP P,L74EE_0
+  JP P,handle_tank_at_boundary_0
   LD H,$00
   LD L,$90
   LD D,$00
   LD E,C
   OR A
   SBC HL,DE
-  JP M,L74EE_0
+  JP M,handle_tank_at_boundary_0
   LD HL,(viewport_ptr)
   DEC HL
   DEC HL
@@ -5710,7 +5730,7 @@ L74EE:
   CALL explode_fragment
   LD A,POINTS_TANK
   CALL add_points
-L74EE_0:
+handle_tank_at_boundary_0:
   LD HL,(viewport_ptr)
   DEC HL
   SET 4,(HL)                           ; Set CONTROLS_BIT_BONUS_LIFE
@@ -5722,7 +5742,7 @@ L74EE_0:
   JP Z,L7546
   LD A,(state_bridge_player_2)
 ; This entry point is used by the routine at L7546.
-L74EE_1:
+handle_tank_at_boundary_1:
   LD B,A
   LD A,$07
   SUB B
@@ -5732,10 +5752,10 @@ L74EE_1:
 
 ; Routine at 7546
 ;
-; Used by the routine at L74EE.
+; Used by the routine at handle_tank_at_boundary.
 L7546:
   LD A,(state_bridge_player_1)
-  JP L74EE_1
+  JP handle_tank_at_boundary_1
 
 ; Routine at 754C
 ;
@@ -7449,8 +7469,8 @@ render_sprite_0:
 ; Routine at 8B3C
 ;
 ; Used by the routines at render_plane_and_terrain, handle_right, handle_left, render_plane, finalize_collision,
-; render_rock, operate_ship_or_helicopter_continue, operate_tank_shell_explosion, animate_helicopter, L74A0,
-; handle_object_proximity and L76DA.
+; render_rock, operate_ship_or_helicopter_continue, operate_tank_shell_explosion, animate_helicopter,
+; erase_tank_shell_offscreen, handle_object_proximity and L76DA.
 ;
 ; I:A Sprite width in tiles
 ; I:BC Sprite size in bytes
@@ -7896,7 +7916,7 @@ L90CE:
 ; Add score points for a hit target
 ;
 ; Used by the routines at handle_collision_mode_fighter, check_collision, hit_helicopter_reg, hit_ship,
-; hit_helicopter_adv, hit_fighter, hit_balloon, hit_fuel and L74EE.
+; hit_helicopter_adv, hit_fighter, hit_balloon, hit_fuel and handle_tank_at_boundary.
 ;
 ; I:A Number of points to add divided by 10.
 add_points:

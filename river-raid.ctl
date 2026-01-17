@@ -2414,32 +2414,81 @@ D $7393 #LIST { Loads position from #R$5F73 } { Advances Y position via #R$62DA 
 c $73D0 Remove helicopter missile
 D $73D0 Clears helicopter missile coordinates at #R$5F73 to remove it from the game.
   $73D0,7 Set #R$5F73 to $0000.
-c $73D8
+@ $73D8 label=add_missile_x_offset
+c $73D8 Add X offset for right-facing missile spawn
+D $73D8 Adds $08 to X position for spawning missile from right-facing helicopter.
+  $73D8,4 C = C + $08.
 @ $73DD label=render_helicopter_missile
-c $73DD
+c $73DD Render helicopter missile (spawn new)
+D $73DD Spawns a new helicopter missile from an advanced helicopter. Called when processing OBJECT_HELICOPTER_ADV in the viewport loop. Plays a sound and initializes missile trajectory.
+D $73DD #LIST { Returns immediately during GAMEPLAY_MODE_SCROLL_IN } { Returns if missile already active (B != 0) } { Plays missile launch sound via ROM BEEPER } { Extracts helicopter position and orientation } { Stores initial missile coordinates to #R$5F73 } LIST#
+  $73DD Return if in GAMEPLAY_MODE_SCROLL_IN.
 @ $73E0 isub=CP GAMEPLAY_MODE_SCROLL_IN
+  $73E3,7 Load missile coords from #R$5F73. Return if missile active (B != 0).
+  $73EB Play missile launch sound: BEEPER with DE=$0001, HL=$2800.
+  $73F4 Load viewport_ptr, extract [D, B, C] from helicopter's slot.
+  $73FD Align X to 8-pixel boundary (AND $F8), extract orientation bit.
+  $7404 Store orientation to #R$5F75. If right-facing, add offset via #R$73D8.
+  $740C,8 Add 4 to Y position (INC B × 4), store to #R$5F73.
 @ $7415 label=handle_collision_mode_helicopter_missile
-c $7415
+c $7415 Handle helicopter missile collision
+D $7415 Checks if helicopter missile hit the player. Called from collision handler when COLLISION_MODE_HELICOPTER_MISSILE is active.
+D $7415 #LIST { Checks missile position against player position } { If collision detected, jumps to #R$650A (player hit) } { Clears missile and pops return addresses to abort collision chain } LIST#
+  $7415 Load missile coords. If Y bit 7 clear, clear missile and return.
+  $741B Clear Y bit 7, check if Y-8 is negative (missile above screen).
+  $7423 Compare missile X with player X (from #R$5F72). If match, player hit.
+  $742F Check adjacent X position. If match, player hit.
+  $7435,11 Clear missile coords, pop 4 return addresses, return.
 @ $7441 label=operate_tank_shell
-c $7441
+c $7441 Operate tank shell
+D $7441 Advances the tank shell along its trajectory and renders it. Shell moves in a parabolic arc based on speed and step count.
+D $7441 #LIST { Returns if shell not flying (bit 7 of #R$7383) } { Increments trajectory step, explodes at step 8 } { Plays descending pitch sound based on step } { Moves shell based on speed and orientation } { Renders shell sprite or triggers explosion } LIST#
+  $7441,5 Return if TANK_SHELL_BIT_FLYING not set.
 @ $7444 isub=BIT TANK_SHELL_BIT_FLYING,A
+  $7447,7 Load shell coords, increment trajectory step, store.
 @ $7452 isub=CP TANK_SHELL_TRAJECTORY_MAX_STEP
+  $7452 If step == 8 (max), explode via #R$74C6.
+  $7457 Play shell whistle: BEEPER with DE=$0002, HL=(step, 0).
+  $7460,7 Reload shell coords, advance Y position, store to #R$8B0A.
+  $746B,10 Get shell speed from state, add speed×2 to X position.
 @ $746F isub=AND TANK_SHELL_MASK_SPEED
 @ $7476 isub=BIT SLOT_BIT_ORIENTATION,D
+  $7476 If left-facing, invert X delta via #R$7387.
+  $747B Increment Y, store position to #R$8B0C and #R$7385.
 @ $7484 isub=LD A,COLLISION_MODE_NONE
+  $7484 Set collision mode to COLLISION_MODE_NONE.
+  $7489 Check viewport boundary. If off-screen, handle via #R$74A0.
 @ $748A isub=AND VIEWPORT_HEIGHT
 @ $748C isub=CP VIEWPORT_HEIGHT
+  $7491,14 Load shell sprite #R$8431, set params: height=1, width=1, frame=$08. Render via #R$8B1E.
 @ $7494 isub=LD DE,SPRITE_SHELL_HEIGHT_PIXELS<<8|SPRITE_SHELL_ATTRIBUTES
 @ $7497 isub=LD A,SPRITE_SHELL_WIDTH_TILES
 @ $7499 isub=LD BC,SPRITE_SHELL_FRAME_SIZE_BYTES
-c $74A0
+@ $74A0 label=erase_tank_shell_offscreen
+c $74A0 Erase off-screen tank shell
+D $74A0 Erases the tank shell sprite when it goes off-screen and removes it from the game.
+  $74A0 Load shell position from #R$8B0A, shell sprite #R$8431.
+  $74A7 Calculate sprite frame offset from X position: (X AND 6) << 2.
+  $74B2 Add offset to sprite address, store to #R$8B0E. Load erase sprite #R$82F5.
+  $74B8 Set sprite params, render via #R$8B3C, remove shell.
+  $74C3 Remove shell via #R$74E4.
 @ $74C6 label=render_tank_shell_explosion
-c $74C6
+c $74C6 Trigger tank shell explosion
+D $74C6 Converts the flying tank shell into an explosion. Clears flying bit, sets exploding bit, and adds explosion to viewport objects.
+  $74C6 Set D=$80 (explosion marker), clear shell coordinates.
+  $74CB Store $0000 to #R$7385.
+  $74CE Load shell state, clear FLYING bit, set EXPLODING bit.
 @ $74D1 isub=RES TANK_SHELL_BIT_FLYING,A
 @ $74D3 isub=SET TANK_SHELL_BIT_EXPLODING,A
+  $74D5 Store updated state, add explosion to #R$5F00 objects set.
+  $74DE,5 Reset trajectory step to 0.
 @ $74E4 label=remove_tank_shell
-c $74E4
-c $74EE
+c $74E4 Remove tank shell from game
+D $74E4 Clears all tank shell state variables to remove it from the game.
+  $74E4,9 Clear #R$7383 (state) and #R$7385 (coordinates) to $0000.
+@ $74EE label=handle_tank_at_boundary
+c $74EE Handle tank reaching river boundary
+D $74EE Called when a tank on the river reaches the viewport boundary. Reverses direction or removes the tank.
 @ $7520 isub=LD A,POINTS_TANK
   $7529,2 Set CONTROLS_BIT_BONUS_LIFE
 @ $752B isub=SET CONTROLS_BIT_EXPLODING,(HL)
