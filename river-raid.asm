@@ -4819,7 +4819,7 @@ render_balloon:
 
 ; Main viewport object processing loop.
 ;
-; Used by the routines at play, main_loop, overview, ship_or_helicopter_left_advance, operate_fighter, L71A2, L7224,
+; Used by the routines at play, main_loop, overview, operate_ship_or_helicopter_continue, operate_fighter, L71A2, L7224,
 ; animate_object, animate_helicopter, operate_tank, operate_tank_on_bank, L7358, L74EE, operate_fuel,
 ; handle_object_proximity, remove_object_from_viewport, operate_baloon, jp_operate_viewport_objects and L76DA.
 ;
@@ -4908,61 +4908,79 @@ operate_viewport_objects_0:
   CP $00                               ; Check if object type is 0 (no object or special case).
   JP Z,L71A2                           ; If type is 0, jump to L71A2.
 
-; Ship or helicopter operation routine.
+; Ship or helicopter operation routine
 ;
-; Animates the helicopter rotor on each other metronome tick. Advances the object by 2 pixels on each metrinome tick
-; until it approaches the bank closer than 16 pixels, then inverts the object orientation.
+; Animates and moves ships and helicopters. On every other frame (metronome tick), advances the object by 2 pixels
+; toward the opposite river bank. When the object gets within 16 pixels of the bank edge, it reverses direction.
+;
+; * Checks metronome for animation timing
+; * Determines direction from bit 6 (SLOT_BIT_ORIENTATION)
+; * Left-facing objects advance left, right-facing advance right
+; * Collision with terrain triggers direction reversal via handle_object_proximity
+;
+; I:B Y position of object
+; I:C X position of object
+; I:D Object definition byte
 operate_ship_or_helicopter:
-  LD A,(state_metronome)
-  AND HELICOPTER_ANIMATION_METRONOME_MASK
-  CP HELICOPTER_ANIMATION_METRONOME_VALUE
+  LD A,(state_metronome)                  ; Check metronome: if frame counter bit 0 == 0, jump to render only at
+  AND HELICOPTER_ANIMATION_METRONOME_MASK ; animate_object.
+  CP HELICOPTER_ANIMATION_METRONOME_VALUE ;
   JP Z,animate_object
-  BIT SLOT_BIT_ORIENTATION,D
-  JP Z,ship_or_helicopter_right_advance
+  BIT SLOT_BIT_ORIENTATION,D            ; Check orientation: if bit 6 clear (right-facing), jump to
+  JP Z,ship_or_helicopter_right_advance ; ship_or_helicopter_right_advance.
 
-; Routine at 7113
+; Advance left-facing ship or helicopter
+;
+; Moves a left-facing ship/helicopter 2 pixels left, checking for terrain collision.
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition
 ship_or_helicopter_left_advance:
-  PUSH BC
-  LD A,C
-  SUB $10
-  LD C,A
-  CALL calculate_pixel_address
-  LD A,(HL)
-  POP BC
-  CP $00
-  CALL NZ,handle_object_proximity
-  LD (previous_object_coordinates),BC
-  DEC C
-  DEC C
-; This entry point is used by the routines at L7224 and ship_or_helicopter_right_advance.
+  PUSH BC                              ; Save BC, calculate terrain check position: C -= 16 pixels.
+  LD A,C                               ;
+  SUB $10                              ;
+  LD C,A                               ;
+  CALL calculate_pixel_address         ; Call calculate_pixel_address to get terrain byte at (C, B). Load result into A.
+  LD A,(HL)                            ;
+  POP BC                               ; Restore BC. If terrain != 0, reverse direction via handle_object_proximity.
+  CP $00                               ;
+  CALL NZ,handle_object_proximity      ;
+  LD (previous_object_coordinates),BC  ; Store position to previous_object_coordinates. Advance X position left by 2
+  DEC C                                ; pixels (DEC C twice).
+  DEC C                                ;
+
+; Continue ship/helicopter rendering
+;
+; Updates the object's position in the viewport array and renders the sprite.
 operate_ship_or_helicopter_continue:
-  LD HL,(viewport_ptr)
-  DEC HL
-  LD D,(HL)
-  DEC HL
-  LD (HL),B
-  DEC HL
-  LD (HL),C
-  LD (object_coordinates),BC
-  LD HL,all_ff
-  LD (render_sprite_ptr),HL
+  LD HL,(viewport_ptr)                 ; Load viewport_ptr, navigate back to current slot, update [X, Y, D] values.
+  DEC HL                               ;
+  LD D,(HL)                            ;
+  DEC HL                               ;
+  LD (HL),B                            ;
+  DEC HL                               ;
+  LD (HL),C                            ;
+  LD (object_coordinates),BC           ; Store position to object_coordinates, sprite address all_ff to
+  LD HL,all_ff                         ; render_sprite_ptr. Get sprite via ld_enemy_sprites.
+  LD (render_sprite_ptr),HL            ;
   CALL ld_enemy_sprites
-  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
-  LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES
-  LD A,D
-  AND SLOT_MASK_OBJECT_TYPE
-  CP OBJECT_SHIP
+  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE   ; Set frame size=$18, default attributes=$0E.
+  LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES    ;
+  LD A,D                               ; If object type is OBJECT_SHIP, load ship attributes via ld_attributes_ship.
+  AND SLOT_MASK_OBJECT_TYPE            ;
+  CP OBJECT_SHIP                       ;
   CALL Z,ld_attributes_ship
-  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
-  LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
-  CALL render_object
+  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES   ; Set width=3 tiles, height=8 pixels. Render via render_object, return to main
+  LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS ; loop.
+  CALL render_object                   ;
   JP operate_viewport_objects
 
-; Routine at 7155
+; Reset left-moving fighter position
 ;
-; Used by the routine at operate_fighter.
+; Resets X position to FIGHTER_POSITION_LEFT_INIT ($E8) when fighter reaches left edge.
 fighter_left_reset:
-  LD C,FIGHTER_POSITION_LEFT_INIT
+  LD C,FIGHTER_POSITION_LEFT_INIT      ; Set C = $E8 (initial left position).
   RET
 
 ; Fighter operation routine.
@@ -5734,7 +5752,7 @@ ship_or_helicopter_right_advance:
 
 ; Load array of enemy sprites.
 ;
-; Used by the routines at render_enemy, ship_or_helicopter_left_advance, operate_fighter, animate_helicopter,
+; Used by the routines at render_enemy, operate_ship_or_helicopter_continue, operate_fighter, animate_helicopter,
 ; operate_tank and handle_object_proximity.
 ;
 ; I:D OBJECT_DEFINITION
@@ -7375,7 +7393,7 @@ render_sprite_0:
 ; Routine at 8B3C
 ;
 ; Used by the routines at render_plane_and_terrain, handle_right, handle_left, render_plane, finalize_collision,
-; render_rock, ship_or_helicopter_left_advance, L71A2, animate_helicopter, L74A0, handle_object_proximity and L76DA.
+; render_rock, operate_ship_or_helicopter_continue, L71A2, animate_helicopter, L74A0, handle_object_proximity and L76DA.
 ;
 ; I:A Sprite width in tiles
 ; I:BC Sprite size in bytes

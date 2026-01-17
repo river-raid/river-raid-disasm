@@ -5330,7 +5330,7 @@ c$706C LD B,$00      ; {BC = (0, E): set X position in BC for object entry.
 
 ; Main viewport object processing loop.
 ;
-; Used by the routines at #R$5DA6, #R$5F91, #R$6D17, #R$7113, #R$7158, #R$71A2,
+; Used by the routines at #R$5DA6, #R$5F91, #R$6D17, #R$7128, #R$7158, #R$71A2,
 ; #R$7224, #R$724C, #R$7259, #R$7296, #R$7302, #R$7358, #R$74EE, #R$754C,
 ; #R$75D0, #R$762E, #R$7649, #R$76AC and #R$76DA.
 ;
@@ -5448,76 +5448,94 @@ c$708E LD A,$00      ; {Reset state_collision_mode to COLLISION_MODE_NONE.
  $70FF CP $00        ; Check if object type is 0 (no object or special case).
  $7101 JP Z,$71A2    ; If type is 0, jump to L71A2.
 
-; Ship or helicopter operation routine.
+; Ship or helicopter operation routine
 ;
+; Animates and moves ships and helicopters. On every other frame (metronome
+; tick), advances the object by 2 pixels toward the opposite river bank. When
+; the object gets within 16 pixels of the bank edge, it reverses direction.
 ; .
+; #LIST
+; { Checks metronome for animation timing }
+; { Determines direction from bit 6 (SLOT_BIT_ORIENTATION) }
+; { Left-facing objects advance left, right-facing advance right }
+; { Collision with terrain triggers direction reversal via #R$75D0 }
+; LIST#
 ;
-; .
-;
-; Animates the helicopter rotor on each other metronome tick. Advances the
-; object by 2 pixels on each metrinome tick until it approaches the bank closer
-; than 16 pixels, then inverts the object orientation.
+; I:B Y position of object
+; I:C X position of object
+; I:D Object definition byte
 @label=operate_ship_or_helicopter
-c$7104 LD A,($5EEF)  ;
+c$7104 LD A,($5EEF)  ; {Check metronome: if frame counter bit 0 == 0, jump to
 @isub=AND HELICOPTER_ANIMATION_METRONOME_MASK
- $7107 AND $01       ;
+ $7107 AND $01       ; render only at #R$724C.
 @isub=CP HELICOPTER_ANIMATION_METRONOME_VALUE
- $7109 CP $00        ;
+ $7109 CP $00        ; }
  $710B JP Z,$724C    ;
 @isub=BIT SLOT_BIT_ORIENTATION,D
- $710E BIT 6,D       ;
- $7110 JP Z,$75A2    ;
+ $710E BIT 6,D       ; {Check orientation: if bit 6 clear (right-facing), jump
+ $7110 JP Z,$75A2    ; to #R$75A2.}
 
-; Routine at 7113
+; Advance left-facing ship or helicopter
+;
+; Moves a left-facing ship/helicopter 2 pixels left, checking for terrain
+; collision.
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition
 @label=ship_or_helicopter_left_advance
-c$7113 PUSH BC       ;
- $7114 LD A,C        ;
+c$7113 PUSH BC       ; {Save BC, calculate terrain check position: C -= 16
+ $7114 LD A,C        ; pixels.
  $7115 SUB $10       ;
- $7117 LD C,A        ;
- $7118 CALL $8A4E    ;
- $711B LD A,(HL)     ;
- $711C POP BC        ;
- $711D CP $00        ;
- $711F CALL NZ,$75D0 ;
- $7122 LD ($8B0A),BC ;
- $7126 DEC C         ;
- $7127 DEC C         ;
-; This entry point is used by the routines at #R$7224 and #R$75A2.
+ $7117 LD C,A        ; }
+ $7118 CALL $8A4E    ; {Call #R$8A4E to get terrain byte at (C, B). Load result
+ $711B LD A,(HL)     ; into A.}
+ $711C POP BC        ; {Restore BC. If terrain != 0, reverse direction via
+ $711D CP $00        ; #R$75D0.
+ $711F CALL NZ,$75D0 ; }
+ $7122 LD ($8B0A),BC ; {Store position to #R$8B0A. Advance X position left by 2
+ $7126 DEC C         ; pixels (DEC C twice).
+ $7127 DEC C         ; }
+
+; Continue ship/helicopter rendering
+;
+; Updates the object's position in the viewport array and renders the sprite.
 @label=operate_ship_or_helicopter_continue
-*$7128 LD HL,($5F60) ;
- $712B DEC HL        ;
+c$7128 LD HL,($5F60) ; {Load viewport_ptr, navigate back to current slot,
+ $712B DEC HL        ; update [X, Y, D] values.
  $712C LD D,(HL)     ;
  $712D DEC HL        ;
  $712E LD (HL),B     ;
  $712F DEC HL        ;
- $7130 LD (HL),C     ;
- $7131 LD ($8B0C),BC ;
- $7135 LD HL,$82C5   ;
- $7138 LD ($8B0E),HL ;
+ $7130 LD (HL),C     ; }
+ $7131 LD ($8B0C),BC ; {Store position to #R$8B0C, sprite address #R$82C5 to
+ $7135 LD HL,$82C5   ; #R$8B0E. Get sprite via #R$75BA.
+ $7138 LD ($8B0E),HL ; }
  $713B CALL $75BA    ;
 @isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
- $713E LD BC,$0018   ;
+ $713E LD BC,$0018   ; {Set frame size=$18, default attributes=$0E.
 @isub=LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES
- $7141 LD E,$0E      ;
- $7143 LD A,D        ;
+ $7141 LD E,$0E      ; }
+ $7143 LD A,D        ; {If object type is OBJECT_SHIP, load ship attributes via
 @isub=AND SLOT_MASK_OBJECT_TYPE
- $7144 AND $07       ;
+ $7144 AND $07       ; #R$7038.
 @isub=CP OBJECT_SHIP
- $7146 CP $02        ;
+ $7146 CP $02        ; }
  $7148 CALL Z,$7038  ;
 @isub=LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
- $714B LD A,$03      ;
+ $714B LD A,$03      ; {Set width=3 tiles, height=8 pixels. Render via #R$8B3C,
 @isub=LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
- $714D LD D,$08      ;
- $714F CALL $8B3C    ;
+ $714D LD D,$08      ; return to main loop.
+ $714F CALL $8B3C    ; }
  $7152 JP $708E      ;
 
-; Routine at 7155
+; Reset left-moving fighter position
 ;
-; Used by the routine at #R$7158.
-@isub=LD C,FIGHTER_POSITION_LEFT_INIT
+; Resets X position to FIGHTER_POSITION_LEFT_INIT ($E8) when fighter reaches
+; left edge.
 @label=fighter_left_reset
-c$7155 LD C,$E8      ;
+@isub=LD C,FIGHTER_POSITION_LEFT_INIT
+c$7155 LD C,$E8      ; Set C = $E8 (initial left position).
  $7157 RET           ;
 
 ; Fighter operation routine.
@@ -6350,7 +6368,7 @@ c$75A2 PUSH BC       ;
 
 ; Load array of enemy sprites.
 ;
-; Used by the routines at #R$6FF6, #R$7113, #R$7158, #R$7259, #R$7296 and
+; Used by the routines at #R$6FF6, #R$7128, #R$7158, #R$7259, #R$7296 and
 ; #R$75D0.
 ;
 ; I:D OBJECT_DEFINITION
@@ -8258,7 +8276,7 @@ c$8B1E PUSH DE       ;
 ; Routine at 8B3C
 ;
 ; Used by the routines at #R$60A5, #R$65F3, #R$6642, #R$6682, #R$6794, #R$6FBB,
-; #R$7113, #R$71A2, #R$7259, #R$74A0, #R$75D0 and #R$76DA.
+; #R$7128, #R$71A2, #R$7259, #R$74A0, #R$75D0 and #R$76DA.
 ;
 ; I:A Sprite width in tiles
 ; I:BC Sprite size in bytes

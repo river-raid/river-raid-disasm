@@ -2115,25 +2115,48 @@ N $708E 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHT
   $70FA Check if this is a tank.
   $70FC If tank, jump to operate_tank.
   $70FF Check if object type is 0 (no object or special case).
-  $7101,3 If type is 0, jump to L71A2.
+  $7101 If type is 0, jump to L71A2.
 @ $7104 label=operate_ship_or_helicopter
-c $7104 Ship or helicopter operation routine.
-N $7104 Animates the helicopter rotor on each other metronome tick. Advances the object by 2 pixels on each metrinome tick until it approaches the bank closer than 16 pixels, then inverts the object orientation.
+c $7104 Ship or helicopter operation routine
+D $7104 Animates and moves ships and helicopters. On every other frame (metronome tick), advances the object by 2 pixels toward the opposite river bank. When the object gets within 16 pixels of the bank edge, it reverses direction.
+D $7104 #LIST { Checks metronome for animation timing } { Determines direction from bit 6 (SLOT_BIT_ORIENTATION) } { Left-facing objects advance left, right-facing advance right } { Collision with terrain triggers direction reversal via #R$75D0 } LIST#
+R $7104 I:B Y position of object
+R $7104 I:C X position of object
+R $7104 I:D Object definition byte
+  $7104,7 Check metronome: if frame counter bit 0 == 0, jump to render only at #R$724C.
 @ $7107 isub=AND HELICOPTER_ANIMATION_METRONOME_MASK
 @ $7109 isub=CP HELICOPTER_ANIMATION_METRONOME_VALUE
 @ $710E isub=BIT SLOT_BIT_ORIENTATION,D
+  $710E Check orientation: if bit 6 clear (right-facing), jump to #R$75A2.
 @ $7113 label=ship_or_helicopter_left_advance
-c $7113
+c $7113 Advance left-facing ship or helicopter
+D $7113 Moves a left-facing ship/helicopter 2 pixels left, checking for terrain collision.
+R $7113 I:B Y position
+R $7113 I:C X position
+R $7113 I:D Object definition
+  $7113 Save BC, calculate terrain check position: C -= 16 pixels.
+  $7118 Call #R$8A4E to get terrain byte at (C, B). Load result into A.
+  $711C Restore BC. If terrain != 0, reverse direction via #R$75D0.
+  $7122 Store position to #R$8B0A. Advance X position left by 2 pixels (DEC C twice).
 @ $7128 label=operate_ship_or_helicopter_continue
+c $7128 Continue ship/helicopter rendering
+D $7128 Updates the object's position in the viewport array and renders the sprite.
+  $7128 Load viewport_ptr, navigate back to current slot, update [X, Y, D] values.
+  $7131,10 Store position to #R$8B0C, sprite address #R$82C5 to #R$8B0E. Get sprite via #R$75BA.
 @ $713E isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
+  $713E Set frame size=$18, default attributes=$0E.
 @ $7141 isub=LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES
+  $7143,5 If object type is OBJECT_SHIP, load ship attributes via #R$7038.
 @ $7144 isub=AND SLOT_MASK_OBJECT_TYPE
 @ $7146 isub=CP OBJECT_SHIP
 @ $714B isub=LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
+  $714B,7 Set width=3 tiles, height=8 pixels. Render via #R$8B3C, return to main loop.
 @ $714D isub=LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
-@ $7155 isub=LD C,FIGHTER_POSITION_LEFT_INIT
 @ $7155 label=fighter_left_reset
-c $7155
+@ $7155 isub=LD C,FIGHTER_POSITION_LEFT_INIT
+c $7155 Reset left-moving fighter position
+D $7155 Resets X position to FIGHTER_POSITION_LEFT_INIT ($E8) when fighter reaches left edge.
+  $7155,2 Set C = $E8 (initial left position).
 @ $7158 label=operate_fighter
 c $7158 Fighter operation routine.
 N $7158 Advances the fighter by 4 pixels on each metronome tick and renders it using the XOR blending mode. When a fighter reaches the screen margin, resets its position.
