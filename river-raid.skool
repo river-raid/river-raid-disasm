@@ -8895,9 +8895,10 @@ c$90E0 PUSH AF       ;
  $9106 JR NZ,$90FE   ;
  $9108 RET           ;
 
-; Add a life to the current player
+; Add a life to the current player.
 ;
-; Used by the routine at #R$9122.
+; Increments the current player's life count and triggers the bonus life sound
+; effect.
 @label=add_life
 c$9109 PUSH AF       ;
  $910A CALL $9423    ;
@@ -8906,17 +8907,18 @@ c$9109 PUSH AF       ;
  $9110 CALL $1601    ;
  $9113 CALL $923E    ;
  $9116 LD HL,($9283) ;
- $9119 SET 4,(HL)    ; Set CONTROLS_BIT_BONUS_LIFE
+ $9119 SET 4,(HL)    ; Set CONTROLS_BIT_BONUS_LIFE to trigger bonus sound.
  $911B LD A,$01      ;
  $911D CALL $1601    ;
  $9120 POP AF        ;
  $9121 RET           ;
 
-; Routine at 9122
+; Update and print score for current player.
 ;
-; Used by the routines at #R$90E0, #R$9191 and #R$91A9.
+; Adds points to the current player's score and refreshes the on-screen
+; display.
 ;
-; I:A (can be 1, 2 or 4)
+; I:A Update type (1=player 1, 2=player 2, 4=both)
 @label=update_score
 c$9122 PUSH AF       ;
  $9123 LD A,$01      ;
@@ -9065,9 +9067,9 @@ c$91A9 LD (HL),$30   ;
  $91BD POP HL        ;
  $91BE JP $9179      ;
 
-; Routine at 91C1
+; Print player 2's score on the status line.
 ;
-; Used by the routine at #R$91E8.
+; Displays player 2's score with cyan color on the status line.
 @label=print_score_player_2
 @isub=LD A,EXT_ATTR_INK
 c$91C1 LD A,$10      ; {INK of Player 2 color

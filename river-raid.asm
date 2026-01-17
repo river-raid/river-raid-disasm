@@ -7972,9 +7972,9 @@ add_points_2:
   JR NZ,add_points_2
   RET
 
-; Add a life to the current player
+; Add a life to the current player.
 ;
-; Used by the routine at update_score.
+; Increments the current player's life count and triggers the bonus life sound effect.
 add_life:
   PUSH AF
   CALL ld_lives
@@ -7983,17 +7983,17 @@ add_life:
   CALL CHAN_OPEN
   CALL print_lives
   LD HL,(ptr_state_controls)
-  SET 4,(HL)                           ; Set CONTROLS_BIT_BONUS_LIFE
+  SET 4,(HL)                           ; Set CONTROLS_BIT_BONUS_LIFE to trigger bonus sound.
   LD A,$01
   CALL CHAN_OPEN
   POP AF
   RET
 
-; Routine at 9122
+; Update and print score for current player.
 ;
-; Used by the routines at add_points, carry_player_1_score_digit and carry_player_2_score_digit.
+; Adds points to the current player's score and refreshes the on-screen display.
 ;
-; I:A (can be 1, 2 or 4)
+; I:A Update type (1=player 1, 2=player 2, 4=both)
 update_score:
   PUSH AF
   LD A,$01
@@ -8127,9 +8127,9 @@ carry_player_2_score_digit:
   POP HL
   JP print_player_2_score_digit
 
-; Routine at 91C1
+; Print player 2's score on the status line.
 ;
-; Used by the routine at print_player_2_score_area.
+; Displays player 2's score with cyan color on the status line.
 print_score_player_2:
   LD A,EXT_ATTR_INK                    ; INK of Player 2 color
   RST $10                              ;

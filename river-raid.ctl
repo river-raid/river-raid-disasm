@@ -3171,12 +3171,13 @@ t $90CE
 c $90E0 Add score points for a hit target
 R $90E0 I:A Number of points to add divided by 10.
 @ $9109 label=add_life
-c $9109 Add a life to the current player
-  $9119,2 Set CONTROLS_BIT_BONUS_LIFE
-  $9119,2 Set CONTROLS_BIT_BONUS_LIFE
+c $9109 Add a life to the current player.
+D $9109 Increments the current player's life count and triggers the bonus life sound effect.
+  $9119,2 Set CONTROLS_BIT_BONUS_LIFE to trigger bonus sound.
 @ $9122 label=update_score
-c $9122
-R $9122 I:A (can be 1, 2 or 4)
+c $9122 Update and print score for current player.
+D $9122 Adds points to the current player's score and refreshes the on-screen display.
+R $9122 I:A Update type (1=player 1, 2=player 2, 4=both)
 @ $9136 isub=CP PLAYER_2
 @ $913B label=inc_player_1_score_digit
 c $913B Increase a digit in the player 1's score.
@@ -3218,7 +3219,8 @@ R $91A9 I:D Offset of the digit to carry.
 R $91A9 I:HL Pointer to the digit.
 @ $91C1 label=print_score_player_2
 @ $91C1 isub=LD A,EXT_ATTR_INK
-c $91C1
+c $91C1 Print player 2's score on the status line.
+D $91C1 Displays player 2's score with cyan color on the status line.
   $91C1 INK of Player 2 color
 @ $91C4 isub=LD A,COLOR_PLAYER_2
 @ $91C7 isub=LD BC,L90C8 - state_score_player_2_low
