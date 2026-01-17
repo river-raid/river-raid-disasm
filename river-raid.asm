@@ -3848,15 +3848,18 @@ select_controls:
   JP return_to_control_selection       ; Jump to title screen initialization.
 
 ; Non-maskable interrupt handler
+;
+; Called 50 times per second by the Z80 NMI. Saves registers, increments frame counter, checks for pause key, and
+; processes game control flags for sound effects.
 int_handler:
-  DI
-  PUSH HL
-  PUSH DE
-  PUSH BC
-  PUSH AF
-  LD HL,int_counter
-  INC (HL)
-  LD A,$BF                             ; Check if H was pressed
+  DI                                   ; Disable interrupts and save all registers (HL, DE, BC, AF).
+  PUSH HL                              ;
+  PUSH DE                              ;
+  PUSH BC                              ;
+  PUSH AF                              ;
+  LD HL,int_counter                    ; Increment frame counter at FRAMES (int_counter).
+  INC (HL)                             ;
+  LD A,$BF                             ; Read keyboard row (H-B-N-M-SS). If H pressed, jump to pause (pause handler).
   IN A,($FE)                           ;
   BIT 4,A                              ;
   JP Z,pause
@@ -3865,41 +3868,39 @@ int_handler:
 ;
 ; Called from interrupt handler to process various control flags like fire, bonus life, explosion, and low fuel sounds.
 handle_controls:
-  LD A,(LAST_K)                        ; Check if H (pause) was pressed, skip processing if so.
+  LD A,(LAST_K)                        ; If last key was 'h' (pause), skip sound processing.
   CP $68                               ;
-  JP Z,int_return
-  LD HL,state_controls
-  BIT CONTROLS_BIT_FIRE,(HL)
-  CALL NZ,do_fire
-  BIT CONTROLS_BIT_BONUS_LIFE,(HL)
-  CALL NZ,do_bonus_life
-  LD HL,state_controls
-  BIT CONTROLS_BIT_EXPLODING,(HL)
-  CALL NZ,beep_explosion
-  LD HL,state_controls
-  BIT CONTROLS_BIT_LOW_FUEL,(HL)
-  JP NZ,do_low_fuel
-  LD A,(HL)
-  AND $06                              ; Distill the state down to CONTROLS_BIT_SPEED_DECREASED and
-                                       ; CONTROLS_BIT_SPEED_ALTERED.
-  CP $02                               ; Check if only CONTROLS_BIT_SPEED_DECREASED is set.
+  JP Z,int_return                      ;
+  LD HL,state_controls                 ; Load state_controls (controls). If FIRE bit set, call do_fire (fire sound).
+  BIT CONTROLS_BIT_FIRE,(HL)           ;
+  CALL NZ,do_fire                      ;
+  BIT CONTROLS_BIT_BONUS_LIFE,(HL)     ; If BONUS_LIFE bit set, call do_bonus_life (bonus life sound).
+  CALL NZ,do_bonus_life                ;
+  LD HL,state_controls                 ;
+  BIT CONTROLS_BIT_EXPLODING,(HL)      ; Reload controls. If EXPLODING bit set, call beep_explosion (explosion sound).
+  CALL NZ,beep_explosion               ;
+  LD HL,state_controls                 ;
+  BIT CONTROLS_BIT_LOW_FUEL,(HL)       ; Reload controls. If LOW_FUEL bit set, jump to do_low_fuel (low fuel warning).
+  JP NZ,do_low_fuel                    ;
+  LD A,(HL)                            ;
+  AND $06                              ; Mask control byte to isolate SPEED_DECREASED and SPEED_ALTERED bits.
+  CP $02                               ; If only SPEED_DECREASED set, jump to beep_speed_decreased (deceleration sound).
   JP Z,beep_speed_decreased            ;
-  CP $04                               ; Check if only CONTROLS_BIT_SPEED_ALTERED is set.
+  CP $04                               ; If only SPEED_ALTERED set, jump to beep_speed_increased (acceleration sound).
   JP Z,beep_speed_increased            ;
-  CP $06                               ; Check if both bits are set.
+  CP $06                               ; If both speed bits set, jump to beep_speed_combined (combined speed sound).
   JP Z,beep_speed_combined             ;
 
-; Return from the non-maskable interrupt handler
+; Return from the non-maskable interrupt handler.
 ;
-; Used by the routines at handle_controls, beep_speed_decreased, beep_speed_increased, beep_speed_combined and
-; do_low_fuel.
+; Restores all saved registers and returns from NMI using RETN instruction.
 int_return:
-  POP AF
-  POP BC
-  POP DE
-  POP HL
-  EI
-  RETN
+  POP AF                               ; Restore registers (AF, BC, DE, HL).
+  POP BC                               ;
+  POP DE                               ;
+  POP HL                               ;
+  EI                                   ; Enable interrupts and return from NMI.
+  RETN                                 ;
 
 ; Unused
 L6C2B:

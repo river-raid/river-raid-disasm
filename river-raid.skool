@@ -4243,16 +4243,20 @@ c$6BD2 LD HL,$8182   ; {Reset text pointer to #R$8182 (credits text start).
  $6BD8 JP $5D06      ; Jump to title screen initialization.
 
 ; Non-maskable interrupt handler
+;
+; Called 50 times per second by the Z80 NMI. Saves registers, increments frame
+; counter, checks for pause key, and processes game control flags for sound
+; effects.
 @label=int_handler
-c$6BDB DI            ;
- $6BDC PUSH HL       ;
+c$6BDB DI            ; {Disable interrupts and save all registers (HL, DE, BC,
+ $6BDC PUSH HL       ; AF).
  $6BDD PUSH DE       ;
  $6BDE PUSH BC       ;
- $6BDF PUSH AF       ;
- $6BE0 LD HL,$5C78   ;
- $6BE3 INC (HL)      ;
- $6BE4 LD A,$BF      ; {Check if H was pressed
- $6BE6 IN A,($FE)    ;
+ $6BDF PUSH AF       ; }
+ $6BE0 LD HL,$5C78   ; {Increment frame counter at FRAMES (#R$5C78).
+ $6BE3 INC (HL)      ; }
+ $6BE4 LD A,$BF      ; {Read keyboard row (H-B-N-M-SS). If H pressed, jump to
+ $6BE6 IN A,($FE)    ; #R$6BB1 (pause handler).
  $6BE8 BIT 4,A       ; }
  $6BEA JP Z,$6BB1    ;
 
@@ -4261,44 +4265,44 @@ c$6BDB DI            ;
 ; Called from interrupt handler to process various control flags like fire,
 ; bonus life, explosion, and low fuel sounds.
 @label=handle_controls
-c$6BED LD A,($5C08)  ; {Check if H (pause) was pressed, skip processing if so.
- $6BF0 CP $68        ; }
- $6BF2 JP Z,$6C24    ;
- $6BF5 LD HL,$6BB0   ;
+c$6BED LD A,($5C08)  ; {If last key was 'h' (pause), skip sound processing.
+ $6BF0 CP $68        ;
+ $6BF2 JP Z,$6C24    ; }
+ $6BF5 LD HL,$6BB0   ; {Load #R$6BB0 (controls). If FIRE bit set, call #R$8A02
 @isub=BIT CONTROLS_BIT_FIRE,(HL)
- $6BF8 BIT 0,(HL)    ;
- $6BFA CALL NZ,$8A02 ;
+ $6BF8 BIT 0,(HL)    ; (fire sound).
+ $6BFA CALL NZ,$8A02 ; }
 @isub=BIT CONTROLS_BIT_BONUS_LIFE,(HL)
- $6BFD BIT 4,(HL)    ;
+ $6BFD BIT 4,(HL)    ; {If BONUS_LIFE bit set, call #R$6C31 (bonus life sound).
  $6BFF CALL NZ,$6C31 ;
- $6C02 LD HL,$6BB0   ;
+ $6C02 LD HL,$6BB0   ; }
 @isub=BIT CONTROLS_BIT_EXPLODING,(HL)
- $6C05 BIT 5,(HL)    ;
- $6C07 CALL NZ,$6C7B ;
- $6C0A LD HL,$6BB0   ;
+ $6C05 BIT 5,(HL)    ; {Reload controls. If EXPLODING bit set, call #R$6C7B
+ $6C07 CALL NZ,$6C7B ; (explosion sound).
+ $6C0A LD HL,$6BB0   ; }
 @isub=BIT CONTROLS_BIT_LOW_FUEL,(HL)
- $6C0D BIT 3,(HL)    ;
- $6C0F JP NZ,$6CF4   ;
- $6C12 LD A,(HL)     ;
- $6C13 AND $06       ; Distill the state down to CONTROLS_BIT_SPEED_DECREASED
-                     ; and CONTROLS_BIT_SPEED_ALTERED.
- $6C15 CP $02        ; {Check if only CONTROLS_BIT_SPEED_DECREASED is set.
- $6C17 JP Z,$6C5D    ; }
- $6C1A CP $04        ; {Check if only CONTROLS_BIT_SPEED_ALTERED is set.
- $6C1C JP Z,$6CB8    ; }
- $6C1F CP $06        ; {Check if both bits are set.
- $6C21 JP Z,$6CD6    ; }
+ $6C0D BIT 3,(HL)    ; {Reload controls. If LOW_FUEL bit set, jump to #R$6CF4
+ $6C0F JP NZ,$6CF4   ; (low fuel warning).
+ $6C12 LD A,(HL)     ; }
+ $6C13 AND $06       ; Mask control byte to isolate SPEED_DECREASED and
+                     ; SPEED_ALTERED bits.
+ $6C15 CP $02        ; {If only SPEED_DECREASED set, jump to #R$6C5D
+ $6C17 JP Z,$6C5D    ; (deceleration sound).}
+ $6C1A CP $04        ; {If only SPEED_ALTERED set, jump to #R$6CB8
+ $6C1C JP Z,$6CB8    ; (acceleration sound).}
+ $6C1F CP $06        ; {If both speed bits set, jump to #R$6CD6 (combined speed
+ $6C21 JP Z,$6CD6    ; sound).}
 
-; Return from the non-maskable interrupt handler
+; Return from the non-maskable interrupt handler.
 ;
-; Used by the routines at #R$6BED, #R$6C5D, #R$6CB8, #R$6CD6 and #R$6CF4.
+; Restores all saved registers and returns from NMI using RETN instruction.
 @label=int_return
-c$6C24 POP AF        ;
+c$6C24 POP AF        ; {Restore registers (AF, BC, DE, HL).
  $6C25 POP BC        ;
  $6C26 POP DE        ;
- $6C27 POP HL        ;
- $6C28 EI            ;
- $6C29 RETN          ;
+ $6C27 POP HL        ; }
+ $6C28 EI            ; {Enable interrupts and return from NMI.
+ $6C29 RETN          ; }
 
 ; Unused
 u$6C2B DEFB $ED,$56,$C3,$08,$00

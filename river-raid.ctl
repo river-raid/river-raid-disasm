@@ -1631,24 +1631,34 @@ C $6BC8 Scan Symbol Shift
 c $6BD2 Reset to control selection screen.
 D $6BD2 Resets the scrolling text pointer and jumps back to the title screen.
   $6BD2 Reset text pointer to #R$8182 (credits text start).
-  $6BD8,3 Jump to title screen initialization.
+  $6BD8 Jump to title screen initialization.
 @ $6BDB label=int_handler
 c $6BDB Non-maskable interrupt handler
-  $6BE4,6 Check if H was pressed
+D $6BDB Called 50 times per second by the Z80 NMI. Saves registers, increments frame counter, checks for pause key, and processes game control flags for sound effects.
+  $6BDB Disable interrupts and save all registers (HL, DE, BC, AF).
+  $6BE0 Increment frame counter at FRAMES (#R$5C78).
+  $6BE4,6 Read keyboard row (H-B-N-M-SS). If H pressed, jump to #R$6BB1 (pause handler).
 @ $6BED label=handle_controls
 c $6BED Process control state flags and trigger sound effects.
 D $6BED Called from interrupt handler to process various control flags like fire, bonus life, explosion, and low fuel sounds.
-  $6BED,5 Check if H (pause) was pressed, skip processing if so.
+  $6BED If last key was 'h' (pause), skip sound processing.
+  $6BF5 Load #R$6BB0 (controls). If FIRE bit set, call #R$8A02 (fire sound).
 @ $6BF8 isub=BIT CONTROLS_BIT_FIRE,(HL)
 @ $6BFD isub=BIT CONTROLS_BIT_BONUS_LIFE,(HL)
+  $6BFD If BONUS_LIFE bit set, call #R$6C31 (bonus life sound).
 @ $6C05 isub=BIT CONTROLS_BIT_EXPLODING,(HL)
+  $6C05 Reload controls. If EXPLODING bit set, call #R$6C7B (explosion sound).
 @ $6C0D isub=BIT CONTROLS_BIT_LOW_FUEL,(HL)
-  $6C13 Distill the state down to CONTROLS_BIT_SPEED_DECREASED and CONTROLS_BIT_SPEED_ALTERED.
-  $6C15 Check if only CONTROLS_BIT_SPEED_DECREASED is set.
-  $6C1A Check if only CONTROLS_BIT_SPEED_ALTERED is set.
-  $6C1F,5 Check if both bits are set.
+  $6C0D Reload controls. If LOW_FUEL bit set, jump to #R$6CF4 (low fuel warning).
+  $6C13 Mask control byte to isolate SPEED_DECREASED and SPEED_ALTERED bits.
+  $6C15 If only SPEED_DECREASED set, jump to #R$6C5D (deceleration sound).
+  $6C1A If only SPEED_ALTERED set, jump to #R$6CB8 (acceleration sound).
+  $6C1F If both speed bits set, jump to #R$6CD6 (combined speed sound).
 @ $6C24 label=int_return
-c $6C24 Return from the non-maskable interrupt handler
+c $6C24 Return from the non-maskable interrupt handler.
+D $6C24 Restores all saved registers and returns from NMI using RETN instruction.
+  $6C24 Restore registers (AF, BC, DE, HL).
+  $6C28,3 Enable interrupts and return from NMI.
 u $6C2B
 @ $6C30 label=bonus_life_sound_counter
 g $6C30 Bonus life sound progress counter (0-64)
