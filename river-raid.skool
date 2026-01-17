@@ -8222,7 +8222,6 @@ c$8A02 LD C,$08      ; Loop 8 times for sound duration.
 ; Shifts the pixels in the bottom visible row (#R$5800-1 down) left by 1 bit.
 ; Used during terrain scrolling.
 @label=scroll_attribute_row
-@ignoreua=$57FF
 c$8A1B LD HL,$57FF   ; {Start at #R$5800-1 (bottom-right of visible area), loop
  $8A1E LD C,$08      ; 8 rows.}
 *$8A20 LD B,$20      ; {Rotate 32 bytes left with carry propagation.
@@ -8523,11 +8522,11 @@ c$8BC6 LD HL,($8B14) ; {HL -= $E0, fall through to blitter.
  $8BD8 LD D,$00      ;
  $8BDA LD E,A        ;
  $8BDB LD HL,($8B0E) ;
- $8BDE ADD HL,DE     ; }
+ $8BDE ADD HL,DE     ;
  $8BDF LD ($8B0E),HL ;
  $8BE2 LD HL,($8B10) ;
  $8BE5 ADD HL,DE     ;
- $8BE6 LD ($8B10),HL ;
+ $8BE6 LD ($8B10),HL ; }
  $8BE9 LD HL,($8B0A) ; {Increment Y coordinate for all position/address
  $8BEC INC H         ; variables.
  $8BED LD ($8B0A),HL ;
@@ -8549,8 +8548,8 @@ c$8BC6 LD HL,($8B14) ; {HL -= $E0, fall through to blitter.
 ;
 ; XORs erasure pixels, then ORs new pixels, checking for collision.
 @label=render_blit_row
-c$8C0B LD A,($8B1A)  ; {Get width, load new position screen address.
- $8C0E LD C,A        ;
+c$8C0B LD A,($8B1A)  ; {Get width, load screen addresses for new and old
+ $8C0E LD C,A        ; positions.
  $8C0F LD HL,($8B14) ;
  $8C12 LD DE,($8B0E) ; }
 ; First pass: erase old sprite (XOR with screen).

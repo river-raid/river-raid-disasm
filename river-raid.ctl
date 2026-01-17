@@ -3010,7 +3010,6 @@ D $8A02 Produces the "pew" sound when the player fires a missile by toggling the
   $8A0D Turn speaker OFF.
   $8A11,9 Delay and loop for next sound pulse.
 @ $8A1B label=scroll_attribute_row
-@ $8A1B ignoreua=$57FF
 c $8A1B Scroll the bottom attribute row left by 1 pixel.
 D $8A1B Shifts the pixels in the bottom visible row (#R$5800-1 down) left by 1 bit. Used during terrain scrolling.
   $8A1B Start at #R$5800-1 (bottom-right of visible area), loop 8 rows.
@@ -3111,13 +3110,13 @@ c $8BC6 Adjust old position for third-of-screen crossing.
   $8BC6,9 HL -= $E0, fall through to blitter.
 N $8BD2 Main rendering loop - calls blitter and advances to next pixel row.
   $8BD2 Call blitter for this row.
-  $8BD5,10 Advance sprite pointers by width.
+  $8BD5 Advance sprite pointers by width.
   $8BE9 Increment Y coordinate for all position/address variables.
   $8C05,5 Decrement row counter, loop if more rows.
 @ $8C0B label=render_blit_row
 c $8C0B Blit one row of sprite data to screen.
 D $8C0B XORs erasure pixels, then ORs new pixels, checking for collision.
-  $8C0B Get width, load new position screen address.
+  $8C0B Get width, load screen addresses for new and old positions.
 N $8C16 First pass: erase old sprite (XOR with screen).
   $8C16 Read sprite byte, XOR $FF, combine with screen.
 @ $8C1B label=blit_erase_op

@@ -7598,10 +7598,10 @@ adjust_old_screen_third_0:
   LD E,A                               ;
   LD HL,(render_sprite_ptr)            ;
   ADD HL,DE                            ;
-  LD (render_sprite_ptr),HL
-  LD HL,(L8B10)
-  ADD HL,DE
-  LD (L8B10),HL
+  LD (render_sprite_ptr),HL            ;
+  LD HL,(L8B10)                        ;
+  ADD HL,DE                            ;
+  LD (L8B10),HL                        ;
   LD HL,(previous_object_coordinates)  ; Increment Y coordinate for all position/address variables.
   INC H                                ;
   LD (previous_object_coordinates),HL  ;
@@ -7623,7 +7623,7 @@ adjust_old_screen_third_0:
 ;
 ; XORs erasure pixels, then ORs new pixels, checking for collision.
 render_blit_row:
-  LD A,(render_object_width)           ; Get width, load new position screen address.
+  LD A,(render_object_width)           ; Get width, load screen addresses for new and old positions.
   LD C,A                               ;
   LD HL,(L8B14)                        ;
   LD DE,(render_sprite_ptr)            ;
