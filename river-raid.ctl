@@ -2193,17 +2193,38 @@ D $7192 Moves right-facing fighter 4 pixels right, wrapping at the right edge.
 c $719F Reset right-moving fighter position
 D $719F Resets X position to FIGHTER_POSITION_RIGHT_INIT ($04) when fighter reaches right edge.
   $719F,2 Set C = $04 (initial right position).
-c $71A2
+@ $71A2 label=operate_tank_shell_explosion
+c $71A2 Animate tank shell explosion
+D $71A2 Handles animation of tank shell explosions. Called when object type is 0 (special marker for shell explosions). Advances explosion frame counter and renders the current frame.
+D $71A2 #LIST { Only processes on every other frame (metronome check) } { Extracts frame index from bits 3-5 of object definition } { Finishes explosion when frame reaches 7 or Y position is off-screen } { Uses sprite at #R$8FFC with varying attributes for color cycling } LIST#
+R $71A2 I:B Y position
+R $71A2 I:C X position
+R $71A2 I:D Object definition (bits 3-5 = frame index)
+  $71A2 Check metronome: if frame counter bit 0 != 1, skip to next object.
 @ $71A5 isub=AND METRONOME_INTERVAL_1
 @ $71A7 isub=CP METRONOME_INTERVAL_1
+  $71A9 Store position to #R$8B0A and #R$8B0C for rendering.
+  $71B0 Check Y position: if bit 7 set (off-screen), finish explosion.
+  $71B9 Extract frame index from D bits 3-5, increment. If frame == 7, finish.
+  $71C8 Shift frame back to bits 3-5 position, store in E.
+  $71D1 Merge new frame into D, update object definition in viewport array.
+  $71DB,15 Load sprite base #R$8FFC, calculate frame offset: HL -= (frame * $20).
+  $71F0 Store erase sprite #R$82C5 to #R$8B0E, get frame-based attributes.
+  $71F7 Calculate attributes with color cycling, set sprite params: width=2, height=16.
 @ $71FE isub=ADD A,SPRITE_SHELL_EXPLOSION_ATTRIBUTES
 @ $7201 isub=LD BC,SPRITE_SHELL_EXPLOSION_FRAME_SIZE_BYTES
 @ $7204 isub=LD D,SPRITE_SHELL_EXPLOSION_HEIGHT_PIXELS
 @ $7206 isub=LD A,SPRITE_SHELL_EXPLOSION_WIDTH_TILES
+  $7208 Render via #R$8B3C, return to main loop.
 @ $720E label=finish_tank_shell_explosion
-c $720E
+c $720E Finish tank shell explosion animation
+D $720E Clears the explosion object from the viewport and resets the tank shell state.
+  $720E Navigate to object slot, clear X position to remove from viewport.
+  $7216,11 Clear TANK_SHELL_BIT_EXPLODING in #R$7383, continue to render final frame.
 @ $721C isub=RES TANK_SHELL_BIT_EXPLODING,A
-c $7224
+@ $7224 label=handle_inactive_object
+c $7224 Handle non-activated object
+D $7224 Processes objects that haven't been activated yet. Routes balloons to #R$76AC, checks animation timing for helicopter rotor animation.
 @ $7225 isub=CP OBJECT_BALLOON
 @ $722D isub=AND BALLOON_ANIMATION_METRONOME_MASK
 @ $722F isub=CP BALLOON_ANIMATION_METRONOME_VALUE

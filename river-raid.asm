@@ -4820,8 +4820,9 @@ render_balloon:
 ; Main viewport object processing loop.
 ;
 ; Used by the routines at play, main_loop, overview, operate_ship_or_helicopter_continue, operate_fighter_continue,
-; L71A2, L7224, animate_object, animate_helicopter, operate_tank, operate_tank_on_bank, L7358, L74EE, operate_fuel,
-; handle_object_proximity, remove_object_from_viewport, operate_baloon, jp_operate_viewport_objects and L76DA.
+; operate_tank_shell_explosion, handle_inactive_object, animate_object, animate_helicopter, operate_tank,
+; operate_tank_on_bank, L7358, L74EE, operate_fuel, handle_object_proximity, remove_object_from_viewport,
+; operate_baloon, jp_operate_viewport_objects and L76DA.
 ;
 ; Iterates through the viewport_objects array, processing each active object. Each object slot is a 3-byte structure: [X
 ; position, Y position, OBJECT_DEFINITION byte].
@@ -4888,7 +4889,7 @@ operate_viewport_objects:
   LD A,(int_counter)                   ; Load the interrupt counter.
   AND E                                ; AND the counter with the mask to check if it's time to activate.
   CP $00                               ; Compare with zero.
-  JP NZ,L7224                          ; If not zero, skip activation and jump to L7224.
+  JP NZ,handle_inactive_object         ; If not zero, skip activation and jump to L7224.
   SET 7,D                              ; Set bit 7 of D to mark the object as activated.
   INC HL                               ; Move HL forward to point to the object definition byte.
   LD (HL),D                            ; Store the updated definition (with bit 7 set) back to the slot.
@@ -4906,7 +4907,7 @@ operate_viewport_objects_0:
   CP OBJECT_TANK                       ; Check if this is a tank.
   JP Z,operate_tank                    ; If tank, jump to operate_tank.
   CP $00                               ; Check if object type is 0 (no object or special case).
-  JP Z,L71A2                           ; If type is 0, jump to L71A2.
+  JP Z,operate_tank_shell_explosion    ; If type is 0, jump to L71A2.
 
 ; Ship or helicopter operation routine
 ;
@@ -5051,84 +5052,95 @@ fighter_right_reset:
   LD C,FIGHTER_POSITION_RIGHT_INIT     ; Set C = $04 (initial right position).
   RET
 
-; Routine at 71A2
+; Animate tank shell explosion
 ;
-; Used by the routine at operate_viewport_objects.
-L71A2:
-  LD A,(state_metronome)
-  AND METRONOME_INTERVAL_1
-  CP METRONOME_INTERVAL_1
-  JP NZ,operate_viewport_objects
-  LD (previous_object_coordinates),BC
-  LD (object_coordinates),BC
-  LD A,B
-  AND $80
-  CP $80
-  JP Z,finish_tank_shell_explosion
-  LD A,D
-  SRL A
-  SRL A
-  SRL A
-  AND $07
-  INC A
-  CP $07
-  JP Z,finish_tank_shell_explosion
-  SLA A
-  SLA A
-  SLA A
-  LD E,A
-  LD A,D
-  AND $C7
-  OR E
-  LD HL,(viewport_ptr)
-  DEC HL
-  LD (HL),A
-  LD HL,sprite_tank_shell_explosion
-  SRL A
-  SRL A
-  SRL A
-  AND $07
-  LD BC,$0020
-  OR A
+; Handles animation of tank shell explosions. Called when object type is 0 (special marker for shell explosions).
+; Advances explosion frame counter and renders the current frame.
+;
+; * Only processes on every other frame (metronome check)
+; * Extracts frame index from bits 3-5 of object definition
+; * Finishes explosion when frame reaches 7 or Y position is off-screen
+; * Uses sprite at sprite_tank_shell_explosion with varying attributes for color cycling
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition (bits 3-5 = frame index)
+operate_tank_shell_explosion:
+  LD A,(state_metronome)               ; Check metronome: if frame counter bit 0 != 1, skip to next object.
+  AND METRONOME_INTERVAL_1             ;
+  CP METRONOME_INTERVAL_1              ;
+  JP NZ,operate_viewport_objects       ; Store position to previous_object_coordinates and object_coordinates for
+  LD (previous_object_coordinates),BC  ; rendering.
+  LD (object_coordinates),BC           ; Check Y position: if bit 7 set (off-screen), finish explosion.
+  LD A,B                               ;
+  AND $80                              ;
+  CP $80                               ;
+  JP Z,finish_tank_shell_explosion     ; Extract frame index from D bits 3-5, increment. If frame == 7, finish.
+  LD A,D                               ;
+  SRL A                                ;
+  SRL A                                ;
+  SRL A                                ;
+  AND $07                              ;
+  INC A                                ;
+  CP $07                               ;
+  JP Z,finish_tank_shell_explosion     ; Shift frame back to bits 3-5 position, store in E.
+  SLA A                                ;
+  SLA A                                ;
+  SLA A                                ;
+  LD E,A                               ; Merge new frame into D, update object definition in viewport array.
+  LD A,D                               ;
+  AND $C7                              ;
+  OR E                                 ;
+  LD HL,(viewport_ptr)                 ;
+  DEC HL                               ;
+  LD (HL),A                            ;
+  LD HL,sprite_tank_shell_explosion    ; Load sprite base sprite_tank_shell_explosion, calculate frame offset: HL -=
+  SRL A                                ; (frame * $20).
+  SRL A                                ;
+  SRL A                                ;
+  AND $07                              ;
+  LD BC,$0020                          ;
+  OR A                                 ;
   SBC HL,BC
-L71A2_0:
+operate_tank_shell_explosion_0:
   ADD HL,BC
   DEC A
-  JR NZ,L71A2_0
+  JR NZ,operate_tank_shell_explosion_0
 ; This entry point is used by the routine at finish_tank_shell_explosion.
-L71A2_1:
-  LD BC,all_ff
-  LD (render_sprite_ptr),BC
-  LD A,(state_metronome)
-  AND $06
-  SRL A
-  ADD A,SPRITE_SHELL_EXPLOSION_ATTRIBUTES
-  LD E,A
-  LD BC,SPRITE_SHELL_EXPLOSION_FRAME_SIZE_BYTES
-  LD D,SPRITE_SHELL_EXPLOSION_HEIGHT_PIXELS
-  LD A,SPRITE_SHELL_EXPLOSION_WIDTH_TILES
-  CALL render_object
-  JP operate_viewport_objects
+operate_tank_shell_explosion_1:
+  LD BC,all_ff                         ; Store erase sprite all_ff to render_sprite_ptr, get frame-based attributes.
+  LD (render_sprite_ptr),BC            ;
+  LD A,(state_metronome)                        ; Calculate attributes with color cycling, set sprite params: width=2,
+  AND $06                                       ; height=16.
+  SRL A                                         ;
+  ADD A,SPRITE_SHELL_EXPLOSION_ATTRIBUTES       ;
+  LD E,A                                        ;
+  LD BC,SPRITE_SHELL_EXPLOSION_FRAME_SIZE_BYTES ;
+  LD D,SPRITE_SHELL_EXPLOSION_HEIGHT_PIXELS     ;
+  LD A,SPRITE_SHELL_EXPLOSION_WIDTH_TILES       ;
+  CALL render_object                   ; Render via render_object, return to main loop.
+  JP operate_viewport_objects          ;
 
-; Routine at 720E
+; Finish tank shell explosion animation
 ;
-; Used by the routine at L71A2.
+; Clears the explosion object from the viewport and resets the tank shell state.
 finish_tank_shell_explosion:
-  LD HL,(viewport_ptr)
-  DEC HL
-  DEC HL
-  DEC HL
-  LD (HL),$00
-  LD HL,sprite_erasure
-  LD A,(tank_shell_state)
-  RES TANK_SHELL_BIT_EXPLODING,A
-  LD (tank_shell_state),A
-  JP L71A2_1
+  LD HL,(viewport_ptr)                 ; Navigate to object slot, clear X position to remove from viewport.
+  DEC HL                               ;
+  DEC HL                               ;
+  DEC HL                               ;
+  LD (HL),$00                          ;
+  LD HL,sprite_erasure                 ; Clear TANK_SHELL_BIT_EXPLODING in tank_shell_state, continue to render final
+  LD A,(tank_shell_state)              ; frame.
+  RES TANK_SHELL_BIT_EXPLODING,A       ;
+  LD (tank_shell_state),A              ;
+  JP operate_tank_shell_explosion_1
 
-; Routine at 7224
+; Handle non-activated object
 ;
-; Used by the routine at operate_viewport_objects.
-L7224:
+; Processes objects that haven't been activated yet. Routes balloons to jp_operate_viewport_objects, checks animation
+; timing for helicopter rotor animation.
+handle_inactive_object:
   LD A,D
   CP OBJECT_BALLOON
   JP Z,jp_operate_viewport_objects
@@ -5139,10 +5151,10 @@ L7224:
   LD A,D
   AND SLOT_MASK_OBJECT_TYPE
   CP OBJECT_HELICOPTER_REG
-  JP Z,L7224_0
+  JP Z,handle_inactive_object_0
   CP OBJECT_HELICOPTER_ADV
   JP NZ,operate_viewport_objects
-L7224_0:
+handle_inactive_object_0:
   LD (previous_object_coordinates),BC
   JP operate_ship_or_helicopter_continue
 
@@ -5157,7 +5169,7 @@ ld_sprite_helicopter_rotor_right:
 
 ; Routine at 724C
 ;
-; Used by the routines at operate_ship_or_helicopter and L7224.
+; Used by the routines at operate_ship_or_helicopter and handle_inactive_object.
 animate_object:
   LD A,D
   AND SLOT_MASK_OBJECT_TYPE
@@ -5916,7 +5928,7 @@ operate_baloon_0:
 
 ; A useless procedure that unconcditionally jumps to operate_viewport_objects.
 ;
-; Used by the routines at L7224 and operate_baloon.
+; Used by the routines at handle_inactive_object and operate_baloon.
 jp_operate_viewport_objects:
   JP operate_viewport_objects
 
@@ -7403,7 +7415,8 @@ render_sprite_0:
 ; Routine at 8B3C
 ;
 ; Used by the routines at render_plane_and_terrain, handle_right, handle_left, render_plane, finalize_collision,
-; render_rock, operate_ship_or_helicopter_continue, L71A2, animate_helicopter, L74A0, handle_object_proximity and L76DA.
+; render_rock, operate_ship_or_helicopter_continue, operate_tank_shell_explosion, animate_helicopter, L74A0,
+; handle_object_proximity and L76DA.
 ;
 ; I:A Sprite width in tiles
 ; I:BC Sprite size in bytes

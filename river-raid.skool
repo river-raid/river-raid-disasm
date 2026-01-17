@@ -5618,55 +5618,69 @@ c$7192 INC C         ; {Move right 4 pixels (INC C × 4). If C == $E8, reset via
 c$719F LD C,$04      ; Set C = $04 (initial right position).
  $71A1 RET           ;
 
-; Routine at 71A2
+; Animate tank shell explosion
 ;
-; Used by the routine at #R$708E.
-c$71A2 LD A,($5EEF)  ;
+; Handles animation of tank shell explosions. Called when object type is 0
+; (special marker for shell explosions). Advances explosion frame counter and
+; renders the current frame.
+; .
+; #LIST
+; { Only processes on every other frame (metronome check) }
+; { Extracts frame index from bits 3-5 of object definition }
+; { Finishes explosion when frame reaches 7 or Y position is off-screen }
+; { Uses sprite at #R$8FFC with varying attributes for color cycling }
+; LIST#
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition (bits 3-5 = frame index)
+@label=operate_tank_shell_explosion
+c$71A2 LD A,($5EEF)  ; {Check metronome: if frame counter bit 0 != 1, skip to
 @isub=AND METRONOME_INTERVAL_1
- $71A5 AND $01       ;
+ $71A5 AND $01       ; next object.
 @isub=CP METRONOME_INTERVAL_1
- $71A7 CP $01        ;
- $71A9 JP NZ,$708E   ;
- $71AC LD ($8B0A),BC ;
- $71B0 LD ($8B0C),BC ;
- $71B4 LD A,B        ;
+ $71A7 CP $01        ; }
+ $71A9 JP NZ,$708E   ; {Store position to #R$8B0A and #R$8B0C for rendering.
+ $71AC LD ($8B0A),BC ; }
+ $71B0 LD ($8B0C),BC ; {Check Y position: if bit 7 set (off-screen), finish
+ $71B4 LD A,B        ; explosion.
  $71B5 AND $80       ;
- $71B7 CP $80        ;
- $71B9 JP Z,$720E    ;
- $71BC LD A,D        ;
+ $71B7 CP $80        ; }
+ $71B9 JP Z,$720E    ; {Extract frame index from D bits 3-5, increment. If
+ $71BC LD A,D        ; frame == 7, finish.
  $71BD SRL A         ;
  $71BF SRL A         ;
  $71C1 SRL A         ;
  $71C3 AND $07       ;
  $71C5 INC A         ;
- $71C6 CP $07        ;
- $71C8 JP Z,$720E    ;
+ $71C6 CP $07        ; }
+ $71C8 JP Z,$720E    ; {Shift frame back to bits 3-5 position, store in E.
  $71CB SLA A         ;
  $71CD SLA A         ;
- $71CF SLA A         ;
- $71D1 LD E,A        ;
- $71D2 LD A,D        ;
+ $71CF SLA A         ; }
+ $71D1 LD E,A        ; {Merge new frame into D, update object definition in
+ $71D2 LD A,D        ; viewport array.
  $71D3 AND $C7       ;
  $71D5 OR E          ;
  $71D6 LD HL,($5F60) ;
  $71D9 DEC HL        ;
- $71DA LD (HL),A     ;
- $71DB LD HL,$8FFC   ;
- $71DE SRL A         ;
+ $71DA LD (HL),A     ; }
+ $71DB LD HL,$8FFC   ; {Load sprite base #R$8FFC, calculate frame offset: HL -=
+ $71DE SRL A         ; (frame * $20).
  $71E0 SRL A         ;
  $71E2 SRL A         ;
  $71E4 AND $07       ;
  $71E6 LD BC,$0020   ;
- $71E9 OR A          ;
+ $71E9 OR A          ; }
  $71EA SBC HL,BC     ;
 *$71EC ADD HL,BC     ;
  $71ED DEC A         ;
  $71EE JR NZ,$71EC   ;
 ; This entry point is used by the routine at #R$720E.
-*$71F0 LD BC,$82C5   ;
- $71F3 LD ($8B0E),BC ;
- $71F7 LD A,($5EEF)  ;
- $71FA AND $06       ;
+*$71F0 LD BC,$82C5   ; {Store erase sprite #R$82C5 to #R$8B0E, get frame-based
+ $71F3 LD ($8B0E),BC ; attributes.}
+ $71F7 LD A,($5EEF)  ; {Calculate attributes with color cycling, set sprite
+ $71FA AND $06       ; params: width=2, height=16.
  $71FC SRL A         ;
 @isub=ADD A,SPRITE_SHELL_EXPLOSION_ATTRIBUTES
  $71FE ADD A,$0C     ;
@@ -5676,29 +5690,32 @@ c$71A2 LD A,($5EEF)  ;
 @isub=LD D,SPRITE_SHELL_EXPLOSION_HEIGHT_PIXELS
  $7204 LD D,$10      ;
 @isub=LD A,SPRITE_SHELL_EXPLOSION_WIDTH_TILES
- $7206 LD A,$02      ;
- $7208 CALL $8B3C    ;
- $720B JP $708E      ;
+ $7206 LD A,$02      ; }
+ $7208 CALL $8B3C    ; {Render via #R$8B3C, return to main loop.
+ $720B JP $708E      ; }
 
-; Routine at 720E
+; Finish tank shell explosion animation
 ;
-; Used by the routine at #R$71A2.
+; Clears the explosion object from the viewport and resets the tank shell
+; state.
 @label=finish_tank_shell_explosion
-c$720E LD HL,($5F60) ;
- $7211 DEC HL        ;
+c$720E LD HL,($5F60) ; {Navigate to object slot, clear X position to remove
+ $7211 DEC HL        ; from viewport.
  $7212 DEC HL        ;
  $7213 DEC HL        ;
- $7214 LD (HL),$00   ;
- $7216 LD HL,$82F5   ;
- $7219 LD A,($7383)  ;
+ $7214 LD (HL),$00   ; }
+ $7216 LD HL,$82F5   ; {Clear TANK_SHELL_BIT_EXPLODING in #R$7383, continue to
+ $7219 LD A,($7383)  ; render final frame.
 @isub=RES TANK_SHELL_BIT_EXPLODING,A
  $721C RES 5,A       ;
- $721E LD ($7383),A  ;
+ $721E LD ($7383),A  ; }
  $7221 JP $71F0      ;
 
-; Routine at 7224
+; Handle non-activated object
 ;
-; Used by the routine at #R$708E.
+; Processes objects that haven't been activated yet. Routes balloons to
+; #R$76AC, checks animation timing for helicopter rotor animation.
+@label=handle_inactive_object
 c$7224 LD A,D        ;
 @isub=CP OBJECT_BALLOON
  $7225 CP $06        ;
