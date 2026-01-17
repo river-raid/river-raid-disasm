@@ -5436,64 +5436,78 @@ tank_shell_trajectory_step:
 tank_shell_coordinates:
   DEFW $0000
 
-; Routine at 7387
+; Invert shell coordinate delta
 ;
-; Used by the routine at operate_tank_shell.
+; Subtracts E×4 from C for left-facing tank shell trajectory adjustment.
+;
+; I:C Current X position
+; I:E Delta value
+; O:C Adjusted X position
 invert_shell_coordinate_delta:
-  LD A,C
-  SUB E
-  SUB E
-  SUB E
-  SUB E
-  LD C,A
+  LD A,C                               ; C = C - E×4 (SUB E four times).
+  SUB E                                ;
+  SUB E                                ;
+  SUB E                                ;
+  SUB E                                ;
+  LD C,A                               ;
   RET
 
-; Invert the previously calculated helicopter missile offset for right-oriented objects.
+; Invert helicopter missile offset
 ;
-; Used by the routine at operate_helicopter_missile.
-invert_helicopter_missle_offset:
-  LD A,C
-  ADD A,HELICOPTER_MISSILE_STEP*2
-  LD C,A
+; Adds HELICOPTER_MISSILE_STEP×2 ($10) to C for right-facing missile trajectory.
+;
+; I:C Current X position
+; O:C X position + $10
+invert_helicopter_missile_offset:
+  LD A,C                               ; C = C + $10.
+  ADD A,HELICOPTER_MISSILE_STEP*2      ;
+  LD C,A                               ;
   RET
 
-; Operates helicopter missile.
+; Operate helicopter missile
 ;
-; Used by the routines at main_loop and overview.
+; Advances the helicopter missile position and renders it. Missiles move down and sideways based on helicopter
+; orientation. Removed when reaching viewport boundary.
+;
+; * Loads position from helicopter_missile_coordinates_ptr
+; * Advances Y position via advance_object
+; * Moves X position by HELICOPTER_MISSILE_STEP ($08)
+; * Removed at VIEWPORT_HEIGHT boundary via remove_helicopter_missile
+; * Sets COLLISION_MODE_HELICOPTER_MISSILE for collision
 operate_helicopter_missile:
-  LD BC,(helicopter_missile_coordinates_ptr)
-  LD A,B
-  CP $00
+  LD BC,(helicopter_missile_coordinates_ptr) ; Load missile coordinates from helicopter_missile_coordinates_ptr. Return
+  LD A,B                                     ; if B==0 (no missile).
+  CP $00                                     ;
   RET Z
-  CALL advance_object
-  LD (previous_object_coordinates),BC
+  CALL advance_object                  ; Advance Y position, store to previous_object_coordinates, move X left by $08.
+  LD (previous_object_coordinates),BC  ;
   LD A,C
   SUB HELICOPTER_MISSILE_STEP
   LD C,A
-  LD A,B
-  AND VIEWPORT_HEIGHT
-  CP VIEWPORT_HEIGHT
-  JP Z,remove_helicopter_missile
-  LD A,(helicopter_missile_state)
-  BIT SLOT_BIT_ORIENTATION,A
-  CALL Z,invert_helicopter_missle_offset
-  LD (object_coordinates),BC
-  LD (helicopter_missile_coordinates_ptr),BC
-  LD A,COLLISION_MODE_HELICOPTER_MISSILE
-  LD (state_collision_mode),A
-  LD A,SPRITE_HELICOPTER_MISSILE_WIDTH_TILES
-  LD E,SPRITE_HELICOPTER_MISSILE_ATTRIBUTES
-  LD D,$01
-  LD HL,all_ff
-  CALL render_sprite
+  LD A,B                               ; Check viewport boundary. If off-screen, remove missile via
+  AND VIEWPORT_HEIGHT                  ; remove_helicopter_missile.
+  CP VIEWPORT_HEIGHT                   ;
+  JP Z,remove_helicopter_missile       ;
+  LD A,(helicopter_missile_state)         ; If right-facing (from helicopter_missile_state), adjust X offset via
+  BIT SLOT_BIT_ORIENTATION,A              ; invert_helicopter_missile_offset.
+  CALL Z,invert_helicopter_missile_offset ;
+  LD (object_coordinates),BC                 ; Store position to object_coordinates and
+  LD (helicopter_missile_coordinates_ptr),BC ; helicopter_missile_coordinates_ptr.
+  LD A,COLLISION_MODE_HELICOPTER_MISSILE     ; Set collision mode=$04, width=1, attributes=$00, height=1. Render via
+  LD (state_collision_mode),A                ; render_sprite.
+  LD A,SPRITE_HELICOPTER_MISSILE_WIDTH_TILES ;
+  LD E,SPRITE_HELICOPTER_MISSILE_ATTRIBUTES  ;
+  LD D,$01                                   ;
+  LD HL,all_ff                               ;
+  CALL render_sprite                         ;
   RET
 
-; Removes helicopter missile.
+; Remove helicopter missile
 ;
-; Used by the routine at operate_helicopter_missile.
+; Clears helicopter missile coordinates at helicopter_missile_coordinates_ptr to remove it from the game.
 remove_helicopter_missile:
-  LD BC,$0000
-  LD (helicopter_missile_coordinates_ptr),BC
+  LD BC,$0000                                ; Set helicopter_missile_coordinates_ptr to $0000.
+  LD (helicopter_missile_coordinates_ptr),BC ;
   RET
 
 ; Routine at 73D8

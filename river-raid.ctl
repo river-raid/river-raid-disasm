@@ -2380,21 +2380,40 @@ g $7384
 g $7385
 W $7385
 @ $7387 label=invert_shell_coordinate_delta
-c $7387
-@ $738E label=invert_helicopter_missle_offset
-c $738E Invert the previously calculated helicopter missile offset for right-oriented objects.
+c $7387 Invert shell coordinate delta
+D $7387 Subtracts E×4 from C for left-facing tank shell trajectory adjustment.
+R $7387 I:C Current X position
+R $7387 I:E Delta value
+R $7387 O:C Adjusted X position
+  $7387,6 C = C - E×4 (SUB E four times).
+@ $738E label=invert_helicopter_missile_offset
+c $738E Invert helicopter missile offset
+D $738E Adds HELICOPTER_MISSILE_STEP×2 ($10) to C for right-facing missile trajectory.
+R $738E I:C Current X position
+R $738E O:C X position + $10
+  $738E,4 C = C + $10.
 @ $738F isub=ADD A,HELICOPTER_MISSILE_STEP*2
 @ $7393 label=operate_helicopter_missile
-c $7393 Operates helicopter missile.
+c $7393 Operate helicopter missile
+D $7393 Advances the helicopter missile position and renders it. Missiles move down and sideways based on helicopter orientation. Removed when reaching viewport boundary.
+D $7393 #LIST { Loads position from #R$5F73 } { Advances Y position via #R$62DA } { Moves X position by HELICOPTER_MISSILE_STEP ($08) } { Removed at VIEWPORT_HEIGHT boundary via #R$73D0 } { Sets COLLISION_MODE_HELICOPTER_MISSILE for collision } LIST#
+  $7393,7 Load missile coordinates from #R$5F73. Return if B==0 (no missile).
+  $739B,7 Advance Y position, store to #R$8B0A, move X left by $08.
 @ $73A3 isub=SUB HELICOPTER_MISSILE_STEP
+  $73A6 Check viewport boundary. If off-screen, remove missile via #R$73D0.
 @ $73A7 isub=AND VIEWPORT_HEIGHT
 @ $73A9 isub=CP VIEWPORT_HEIGHT
+  $73AE If right-facing (from #R$5F75), adjust X offset via #R$738E.
 @ $73B1 isub=BIT SLOT_BIT_ORIENTATION,A
+  $73B6 Store position to #R$8B0C and #R$5F73.
 @ $73BE isub=LD A,COLLISION_MODE_HELICOPTER_MISSILE
+  $73BE,17 Set collision mode=$04, width=1, attributes=$00, height=1. Render via #R$8B1E.
 @ $73C3 isub=LD A,SPRITE_HELICOPTER_MISSILE_WIDTH_TILES
 @ $73C5 isub=LD E,SPRITE_HELICOPTER_MISSILE_ATTRIBUTES
 @ $73D0 label=remove_helicopter_missile
-c $73D0 Removes helicopter missile.
+c $73D0 Remove helicopter missile
+D $73D0 Clears helicopter missile coordinates at #R$5F73 to remove it from the game.
+  $73D0,7 Set #R$5F73 to $0000.
 c $73D8
 @ $73DD label=render_helicopter_missile
 c $73DD
