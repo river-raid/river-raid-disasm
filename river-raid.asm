@@ -1297,7 +1297,7 @@ init_state:
 decrease_lives_player_2:
   LD HL,state_lives_player_2
   DEC (HL)
-  JP play_1
+  JP after_life_lost
 
 ; Initialize and start gameplay mode
 ;
@@ -1392,7 +1392,7 @@ play:
   CALL print_player_2_score_area       ; Print player 2 score area
   CALL init_current_bridge             ; Initialize current bridge data
   LD B,$28                             ; Set loop counter to $28 (40 iterations for scroll-in)
-play_0:
+scroll_in_loop:
   PUSH BC                              ; Save loop counter
   LD HL,state_metronome                ; Point to metronome counter
   INC (HL)                             ; Increment metronome (advances game timing)
@@ -1402,7 +1402,7 @@ play_0:
   LD A,SPEED_FAST                      ; Set speed to SPEED_FAST (maintain fast scroll during intro)
   LD (state_speed),A                   ; Store speed
   POP BC                               ; Restore loop counter
-  DJNZ play_0                          ; Repeat scroll-in loop until counter reaches zero
+  DJNZ scroll_in_loop                  ; Repeat scroll-in loop until counter reaches zero
   LD A,$00                             ; Clear control state (reset controls after scroll-in)
   LD (state_controls),A                ; Store control state
   LD (state_gameplay_mode),A           ; Set gameplay mode to $00 (ready for player control)
@@ -1415,22 +1415,22 @@ play_0:
   LD HL,state_lives_player_1           ; Point to player 1 lives counter
   DEC (HL)                             ; Decrement lives (player lost a life)
 ; This entry point is used by the routine at decrease_lives_player_2.
-play_1:
+after_life_lost:
   CALL print_lives                     ; Display updated lives count
-play_2:
+wait_for_start_input:
   CALL KEYBOARD                        ; Scan keyboard for input
   EI                                   ; Enable interrupts
   LD A,(LAST_K)                        ; Load last key pressed
   CP $0D                               ; Check if Enter key ($0D)
-  JR NZ,play_3                         ; If not Enter, start game
+  JR NZ,start_game                     ; If not Enter, start game
   LD A,(state_input_interface)         ; Load input interface type (keyboard/joystick)
   CP INPUT_INTERFACE_KEMPSTON          ; Check if Kempston joystick
-  JP NZ,play_2                         ; If not Kempston, wait for key press
+  JP NZ,wait_for_start_input           ; If not Kempston, wait for key press
   LD A,$FE                             ; Set port address for Kempston joystick read
   IN A,($1F)                           ; Read Kempston joystick port
   CP $00                               ; Check if joystick is centered (no input)
-  JP Z,play_2                          ; If centered, keep waiting for input
-play_3:
+  JP Z,wait_for_start_input            ; If centered, keep waiting for input
+start_game:
   LD A,$00                             ; Clear bridge destroyed flag (bridge is intact at start)
   LD (state_bridge_destroyed),A        ; Store bridge destroyed flag
   LD (state_bridge_y_position),A
@@ -3802,14 +3802,14 @@ handle_special_terrain_fragment_continue:
   LD HL,(screen_ptr)                   ; Load screen_ptr for destroyed bridge clearing.
 ; This entry point is used by the routine at check_collision.
 clear_destroyed_bridge:
-  LD DE,$000E                            ; Clear 4 bytes at offset $0E (punch hole in destroyed bridge).
-  LD B,$04                               ;
-  ADD HL,DE                              ;
-handle_special_terrain_fragment_0:
-  LD (HL),$00                            ;
-  INC HL                                 ;
-  DJNZ handle_special_terrain_fragment_0 ;
-  RET
+  LD DE,$000E                          ; Set up loop to clear 4 bytes at offset $0E.
+  LD B,$04                             ;
+  ADD HL,DE                            ;
+clear_bridge_bytes_loop:
+  LD (HL),$00                          ; Clear byte, advance pointer, loop 4 times.
+  INC HL                               ;
+  DJNZ clear_bridge_bytes_loop         ;
+  RET                                  ;
 
 ; Bitmask of the CONTROLS_BIT_* bits containing the current controls and other information.
 state_controls:
@@ -3966,16 +3966,16 @@ beep_speed_decreased:
 beep_speed_decreased_loop:
   LD A,$10                             ; Turn speaker ON (bit 4 of port $FE).
   OUT ($FE),A                          ;
-  LD D,E                               ; Delay loop: wait D iterations where D = period (from E).
-beep_speed_decreased_0:
-  DEC D                                ;
-  JR NZ,beep_speed_decreased_0         ;
+  LD D,E                               ; Load period into D.
+beep_speed_decreased_delay_on:
+  DEC D                                ; Delay loop for speaker ON phase.
+  JR NZ,beep_speed_decreased_delay_on  ;
   LD A,$00                             ; Turn speaker OFF.
   OUT ($FE),A                          ;
-  LD D,E                               ; Delay loop: wait D iterations (same period for symmetric wave).
-beep_speed_decreased_1:
-  DEC D                                ;
-  JR NZ,beep_speed_decreased_1         ;
+  LD D,E                               ; Load period into D.
+beep_speed_decreased_delay_off:
+  DEC D                                ; Delay loop for speaker OFF phase.
+  JR NZ,beep_speed_decreased_delay_off ;
   DEC C                                ; Decrement cycle counter, loop if not zero. Jump to int_return when done.
   JP NZ,beep_speed_decreased_loop      ;
   JP int_return                        ;
@@ -4013,17 +4013,17 @@ beep_explosion:
 beep_explosion_loop:
   LD A,$10                             ; Turn speaker ON (bit 4 of port $FE).
   OUT ($FE),A                          ;
-  LD D,E                               ; Delay loop: wait D iterations using calculated ON delay (from E).
-beep_explosion_0:
-  DEC D                                ;
-  JR NZ,beep_explosion_0               ;
+  LD D,E                               ; Load ON delay into D.
+beep_explosion_delay_on:
+  DEC D                                ; Delay loop for speaker ON phase.
+  JR NZ,beep_explosion_delay_on        ;
   LD A,$00                             ; Turn speaker OFF.
   OUT ($FE),A                          ;
-  LD A,(explosion_counter)             ; Delay loop: OFF delay = current counter value. Sound speeds up as counter
-  LD D,A                               ; decreases.
-beep_explosion_1:
-  DEC D                                ;
-  JR NZ,beep_explosion_1               ;
+  LD A,(explosion_counter)             ; Load counter value as OFF delay.
+  LD D,A                               ;
+beep_explosion_delay_off:
+  DEC D                                ; Delay loop for speaker OFF phase (speeds up as counter decreases).
+  JR NZ,beep_explosion_delay_off       ;
   DEC C                                ; Decrement cycle counter, loop for 4 cycles per frame.
   JP NZ,beep_explosion_loop            ;
   RET                                  ;
@@ -4056,16 +4056,16 @@ beep_speed_increased:
 beep_speed_increased_loop:
   LD A,$10                             ; Turn speaker ON (bit 4 of port $FE).
   OUT ($FE),A                          ;
-  LD D,E                               ; Delay loop: wait D iterations where D = period (from E).
-beep_speed_increased_0:
-  DEC D                                ;
-  JR NZ,beep_speed_increased_0         ;
+  LD D,E                               ; Load period into D.
+beep_speed_increased_delay_on:
+  DEC D                                ; Delay loop for speaker ON phase.
+  JR NZ,beep_speed_increased_delay_on  ;
   LD A,$00                             ; Turn speaker OFF.
   OUT ($FE),A                          ;
-  LD D,$04                             ; Fixed short delay: 4 iterations (asymmetric wave).
-beep_speed_increased_1:
-  DEC D                                ;
-  JR NZ,beep_speed_increased_1         ;
+  LD D,$04                             ; Load fixed delay ($04) into D.
+beep_speed_increased_delay_off:
+  DEC D                                ; Delay loop for speaker OFF phase (asymmetric wave).
+  JR NZ,beep_speed_increased_delay_off ;
   DEC C                                ; Decrement cycle counter, loop if not zero. Jump to int_return when done.
   JP NZ,beep_speed_increased_loop      ;
   JP int_return                        ;
@@ -4088,16 +4088,16 @@ beep_speed_combined:
 beep_speed_combined_loop:
   LD A,$10                             ; Turn speaker ON (bit 4 of port $FE).
   OUT ($FE),A                          ;
-  LD D,E                               ; Delay loop: wait D iterations where D = period (from E).
-beep_speed_combined_0:
-  DEC D                                ;
-  JR NZ,beep_speed_combined_0          ;
+  LD D,E                               ; Load period into D.
+beep_speed_combined_delay_on:
+  DEC D                                ; Delay loop for speaker ON phase.
+  JR NZ,beep_speed_combined_delay_on   ;
   LD A,$00                             ; Turn speaker OFF.
   OUT ($FE),A                          ;
-  LD D,$0C                             ; Fixed delay: $0C (12) iterations.
-beep_speed_combined_1:
-  DEC D                                ;
-  JR NZ,beep_speed_combined_1          ;
+  LD D,$0C                             ; Load fixed delay ($0C) into D.
+beep_speed_combined_delay_off:
+  DEC D                                ; Delay loop for speaker OFF phase.
+  JR NZ,beep_speed_combined_delay_off  ;
   DEC C                                ; Decrement cycle counter, loop if not zero. Jump to int_return when done.
   JP NZ,beep_speed_combined_loop       ;
   JP int_return                        ;
@@ -4121,18 +4121,18 @@ do_low_fuel_loop:
   LD E,A                               ; Turn speaker ON (bit 4 of port $FE).
   LD A,$10                             ;
   OUT ($FE),A                          ;
-  LD D,E                               ; Delay loop: wait D iterations where D = period (from E).
-do_low_fuel_0:
-  DEC D                                ;
-  JR NZ,do_low_fuel_0                  ;
+  LD D,E                               ; Load period into D.
+do_low_fuel_delay_on:
+  DEC D                                ; Delay loop for speaker ON phase.
+  JR NZ,do_low_fuel_delay_on           ;
   LD A,$00                             ; Turn speaker OFF.
   OUT ($FE),A                          ;
-  LD D,E                               ; Delay loop: wait D iterations (symmetric wave).
-do_low_fuel_1:
-  DEC D                                ;
-  JR NZ,do_low_fuel_1                  ;
-  DEC C                                ;
-  JP NZ,do_low_fuel_loop               ; Decrement cycle counter, loop for 3 cycles. Jump to int_return when done.
+  LD D,E                               ; Load period into D.
+do_low_fuel_delay_off:
+  DEC D                                ; Delay loop for speaker OFF phase.
+  JR NZ,do_low_fuel_delay_off          ;
+  DEC C                                ; Decrement cycle counter, loop for 3 cycles. Jump to int_return when done.
+  JP NZ,do_low_fuel_loop               ;
   JP int_return                        ;
 
 ; Level overview screen
@@ -4294,14 +4294,14 @@ update_fuel_gauge:
   CALL calculate_pixel_address         ; Call calculate_pixel_address to compute screen address from B,C coordinates.
 draw_fuel_gauge_loop:
   LD A,$08                             ; Loop counter: 8 rows of gauge.
-  LD D,$86                             ; Draw 8 rows of fuel gauge with pixel pattern $86. Increment H to move down one
-consume_fuel_0:
-  PUSH AF                              ; row.
+  LD D,$86                             ; Set pixel pattern $86 for gauge.
+draw_fuel_gauge_row_loop:
+  PUSH AF                              ; Draw row, move down, decrement counter, loop for 8 rows.
   CALL calculate_fuel_gauge_offset     ;
   INC H                                ;
   POP AF                               ;
   DEC A                                ;
-  JP NZ,consume_fuel_0                 ;
+  JP NZ,draw_fuel_gauge_row_loop       ;
   RET
 
 ; Add fuel during refueling
@@ -4516,20 +4516,20 @@ render_explosions:
   LD (object_coordinates),BC           ;
   LD BC,$0000                          ; Check bit 7 of frame. If set, skip first render call.
   BIT 7,A                              ;
-  JP NZ,render_explosions_0            ;
+  JP NZ,render_explosions_next         ;
   PUSH DE                              ;
   PUSH BC                              ;
   PUSH AF                              ;
   PUSH HL                              ;
   LD A,$02                             ; Call first sprite rendering pass.
   CALL set_sprite_attributes           ;
-  POP HL                               ; Call second sprite rendering pass, loop to next entry.
+  POP HL                               ; Restore registers from stack.
   POP AF                               ;
   POP BC                               ;
   POP DE                               ;
-render_explosions_0:
-  LD A,$02                             ;
-  CALL render_object_1                 ;
+render_explosions_next:
+  LD A,$02                             ; Call second sprite rendering pass, loop to next entry.
+  CALL render_object_blit_entry        ;
   JP render_explosions                 ;
 
 ; Load frame 1/5 explosion sprite
@@ -4887,7 +4887,7 @@ operate_viewport_objects:
   CP GAMEPLAY_MODE_SCROLL_IN           ; Check if gameplay mode is GAMEPLAY_MODE_SCROLL_IN.
   JP Z,operate_viewport_objects        ; If so, skip to the next object without further processing.
   BIT 7,D                              ; Check bit 7 of the object definition (activation flag).
-  JP NZ,operate_viewport_objects_0     ; If bit 7 is set, the object is already activated, skip to operation dispatch.
+  JP NZ,dispatch_object_type           ; If bit 7 is set, the object is already activated, skip to operation dispatch.
   LD A,(state_activation_mask)         ; Load the activation mask from state_activation_mask.
   LD E,A                               ; Copy the mask into E.
   LD A,(int_counter)                   ; Load the interrupt counter.
@@ -4899,7 +4899,7 @@ operate_viewport_objects:
   LD (HL),D                            ; Store the updated definition (with bit 7 set) back to the slot.
   LD HL,int_counter                    ; Point HL to the interrupt counter.
   INC (HL)                             ; Increment the interrupt counter.
-operate_viewport_objects_0:
+dispatch_object_type:
   LD A,D                               ; Copy the object definition into A for type dispatch.
   AND SLOT_MASK_OBJECT_TYPE            ; Extract the object type (bits 0-2).
   CP OBJECT_FIGHTER                    ; Check if this is a fighter.
@@ -5103,15 +5103,15 @@ operate_tank_shell_explosion:
   SRL A                                ;
   SRL A                                ;
   AND $07                              ;
-  LD BC,$0020                          ;
-  OR A                                 ;
+  LD BC,$0020
+  OR A
   SBC HL,BC
-operate_tank_shell_explosion_0:
-  ADD HL,BC
-  DEC A
-  JR NZ,operate_tank_shell_explosion_0
+tank_shell_frame_calc_loop:
+  ADD HL,BC                            ; Add frame size, loop until frame index exhausted.
+  DEC A                                ;
+  JR NZ,tank_shell_frame_calc_loop     ;
 ; This entry point is used by the routine at finish_tank_shell_explosion.
-operate_tank_shell_explosion_1:
+tank_shell_render_entry:
   LD BC,all_ff                         ; Store erase sprite all_ff to render_sprite_ptr, get frame-based attributes.
   LD (render_sprite_ptr),BC            ;
   LD A,(state_metronome)                        ; Calculate attributes with color cycling, set sprite params: width=2,
@@ -5138,7 +5138,7 @@ finish_tank_shell_explosion:
   LD A,(tank_shell_state)              ; frame.
   RES TANK_SHELL_BIT_EXPLODING,A       ;
   LD (tank_shell_state),A              ;
-  JP operate_tank_shell_explosion_1
+  JP tank_shell_render_entry
 
 ; Handle non-activated object
 ;
@@ -5159,11 +5159,11 @@ handle_inactive_object:
   LD A,D                               ; If helicopter (REG or ADV), store position and continue to
   AND SLOT_MASK_OBJECT_TYPE            ; operate_ship_or_helicopter_continue.
   CP OBJECT_HELICOPTER_REG             ;
-  JP Z,handle_inactive_object_0        ;
+  JP Z,store_and_continue_ship         ;
   CP OBJECT_HELICOPTER_ADV             ;
-  JP NZ,operate_viewport_objects         ; Not a helicopter: return to main loop. Helicopters store position and jump to
-handle_inactive_object_0:
-  LD (previous_object_coordinates),BC    ; operate_ship_or_helicopter_continue.
+  JP NZ,operate_viewport_objects       ; Not a helicopter: return to main loop.
+store_and_continue_ship:
+  LD (previous_object_coordinates),BC    ; Helicopters store position and jump to operate_ship_or_helicopter_continue.
   JP operate_ship_or_helicopter_continue ;
 
 ; Load right-facing helicopter rotor sprite
@@ -5799,23 +5799,32 @@ operate_fuel:
   CALL render_sprite                   ;
   JP operate_viewport_objects          ;
 
-; Handle fuel station off viewport
+; Clip fuel station height to viewport
 ;
-; Removes fuel station from viewport when it scrolls off-screen.
+; Called when the fuel station extends past the viewport bottom. Calculates the visible portion height by subtracting
+; the overflow from the full height.
+;
+; * Input: B = Y position, D = full height ($19)
+; * Calculates: overflow = (Y + height) - VIEWPORT_HEIGHT
+; * Output: D = visible height = height - overflow
+;
+; I:B Y position of fuel station
+; I:D Full sprite height ($19 = 25 pixels)
+; O:D Clipped height (visible portion only)
 handle_fuel_off_viewport:
-  LD H,$00
-  LD L,B
-  LD BC,$0019
-  ADD HL,BC
-  LD BC,$0090
-  OR A
-  SBC HL,BC
-  LD B,$00
-  LD C,L
-  LD H,$00
-  LD L,D
-  OR A
-  SBC HL,BC
+  LD H,$00                                ; Calculate overflow: HL = (Y + height) - $90.
+  LD L,B                                  ;
+  LD BC,SPRITE_FUEL_STATION_HEIGHT_PIXELS ;
+  ADD HL,BC                               ;
+  LD BC,$0090                             ;
+  OR A                                    ;
+  SBC HL,BC                               ;
+  LD B,$00                             ; Calculate visible height: D = $19 - overflow.
+  LD C,L                               ;
+  LD H,$00                             ;
+  LD L,D                               ;
+  OR A                                 ;
+  SBC HL,BC                            ;
   LD D,L
   RET
 
@@ -7480,14 +7489,14 @@ render_sprite:
   AND $07                              ;
   SRL A                                ;
   INC A
-  PUSH HL                              ; Loop to add frame offset to sprite pointer, store to render_sprite_ptr.
+  PUSH HL                              ; Prepare for frame calculation loop.
   OR A                                 ;
   SBC HL,BC                            ;
-render_sprite_0:
-  ADD HL,BC                            ;
+render_sprite_frame_loop:
+  ADD HL,BC                            ; Add frame offset to sprite pointer, loop until done.
   DEC A                                ;
-  JR NZ,render_sprite_0                ;
-  LD (render_sprite_ptr),HL
+  JR NZ,render_sprite_frame_loop       ;
+  LD (render_sprite_ptr),HL            ; Store result to render_sprite_ptr.
   POP HL                               ; Reload width and restore attributes/height, fall through to render_object.
   LD A,(render_object_width)           ;
   POP DE
@@ -7502,33 +7511,33 @@ render_sprite_0:
 ; I:E Screen attributes
 ; I:HL Pointer to the sprite array
 render_object:
-  PUSH DE
-  LD (render_object_width),A
-  NOP
+  PUSH DE                              ; Save DE, store width, call set_sprite_attributes.
+  LD (render_object_width),A           ;
+  NOP                                  ;
   CALL set_sprite_attributes
-  LD A,E
-  AND $07
-  SRL A
-  INC A
-  OR A
-  SBC HL,BC
-render_object_0:
-  ADD HL,BC
-  DEC A
-  JR NZ,render_object_0
-  LD (render_old_sprite_ptr),HL
-  LD (render_sprite_ptr_out),HL
+  LD A,E                               ; Calculate frame index from E bits 1-2.
+  AND $07                              ;
+  SRL A                                ;
+  INC A                                ;
+  OR A                                 ;
+  SBC HL,BC                            ; Prepare for frame loop.
+render_object_frame_loop:
+  ADD HL,BC                            ; Add frame offset to HL, loop until done.
+  DEC A                                ;
+  JR NZ,render_object_frame_loop       ;
+  LD (render_old_sprite_ptr),HL        ; Store sprite pointers to render_old_sprite_ptr and render_sprite_ptr_out.
+  LD (render_sprite_ptr_out),HL        ;
   POP DE
 ; This entry point is used by the routine at render_explosions.
-render_object_1:
-  PUSH DE
-  LD BC,(object_coordinates)
-  CALL calculate_pixel_address
+render_object_blit_entry:
+  PUSH DE                              ; Save DE, load object_coordinates.
+  LD BC,(object_coordinates)           ;
+  CALL calculate_pixel_address         ; Calculate screen address for new position.
   LD (render_new_screen_addr),HL
-  LD BC,(previous_object_coordinates)
-  CALL calculate_pixel_address
+  LD BC,(previous_object_coordinates)  ; Calculate screen address for old position.
+  CALL calculate_pixel_address         ;
   LD (render_old_screen_addr),HL
-  JP adjust_old_screen_third_0
+  JP adjust_old_screen_third_0         ; Jump to blit loop.
 
 ; Process one row of sprite rendering.
 ;
@@ -7943,37 +7952,36 @@ L90CE:
 
 ; Add score points for a hit target
 ;
-; Used by the routines at handle_collision_mode_fighter, check_collision, hit_helicopter_reg, hit_ship,
-; hit_helicopter_adv, hit_fighter, hit_balloon, hit_fuel and handle_tank_at_boundary.
+; Adds points encoded in A (divided by 10). High nibble = tens, low nibble = units.
 ;
 ; I:A Number of points to add divided by 10.
 add_points:
-  PUSH AF
-  SRL A
-  SRL A
-  SRL A
-  SRL A
-  CP $00
-  JP Z,add_points_1
-add_points_0:
-  PUSH AF
-  LD A,$02
-  CALL update_score
-  POP AF
-  DEC A
-  JR NZ,add_points_0
-add_points_1:
-  POP AF
-  AND $0F
-  CP $00
-  RET Z
-add_points_2:
-  PUSH AF
-  LD A,$01
-  CALL update_score
-  POP AF
-  DEC A
-  JR NZ,add_points_2
+  PUSH AF                              ; Extract high nibble (tens), skip if zero.
+  SRL A                                ;
+  SRL A                                ;
+  SRL A                                ;
+  SRL A                                ;
+  CP $00                               ;
+  JP Z,add_points_units_entry
+add_points_tens_loop:
+  PUSH AF                              ; Add 20 points per tens digit, loop.
+  LD A,$02                             ;
+  CALL update_score                    ;
+  POP AF                               ;
+  DEC A                                ;
+  JR NZ,add_points_tens_loop
+add_points_units_entry:
+  POP AF                               ; Extract low nibble (units), return if zero.
+  AND $0F                              ;
+  CP $00                               ;
+  RET Z                                ;
+add_points_units_loop:
+  PUSH AF                              ; Add 10 points per units digit, loop.
+  LD A,$01                             ;
+  CALL update_score                    ;
+  POP AF                               ;
+  DEC A                                ;
+  JR NZ,add_points_units_loop          ;
   RET
 
 ; Add a life to the current player.

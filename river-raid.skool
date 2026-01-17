@@ -1467,6 +1467,7 @@ c$5DA6 LD A,$10      ; Initialize island line index to $10 (starting line for
  $5E82 CALL $91E8    ; Print player 2 score area
  $5E85 CALL $68E9    ; Initialize current bridge data
  $5E88 LD B,$28      ; Set loop counter to $28 (40 iterations for scroll-in)
+@label=scroll_in_loop
 *$5E8A PUSH BC       ; Save loop counter
  $5E8B LD HL,$5EEF   ; Point to metronome counter
  $5E8E INC (HL)      ; Increment metronome (advances game timing)
@@ -1492,7 +1493,9 @@ c$5DA6 LD A,$10      ; Initialize island line index to $10 (starting line for
  $5EB8 LD HL,$923B   ; Point to player 1 lives counter
  $5EBB DEC (HL)      ; Decrement lives (player lost a life)
 ; This entry point is used by the routine at #R$5D9F.
+@label=after_life_lost
 *$5EBC CALL $923E    ; Display updated lives count
+@label=wait_for_start_input
 *$5EBF CALL $02BF    ; Scan keyboard for input
  $5EC2 EI            ; Enable interrupts
  $5EC3 LD A,($5C08)  ; Load last key pressed
@@ -1506,6 +1509,7 @@ c$5DA6 LD A,$10      ; Initialize island line index to $10 (starting line for
  $5ED4 IN A,($1F)    ; Read Kempston joystick port
  $5ED6 CP $00        ; Check if joystick is centered (no input)
  $5ED8 JP Z,$5EBF    ; If centered, keep waiting for input
+@label=start_game
 *$5EDB LD A,$00      ; Clear bridge destroyed flag (bridge is intact at start)
  $5EDD LD ($5F6D),A  ; Store bridge destroyed flag
  $5EE0 LD ($5F6E),A  ;
@@ -4197,13 +4201,14 @@ c$6B7B CP $80        ; {Dispatch: $80=#R$6B63, $E0=#R$6B6B, $F0=#R$6B73,
  $6BA1 LD HL,($5F7B) ; Load screen_ptr for destroyed bridge clearing.
 ; This entry point is used by the routine at #R$61BB.
 @label=clear_destroyed_bridge
-*$6BA4 LD DE,$000E   ; {Clear 4 bytes at offset $0E (punch hole in destroyed
- $6BA7 LD B,$04      ; bridge).
- $6BA9 ADD HL,DE     ;
-*$6BAA LD (HL),$00   ;
+*$6BA4 LD DE,$000E   ; {Set up loop to clear 4 bytes at offset $0E.
+ $6BA7 LD B,$04      ;
+ $6BA9 ADD HL,DE     ; }
+@label=clear_bridge_bytes_loop
+*$6BAA LD (HL),$00   ; {Clear byte, advance pointer, loop 4 times.
  $6BAC INC HL        ;
- $6BAD DJNZ $6BAA    ; }
- $6BAF RET           ;
+ $6BAD DJNZ $6BAA    ;
+ $6BAF RET           ; }
 
 ; Bitmask of the CONTROLS_BIT_* bits containing the current controls and other
 ; information.
@@ -4374,13 +4379,15 @@ c$6C5D LD A,(HL)     ; {Extract period from low 4 bits of controls byte. Higher
 @label=beep_speed_decreased_loop
 *$6C63 LD A,$10      ; {Turn speaker ON (bit 4 of port $FE).
  $6C65 OUT ($FE),A   ; }
- $6C67 LD D,E        ; {Delay loop: wait D iterations where D = period (from
-*$6C68 DEC D         ; E).
+ $6C67 LD D,E        ; Load period into D.
+@label=beep_speed_decreased_delay_on
+*$6C68 DEC D         ; {Delay loop for speaker ON phase.
  $6C69 JR NZ,$6C68   ; }
  $6C6B LD A,$00      ; {Turn speaker OFF.
  $6C6D OUT ($FE),A   ; }
- $6C6F LD D,E        ; {Delay loop: wait D iterations (same period for
-*$6C70 DEC D         ; symmetric wave).
+ $6C6F LD D,E        ; Load period into D.
+@label=beep_speed_decreased_delay_off
+*$6C70 DEC D         ; {Delay loop for speaker OFF phase.
  $6C71 JR NZ,$6C70   ; }
  $6C73 DEC C         ; {Decrement cycle counter, loop if not zero. Jump to
  $6C74 JP NZ,$6C63   ; #R$6C24 when done.
@@ -4422,15 +4429,17 @@ c$6C7B LD A,($6C7A)  ; {Decrement explosion counter.
 @label=beep_explosion_loop
 *$6C95 LD A,$10      ; {Turn speaker ON (bit 4 of port $FE).
  $6C97 OUT ($FE),A   ; }
- $6C99 LD D,E        ; {Delay loop: wait D iterations using calculated ON delay
-*$6C9A DEC D         ; (from E).
+ $6C99 LD D,E        ; Load ON delay into D.
+@label=beep_explosion_delay_on
+*$6C9A DEC D         ; {Delay loop for speaker ON phase.
  $6C9B JR NZ,$6C9A   ; }
  $6C9D LD A,$00      ; {Turn speaker OFF.
  $6C9F OUT ($FE),A   ; }
- $6CA1 LD A,($6C7A)  ; {Delay loop: OFF delay = current counter value. Sound
- $6CA4 LD D,A        ; speeds up as counter decreases.
-*$6CA5 DEC D         ;
- $6CA6 JR NZ,$6CA5   ; }
+ $6CA1 LD A,($6C7A)  ; {Load counter value as OFF delay.
+ $6CA4 LD D,A        ; }
+@label=beep_explosion_delay_off
+*$6CA5 DEC D         ; {Delay loop for speaker OFF phase (speeds up as counter
+ $6CA6 JR NZ,$6CA5   ; decreases).}
  $6CA8 DEC C         ; {Decrement cycle counter, loop for 4 cycles per frame.
  $6CA9 JP NZ,$6C95   ;
  $6CAC RET           ; }
@@ -4467,13 +4476,15 @@ c$6CB8 LD A,(HL)     ; {Extract period from low 3 bits of controls byte.
 @label=beep_speed_increased_loop
 *$6CBE LD A,$10      ; {Turn speaker ON (bit 4 of port $FE).
  $6CC0 OUT ($FE),A   ; }
- $6CC2 LD D,E        ; {Delay loop: wait D iterations where D = period (from
-*$6CC3 DEC D         ; E).
+ $6CC2 LD D,E        ; Load period into D.
+@label=beep_speed_increased_delay_on
+*$6CC3 DEC D         ; {Delay loop for speaker ON phase.
  $6CC4 JR NZ,$6CC3   ; }
  $6CC6 LD A,$00      ; {Turn speaker OFF.
  $6CC8 OUT ($FE),A   ; }
- $6CCA LD D,$04      ; {Fixed short delay: 4 iterations (asymmetric wave).
-*$6CCC DEC D         ;
+ $6CCA LD D,$04      ; Load fixed delay ($04) into D.
+@label=beep_speed_increased_delay_off
+*$6CCC DEC D         ; {Delay loop for speaker OFF phase (asymmetric wave).
  $6CCD JR NZ,$6CCC   ; }
  $6CCF DEC C         ; {Decrement cycle counter, loop if not zero. Jump to
  $6CD0 JP NZ,$6CBE   ; #R$6C24 when done.
@@ -4499,13 +4510,15 @@ c$6CD6 LD A,(HL)     ; {Extract period from bits 0-2 and bit 4 of controls
 @label=beep_speed_combined_loop
 *$6CDC LD A,$10      ; {Turn speaker ON (bit 4 of port $FE).
  $6CDE OUT ($FE),A   ; }
- $6CE0 LD D,E        ; {Delay loop: wait D iterations where D = period (from
-*$6CE1 DEC D         ; E).
+ $6CE0 LD D,E        ; Load period into D.
+@label=beep_speed_combined_delay_on
+*$6CE1 DEC D         ; {Delay loop for speaker ON phase.
  $6CE2 JR NZ,$6CE1   ; }
  $6CE4 LD A,$00      ; {Turn speaker OFF.
  $6CE6 OUT ($FE),A   ; }
- $6CE8 LD D,$0C      ; {Fixed delay: $0C (12) iterations.
-*$6CEA DEC D         ;
+ $6CE8 LD D,$0C      ; Load fixed delay ($0C) into D.
+@label=beep_speed_combined_delay_off
+*$6CEA DEC D         ; {Delay loop for speaker OFF phase.
  $6CEB JR NZ,$6CEA   ; }
  $6CED DEC C         ; {Decrement cycle counter, loop if not zero. Jump to
  $6CEE JP NZ,$6CDC   ; #R$6C24 when done.
@@ -4533,17 +4546,19 @@ c$6CF4 LD C,$03      ; Loop counter: 3 cycles of waveform.
  $6CFF LD E,A        ; {Turn speaker ON (bit 4 of port $FE).
  $6D00 LD A,$10      ;
  $6D02 OUT ($FE),A   ; }
- $6D04 LD D,E        ; {Delay loop: wait D iterations where D = period (from
-*$6D05 DEC D         ; E).
+ $6D04 LD D,E        ; Load period into D.
+@label=do_low_fuel_delay_on
+*$6D05 DEC D         ; {Delay loop for speaker ON phase.
  $6D06 JR NZ,$6D05   ; }
  $6D08 LD A,$00      ; {Turn speaker OFF.
  $6D0A OUT ($FE),A   ; }
- $6D0C LD D,E        ; {Delay loop: wait D iterations (symmetric wave).
-*$6D0D DEC D         ;
- $6D0E JR NZ,$6D0D   ;
- $6D10 DEC C         ; }
- $6D11 JP NZ,$6CF6   ; {Decrement cycle counter, loop for 3 cycles. Jump to
- $6D14 JP $6C24      ; #R$6C24 when done.}
+ $6D0C LD D,E        ; Load period into D.
+@label=do_low_fuel_delay_off
+*$6D0D DEC D         ; {Delay loop for speaker OFF phase.
+ $6D0E JR NZ,$6D0D   ; }
+ $6D10 DEC C         ; {Decrement cycle counter, loop for 3 cycles. Jump to
+ $6D11 JP NZ,$6CF6   ; #R$6C24 when done.
+ $6D14 JP $6C24      ; }
 
 ; Level overview screen
 ;
@@ -4727,9 +4742,10 @@ c$6DFF LD A,($5EEF)  ; {Skip if odd frame (fuel only consumed on even frames).
                      ; coordinates.
 @label=draw_fuel_gauge_loop
  $6E31 LD A,$08      ; Loop counter: 8 rows of gauge.
- $6E33 LD D,$86      ; {Draw 8 rows of fuel gauge with pixel pattern $86.
-*$6E35 PUSH AF       ; Increment H to move down one row.
- $6E36 CALL $6124    ;
+ $6E33 LD D,$86      ; Set pixel pattern $86 for gauge.
+@label=draw_fuel_gauge_row_loop
+*$6E35 PUSH AF       ; {Draw row, move down, decrement counter, loop for 8
+ $6E36 CALL $6124    ; rows.
  $6E39 INC H         ;
  $6E3A POP AF        ;
  $6E3B DEC A         ;
@@ -4982,11 +4998,12 @@ c$6EC8 LD HL,($5F62) ; {Load 3-byte entry from set: C=X, B=Y offset, D=frame.
  $6F51 PUSH HL       ; }
  $6F52 LD A,$02      ; {Call first sprite rendering pass.
  $6F54 CALL $928D    ; }
- $6F57 POP HL        ; {Call second sprite rendering pass, loop to next entry.
+ $6F57 POP HL        ; {Restore registers from stack.
  $6F58 POP AF        ;
  $6F59 POP BC        ;
- $6F5A POP DE        ;
-*$6F5B LD A,$02      ;
+ $6F5A POP DE        ; }
+@label=render_explosions_next
+*$6F5B LD A,$02      ; {Call second sprite rendering pass, loop to next entry.
  $6F5D CALL $8B58    ;
  $6F60 JP $6EC8      ; }
 
@@ -5437,6 +5454,7 @@ c$708E LD A,$00      ; {Reset state_collision_mode to COLLISION_MODE_NONE.
                      ; the slot.
  $70E4 LD HL,$5C78   ; Point HL to the interrupt counter.
  $70E7 INC (HL)      ; Increment the interrupt counter.
+@label=dispatch_object_type
 *$70E8 LD A,D        ; Copy the object definition into A for type dispatch.
 @isub=AND SLOT_MASK_OBJECT_TYPE
  $70E9 AND $07       ; Extract the object type (bits 0-2).
@@ -5676,14 +5694,16 @@ c$71A2 LD A,($5EEF)  ; {Check metronome: if frame counter bit 0 != 1, skip to
  $71DE SRL A         ; (frame * $20).
  $71E0 SRL A         ;
  $71E2 SRL A         ;
- $71E4 AND $07       ;
+ $71E4 AND $07       ; }
  $71E6 LD BC,$0020   ;
- $71E9 OR A          ; }
+ $71E9 OR A          ;
  $71EA SBC HL,BC     ;
-*$71EC ADD HL,BC     ;
+@label=tank_shell_frame_calc_loop
+*$71EC ADD HL,BC     ; {Add frame size, loop until frame index exhausted.
  $71ED DEC A         ;
- $71EE JR NZ,$71EC   ;
+ $71EE JR NZ,$71EC   ; }
 ; This entry point is used by the routine at #R$720E.
+@label=tank_shell_render_entry
 *$71F0 LD BC,$82C5   ; {Store erase sprite #R$82C5 to #R$8B0E, get frame-based
  $71F3 LD ($8B0E),BC ; attributes.}
  $71F7 LD A,($5EEF)  ; {Calculate attributes with color cycling, set sprite
@@ -5745,8 +5765,9 @@ c$7224 LD A,D        ; {If object is OBJECT_BALLOON, jump to #R$76AC.
  $7239 JP Z,$7241    ;
 @isub=CP OBJECT_HELICOPTER_ADV
  $723C CP $03        ; }
- $723E JP NZ,$708E   ; {Not a helicopter: return to main loop. Helicopters
-*$7241 LD ($8B0A),BC ; store position and jump to #R$7128.
+ $723E JP NZ,$708E   ; Not a helicopter: return to main loop.
+@label=store_and_continue_ship
+*$7241 LD ($8B0A),BC ; {Helicopters store position and jump to #R$7128.
  $7245 JP $7128      ; }
 
 ; Load right-facing helicopter rotor sprite
@@ -6457,23 +6478,35 @@ c$754C LD ($8B0A),BC ; {Store position to #R$8B0A and #R$8B0C. Set height=$19.
  $7584 CALL $8B1E    ;
  $7587 JP $708E      ; }
 
-; Handle fuel station off viewport
+; Clip fuel station height to viewport
 ;
-; Removes fuel station from viewport when it scrolls off-screen.
+; Called when the fuel station extends past the viewport bottom. Calculates the
+; visible portion height by subtracting the overflow from the full height.
+; .
+; #LIST
+; { Input: B = Y position, D = full height ($19) }
+; { Calculates: overflow = (Y + height) - VIEWPORT_HEIGHT }
+; { Output: D = visible height = height - overflow }
+; LIST#
+;
+; I:B Y position of fuel station
+; I:D Full sprite height ($19 = 25 pixels)
+; O:D Clipped height (visible portion only)
 @label=handle_fuel_off_viewport
-c$758A LD H,$00      ;
+c$758A LD H,$00      ; {Calculate overflow: HL = (Y + height) - $90.
  $758C LD L,B        ;
+@isub=LD BC,SPRITE_FUEL_STATION_HEIGHT_PIXELS
  $758D LD BC,$0019   ;
  $7590 ADD HL,BC     ;
  $7591 LD BC,$0090   ;
  $7594 OR A          ;
- $7595 SBC HL,BC     ;
- $7597 LD B,$00      ;
+ $7595 SBC HL,BC     ; }
+ $7597 LD B,$00      ; {Calculate visible height: D = $19 - overflow.
  $7599 LD C,L        ;
  $759A LD H,$00      ;
  $759C LD L,D        ;
  $759D OR A          ;
- $759E SBC HL,BC     ;
+ $759E SBC HL,BC     ; }
  $75A0 LD D,L        ;
  $75A1 RET           ;
 
@@ -8412,13 +8445,14 @@ c$8B1E PUSH DE       ; {Save attributes/height, store sprite width.
  $8B27 AND $07       ;
  $8B29 SRL A         ; }
  $8B2B INC A         ;
- $8B2C PUSH HL       ; {Loop to add frame offset to sprite pointer, store to
- $8B2D OR A          ; #R$8B0E.
- $8B2E SBC HL,BC     ;
-*$8B30 ADD HL,BC     ;
+ $8B2C PUSH HL       ; {Prepare for frame calculation loop.
+ $8B2D OR A          ;
+ $8B2E SBC HL,BC     ; }
+@label=render_sprite_frame_loop
+*$8B30 ADD HL,BC     ; {Add frame offset to sprite pointer, loop until done.
  $8B31 DEC A         ;
  $8B32 JR NZ,$8B30   ; }
- $8B34 LD ($8B0E),HL ;
+ $8B34 LD ($8B0E),HL ; Store result to #R$8B0E.
  $8B37 POP HL        ; {Reload width and restore attributes/height, fall
  $8B38 LD A,($8B1A)  ; through to render_object.}
  $8B3B POP DE        ;
@@ -8434,31 +8468,33 @@ c$8B1E PUSH DE       ; {Save attributes/height, store sprite width.
 ; I:E Screen attributes
 ; I:HL Pointer to the sprite array
 @label=render_object
-c$8B3C PUSH DE       ;
+c$8B3C PUSH DE       ; {Save DE, store width, call set_sprite_attributes.
  $8B3D LD ($8B1A),A  ;
- $8B40 NOP           ;
+ $8B40 NOP           ; }
  $8B41 CALL $928D    ;
- $8B44 LD A,E        ;
+ $8B44 LD A,E        ; {Calculate frame index from E bits 1-2.
  $8B45 AND $07       ;
  $8B47 SRL A         ;
  $8B49 INC A         ;
- $8B4A OR A          ;
- $8B4B SBC HL,BC     ;
-*$8B4D ADD HL,BC     ;
+ $8B4A OR A          ; }
+ $8B4B SBC HL,BC     ; Prepare for frame loop.
+@label=render_object_frame_loop
+*$8B4D ADD HL,BC     ; {Add frame offset to HL, loop until done.
  $8B4E DEC A         ;
- $8B4F JR NZ,$8B4D   ;
- $8B51 LD ($8B10),HL ;
- $8B54 LD ($8B16),HL ;
+ $8B4F JR NZ,$8B4D   ; }
+ $8B51 LD ($8B10),HL ; {Store sprite pointers to render_old_sprite_ptr and
+ $8B54 LD ($8B16),HL ; render_sprite_ptr_out.}
  $8B57 POP DE        ;
 ; This entry point is used by the routine at #R$6EC8.
-*$8B58 PUSH DE       ;
- $8B59 LD BC,($8B0C) ;
- $8B5D CALL $8A4E    ;
+@label=render_object_blit_entry
+*$8B58 PUSH DE       ; {Save DE, load object_coordinates.
+ $8B59 LD BC,($8B0C) ; }
+ $8B5D CALL $8A4E    ; Calculate screen address for new position.
  $8B60 LD ($8B12),HL ;
- $8B63 LD BC,($8B0A) ;
- $8B67 CALL $8A4E    ;
+ $8B63 LD BC,($8B0A) ; {Calculate screen address for old position.
+ $8B67 CALL $8A4E    ; }
  $8B6A LD ($8B14),HL ;
- $8B6D JP $8BD2      ;
+ $8B6D JP $8BD2      ; Jump to blit loop.
 
 ; Process one row of sprite rendering.
 ;
@@ -8871,34 +8907,37 @@ t$90CE DEFM "000000000000000000"
 
 ; Add score points for a hit target
 ;
-; Used by the routines at #R$615E, #R$61BB, #R$6414, #R$6423, #R$6444, #R$6453,
-; #R$6462, #R$6478 and #R$74EE.
+; Adds points encoded in A (divided by 10). High nibble = tens, low nibble =
+; units.
 ;
 ; I:A Number of points to add divided by 10.
 @label=add_points
-c$90E0 PUSH AF       ;
+c$90E0 PUSH AF       ; {Extract high nibble (tens), skip if zero.
  $90E1 SRL A         ;
  $90E3 SRL A         ;
  $90E5 SRL A         ;
  $90E7 SRL A         ;
- $90E9 CP $00        ;
+ $90E9 CP $00        ; }
  $90EB JP Z,$90F8    ;
-*$90EE PUSH AF       ;
+@label=add_points_tens_loop
+*$90EE PUSH AF       ; {Add 20 points per tens digit, loop.
  $90EF LD A,$02      ;
  $90F1 CALL $9122    ;
  $90F4 POP AF        ;
- $90F5 DEC A         ;
+ $90F5 DEC A         ; }
  $90F6 JR NZ,$90EE   ;
-*$90F8 POP AF        ;
+@label=add_points_units_entry
+*$90F8 POP AF        ; {Extract low nibble (units), return if zero.
  $90F9 AND $0F       ;
  $90FB CP $00        ;
- $90FD RET Z         ;
-*$90FE PUSH AF       ;
+ $90FD RET Z         ; }
+@label=add_points_units_loop
+*$90FE PUSH AF       ; {Add 10 points per units digit, loop.
  $90FF LD A,$01      ;
  $9101 CALL $9122    ;
  $9104 POP AF        ;
  $9105 DEC A         ;
- $9106 JR NZ,$90FE   ;
+ $9106 JR NZ,$90FE   ; }
  $9108 RET           ;
 
 ; Add a life to the current player.

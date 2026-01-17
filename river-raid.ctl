@@ -432,6 +432,7 @@ D $5DA6 This routine initializes the game screen and state for gameplay mode, th
   $5E82 Print player 2 score area
   $5E85 Initialize current bridge data
   $5E88 Set loop counter to $28 (40 iterations for scroll-in)
+@ $5E8A label=scroll_in_loop
   $5E8A Save loop counter
   $5E8B Point to metronome counter
   $5E8E Increment metronome (advances game timing)
@@ -455,7 +456,9 @@ D $5DA6 This routine initializes the game screen and state for gameplay mode, th
   $5EB5 If player 2, jump to decrease player 2 lives
   $5EB8 Point to player 1 lives counter
   $5EBB Decrement lives (player lost a life)
+@ $5EBC label=after_life_lost
   $5EBC Display updated lives count
+@ $5EBF label=wait_for_start_input
   $5EBF Scan keyboard for input
   $5EC2 Enable interrupts
   $5EC3 Load last key pressed
@@ -469,6 +472,7 @@ D $5DA6 This routine initializes the game screen and state for gameplay mode, th
   $5ED4 Read Kempston joystick port
   $5ED6 Check if joystick is centered (no input)
   $5ED8 If centered, keep waiting for input
+@ $5EDB label=start_game
   $5EDB Clear bridge destroyed flag (bridge is intact at start)
   $5EDD,3 Store bridge destroyed flag
 @ $5EEE label=state_terrain_fragment_counter
@@ -1617,7 +1621,9 @@ N $6B7B After copying the 32-byte sprite to screen, sets state_bridge_section fo
   $6B98 If state_bridge_destroyed = 0, return (bridge intact).
   $6BA1 Load screen_ptr for destroyed bridge clearing.
 @ $6BA4 label=clear_destroyed_bridge
-  $6BA4,11 Clear 4 bytes at offset $0E (punch hole in destroyed bridge).
+  $6BA4 Set up loop to clear 4 bytes at offset $0E.
+@ $6BAA label=clear_bridge_bytes_loop
+  $6BAA,6 Clear byte, advance pointer, loop 4 times.
 @ $6BB0 label=state_controls
 g $6BB0 Bitmask of the CONTROLS_BIT_* bits containing the current controls and other information.
 @ $6BB1 label=pause
@@ -1685,9 +1691,13 @@ R $6C5D I:HL Pointer to #R$6BB0 (controls state byte)
   $6C61 Loop counter: 8 cycles of the waveform.
 @ $6C63 label=beep_speed_decreased_loop
   $6C63 Turn speaker ON (bit 4 of port $FE).
-  $6C67 Delay loop: wait D iterations where D = period (from E).
+  $6C67 Load period into D.
+@ $6C68 label=beep_speed_decreased_delay_on
+  $6C68 Delay loop for speaker ON phase.
   $6C6B Turn speaker OFF.
-  $6C6F Delay loop: wait D iterations (same period for symmetric wave).
+  $6C6F Load period into D.
+@ $6C70 label=beep_speed_decreased_delay_off
+  $6C70 Delay loop for speaker OFF phase.
   $6C73,7 Decrement cycle counter, loop if not zero. Jump to #R$6C24 when done.
 @ $6C7A label=explosion_counter
 g $6C7A Explosion sound frame counter (counts down from $18 to 0)
@@ -1702,9 +1712,13 @@ R $6C7B I:DE Pointer to game state byte affecting pitch
   $6C92 Set ON delay in E, loop counter = 4 cycles.
 @ $6C95 label=beep_explosion_loop
   $6C95 Turn speaker ON (bit 4 of port $FE).
-  $6C99 Delay loop: wait D iterations using calculated ON delay (from E).
+  $6C99 Load ON delay into D.
+@ $6C9A label=beep_explosion_delay_on
+  $6C9A Delay loop for speaker ON phase.
   $6C9D Turn speaker OFF.
-  $6CA1 Delay loop: OFF delay = current counter value. Sound speeds up as counter decreases.
+  $6CA1 Load counter value as OFF delay.
+@ $6CA5 label=beep_explosion_delay_off
+  $6CA5 Delay loop for speaker OFF phase (speeds up as counter decreases).
   $6CA8 Decrement cycle counter, loop for 4 cycles per frame.
 @ $6CAD label=explosion_render_finish
 c $6CAD Complete explosion sound sequence
@@ -1721,9 +1735,13 @@ R $6CB8 I:HL Pointer to #R$6BB0 (controls state byte)
   $6CBC Loop counter: 8 cycles of the waveform.
 @ $6CBE label=beep_speed_increased_loop
   $6CBE Turn speaker ON (bit 4 of port $FE).
-  $6CC2 Delay loop: wait D iterations where D = period (from E).
+  $6CC2 Load period into D.
+@ $6CC3 label=beep_speed_increased_delay_on
+  $6CC3 Delay loop for speaker ON phase.
   $6CC6 Turn speaker OFF.
-  $6CCA Fixed short delay: 4 iterations (asymmetric wave).
+  $6CCA Load fixed delay ($04) into D.
+@ $6CCC label=beep_speed_increased_delay_off
+  $6CCC Delay loop for speaker OFF phase (asymmetric wave).
   $6CCF Decrement cycle counter, loop if not zero. Jump to #R$6C24 when done.
 @ $6CD6 label=beep_speed_combined
 c $6CD6 Play combined speed change sound
@@ -1734,9 +1752,13 @@ R $6CD6 I:HL Pointer to #R$6BB0 (controls state byte)
   $6CDA Loop counter: 8 cycles of the waveform.
 @ $6CDC label=beep_speed_combined_loop
   $6CDC Turn speaker ON (bit 4 of port $FE).
-  $6CE0 Delay loop: wait D iterations where D = period (from E).
+  $6CE0 Load period into D.
+@ $6CE1 label=beep_speed_combined_delay_on
+  $6CE1 Delay loop for speaker ON phase.
   $6CE4 Turn speaker OFF.
-  $6CE8 Fixed delay: $0C (12) iterations.
+  $6CE8 Load fixed delay ($0C) into D.
+@ $6CEA label=beep_speed_combined_delay_off
+  $6CEA Delay loop for speaker OFF phase.
   $6CED Decrement cycle counter, loop if not zero. Jump to #R$6C24 when done.
 @ $6CF4 label=do_low_fuel
 c $6CF4 Play low fuel warning sound
@@ -1746,10 +1768,14 @@ D $6CF4 #LIST { Decrements #R$5F65 each frame, wrapping at $7F (0-127 range) } {
 @ $6CF6 label=do_low_fuel_loop
   $6CF6 Decrement period (#R$5F65), wrap at $7F. Store new period in E.
   $6CFF Turn speaker ON (bit 4 of port $FE).
-  $6D04 Delay loop: wait D iterations where D = period (from E).
+  $6D04 Load period into D.
+@ $6D05 label=do_low_fuel_delay_on
+  $6D05 Delay loop for speaker ON phase.
   $6D08 Turn speaker OFF.
-  $6D0C Delay loop: wait D iterations (symmetric wave).
-  $6D11 Decrement cycle counter, loop for 3 cycles. Jump to #R$6C24 when done.
+  $6D0C Load period into D.
+@ $6D0D label=do_low_fuel_delay_off
+  $6D0D Delay loop for speaker OFF phase.
+  $6D10 Decrement cycle counter, loop for 3 cycles. Jump to #R$6C24 when done.
 @ $6D17 label=overview
 c $6D17 Level overview screen
 D $6D17 Displays a preview fly-over of the upcoming terrain before the game starts. Shows scrolling terrain with game number and scrolling title text. Player can press Enter to start the game early, or wait for 5 scroll units to auto-start.
@@ -1814,7 +1840,9 @@ D $6DFF #LIST { Fuel level stored in #R$5F66 (0-255) } { Low fuel warning when t
   $6E2E Call #R$8A4E to compute screen address from B,C coordinates.
 @ $6E31 label=draw_fuel_gauge_loop
   $6E31 Loop counter: 8 rows of gauge.
-  $6E33,12 Draw 8 rows of fuel gauge with pixel pattern $86. Increment H to move down one row.
+  $6E33 Set pixel pattern $86 for gauge.
+@ $6E35 label=draw_fuel_gauge_row_loop
+  $6E35,10 Draw row, move down, decrement counter, loop for 8 rows.
 @ $6E40 label=add_fuel
 c $6E40 Add fuel during refueling
 D $6E40 Called when plane is over a fuel depot. Adds FUEL_INTAKE_AMOUNT (4) to fuel level, plays refueling sound, and updates gauge.
@@ -1907,7 +1935,9 @@ D $6EC8 #LIST { Entry format: [X_pos, Y_offset, frame_counter] where frame_count
 @ $6F30 isub=LD A,COLLISION_MODE_NONE
   $6F46 Check bit 7 of frame. If set, skip first render call.
   $6F52 Call first sprite rendering pass.
-  $6F57,12 Call second sprite rendering pass, loop to next entry.
+  $6F57 Restore registers from stack.
+@ $6F5B label=render_explosions_next
+  $6F5B,8 Call second sprite rendering pass, loop to next entry.
 @ $6F63 label=ld_sprite_explosion_f1
 c $6F63 Load frame 1/5 explosion sprite
 R $6F63 O:DE Pointer to small explosion sprite at #R$8471.
@@ -2119,6 +2149,7 @@ N $708E 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHT
   $70E3 Store the updated definition (with bit 7 set) back to the slot.
   $70E4 Point HL to the interrupt counter.
   $70E7 Increment the interrupt counter.
+@ $70E8 label=dispatch_object_type
   $70E8 Copy the object definition into A for type dispatch.
 @ $70E9 isub=AND SLOT_MASK_OBJECT_TYPE
   $70E9 Extract the object type (bits 0-2).
@@ -2228,7 +2259,10 @@ R $71A2 I:D Object definition (bits 3-5 = frame index)
   $71B9 Extract frame index from D bits 3-5, increment. If frame == 7, finish.
   $71C8 Shift frame back to bits 3-5 position, store in E.
   $71D1 Merge new frame into D, update object definition in viewport array.
-  $71DB,15 Load sprite base #R$8FFC, calculate frame offset: HL -= (frame * $20).
+  $71DB,11 Load sprite base #R$8FFC, calculate frame offset: HL -= (frame * $20).
+@ $71EC label=tank_shell_frame_calc_loop
+  $71EC Add frame size, loop until frame index exhausted.
+@ $71F0 label=tank_shell_render_entry
   $71F0 Store erase sprite #R$82C5 to #R$8B0E, get frame-based attributes.
   $71F7 Calculate attributes with color cycling, set sprite params: width=2, height=16.
 @ $71FE isub=ADD A,SPRITE_SHELL_EXPLOSION_ATTRIBUTES
@@ -2257,7 +2291,9 @@ R $7224 I:D Object definition byte
 @ $7235 isub=AND SLOT_MASK_OBJECT_TYPE
 @ $7237 isub=CP OBJECT_HELICOPTER_REG
 @ $723C isub=CP OBJECT_HELICOPTER_ADV
-  $723E Not a helicopter: return to main loop. Helicopters store position and jump to #R$7128.
+  $723E Not a helicopter: return to main loop.
+@ $7241 label=store_and_continue_ship
+  $7241 Helicopters store position and jump to #R$7128.
 @ $7248 label=ld_sprite_helicopter_rotor_right
 c $7248 Load right-facing helicopter rotor sprite
 D $7248 Returns pointer to right-facing helicopter rotor sprite at #R$8AC8.
@@ -2538,10 +2574,17 @@ D $754C #LIST { Stores position for rendering } { Checks if fuel station is with
 @ $757D isub=AND METRONOME_INTERVAL_ANIMATE_FUEL
 @ $757F isub=ADD A,SPRITE_FUEL_STATION_ATTRIBUTES
 @ $7582 isub=LD A,SPRITE_FUEL_STATION_WIDTH_TILES
-  $7582,8 Set width=2, render via #R$8B1E.
+  $7582 Set width=2, render via #R$8B1E.
 @ $758A label=handle_fuel_off_viewport
-c $758A Handle fuel station off viewport
-D $758A Removes fuel station from viewport when it scrolls off-screen.
+c $758A Clip fuel station height to viewport
+D $758A Called when the fuel station extends past the viewport bottom. Calculates the visible portion height by subtracting the overflow from the full height.
+D $758A #LIST { Input: B = Y position, D = full height ($19) } { Calculates: overflow = (Y + height) - VIEWPORT_HEIGHT } { Output: D = visible height = height - overflow } LIST#
+R $758A I:B Y position of fuel station
+R $758A I:D Full sprite height ($19 = 25 pixels)
+R $758A O:D Clipped height (visible portion only)
+  $758A Calculate overflow: HL = (Y + height) - $90.
+@ $758D isub=LD BC,SPRITE_FUEL_STATION_HEIGHT_PIXELS
+  $7597,9 Calculate visible height: D = $19 - overflow.
 @ $75A2 label=ship_or_helicopter_right_advance
 c $75A2 Advance right-facing ship or helicopter
 D $75A2 Moves a right-facing ship/helicopter 2 pixels right, checking for terrain collision ahead.
@@ -3107,7 +3150,10 @@ R $8B1E I:E Screen attributes
 R $8B1E I:HL Pointer to the sprite array
   $8B1E Save attributes/height, store sprite width.
   $8B22,9 Calculate animation frame index from X position bits 1-2.
-  $8B2C,8 Loop to add frame offset to sprite pointer, store to #R$8B0E.
+  $8B2C Prepare for frame calculation loop.
+@ $8B30 label=render_sprite_frame_loop
+  $8B30 Add frame offset to sprite pointer, loop until done.
+  $8B34 Store result to #R$8B0E.
   $8B37,4 Reload width and restore attributes/height, fall through to render_object.
 @ $8B3C label=render_object
 c $8B3C Render an object with collision detection.
@@ -3117,6 +3163,17 @@ R $8B3C I:BC Sprite size in bytes
 R $8B3C I:D  Frame number and some other info
 R $8B3C I:E  Screen attributes
 R $8B3C I:HL Pointer to the sprite array
+  $8B3C,5 Save DE, store width, call set_sprite_attributes.
+  $8B44 Calculate frame index from E bits 1-2.
+  $8B4B Prepare for frame loop.
+@ $8B4D label=render_object_frame_loop
+  $8B4D Add frame offset to HL, loop until done.
+  $8B51,6 Store sprite pointers to render_old_sprite_ptr and render_sprite_ptr_out.
+@ $8B58 label=render_object_blit_entry
+  $8B58 Save DE, load object_coordinates.
+  $8B5D,3 Calculate screen address for new position.
+  $8B63,7 Calculate screen address for old position.
+  $8B6D Jump to blit loop.
 @ $8B70 label=render_row_loop
 c $8B70 Process one row of sprite rendering.
 D $8B70 Handles screen boundary wrapping for the new object position and calls the blitter.
@@ -3187,7 +3244,15 @@ t $90C8
 t $90CE
 @ $90E0 label=add_points
 c $90E0 Add score points for a hit target
+D $90E0 Adds points encoded in A (divided by 10). High nibble = tens, low nibble = units.
 R $90E0 I:A Number of points to add divided by 10.
+  $90E0,11 Extract high nibble (tens), skip if zero.
+@ $90EE label=add_points_tens_loop
+  $90EE,8 Add 20 points per tens digit, loop.
+@ $90F8 label=add_points_units_entry
+  $90F8 Extract low nibble (units), return if zero.
+@ $90FE label=add_points_units_loop
+  $90FE,10 Add 10 points per units digit, loop.
 @ $9109 label=add_life
 c $9109 Add a life to the current player.
 D $9109 Increments the current player's life count and triggers the bonus life sound effect.
