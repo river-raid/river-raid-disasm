@@ -1923,10 +1923,14 @@ R $6F6F O:DE Pointer to erasure sprite at #R$82F5.
 @ $6F73 label=reset_explosions_pointer
 c $6F73 Reset explosions set pointer
 D $6F73 Resets #R$5F62 to point to start of explosions set at #R$5F2E.
-  $6F73,7 Reset pointer and return.
+  $6F73 Reset pointer and return.
 @ $6F7A label=remove_explosion_entry
 c $6F7A Remove completed explosion from set
-D $6F7A Marks the current explosion entry as empty ($00) and renders the final erasure frame.
+D $6F7A Called when explosion animation reaches frame 7 (complete). Marks the entry as empty so it can be reused, then continues processing remaining explosions.
+R $6F7A I:HL Pointer past the current explosion entry's frame counter byte
+  $6F7A Move back to frame counter byte and mark entry as empty.
+@ $6F7B isub=LD (HL),SET_MARKER_EMPTY_SLOT
+  $6F7D Continue processing remaining explosions.
 @ $6F80 isub=LD A,COLLISION_MODE_NONE
 @ $6F80 label=next_row
 c $6F80 Process objects for newly scrolled row

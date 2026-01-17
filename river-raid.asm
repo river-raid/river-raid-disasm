@@ -4578,11 +4578,14 @@ reset_explosions_pointer:
 
 ; Remove completed explosion from set
 ;
-; Marks the current explosion entry as empty ($00) and renders the final erasure frame.
+; Called when explosion animation reaches frame 7 (complete). Marks the entry as empty so it can be reused, then
+; continues processing remaining explosions.
+;
+; I:HL Pointer past the current explosion entry's frame counter byte
 remove_explosion_entry:
-  DEC HL
-  LD (HL),$00
-  JP render_explosions
+  DEC HL                               ; Move back to frame counter byte and mark entry as empty.
+  LD (HL),SET_MARKER_EMPTY_SLOT        ;
+  JP render_explosions                 ; Continue processing remaining explosions.
 
 ; Process objects for newly scrolled row
 ;

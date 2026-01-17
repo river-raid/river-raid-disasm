@@ -5036,12 +5036,15 @@ c$6F73 LD HL,$5F2E   ; {Reset pointer and return.
 
 ; Remove completed explosion from set
 ;
-; Marks the current explosion entry as empty ($00) and renders the final
-; erasure frame.
+; Called when explosion animation reaches frame 7 (complete). Marks the entry
+; as empty so it can be reused, then continues processing remaining explosions.
+;
+; I:HL Pointer past the current explosion entry's frame counter byte
 @label=remove_explosion_entry
-c$6F7A DEC HL        ;
- $6F7B LD (HL),$00   ;
- $6F7D JP $6EC8      ;
+c$6F7A DEC HL        ; {Move back to frame counter byte and mark entry as
+@isub=LD (HL),SET_MARKER_EMPTY_SLOT
+ $6F7B LD (HL),$00   ; empty.}
+ $6F7D JP $6EC8      ; Continue processing remaining explosions.
 
 ; Process objects for newly scrolled row
 ;
