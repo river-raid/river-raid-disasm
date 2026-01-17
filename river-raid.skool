@@ -5330,7 +5330,7 @@ c$706C LD B,$00      ; {BC = (0, E): set X position in BC for object entry.
 
 ; Main viewport object processing loop.
 ;
-; Used by the routines at #R$5DA6, #R$5F91, #R$6D17, #R$7128, #R$7158, #R$71A2,
+; Used by the routines at #R$5DA6, #R$5F91, #R$6D17, #R$7128, #R$716B, #R$71A2,
 ; #R$7224, #R$724C, #R$7259, #R$7296, #R$7302, #R$7358, #R$74EE, #R$754C,
 ; #R$75D0, #R$762E, #R$7649, #R$76AC and #R$76DA.
 ;
@@ -5538,72 +5538,84 @@ c$7128 LD HL,($5F60) ; {Load viewport_ptr, navigate back to current slot,
 c$7155 LD C,$E8      ; Set C = $E8 (initial left position).
  $7157 RET           ;
 
-; Fighter operation routine.
+; Fighter operation routine
 ;
-; Used by the routine at #R$708E.
-;
+; Operates fighter jets that fly horizontally across the screen. Fighters move
+; 4 pixels per frame and wrap around when reaching screen edges. Uses XOR
+; blending mode for rendering.
 ; .
+; #LIST
+; { Moves 4 pixels per frame (faster than ships/helicopters) }
+; { Left-facing: decrements X, wraps at $00 to $E8 }
+; { Right-facing: increments X, wraps at $E8 to $04 }
+; { Sets COLLISION_MODE_FIGHTER for collision detection }
+; LIST#
 ;
-; Advances the fighter by 4 pixels on each metronome tick and renders it using
-; the XOR blending mode. When a fighter reaches the screen margin, resets its
-; position.
+; I:B Y position
+; I:C X position
+; I:D Object definition byte
 @label=operate_fighter
-c$7158 LD ($8B0A),BC ;
+c$7158 LD ($8B0A),BC ; Store current position to #R$8B0A for rendering.
 @isub=BIT SLOT_BIT_ORIENTATION,D
- $715C BIT 6,D       ;
- $715E JP Z,$7192    ;
+ $715C BIT 6,D       ; {Check orientation: if bit 6 clear (right-facing), jump
+ $715E JP Z,$7192    ; to #R$7192.}
 @label=fighter_left_advance
- $7161 DEC C         ;
- $7162 DEC C         ;
+ $7161 DEC C         ; {Move left 4 pixels (DEC C × 4). If C == 0, reset via
+ $7162 DEC C         ; #R$7155.
  $7163 DEC C         ;
  $7164 DEC C         ;
  $7165 LD A,C        ;
 @isub=CP FIGHTER_POSITION_LEFT_LIMIT
- $7166 CP $00        ;
+ $7166 CP $00        ; }
  $7168 CALL Z,$7155  ;
-; This entry point is used by the routine at #R$7192.
+
+; Continue fighter operation
+;
+; Updates fighter position in viewport array and renders the sprite with XOR
+; blending.
 @label=operate_fighter_continue
-*$716B LD HL,($5F60) ;
- $716E DEC HL        ;
+c$716B LD HL,($5F60) ; {Load viewport_ptr, navigate to current slot, update [X,
+ $716E DEC HL        ; Y, D] values.
  $716F LD D,(HL)     ;
  $7170 DEC HL        ;
  $7171 LD (HL),B     ;
  $7172 DEC HL        ;
- $7173 LD (HL),C     ;
- $7174 LD ($8B0C),BC ;
- $7178 CALL $75BA    ;
+ $7173 LD (HL),C     ; }
+ $7174 LD ($8B0C),BC ; {Store position to #R$8B0C, get sprite pointer via
+ $7178 CALL $75BA    ; #R$75BA.}
 @isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
- $717B LD BC,$0018   ;
- $717E CALL $72E6    ;
+ $717B LD BC,$0018   ; {Set frame size=$18, call #R$72E6 to set XOR blending
+ $717E CALL $72E6    ; mode.}
 @isub=LD A,COLLISION_MODE_FIGHTER
- $7181 LD A,$03      ;
- $7183 LD ($5EF5),A  ;
+ $7181 LD A,$03      ; {Set collision mode to COLLISION_MODE_FIGHTER ($03) at
+ $7183 LD ($5EF5),A  ; #R$5EF5.}
 @isub=LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_FIGHTER_ATTRIBUTES
- $7186 LD DE,$0800   ;
- $7189 CALL $8B1E    ;
- $718C CALL $72EF    ;
- $718F JP $708E      ;
+ $7186 LD DE,$0800   ; {Set height=8px, attributes=$00. Render via #R$8B1E,
+ $7189 CALL $8B1E    ; restore blending via #R$72EF.
+ $718C CALL $72EF    ; }
+ $718F JP $708E      ; Return to main viewport loop.
 
-; Routine at 7192
+; Advance right-facing fighter
 ;
-; Used by the routine at #R$7158.
+; Moves right-facing fighter 4 pixels right, wrapping at the right edge.
 @label=fighter_right_advance
-c$7192 INC C         ;
- $7193 INC C         ;
+c$7192 INC C         ; {Move right 4 pixels (INC C × 4). If C == $E8, reset via
+ $7193 INC C         ; #R$719F.
  $7194 INC C         ;
  $7195 INC C         ;
  $7196 LD A,C        ;
 @isub=CP FIGHTER_POSITION_RIGHT_LIMIT
- $7197 CP $E8        ;
- $7199 CALL Z,$719F  ;
- $719C JP $716B      ;
+ $7197 CP $E8        ; }
+ $7199 CALL Z,$719F  ; {Continue to #R$716B for rendering.
+ $719C JP $716B      ; }
 
-; Routine at 719F
+; Reset right-moving fighter position
 ;
-; Used by the routine at #R$7192.
-@isub=LD C,FIGHTER_POSITION_RIGHT_INIT
+; Resets X position to FIGHTER_POSITION_RIGHT_INIT ($04) when fighter reaches
+; right edge.
 @label=fighter_right_reset
-c$719F LD C,$04      ;
+@isub=LD C,FIGHTER_POSITION_RIGHT_INIT
+c$719F LD C,$04      ; Set C = $04 (initial right position).
  $71A1 RET           ;
 
 ; Routine at 71A2
@@ -5834,7 +5846,7 @@ c$7296 LD A,($5EEF)  ;
 
 ; Routine at 72E6
 ;
-; Used by the routines at #R$7158 and #R$7296.
+; Used by the routines at #R$716B and #R$7296.
 @label=blenging_mode_xor_xor
 c$72E6 LD A,$A8      ;
 @nowarn
@@ -5845,7 +5857,7 @@ c$72E6 LD A,$A8      ;
 
 ; Routine at 72EF
 ;
-; Used by the routines at #R$6794, #R$6FF6, #R$7158 and #R$7296.
+; Used by the routines at #R$6794, #R$6FF6, #R$716B and #R$7296.
 @label=blenging_mode_or_or
 c$72EF LD A,$B0      ;
 @nowarn
@@ -6368,7 +6380,7 @@ c$75A2 PUSH BC       ;
 
 ; Load array of enemy sprites.
 ;
-; Used by the routines at #R$6FF6, #R$7128, #R$7158, #R$7259, #R$7296 and
+; Used by the routines at #R$6FF6, #R$7128, #R$716B, #R$7259, #R$7296 and
 ; #R$75D0.
 ;
 ; I:D OBJECT_DEFINITION
@@ -8246,7 +8258,7 @@ s$8B1B DEFS $03
 
 ; Routine at 8B1E
 ;
-; Used by the routines at #R$673D, #R$6FF6, #R$7051, #R$706C, #R$7158, #R$7296,
+; Used by the routines at #R$673D, #R$6FF6, #R$7051, #R$706C, #R$716B, #R$7296,
 ; #R$7393, #R$7441, #R$754C and #R$7649.
 ;
 ; I:A Sprite width in tiles

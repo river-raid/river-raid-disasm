@@ -4819,8 +4819,8 @@ render_balloon:
 
 ; Main viewport object processing loop.
 ;
-; Used by the routines at play, main_loop, overview, operate_ship_or_helicopter_continue, operate_fighter, L71A2, L7224,
-; animate_object, animate_helicopter, operate_tank, operate_tank_on_bank, L7358, L74EE, operate_fuel,
+; Used by the routines at play, main_loop, overview, operate_ship_or_helicopter_continue, operate_fighter_continue,
+; L71A2, L7224, animate_object, animate_helicopter, operate_tank, operate_tank_on_bank, L7358, L74EE, operate_fuel,
 ; handle_object_proximity, remove_object_from_viewport, operate_baloon, jp_operate_viewport_objects and L76DA.
 ;
 ; Iterates through the viewport_objects array, processing each active object. Each object slot is a 3-byte structure: [X
@@ -4983,62 +4983,72 @@ fighter_left_reset:
   LD C,FIGHTER_POSITION_LEFT_INIT      ; Set C = $E8 (initial left position).
   RET
 
-; Fighter operation routine.
+; Fighter operation routine
 ;
-; Used by the routine at operate_viewport_objects.
+; Operates fighter jets that fly horizontally across the screen. Fighters move 4 pixels per frame and wrap around when
+; reaching screen edges. Uses XOR blending mode for rendering.
 ;
-; Advances the fighter by 4 pixels on each metronome tick and renders it using the XOR blending mode. When a fighter
-; reaches the screen margin, resets its position.
+; * Moves 4 pixels per frame (faster than ships/helicopters)
+; * Left-facing: decrements X, wraps at $00 to $E8
+; * Right-facing: increments X, wraps at $E8 to $04
+; * Sets COLLISION_MODE_FIGHTER for collision detection
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition byte
 operate_fighter:
-  LD (previous_object_coordinates),BC
-  BIT SLOT_BIT_ORIENTATION,D
-  JP Z,fighter_right_advance
+  LD (previous_object_coordinates),BC  ; Store current position to previous_object_coordinates for rendering.
+  BIT SLOT_BIT_ORIENTATION,D           ; Check orientation: if bit 6 clear (right-facing), jump to
+  JP Z,fighter_right_advance           ; fighter_right_advance.
 fighter_left_advance:
-  DEC C
-  DEC C
-  DEC C
-  DEC C
-  LD A,C
-  CP FIGHTER_POSITION_LEFT_LIMIT
+  DEC C                                ; Move left 4 pixels (DEC C × 4). If C == 0, reset via fighter_left_reset.
+  DEC C                                ;
+  DEC C                                ;
+  DEC C                                ;
+  LD A,C                               ;
+  CP FIGHTER_POSITION_LEFT_LIMIT       ;
   CALL Z,fighter_left_reset
-; This entry point is used by the routine at fighter_right_advance.
+
+; Continue fighter operation
+;
+; Updates fighter position in viewport array and renders the sprite with XOR blending.
 operate_fighter_continue:
-  LD HL,(viewport_ptr)
-  DEC HL
-  LD D,(HL)
-  DEC HL
-  LD (HL),B
-  DEC HL
-  LD (HL),C
-  LD (object_coordinates),BC
-  CALL ld_enemy_sprites
-  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
-  CALL blenging_mode_xor_xor
-  LD A,COLLISION_MODE_FIGHTER
-  LD (state_collision_mode),A
-  LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_FIGHTER_ATTRIBUTES
-  CALL render_sprite
-  CALL blenging_mode_or_or
-  JP operate_viewport_objects
+  LD HL,(viewport_ptr)                 ; Load viewport_ptr, navigate to current slot, update [X, Y, D] values.
+  DEC HL                               ;
+  LD D,(HL)                            ;
+  DEC HL                               ;
+  LD (HL),B                            ;
+  DEC HL                               ;
+  LD (HL),C                            ;
+  LD (object_coordinates),BC           ; Store position to object_coordinates, get sprite pointer via ld_enemy_sprites.
+  CALL ld_enemy_sprites                ;
+  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE   ; Set frame size=$18, call blenging_mode_xor_xor to set XOR blending mode.
+  CALL blenging_mode_xor_xor           ;
+  LD A,COLLISION_MODE_FIGHTER          ; Set collision mode to COLLISION_MODE_FIGHTER ($03) at state_collision_mode.
+  LD (state_collision_mode),A          ;
+  LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_FIGHTER_ATTRIBUTES ; Set height=8px, attributes=$00. Render via
+  CALL render_sprite                                                 ; render_sprite, restore blending via
+  CALL blenging_mode_or_or                                           ; blenging_mode_or_or.
+  JP operate_viewport_objects          ; Return to main viewport loop.
 
-; Routine at 7192
+; Advance right-facing fighter
 ;
-; Used by the routine at operate_fighter.
+; Moves right-facing fighter 4 pixels right, wrapping at the right edge.
 fighter_right_advance:
-  INC C
-  INC C
-  INC C
-  INC C
-  LD A,C
-  CP FIGHTER_POSITION_RIGHT_LIMIT
-  CALL Z,fighter_right_reset
-  JP operate_fighter_continue
+  INC C                                ; Move right 4 pixels (INC C × 4). If C == $E8, reset via fighter_right_reset.
+  INC C                                ;
+  INC C                                ;
+  INC C                                ;
+  LD A,C                               ;
+  CP FIGHTER_POSITION_RIGHT_LIMIT      ;
+  CALL Z,fighter_right_reset           ; Continue to operate_fighter_continue for rendering.
+  JP operate_fighter_continue          ;
 
-; Routine at 719F
+; Reset right-moving fighter position
 ;
-; Used by the routine at fighter_right_advance.
+; Resets X position to FIGHTER_POSITION_RIGHT_INIT ($04) when fighter reaches right edge.
 fighter_right_reset:
-  LD C,FIGHTER_POSITION_RIGHT_INIT
+  LD C,FIGHTER_POSITION_RIGHT_INIT     ; Set C = $04 (initial right position).
   RET
 
 ; Routine at 71A2
@@ -5249,7 +5259,7 @@ operate_tank_0:
 
 ; Routine at 72E6
 ;
-; Used by the routines at operate_fighter and operate_tank.
+; Used by the routines at operate_fighter_continue and operate_tank.
 blenging_mode_xor_xor:
   LD A,$A8
   LD (L8C1B),A                         ; Put "XOR B" into L8C1B
@@ -5258,7 +5268,7 @@ blenging_mode_xor_xor:
 
 ; Routine at 72EF
 ;
-; Used by the routines at finalize_collision, render_enemy, operate_fighter and operate_tank.
+; Used by the routines at finalize_collision, render_enemy, operate_fighter_continue and operate_tank.
 blenging_mode_or_or:
   LD A,$B0
   LD (L8C1B),A                         ; Put "OR B" into L8C1B
@@ -5752,8 +5762,8 @@ ship_or_helicopter_right_advance:
 
 ; Load array of enemy sprites.
 ;
-; Used by the routines at render_enemy, operate_ship_or_helicopter_continue, operate_fighter, animate_helicopter,
-; operate_tank and handle_object_proximity.
+; Used by the routines at render_enemy, operate_ship_or_helicopter_continue, operate_fighter_continue,
+; animate_helicopter, operate_tank and handle_object_proximity.
 ;
 ; I:D OBJECT_DEFINITION
 ; I:HL Pointer to the array of sprites
@@ -7362,7 +7372,7 @@ L8B1B:
 
 ; Routine at 8B1E
 ;
-; Used by the routines at animate_plane_missile, render_enemy, render_fuel, render_balloon, operate_fighter,
+; Used by the routines at animate_plane_missile, render_enemy, render_fuel, render_balloon, operate_fighter_continue,
 ; operate_tank, operate_helicopter_missile, operate_tank_shell, operate_fuel and operate_baloon.
 ;
 ; I:A Sprite width in tiles

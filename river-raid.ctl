@@ -2158,21 +2158,41 @@ c $7155 Reset left-moving fighter position
 D $7155 Resets X position to FIGHTER_POSITION_LEFT_INIT ($E8) when fighter reaches left edge.
   $7155,2 Set C = $E8 (initial left position).
 @ $7158 label=operate_fighter
-c $7158 Fighter operation routine.
-N $7158 Advances the fighter by 4 pixels on each metronome tick and renders it using the XOR blending mode. When a fighter reaches the screen margin, resets its position.
+c $7158 Fighter operation routine
+D $7158 Operates fighter jets that fly horizontally across the screen. Fighters move 4 pixels per frame and wrap around when reaching screen edges. Uses XOR blending mode for rendering.
+D $7158 #LIST { Moves 4 pixels per frame (faster than ships/helicopters) } { Left-facing: decrements X, wraps at $00 to $E8 } { Right-facing: increments X, wraps at $E8 to $04 } { Sets COLLISION_MODE_FIGHTER for collision detection } LIST#
+R $7158 I:B Y position
+R $7158 I:C X position
+R $7158 I:D Object definition byte
+  $7158 Store current position to #R$8B0A for rendering.
 @ $715C isub=BIT SLOT_BIT_ORIENTATION,D
+  $715C Check orientation: if bit 6 clear (right-facing), jump to #R$7192.
 @ $7161 label=fighter_left_advance
+  $7161,7 Move left 4 pixels (DEC C × 4). If C == 0, reset via #R$7155.
 @ $7166 isub=CP FIGHTER_POSITION_LEFT_LIMIT
 @ $716B label=operate_fighter_continue
+c $716B Continue fighter operation
+D $716B Updates fighter position in viewport array and renders the sprite with XOR blending.
+  $716B Load viewport_ptr, navigate to current slot, update [X, Y, D] values.
+  $7174 Store position to #R$8B0C, get sprite pointer via #R$75BA.
 @ $717B isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
+  $717B Set frame size=$18, call #R$72E6 to set XOR blending mode.
 @ $7181 isub=LD A,COLLISION_MODE_FIGHTER
+  $7181 Set collision mode to COLLISION_MODE_FIGHTER ($03) at #R$5EF5.
 @ $7186 isub=LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_FIGHTER_ATTRIBUTES
+  $7186 Set height=8px, attributes=$00. Render via #R$8B1E, restore blending via #R$72EF.
+  $718F Return to main viewport loop.
 @ $7192 label=fighter_right_advance
-c $7192
+c $7192 Advance right-facing fighter
+D $7192 Moves right-facing fighter 4 pixels right, wrapping at the right edge.
+  $7192 Move right 4 pixels (INC C × 4). If C == $E8, reset via #R$719F.
 @ $7197 isub=CP FIGHTER_POSITION_RIGHT_LIMIT
-@ $719F isub=LD C,FIGHTER_POSITION_RIGHT_INIT
+  $7199 Continue to #R$716B for rendering.
 @ $719F label=fighter_right_reset
-c $719F
+@ $719F isub=LD C,FIGHTER_POSITION_RIGHT_INIT
+c $719F Reset right-moving fighter position
+D $719F Resets X position to FIGHTER_POSITION_RIGHT_INIT ($04) when fighter reaches right edge.
+  $719F,2 Set C = $04 (initial right position).
 c $71A2
 @ $71A5 isub=AND METRONOME_INTERVAL_1
 @ $71A7 isub=CP METRONOME_INTERVAL_1
