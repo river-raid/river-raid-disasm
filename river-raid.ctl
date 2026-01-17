@@ -857,15 +857,19 @@ c $62D4 Get Y offset for balloon collision
   $62D4 Return $09 in E (balloon Y offset).
 @ $62D7 label=get_offset_fuel
 c $62D7 Get Y offset for fuel depot collision
-  $62D7,3 Return $11 in E (fuel depot Y offset).
+  $62D7 Return $11 in E (fuel depot Y offset).
 @ $62DA label=advance_object
 c $62DA Increase vertical coordinate of the object by the value of #R$5F64.
-R $62DA I:B Current coordinate
-R $62DA O:B New coordinate
+D $62DA Adds the current scroll delta to an object's Y coordinate. Used during refueling mode to compensate for screen scrolling when checking collisions.
+R $62DA I:B Current Y coordinate
+R $62DA O:B New Y coordinate (B + scroll_delta)
+  $62DA,5 Load scroll delta from #R$5F64 and add to B.
 @ $62E0 label=retract_object
 c $62E0 Decrease vertical coordinate of the object by the value of #R$5F64.
-R $62E0 I:B Current coordinate
-R $62E0 O:B New coordinate
+D $62E0 Subtracts the current scroll delta from an object's Y coordinate. Used to reverse the adjustment made by #R$62DA after collision checking.
+R $62E0 I:B Current Y coordinate
+R $62E0 O:B New Y coordinate (B - scroll_delta)
+  $62E0,7 Load scroll delta from #R$5F64 and subtract from B.
 @ $62E8 label=check_missile_vs_objects
 c $62E8 Check missile collision against viewport objects
 N $62E8 Iterates through #R$5F00 (viewport_objects) checking if the player's missile collides with any object. Each object slot is 3 bytes: X, Y, and type/state.
@@ -1505,7 +1509,7 @@ N $6990 The right edge position depends on state_island_byte_3: 0=use byte_3 dir
   $69C5 Calculate screen address = screen_ptr + (X >> 3). Copy 2-byte edge sprite via LDIR.
   $69D8 Calculate fill count = (X >> 3) - 16. This is number of solid tiles left of edge.
   $69EA Fill leftward with $FF bytes (solid terrain) for fill count iterations.
-@ $69EC label=fill_left_terrain_loop
+@ $69EC label=fill_island_left_loop
 @ $69F0 label=prepare_right_edge
   $69F0 Restore left X from stack. Set D=left X, C=$3C (river half-width), B=state_island_byte_2.
   $69FA Dispatch based on state_island_byte_3: 1=#R$6A3F, 2=#R$6A45, else use byte_3 as right X.
@@ -1513,8 +1517,10 @@ N $6990 The right edge position depends on state_island_byte_3: 0=use byte_3 dir
   $6A0A Look up 2-byte edge sprite from terrain_edge_right using (right X AND $06) as index.
   $6A18 Calculate screen address = screen_ptr + (right X >> 3). Copy 2-byte edge sprite via LDIR.
   $6A26 Calculate fill count = 15 - (right X >> 3). This is number of solid tiles right of edge.
-  $6A38,6 Fill rightward with $FF bytes (solid terrain) for fill count iterations.
-@ $6A3A label=fill_right_terrain_loop
+  $6A38 Load $FF (solid terrain byte) into A.
+@ $6A3A label=fill_island_right_loop
+  $6A3A Write A to (DE), increment DE, loop B times to fill rightward.
+  $6A3E Return after filling right terrain.
 @ $6A3F label=calc_mirrored_edge
 c $6A3F Calculate mirrored right edge position
 D $6A3F For symmetric islands (state_island_byte_3=1). Right edge = 2*$3C - left = 120 - left. This mirrors the left edge around screen center, creating a symmetric island shape.
@@ -1567,13 +1573,11 @@ N $6AA3 Left edge X = profile_byte + row_offset - 16. The profile_byte comes fro
   $6AF4 Fill count = X >> 3. Fill leftward with $FF (solid terrain).
   $6AFB,15 Restore original X. Dispatch based on state_terrain_extras: 1=#R$6B58, 2=#R$6B5E.
 @ $6B06 label=fill_terrain_left_loop
-@ $6B06 label=fill_terrain_left_loop
   $6B10 Right sprite index = (right_X AND $06). Look up from #R$89FA.
 @ $6B20 label=draw_terrain_right_edge
   $6B21 Screen address = screen_ptr + (right_X >> 3). Copy 2-byte sprite via LDIR.
   $6B31,13 Fill count = 30 - (right_X >> 3). Fill rightward with $FF.
   $6B45,13 If island active (state_island_line_idx != 16), call #R$6990.
-@ $6B4B label=fill_terrain_right_loop
 @ $6B4B label=fill_terrain_right_loop
 @ $6B58 label=calc_terrain_right_mirrored
 c $6B58 Calculate mirrored right edge (terrain extras mode 1)

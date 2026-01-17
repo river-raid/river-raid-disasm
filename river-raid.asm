@@ -2212,30 +2212,30 @@ get_offset_fuel:
 
 ; Increase vertical coordinate of the object by the value of state_speed.
 ;
-; Used by the routines at check_fragment_collision, check_missile_vs_objects, render_plane, update_bridge_scroll,
-; animate_plane_missile, finalize_collision, setup_object_position, operate_viewport_objects, operate_helicopter_missile
-; and operate_tank_shell.
+; Adds the current scroll delta to an object's Y coordinate. Used during refueling mode to compensate for screen
+; scrolling when checking collisions.
 ;
-; I:B Current coordinate
-; O:B New coordinate
+; I:B Current Y coordinate
+; O:B New Y coordinate (B + scroll_delta)
 advance_object:
-  LD A,(state_speed)
-  ADD A,B
-  LD B,A
+  LD A,(state_speed)                   ; Load scroll delta from state_speed and add to B.
+  ADD A,B                              ;
+  LD B,A                               ;
   RET
 
 ; Decrease vertical coordinate of the object by the value of state_speed.
 ;
-; Used by the routine at check_missile_vs_objects.
+; Subtracts the current scroll delta from an object's Y coordinate. Used to reverse the adjustment made by
+; advance_object after collision checking.
 ;
-; I:B Current coordinate
-; O:B New coordinate
+; I:B Current Y coordinate
+; O:B New Y coordinate (B - scroll_delta)
 retract_object:
-  LD A,(state_speed)
-  LD H,A
-  LD A,B
-  SUB H
-  LD B,A
+  LD A,(state_speed)                   ; Load scroll delta from state_speed and subtract from B.
+  LD H,A                               ;
+  LD A,B                               ;
+  SUB H                                ;
+  LD B,A                               ;
   RET
 
 ; Check missile collision against viewport objects
@@ -3468,10 +3468,10 @@ locate_island_profile:
   CP $00                               ;
   JP Z,prepare_right_edge              ;
   LD A,$FF                             ; Fill leftward with $FF bytes (solid terrain) for fill count iterations.
-fill_left_terrain_loop:
+fill_island_left_loop:
   DEC DE                               ;
   LD (DE),A                            ;
-  DJNZ fill_left_terrain_loop          ;
+  DJNZ fill_island_left_loop           ;
 prepare_right_edge:
   POP AF                               ; Restore left X from stack. Set D=left X, C=$3C (river half-width),
   LD B,$00                             ; B=state_island_byte_2.
@@ -3515,12 +3515,12 @@ draw_right_edge:
   AND $0F                              ;
   CP $00                               ;
   RET Z                                ;
-  LD A,$FF                             ; Fill rightward with $FF bytes (solid terrain) for fill count iterations.
-fill_right_terrain_loop:
-  LD (DE),A                            ;
+  LD A,$FF                             ; Load $FF (solid terrain byte) into A.
+fill_island_right_loop:
+  LD (DE),A                            ; Write A to (DE), increment DE, loop B times to fill rightward.
   INC DE                               ;
-  DJNZ fill_right_terrain_loop         ;
-  RET
+  DJNZ fill_island_right_loop          ;
+  RET                                  ; Return after filling right terrain.
 
 ; Calculate mirrored right edge position
 ;

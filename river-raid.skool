@@ -2355,29 +2355,30 @@ c$62D7 LD E,$11      ; {Return $11 in E (fuel depot Y offset).
 
 ; Increase vertical coordinate of the object by the value of #R$5F64.
 ;
-; Used by the routines at #R$6268, #R$62E8, #R$6682, #R$66EE, #R$673D, #R$6794,
-; #R$6FEA, #R$708E, #R$7393 and #R$7441.
+; Adds the current scroll delta to an object's Y coordinate. Used during
+; refueling mode to compensate for screen scrolling when checking collisions.
 ;
-; I:B Current coordinate
-; O:B New coordinate
+; I:B Current Y coordinate
+; O:B New Y coordinate (B + scroll_delta)
 @label=advance_object
-c$62DA LD A,($5F64)  ;
+c$62DA LD A,($5F64)  ; {Load scroll delta from #R$5F64 and add to B.
  $62DD ADD A,B       ;
- $62DE LD B,A        ;
+ $62DE LD B,A        ; }
  $62DF RET           ;
 
 ; Decrease vertical coordinate of the object by the value of #R$5F64.
 ;
-; Used by the routine at #R$62E8.
+; Subtracts the current scroll delta from an object's Y coordinate. Used to
+; reverse the adjustment made by #R$62DA after collision checking.
 ;
-; I:B Current coordinate
-; O:B New coordinate
+; I:B Current Y coordinate
+; O:B New Y coordinate (B - scroll_delta)
 @label=retract_object
-c$62E0 LD A,($5F64)  ;
+c$62E0 LD A,($5F64)  ; {Load scroll delta from #R$5F64 and subtract from B.
  $62E3 LD H,A        ;
  $62E4 LD A,B        ;
  $62E5 SUB H         ;
- $62E6 LD B,A        ;
+ $62E6 LD B,A        ; }
  $62E7 RET           ;
 
 ; Check missile collision against viewport objects
@@ -3834,7 +3835,7 @@ c$6990 LD HL,$5EFD   ; {Increment island line counter.
  $69E5 CP $00        ;
  $69E7 JP Z,$69F0    ; }
  $69EA LD A,$FF      ; {Fill leftward with $FF bytes (solid terrain) for fill
-@label=fill_left_terrain_loop
+@label=fill_island_left_loop
 *$69EC DEC DE        ; count iterations.
  $69ED LD (DE),A     ;
  $69EE DJNZ $69EC    ; }
@@ -3881,12 +3882,12 @@ c$6990 LD HL,$5EFD   ; {Increment island line counter.
  $6A33 AND $0F       ;
  $6A35 CP $00        ;
  $6A37 RET Z         ; }
- $6A38 LD A,$FF      ; {Fill rightward with $FF bytes (solid terrain) for fill
-@label=fill_right_terrain_loop
-*$6A3A LD (DE),A     ; count iterations.
- $6A3B INC DE        ;
+ $6A38 LD A,$FF      ; Load $FF (solid terrain byte) into A.
+@label=fill_island_right_loop
+*$6A3A LD (DE),A     ; {Write A to (DE), increment DE, loop B times to fill
+ $6A3B INC DE        ; rightward.
  $6A3C DJNZ $6A3A    ; }
- $6A3E RET           ;
+ $6A3E RET           ; Return after filling right terrain.
 
 ; Calculate mirrored right edge position
 ;
@@ -4056,7 +4057,6 @@ c$6AA3 LD A,($5F77)  ; {Set up profile lookup: HL = #R$8063, DE = $10 (profile
  $6B02 SRL B         ;
  $6B04 LD A,$FF      ;
 @label=fill_terrain_left_loop
-@label=fill_terrain_left_loop
 *$6B06 DEC DE        ;
  $6B07 LD (DE),A     ;
  $6B08 DJNZ $6B06    ; }
@@ -4097,7 +4097,6 @@ c$6AA3 LD A,($5F77)  ; {Set up profile lookup: HL = #R$8063, DE = $10 (profile
  $6B47 SUB B         ; #R$6990.
  $6B48 LD B,A        ;
  $6B49 LD A,$FF      ;
-@label=fill_terrain_right_loop
 @label=fill_terrain_right_loop
 *$6B4B LD (DE),A     ;
  $6B4C INC DE        ;
