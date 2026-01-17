@@ -286,7 +286,7 @@ N $5D35 This routine is called when the player presses Enter during gameplay to 
 b $5D3F Array of possible starting bridge values.
 R $5D3F Index of list element is specified by the second and third bits of the #R$923A.
 R $5D3F The values correspond to the dialog rendered as #R$792A.
-@ $5D43 label=L5D43
+@ $5D43 label=state_overview_start_scroll
 g $5D43
 @ $5D44 label=init_state
 c $5D44 Initialize game state for overview/demo mode.
@@ -402,7 +402,7 @@ D $5DA6 This routine initializes the game screen and state for gameplay mode, th
   $5E3A Open channel 2 for status display
   $5E3D Point to status line 4 text
   $5E40 Calculate length of status line 4
-@ $5E40 isub=LD BC,data_unused_805F - status_line_4
+@ $5E40 isub=LD BC,status_line_4_end - status_line_4
   $5E43 Print status line 4
   $5E46 Load current game mode (1 or 2 player)
   $5E49 Convert to ASCII digit (add $31 to convert 0-9 to '0'-'9')
@@ -487,12 +487,12 @@ g $5EF3
 g $5EF4
 @ $5EF5 label=state_collision_mode
 g $5EF5
-@ $5EF6 label=L5EF6
+@ $5EF6 label=state_collision_y
 g $5EF6
-@ $5EF7 label=L5EF7
+@ $5EF7 label=ptr_plane_sprite
 g $5EF7
 W $5EF7
-@ $5EF9 label=L5EF9
+@ $5EF9 label=state_island_render_idx
 g $5EF9
 @ $5EFA label=state_island_profile_idx
 g $5EFA The value sourced from the first byte of an island definition in #R$C600 and used as a #R$8063 array index.
@@ -567,7 +567,7 @@ g $5F7D Inner array index in the terrain definition.
 g $5F7E Pointer to the text to be displayed in the scroller.
 W $5F7E
 u $5F80
-@ $5F81 label=L5F81
+@ $5F81 label=state_overview_frame
 g $5F81
 u $5F82
 @ $5F83 label=saved_stack_pointer
@@ -586,7 +586,7 @@ W $5F89
 @ $5F8B label=collision_result
 g $5F8B Collision detection result / hit object coordinates
 W $5F8B
-@ $5F8D label=L5F8D
+@ $5F8D label=state_saved_entity_coords
 g $5F8D
 W $5F8D
 @ $5F8F label=state_plane_missile_coordinates_backup
@@ -1763,7 +1763,7 @@ D $6D17 #LIST { Initializes screen with PAPER BLUE, INK GREEN } { Prints status 
   $6D34 Initialize gameplay: call #R$64BC, #R$6587, #R$6DEB (init_starting_bridge).
   $6D3D Call #R$68E9 to initialize terrain rendering.
   $6D40,11 Print "GAME" text (#R$805A, length 5) using ROM PR_STRING.
-@ $6D48 isub=LD BC,data_unused_805F - status_line_4
+@ $6D48 isub=LD BC,status_line_4_end - status_line_4
   $6D4E Print game number: load game mode from #R$923A, add '1' ($31) for ASCII digit, output via RST $10.
   $6D54,13 Initialize state: store 'h' ($68) in last key, clear #R$5F7D, save initial scroll value to #R$5D43.
 @ $6D64 label=overview_loop
@@ -2828,8 +2828,8 @@ t $805A
 T $805A AT 20,4
 @ $805D isub=DEFM EXT_ATTR_INK,COLOR_WHITE
 T $805D INK WHITE
-@ $805F label=data_unused_805F
-u $805F Unused data bytes
+@ $805F label=status_line_4_end
+u $805F End marker for status_line_4 length calculation
 @ $8063 label=data_terrain_profiles
 b $8063 Array [15] of terrain element definitions (16 bytes each).
 N $8063 Each byte of the element defines the relative terrain width
@@ -2895,7 +2895,7 @@ b $8431
   $8439,8,1 Frame 2
   $8441,8,1 Frame 3
   $8449,8,1 Frame 4
-@ $8451 label=L8451
+@ $8451 label=sprite_missile_trail
 b $8451
 @ $8471 label=sprite_explosion_f1
 b $8471
@@ -3077,16 +3077,16 @@ W $8B0C
 @ $8B0E label=render_sprite_ptr
 g $8B0E
 W $8B0E
-@ $8B10 label=L8B10
+@ $8B10 label=render_old_sprite_ptr
 g $8B10
 W $8B10
-@ $8B12 label=L8B12
+@ $8B12 label=render_new_screen_addr
 g $8B12
 W $8B12
-@ $8B14 label=L8B14
+@ $8B14 label=render_old_screen_addr
 g $8B14
 W $8B14
-@ $8B16 label=L8B16
+@ $8B16 label=render_sprite_ptr_out
 g $8B16
 W $8B16
 u $8B18

@@ -1246,7 +1246,7 @@ starting_bridges:
   DEFB $01,$05,$14,$1E
 
 ; Game status buffer entry at 5D43
-L5D43:
+state_overview_start_scroll:
   DEFB $00
 
 ; Initialize game state for overview/demo mode.
@@ -1364,7 +1364,7 @@ play:
   LD A,$02                             ; Prepare to open channel 2
   CALL CHAN_OPEN                       ; Open channel 2 for status display
   LD DE,status_line_4                  ; Point to status line 4 text
-  LD BC,data_unused_805F - status_line_4 ; Calculate length of status line 4
+  LD BC,status_line_4_end - status_line_4 ; Calculate length of status line 4
   CALL PR_STRING                       ; Print status line 4
   LD A,(state_game_mode)               ; Load current game mode (1 or 2 player)
   ADD A,$31                            ; Convert to ASCII digit (add $31 to convert 0-9 to '0'-'9')
@@ -1472,15 +1472,15 @@ state_collision_mode:
   DEFB $00
 
 ; Game status buffer entry at 5EF6
-L5EF6:
+state_collision_y:
   DEFB $00
 
 ; Game status buffer entry at 5EF7
-L5EF7:
+ptr_plane_sprite:
   DEFW $0000
 
 ; Game status buffer entry at 5EF9
-L5EF9:
+state_island_render_idx:
   DEFB $00
 
 ; The value sourced from the first byte of an island definition in data_islands and used as a data_terrain_profiles
@@ -1654,7 +1654,7 @@ L5F80:
   DEFB $00
 
 ; Game status buffer entry at 5F81
-L5F81:
+state_overview_frame:
   DEFB $00
 
 ; Unused
@@ -1685,7 +1685,7 @@ collision_result:
   DEFW $0000
 
 ; Game status buffer entry at 5F8D
-L5F8D:
+state_saved_entity_coords:
   DEFW $0000
 
 ; Game status buffer entry at 5F8F
@@ -1848,7 +1848,7 @@ render_plane_and_terrain:
   LD D,$00                             ; Clear D register (prepare for 16-bit arithmetic)
   LD E,A                               ; Copy result to E register
   SLA E                                ; Shift E left (multiply by 2 for 16-byte frames)
-  LD HL,(L5EF7)                        ; Load sprite data pointer from L5EF7
+  LD HL,(ptr_plane_sprite)             ; Load sprite data pointer from ptr_plane_sprite
   ADD HL,DE                            ; Add frame offset to sprite pointer
   LD (render_sprite_ptr),HL            ; Store updated sprite pointer to render_sprite_ptr
   ADD A,$80                            ; Add $80 to A (calculate Y-coordinate)
@@ -1987,8 +1987,8 @@ handle_collision_mode_fighter:
   POP DE                               ; Clean up stack (3x POP DE).
   POP DE                               ;
   POP DE                               ;
-  LD A,D                               ; Store fighter Y coordinate to L5EF6.
-  LD (L5EF6),A                         ;
+  LD A,D                               ; Store fighter Y coordinate to state_collision_y.
+  LD (state_collision_y),A             ;
   LD HL,(viewport_ptr)                 ; Get object coordinates from viewport and mark slot as empty.
   DEC HL                               ;
   DEC HL                               ;
@@ -2041,12 +2041,12 @@ check_collision:
   CALL add_points                      ;
   LD A,$0F                             ; Store $0F to state_activation_mask (new activation mask).
   LD (state_activation_mask),A         ;
-  POP DE                               ; Clean up stack and store hit Y to L5EF6.
+  POP DE                               ; Clean up stack and store hit Y to state_collision_y.
   POP DE                               ;
   POP DE                               ;
   POP BC                               ;
   LD A,D                               ;
-  LD (L5EF6),A                         ;
+  LD (state_collision_y),A             ;
   LD A,(state_bridge_y_position)       ; Set up first explosion row: Y = bridge_Y - 4, X = $70, D = 0.
   SUB $04                              ;
   LD B,A                               ;
@@ -2079,8 +2079,8 @@ check_collision:
   LD (state_bridge_y_position),A       ;
   LD A,$01                             ; Set bridge destroyed flag (state_bridge_destroyed).
   LD (state_bridge_destroyed),A        ;
-  LD BC,(L5F8D)                           ; Restore entity coordinates from L5F8D to state_plane_missile_coordinates.
-  LD (state_plane_missile_coordinates),BC ;
+  LD BC,(state_saved_entity_coords)       ; Restore entity coordinates from state_saved_entity_coords to
+  LD (state_plane_missile_coordinates),BC ; state_plane_missile_coordinates.
   LD A,(state_player)                  ; Check if player 2; if so, jump to next_bridge_player_2.
   CP PLAYER_2                          ;
   JP Z,next_bridge_player_2            ; (continued from above).
@@ -2382,13 +2382,13 @@ process_collision_hit:
   POP DE                               ;
   POP DE                               ;
   POP BC                               ;
-  LD A,D                               ; Store hit Y coordinate to L5EF6.
-  LD (L5EF6),A                         ;
+  LD A,D                               ; Store hit Y coordinate to state_collision_y.
+  LD (state_collision_y),A             ;
   LD HL,exploding_fragments            ; Reset exploding_fragments_ptr and viewport_ptr to list starts.
   LD (exploding_fragments_ptr),HL      ;
   LD HL,viewport_objects               ;
   LD (viewport_ptr),HL                 ;
-  LD BC,(L5F8D)                        ; Load saved coordinates from L5F8D.
+  LD BC,(state_saved_entity_coords)    ; Load saved coordinates from state_saved_entity_coords.
   LD (state_plane_missile_coordinates),BC ; Store to state_plane_missile_coordinates.
   JP finalize_collision                ; Finalize collision.
 
@@ -2783,7 +2783,7 @@ handle_right:
   LD (previous_object_coordinates),BC  ; Store previous coordinates to previous_object_coordinates for erasing old
                                        ; sprite
   LD BC,SPRITE_PLANE_FRAME_SIZE        ; Set sprite frame size to $0010 (16 bytes per frame)
-  LD HL,(L5EF7)                        ; Load sprite data pointer from L5EF7
+  LD HL,(ptr_plane_sprite)             ; Load sprite data pointer from ptr_plane_sprite
   LD (render_sprite_ptr),HL            ; Store sprite pointer to render_sprite_ptr for rendering
   LD E,SPRITE_PLANE_ATTRIBUTES         ; Set sprite attributes to $0E (color/attribute byte)
   LD A,(state_player)                  ; Load current player number from state_player
@@ -2803,8 +2803,8 @@ restore_plane_state_after_render:
   LD HL,(state_plane_missile_coordinates_backup) ; Load backed-up missile coordinates from
                                                  ; state_plane_missile_coordinates_backup
   LD (state_plane_missile_coordinates),HL ; Restore missile coordinates to state_plane_missile_coordinates
-  LD HL,(L8B16)                        ; Load sprite data pointer from L8B16 (updated by render routine)
-  LD (L5EF7),HL                        ; Store updated sprite pointer to L5EF7
+  LD HL,(render_sprite_ptr_out)        ; Load sprite data pointer from render_sprite_ptr_out (updated by render routine)
+  LD (ptr_plane_sprite),HL             ; Store updated sprite pointer to ptr_plane_sprite
   LD A,$04                             ; Set sprite bank selector to $04 (select banked plane sprite)
   LD (state_plane_sprite_bank),A       ; Store sprite bank selector to state_plane_sprite_bank
   RET
@@ -2833,7 +2833,7 @@ handle_left:
   LD (previous_object_coordinates),BC  ; Store previous coordinates to previous_object_coordinates for erasing old
                                        ; sprite
   LD BC,SPRITE_PLANE_FRAME_SIZE        ; Set sprite frame size to $0010 (16 bytes per frame)
-  LD HL,(L5EF7)                        ; Load sprite data pointer from L5EF7
+  LD HL,(ptr_plane_sprite)             ; Load sprite data pointer from ptr_plane_sprite
   LD (render_sprite_ptr),HL            ; Store sprite pointer to render_sprite_ptr for rendering
   LD E,SPRITE_PLANE_ATTRIBUTES         ; Set sprite attributes to $0E (color/attribute byte)
   LD A,(state_player)                  ; Load current player number from state_player
@@ -2871,8 +2871,8 @@ render_plane:
   LD (object_coordinates),BC           ; (continued).
   CALL advance_object                  ; Advance position via advance_object and store to previous_object_coordinates.
   LD (previous_object_coordinates),BC  ;
-  LD BC,SPRITE_PLANE_FRAME_SIZE        ; Set frame size and sprite pointer from L5EF7.
-  LD HL,(L5EF7)                        ;
+  LD BC,SPRITE_PLANE_FRAME_SIZE        ; Set frame size and sprite pointer from ptr_plane_sprite.
+  LD HL,(ptr_plane_sprite)             ;
   LD (render_sprite_ptr),HL            ;
   LD E,SPRITE_PLANE_ATTRIBUTES         ; Set attributes; call ld_attributes_ship for Player 2 (uses ship attributes).
   LD A,(state_player)                  ;
@@ -3016,8 +3016,8 @@ animate_plane_missile:
   LD A,(state_plane_missile_coordinates) ; Return if no missile active (Y == 0).
   CP $00                                 ;
   RET Z                                  ;
-  LD BC,(state_plane_missile_coordinates) ; Backup coords to L5F8D; if first pass, adjust for scroll.
-  LD (L5F8D),BC                           ;
+  LD BC,(state_plane_missile_coordinates) ; Backup coords to state_saved_entity_coords; if first pass, adjust for
+  LD (state_saved_entity_coords),BC       ; scroll.
   LD A,(missile_pass_selector)            ;
   CP $01                                  ;
   CALL Z,advance_object                   ;
@@ -3076,8 +3076,8 @@ finalize_collision:
   JP Z,handle_no_fuel                  ;
   LD A,COLLISION_MODE_NONE             ; Reset collision mode in state_collision_mode to NONE.
   LD (state_collision_mode),A          ;
-  LD A,$01                             ; Set up sprite parameters: width=1, base=L8451, frame_size=8.
-  LD HL,L8451                          ;
+  LD A,$01                             ; Set up sprite parameters: width=1, base=sprite_missile_trail, frame_size=8.
+  LD HL,sprite_missile_trail           ;
   LD DE,$0008                          ;
   LD A,C                               ; Calculate frame index from X coordinate's lower 3 bits.
   AND $07                              ;
@@ -3113,7 +3113,7 @@ finalize_collision_erase_missile_loop:
   LD A,(state_x)                       ; Set X = plane_X + 4 for centered erasure.
   ADD A,$04                            ;
   LD C,A                               ;
-  LD HL,L8451                          ; Set up sprite parameters for residue erasure.
+  LD HL,sprite_missile_trail           ; Set up sprite parameters for residue erasure.
   LD DE,$0008                          ;
   LD A,C                               ;
   AND $07                              ;
@@ -3125,7 +3125,7 @@ finalize_collision_erase_residue_loop:
   ADD HL,DE                                   ; Select correct frame by adding frame_size A times.
   DEC A                                       ;
   JR NZ,finalize_collision_erase_residue_loop ;
-  LD A,(L5EF6)                         ; Calculate remaining height from L5EF6; return if zero.
+  LD A,(state_collision_y)             ; Calculate remaining height from state_collision_y; return if zero.
   LD D,A                               ;
   LD A,$08                             ;
   SUB D                                ;
@@ -3166,7 +3166,7 @@ add_island_offset_1000:
 handle_island_rendering:
   LD A,$8F                             ; Initialize island line counter to $8F (143).
 process_island_line:
-  LD (L5EF9),A
+  LD (state_island_render_idx),A
   AND $3F                              ; Mask to get lower 6 bits (index 0-63).
   LD HL,L5B00                          ; Look up pointer in table at L5B00 (index × 2).
   LD C,A                               ;
@@ -3177,7 +3177,7 @@ process_island_line:
   INC HL                               ;
   LD D,(HL)                            ;
   EX DE,HL                             ;
-  LD A,(L5EF9)                         ; Reload island counter.
+  LD A,(state_island_render_idx)       ; Reload island counter.
   BIT 7,A                              ; If bit 7 set, add $1000 offset to island pointer.
   CALL NZ,add_island_offset_1000       ;
   BIT 6,A                              ; If bit 6 set, add $0800 offset to island pointer.
@@ -3186,7 +3186,7 @@ process_island_line:
   LD HL,L5B00                          ; Look up pointer for (counter - speed) in table at L5B00.
   LD A,(state_speed)                   ;
   LD B,A                               ;
-  LD A,(L5EF9)                         ;
+  LD A,(state_island_render_idx)       ;
   SUB B                                ;
   AND $3F                              ;
   LD B,$00                             ;
@@ -3199,7 +3199,7 @@ process_island_line:
   EX DE,HL                             ; Load pointer into HL.
   LD A,(state_speed)                   ; Calculate (counter - speed).
   LD D,A                               ;
-  LD A,(L5EF9)                         ;
+  LD A,(state_island_render_idx)       ;
   SUB D                                ;
   BIT 7,A                              ; If bit 7 set, add $1000 offset to island pointer.
   CALL NZ,add_island_offset_1000       ;
@@ -3208,13 +3208,13 @@ process_island_line:
   POP DE                               ; Copy 32 bytes backward from first to second island line.
   LD BC,$0020                          ;
   LDDR                                 ;
-  LD A,(L5EF9)                         ; Decrement island counter and check if finished.
+  LD A,(state_island_render_idx)       ; Decrement island counter and check if finished.
   DEC A                                ;
   CP $00                               ;
   JP Z,clear_top_rows
   CP $7F                               ; If counter is $7F, render plane.
   CALL Z,render_plane                  ;
-  LD A,(L5EF9)                         ; Continue with next island line.
+  LD A,(state_island_render_idx)       ; Continue with next island line.
   DEC A                                ;
   JP process_island_line               ;
 
@@ -4159,29 +4159,29 @@ overview:
   CALL setup_player_2_display          ; init_starting_bridge (init_starting_bridge).
   CALL init_starting_bridge            ;
   CALL init_current_bridge             ; Call init_current_bridge to initialize terrain rendering.
-  LD A,$04                               ; Print "GAME" text (status_line_4, length 5) using ROM PR_STRING.
-  LD (state_terrain_fragment_counter),A  ;
-  LD DE,status_line_4                    ;
-  LD BC,data_unused_805F - status_line_4 ;
+  LD A,$04                                ; Print "GAME" text (status_line_4, length 5) using ROM PR_STRING.
+  LD (state_terrain_fragment_counter),A   ;
+  LD DE,status_line_4                     ;
+  LD BC,status_line_4_end - status_line_4 ;
   CALL PR_STRING
   LD A,(state_game_mode)               ; Print game number: load game mode from state_game_mode, add '1' ($31) for ASCII
   ADD A,$31                            ; digit, output via RST $10.
   RST $10                              ;
   LD A,$68                             ; Initialize state: store 'h' ($68) in last key, clear state_terrain_position,
-  LD (LAST_K),A                        ; save initial scroll value to L5D43.
+  LD (LAST_K),A                        ; save initial scroll value to state_overview_start_scroll.
   LD A,$00                             ;
   LD (state_terrain_position),A        ;
   LD A,(state_bridge_index)            ;
-  LD (L5D43),A
+  LD (state_overview_start_scroll),A
 ; This entry point is used by the routine at reset_scroll_text.
 overview_loop:
   LD A,$BF                             ; Check Enter key (row 6, bit 0). Call handle_enter if pressed.
   IN A,($FE)                           ;
   BIT 0,A                              ;
   CALL Z,handle_enter                  ;
-  LD A,(L5D43)                         ; Check if 5 scroll units passed: if (state_bridge_index - L5D43) == 5, jump to
-  LD B,A                               ; return_to_control_selection to start game.
-  LD A,(state_bridge_index)            ;
+  LD A,(state_overview_start_scroll)   ; Check if 5 scroll units passed: if (state_bridge_index -
+  LD B,A                               ; state_overview_start_scroll) == 5, jump to return_to_control_selection to start
+  LD A,(state_bridge_index)            ; game.
   SUB B                                ;
   CP $05                               ;
   JP Z,return_to_control_selection     ;
@@ -4193,15 +4193,15 @@ overview_loop:
   CALL operate_tank_shell              ;
   CALL operate_helicopter_missile      ;
   CALL advance_scroll                  ; Call advance_scroll for rendering.
-  CALL scroll_attribute_row            ; Call delay, increment frame counter L5F81, call ROM KEYBOARD ($02BF), enable
-  LD HL,L5F81                          ; interrupts.
+  CALL scroll_attribute_row            ; Call delay, increment frame counter state_overview_frame, call ROM KEYBOARD
+  LD HL,state_overview_frame           ; ($02BF), enable interrupts.
   INC (HL)                             ;
   CALL KEYBOARD                        ;
   EI
   LD A,(LAST_K)                        ; Check if Enter ($0D) was pressed. If so, jump to play.
   CP $0D                               ;
   JP Z,play                            ;
-  LD A,(L5F81)                         ; Check frame counter AND 3: if not zero, loop back to overview_loop.
+  LD A,(state_overview_frame)          ; Check frame counter AND 3: if not zero, loop back to overview_loop.
   AND $03                              ;
   CP $00                               ;
   JP NZ,overview_loop
@@ -4504,7 +4504,7 @@ render_explosions:
   LD A,(HL)                            ; Set up sprite rendering: store sprite pointer, set collision mode to none,
   LD HL,all_ff                         ; configure rendering parameters.
   LD (render_sprite_ptr),HL            ;
-  LD (L8B10),DE                        ;
+  LD (render_old_sprite_ptr),DE        ;
   LD D,A                               ;
   LD A,COLLISION_MODE_NONE             ;
   LD (state_collision_mode),A          ;
@@ -6500,8 +6500,8 @@ status_line_4:
   DEFM EXT_ATTR_AT,$14,$04             ; AT 20,4
   DEFM EXT_ATTR_INK,COLOR_WHITE        ; INK WHITE
 
-; Unused data bytes
-data_unused_805F:
+; End marker for status_line_4 length calculation
+status_line_4_end:
   DEFB $01,$05,$0A,$0F
 
 ; Array [15] of terrain element definitions (16 bytes each).
@@ -6729,7 +6729,7 @@ sprite_missile:
   DEFB $00                             ;
 
 ; Data block at 8451
-L8451:
+sprite_missile_trail:
   DEFB $C0,$C0,$C0,$C0,$C0,$C0,$C0,$C0
   DEFB $30,$30,$30,$30,$30,$30,$30,$30
   DEFB $0C,$0C,$0C,$0C,$0C,$0C,$0C,$0C
@@ -7433,19 +7433,19 @@ render_sprite_ptr:
   DEFW $0000
 
 ; Game status buffer entry at 8B10
-L8B10:
+render_old_sprite_ptr:
   DEFW $0000
 
 ; Game status buffer entry at 8B12
-L8B12:
+render_new_screen_addr:
   DEFW $2020
 
 ; Game status buffer entry at 8B14
-L8B14:
+render_old_screen_addr:
   DEFW $2020
 
 ; Game status buffer entry at 8B16
-L8B16:
+render_sprite_ptr_out:
   DEFW $2020
 
 ; Unused
@@ -7513,18 +7513,18 @@ render_object_0:
   ADD HL,BC
   DEC A
   JR NZ,render_object_0
-  LD (L8B10),HL
-  LD (L8B16),HL
+  LD (render_old_sprite_ptr),HL
+  LD (render_sprite_ptr_out),HL
   POP DE
 ; This entry point is used by the routine at render_explosions.
 render_object_1:
   PUSH DE
   LD BC,(object_coordinates)
   CALL calculate_pixel_address
-  LD (L8B12),HL
+  LD (render_new_screen_addr),HL
   LD BC,(previous_object_coordinates)
   CALL calculate_pixel_address
-  LD (L8B14),HL
+  LD (render_old_screen_addr),HL
   JP adjust_old_screen_third_0
 
 ; Process one row of sprite rendering.
@@ -7541,22 +7541,22 @@ render_row_loop:
   AND $3F                              ;
   CP $00                               ;
   JP Z,adjust_new_screen_third         ;
-  LD HL,(L8B12)                        ; Store new screen address and continue.
+  LD HL,(render_new_screen_addr)       ; Store new screen address and continue.
   LD DE,$07E0                          ;
   OR A                                 ;
   SBC HL,DE                            ;
-  LD (L8B12),HL                        ;
+  LD (render_new_screen_addr),HL       ;
   JP adjust_old_position
 
 ; Adjust screen address for third-of-screen crossing.
 ;
 ; Subtracts $E0 to move screen pointer up one character row.
 adjust_new_screen_third:
-  LD HL,(L8B12)                        ; HL -= $E0 (adjust for character row boundary).
+  LD HL,(render_new_screen_addr)       ; HL -= $E0 (adjust for character row boundary).
   LD DE,$00E0                          ;
   OR A                                 ;
   SBC HL,DE                            ;
-  LD (L8B12),HL                        ;
+  LD (render_new_screen_addr),HL       ;
   JP adjust_old_position
 
 ; Process old position screen address adjustment.
@@ -7572,22 +7572,22 @@ adjust_old_position:
   AND $3F                              ;
   CP $00                               ;
   JP Z,adjust_old_screen_third         ;
-  LD HL,(L8B14)                        ; Store adjusted address.
+  LD HL,(render_old_screen_addr)       ; Store adjusted address.
   LD DE,$07E0                          ;
   OR A                                 ;
   SBC HL,DE                            ;
-  LD (L8B14),HL                        ;
+  LD (render_old_screen_addr),HL       ;
   JP adjust_old_screen_third_0
 
 ; Adjust old position for third-of-screen crossing.
 ;
 ; Used by the routine at adjust_old_position.
 adjust_old_screen_third:
-  LD HL,(L8B14)                        ; HL -= $E0, fall through to blitter.
+  LD HL,(render_old_screen_addr)       ; HL -= $E0, fall through to blitter.
   LD DE,$00E0                          ;
   OR A                                 ;
   SBC HL,DE                            ;
-  LD (L8B14),HL
+  LD (render_old_screen_addr),HL
 ; Main rendering loop - calls blitter and advances to next pixel row.
 adjust_old_screen_third_0:
   CALL render_blit_row                 ; Call blitter for this row.
@@ -7597,21 +7597,21 @@ adjust_old_screen_third_0:
   LD HL,(render_sprite_ptr)            ;
   ADD HL,DE                            ;
   LD (render_sprite_ptr),HL            ;
-  LD HL,(L8B10)                        ;
+  LD HL,(render_old_sprite_ptr)        ;
   ADD HL,DE                            ;
-  LD (L8B10),HL                        ;
+  LD (render_old_sprite_ptr),HL        ;
   LD HL,(previous_object_coordinates)  ; Increment Y coordinate for all position/address variables.
   INC H                                ;
   LD (previous_object_coordinates),HL  ;
   LD HL,(object_coordinates)           ;
   INC H                                ;
   LD (object_coordinates),HL           ;
-  LD HL,(L8B12)                        ;
+  LD HL,(render_new_screen_addr)       ;
   INC H                                ;
-  LD (L8B12),HL                        ;
-  LD HL,(L8B14)                        ;
+  LD (render_new_screen_addr),HL       ;
+  LD HL,(render_old_screen_addr)       ;
   INC H                                ;
-  LD (L8B14),HL                        ;
+  LD (render_old_screen_addr),HL       ;
   POP DE                               ; Decrement row counter, loop if more rows.
   DEC D                                ;
   JP NZ,render_row_loop                ;
@@ -7623,7 +7623,7 @@ adjust_old_screen_third_0:
 render_blit_row:
   LD A,(render_object_width)           ; Get width, load screen addresses for new and old positions.
   LD C,A                               ;
-  LD HL,(L8B14)                        ;
+  LD HL,(render_old_screen_addr)       ;
   LD DE,(render_sprite_ptr)            ;
 ; First pass: erase old sprite (XOR with screen).
 render_blit_row_0:
@@ -7645,8 +7645,8 @@ blit_erase_op:
   JR NZ,render_blit_row_0              ;
   LD A,(render_object_width)
   LD C,A
-  LD HL,(L8B12)
-  LD DE,(L8B10)
+  LD HL,(render_new_screen_addr)
+  LD DE,(render_old_sprite_ptr)
 ; Second pass: draw new sprite (OR with screen), check collision.
 blit_erase_op_0:
   PUSH DE                              ; Read sprite byte, XOR with screen to detect overlap.

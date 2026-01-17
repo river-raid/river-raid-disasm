@@ -1283,7 +1283,7 @@ c$5D35 LD SP,($5F83) ;
 b$5D3F DEFB $01,$05,$14,$1E
 
 ; Game status buffer entry at 5D43
-@label=L5D43
+@label=state_overview_start_scroll
 g$5D43 DEFB $00
 
 ; Initialize game state for overview/demo mode.
@@ -1432,7 +1432,7 @@ c$5DA6 LD A,$10      ; Initialize island line index to $10 (starting line for
  $5E38 LD A,$02      ; Prepare to open channel 2
  $5E3A CALL $1601    ; Open channel 2 for status display
  $5E3D LD DE,$805A   ; Point to status line 4 text
-@isub=LD BC,data_unused_805F - status_line_4
+@isub=LD BC,status_line_4_end - status_line_4
  $5E40 LD BC,$0005   ; Calculate length of status line 4
  $5E43 CALL $203C    ; Print status line 4
  $5E46 LD A,($923A)  ; Load current game mode (1 or 2 player)
@@ -1550,15 +1550,15 @@ g$5EF4 DEFB $00
 g$5EF5 DEFB $00
 
 ; Game status buffer entry at 5EF6
-@label=L5EF6
+@label=state_collision_y
 g$5EF6 DEFB $00
 
 ; Game status buffer entry at 5EF7
-@label=L5EF7
+@label=ptr_plane_sprite
 g$5EF7 DEFW $0000
 
 ; Game status buffer entry at 5EF9
-@label=L5EF9
+@label=state_island_render_idx
 g$5EF9 DEFB $00
 
 ; The value sourced from the first byte of an island definition in #R$C600 and
@@ -1734,7 +1734,7 @@ g$5F7E DEFW $0000
 u$5F80 DEFB $00
 
 ; Game status buffer entry at 5F81
-@label=L5F81
+@label=state_overview_frame
 g$5F81 DEFB $00
 
 ; Unused
@@ -1765,7 +1765,7 @@ g$5F89 DEFW $0000
 g$5F8B DEFW $0000
 
 ; Game status buffer entry at 5F8D
-@label=L5F8D
+@label=state_saved_entity_coords
 g$5F8D DEFW $0000
 
 ; Game status buffer entry at 5F8F
@@ -4578,7 +4578,7 @@ c$6D17 LD BC,$0010   ; {Initialize scroll position (#R$5F70 = $0010) and scroll
  $6D40 LD A,$04      ; {Print "GAME" text (#R$805A, length 5) using ROM
  $6D42 LD ($5EEE),A  ; PR_STRING.
  $6D45 LD DE,$805A   ;
-@isub=LD BC,data_unused_805F - status_line_4
+@isub=LD BC,status_line_4_end - status_line_4
  $6D48 LD BC,$0005   ; }
  $6D4B CALL $203C    ;
  $6D4E LD A,($923A)  ; {Print game number: load game mode from #R$923A, add '1'
@@ -7234,8 +7234,8 @@ t$805A DEFM $16,$14,$04 ; AT 20,4
 @isub=DEFM EXT_ATTR_INK,COLOR_WHITE
  $805D DEFM $10,$07     ; INK WHITE
 
-; Unused data bytes
-@label=data_unused_805F
+; End marker for status_line_4 length calculation
+@label=status_line_4_end
 u$805F DEFB $01,$05,$0A,$0F
 
 ; Array [15] of terrain element definitions (16 bytes each).
@@ -7505,7 +7505,7 @@ b$8431 DEFB $C0      ; {Frame 1
  $8450 DEFB $00      ; }
 
 ; Data block at 8451
-@label=L8451
+@label=sprite_missile_trail
 b$8451 DEFB $C0,$C0,$C0,$C0,$C0,$C0,$C0,$C0
  $8459 DEFB $30,$30,$30,$30,$30,$30,$30,$30
  $8461 DEFB $0C,$0C,$0C,$0C,$0C,$0C,$0C,$0C
@@ -8367,19 +8367,19 @@ g$8B0C DEFW $0000
 g$8B0E DEFW $0000
 
 ; Game status buffer entry at 8B10
-@label=L8B10
+@label=render_old_sprite_ptr
 g$8B10 DEFW $0000
 
 ; Game status buffer entry at 8B12
-@label=L8B12
+@label=render_new_screen_addr
 g$8B12 DEFW $2020
 
 ; Game status buffer entry at 8B14
-@label=L8B14
+@label=render_old_screen_addr
 g$8B14 DEFW $2020
 
 ; Game status buffer entry at 8B16
-@label=L8B16
+@label=render_sprite_ptr_out
 g$8B16 DEFW $2020
 
 ; Unused
