@@ -3721,11 +3721,11 @@ c$694D LD DE,$0000   ; {Reset Y-position
  $6960 LD A,$00      ;
  $6962 RET           ;
 
-; Routine at 6963
+; Handle bridge index overflow by wrapping to first bridge.
 ;
 ; Used by the routine at #R$694D.
 @label=next_bridge_index_overflow
-c$6963 LD A,$01      ; {Reset bridge index
+c$6963 LD A,$01      ; {Reset bridge index to 0.
  $6965 LD ($5EF0),A  ; }
  $6968 LD A,$00      ;
  $696A RET           ;
@@ -4235,13 +4235,13 @@ c$6BBF LD A,$FE      ; {Scan Caps Shift
  $6BCE JP Z,$6BD2    ;
  $6BD1 RET           ; }
 
-; Routine at 6BD2
+; Reset to control selection screen.
 ;
-; Used by the routine at #R$6BBF.
+; Resets the scrolling text pointer and jumps back to the title screen.
 @label=select_controls
-c$6BD2 LD HL,$8182   ;
- $6BD5 LD ($5F7E),HL ;
- $6BD8 JP $5D06      ;
+c$6BD2 LD HL,$8182   ; {Reset text pointer to #R$8182 (credits text start).
+ $6BD5 LD ($5F7E),HL ; }
+ $6BD8 JP $5D06      ; Jump to title screen initialization.
 
 ; Non-maskable interrupt handler
 @label=int_handler
@@ -4257,11 +4257,12 @@ c$6BDB DI            ;
  $6BE8 BIT 4,A       ; }
  $6BEA JP Z,$6BB1    ;
 
-; Routine at 6BED
+; Process control state flags and trigger sound effects.
 ;
-; Used by the routine at #R$6BB1.
+; Called from interrupt handler to process various control flags like fire,
+; bonus life, explosion, and low fuel sounds.
 @label=handle_controls
-c$6BED LD A,($5C08)  ; {Check if H was pressed
+c$6BED LD A,($5C08)  ; {Check if H (pause) was pressed, skip processing if so.
  $6BF0 CP $68        ; }
  $6BF2 JP Z,$6C24    ;
  $6BF5 LD HL,$6BB0   ;

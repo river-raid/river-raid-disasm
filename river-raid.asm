@@ -3366,11 +3366,11 @@ increase_bridge_index:
   LD A,$00
   RET
 
-; Routine at 6963
+; Handle bridge index overflow by wrapping to first bridge.
 ;
 ; Used by the routine at increase_bridge_index.
 next_bridge_index_overflow:
-  LD A,$01                             ; Reset bridge index
+  LD A,$01                             ; Reset bridge index to 0.
   LD (state_bridge_index),A            ;
   LD A,$00
   RET
@@ -3839,13 +3839,13 @@ handle_enter:
   JP Z,select_controls                 ;
   RET                                  ;
 
-; Routine at 6BD2
+; Reset to control selection screen.
 ;
-; Used by the routine at handle_enter.
+; Resets the scrolling text pointer and jumps back to the title screen.
 select_controls:
-  LD HL,msg_credits
-  LD (ptr_scroller),HL
-  JP return_to_control_selection
+  LD HL,msg_credits                    ; Reset text pointer to msg_credits (credits text start).
+  LD (ptr_scroller),HL                 ;
+  JP return_to_control_selection       ; Jump to title screen initialization.
 
 ; Non-maskable interrupt handler
 int_handler:
@@ -3861,11 +3861,11 @@ int_handler:
   BIT 4,A                              ;
   JP Z,pause
 
-; Routine at 6BED
+; Process control state flags and trigger sound effects.
 ;
-; Used by the routine at pause.
+; Called from interrupt handler to process various control flags like fire, bonus life, explosion, and low fuel sounds.
 handle_controls:
-  LD A,(LAST_K)                        ; Check if H was pressed
+  LD A,(LAST_K)                        ; Check if H (pause) was pressed, skip processing if so.
   CP $68                               ;
   JP Z,int_return
   LD HL,state_controls

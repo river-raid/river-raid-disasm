@@ -1476,8 +1476,8 @@ R $694D O:A Always set to 0
   $6954 Increase bridge index
   $695B,2 Check for overflow
 @ $6963 label=next_bridge_index_overflow
-c $6963
-  $6963,5 Reset bridge index
+c $6963 Handle bridge index overflow by wrapping to first bridge.
+  $6963,5 Reset bridge index to 0.
 @ $696B label=handle_island
 c $696B Initialize island state from terrain data
 D $696B Called when terrain data indicates an island should appear. Looks up island parameters from data_islands table and stores them to state variables for use during island line rendering.
@@ -1624,13 +1624,17 @@ c $6BBF Handle the Enter key pressed
 C $6BBF Scan Caps Shift
 C $6BC8 Scan Symbol Shift
 @ $6BD2 label=select_controls
-c $6BD2
+c $6BD2 Reset to control selection screen.
+D $6BD2 Resets the scrolling text pointer and jumps back to the title screen.
+  $6BD2 Reset text pointer to #R$8182 (credits text start).
+  $6BD8,3 Jump to title screen initialization.
 @ $6BDB label=int_handler
 c $6BDB Non-maskable interrupt handler
   $6BE4,6 Check if H was pressed
 @ $6BED label=handle_controls
-c $6BED
-  $6BED,5 Check if H was pressed
+c $6BED Process control state flags and trigger sound effects.
+D $6BED Called from interrupt handler to process various control flags like fire, bonus life, explosion, and low fuel sounds.
+  $6BED,5 Check if H (pause) was pressed, skip processing if so.
 @ $6BF8 isub=BIT CONTROLS_BIT_FIRE,(HL)
 @ $6BFD isub=BIT CONTROLS_BIT_BONUS_LIFE,(HL)
 @ $6C05 isub=BIT CONTROLS_BIT_EXPLODING,(HL)
@@ -1773,8 +1777,6 @@ D $6DDD Resets the scrolling text pointer to the beginning of the title text at 
   $6DDD Reset text pointer #R$5F7E to #R$8182 (start of title text).
   $6DE5,6 Clear #R$5F6D and jump back to overview_loop.
 @ $6DEB label=init_starting_bridge
-c $6DEB
-c $6DEB
 c $6DEB Initializes the starting bridge based on the value of #R$923A using #R$5D3F for the lookup.
   $6DEE Shift the game mode right discarding the bit corresponding to the number of players and leaving the ones corresponding to the starting bridge.
   $6DF0 Point to the beginning of the list
