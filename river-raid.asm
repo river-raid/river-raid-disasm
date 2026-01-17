@@ -5815,84 +5815,89 @@ handle_fuel_off_viewport:
   LD D,L
   RET
 
-; Routine at 75A2
+; Advance right-facing ship or helicopter
 ;
-; Used by the routine at operate_ship_or_helicopter.
+; Moves a right-facing ship/helicopter 2 pixels right, checking for terrain collision ahead.
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition
 ship_or_helicopter_right_advance:
-  PUSH BC
-  LD A,C
-  ADD A,$20
-  LD C,A
-  CALL calculate_pixel_address
-  LD A,(HL)
-  POP BC
-  CP $00
-  CALL NZ,handle_object_proximity
-  LD (previous_object_coordinates),BC
-  INC C
-  INC C
-  JP operate_ship_or_helicopter_continue
+  PUSH BC                              ; Save BC, calculate terrain check position: C += $20 pixels.
+  LD A,C                               ;
+  ADD A,$20                            ;
+  LD C,A                               ;
+  CALL calculate_pixel_address         ; Call calculate_pixel_address to get terrain byte at (C, B). Load result into A.
+  LD A,(HL)                            ;
+  POP BC                               ; Restore BC. If terrain != 0, reverse direction via handle_object_proximity.
+  CP $00                               ;
+  CALL NZ,handle_object_proximity      ;
+  LD (previous_object_coordinates),BC  ; Store position to previous_object_coordinates. Advance X position right by 2
+  INC C                                ; pixels (INC C twice).
+  INC C                                ;
+  JP operate_ship_or_helicopter_continue ; Continue to operate_ship_or_helicopter_continue for rendering.
 
-; Load array of enemy sprites.
+; Load enemy sprite pointer
 ;
-; Used by the routines at render_enemy, operate_ship_or_helicopter_continue, operate_fighter_continue,
-; animate_helicopter, operate_tank and handle_object_proximity.
+; Calculates sprite pointer for enemy objects based on type and orientation. Uses left-facing sprites by default,
+; switches to right-facing via ld_enemy_sprites_right.
 ;
-; I:D OBJECT_DEFINITION
-; I:HL Pointer to the array of sprites
+; I:D Object definition (bits 0-2 = type, bit 6 = orientation)
+; O:HL Pointer to sprite data
 ld_enemy_sprites:
-  LD HL,sprite_enemies_left
-  LD BC,$0060                          ; Enemy sprite array size (3×1 tiles × 8 bytes/tile × 4 frames)
-  BIT SLOT_BIT_ORIENTATION,D
-  CALL Z,ld_enemy_sprites_right
-  LD A,D
-  AND $07
-  OR A
-  SBC HL,BC
+  LD HL,sprite_enemies_left            ; Load left-facing sprite base sprite_enemies_left, frame size $60.
+  LD BC,$0060                          ;
+  BIT SLOT_BIT_ORIENTATION,D           ; If right-facing (bit 6 clear), get right sprites via ld_enemy_sprites_right.
+  CALL Z,ld_enemy_sprites_right        ;
+  LD A,D                               ; Extract object type (bits 0-2), prepare for loop.
+  AND $07                              ;
+  OR A                                 ;
+  SBC HL,BC                            ; Loop: HL += $60 for each type. Result: HL = base + (type * $60).
 ld_enemy_sprites_loop:
-  ADD HL,BC
-  DEC A
-  JR NZ,ld_enemy_sprites_loop
-  RET
+  ADD HL,BC                            ;
+  DEC A                                ;
+  JR NZ,ld_enemy_sprites_loop          ;
+  RET                                  ;
 
-; Handles the situation when a ship or a helicopter is in close proximity to another object.
+; Handle ship/helicopter proximity to obstacle
 ;
-; If it approaches a river bank or a fuel station, it will invert its orientation. But if it's the the player, it won't.
+; When a ship or helicopter approaches a river bank or fuel station, inverts its orientation. Ignores the player
+; (objects in top half of screen).
 ;
 ; I:BC Object coordinates
 handle_object_proximity:
   LD (previous_object_coordinates),BC
-  LD A,B                               ; Return if the object is located in the top half of the screen. Otherwise, the
-  SUB $80                              ; other object may be the player and should be ignored.
+  LD A,B                               ; Return if Y >= $80 (object in top half, might be player).
+  SUB $80                              ;
   RET P                                ;
-  LD BC,(previous_object_coordinates)
-  POP HL
-  LD HL,(viewport_ptr)
-  DEC HL
-  LD D,(HL)
-  CALL ld_enemy_sprites
-  LD BC,(previous_object_coordinates)
-  LD A,C
-  AND $07
-  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
-  SRL A
-  OR A
-  INC A
-  SBC HL,BC
+  LD BC,(previous_object_coordinates)  ; Reload position, pop return address, load viewport_ptr, get object definition.
+  POP HL                               ;
+  LD HL,(viewport_ptr)                 ;
+  DEC HL                               ;
+  LD D,(HL)                            ;
+  CALL ld_enemy_sprites                ; Get sprite pointer via ld_enemy_sprites, reload position.
+  LD BC,(previous_object_coordinates)  ;
+  LD A,C                               ; Calculate animation frame offset from X position.
+  AND $07                              ;
+  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE   ; Set frame size, shift and increment offset.
+  SRL A                                ;
+  OR A                                 ;
+  INC A                                ;
+  SBC HL,BC                            ; Loop to add frame offset to sprite pointer, store to render_sprite_ptr.
 handle_object_proximity_0:
-  ADD HL,BC
-  DEC A
-  JR NZ,handle_object_proximity_0
-  LD (render_sprite_ptr),HL
-  LD BC,(previous_object_coordinates)
-  LD (object_coordinates),BC
-  LD A,D                               ; Invert object orientation
+  ADD HL,BC                            ;
+  DEC A                                ;
+  JR NZ,handle_object_proximity_0      ;
+  LD (render_sprite_ptr),HL            ;
+  LD BC,(previous_object_coordinates)  ; Reload position, store to object_coordinates.
+  LD (object_coordinates),BC           ;
+  LD A,D                               ; Invert object orientation (XOR bit 6).
   XOR 1<<SLOT_BIT_ORIENTATION          ;
   LD D,A                               ;
-  LD HL,(viewport_ptr)
-  DEC HL
-  LD (HL),A
-  CALL ld_enemy_sprites
+  LD HL,(viewport_ptr)                 ; Update orientation in viewport array, get new sprite via ld_enemy_sprites.
+  DEC HL                               ;
+  LD (HL),A                            ;
+  CALL ld_enemy_sprites                ;
   LD E,$0E
   LD A,D
   AND SLOT_MASK_OBJECT_TYPE

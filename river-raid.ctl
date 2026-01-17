@@ -2523,22 +2523,42 @@ D $754C #LIST { Stores position for rendering } { Checks if fuel station is with
 c $758A Handle fuel station off viewport
 D $758A Removes fuel station from viewport when it scrolls off-screen.
 @ $75A2 label=ship_or_helicopter_right_advance
-c $75A2
+c $75A2 Advance right-facing ship or helicopter
+D $75A2 Moves a right-facing ship/helicopter 2 pixels right, checking for terrain collision ahead.
+R $75A2 I:B Y position
+R $75A2 I:C X position
+R $75A2 I:D Object definition
+  $75A2 Save BC, calculate terrain check position: C += $20 pixels.
+  $75A7 Call #R$8A4E to get terrain byte at (C, B). Load result into A.
+  $75AB Restore BC. If terrain != 0, reverse direction via #R$75D0.
+  $75B1 Store position to #R$8B0A. Advance X position right by 2 pixels (INC C twice).
+  $75B7 Continue to #R$7128 for rendering.
 @ $75BA label=ld_enemy_sprites
-c $75BA Load array of enemy sprites.
-R $75BA I:D OBJECT_DEFINITION
-R $75BA I:HL Pointer to the array of sprites
-  $75BD,3 Enemy sprite array size (3×1 tiles × 8 bytes/tile × 4 frames)
+c $75BA Load enemy sprite pointer
+D $75BA Calculates sprite pointer for enemy objects based on type and orientation. Uses left-facing sprites by default, switches to right-facing via #R$6FE6.
+R $75BA I:D Object definition (bits 0-2 = type, bit 6 = orientation)
+R $75BA O:HL Pointer to sprite data
+  $75BA Load left-facing sprite base #R$85B3, frame size $60.
 @ $75C0 isub=BIT SLOT_BIT_ORIENTATION,D
+  $75C0 If right-facing (bit 6 clear), get right sprites via #R$6FE6.
+  $75C5 Extract object type (bits 0-2), prepare for loop.
+  $75C9,7 Loop: HL += $60 for each type. Result: HL = base + (type * $60).
 @ $75CB label=ld_enemy_sprites_loop
 @ $75D0 label=handle_object_proximity
-c $75D0 Handles the situation when a ship or a helicopter is in close proximity to another object.
-D $75D0 If it approaches a river bank or a fuel station, it will invert its orientation. But if it's the the player, it won't.
+c $75D0 Handle ship/helicopter proximity to obstacle
+D $75D0 When a ship or helicopter approaches a river bank or fuel station, inverts its orientation. Ignores the player (objects in top half of screen).
 R $75D0 I:BC Object coordinates
-  $75D4,4 Return if the object is located in the top half of the screen. Otherwise, the other object may be the player and should be ignored.
+  $75D4 Return if Y >= $80 (object in top half, might be player).
+  $75D8 Reload position, pop return address, load viewport_ptr, get object definition.
+  $75E2 Get sprite pointer via #R$75BA, reload position.
+  $75E9 Calculate animation frame offset from X position.
 @ $75EC isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
-  $7604,4 Invert object orientation
+  $75EC Set frame size, shift and increment offset.
+  $75F3 Loop to add frame offset to sprite pointer, store to #R$8B0E.
+  $75FC Reload position, store to #R$8B0C.
+  $7604 Invert object orientation (XOR bit 6).
 @ $7605 isub=XOR 1<<SLOT_BIT_ORIENTATION
+  $7608,8 Update orientation in viewport array, get new sprite via #R$75BA.
 @ $7613 isub=AND SLOT_MASK_OBJECT_TYPE
 @ $7615 isub=CP OBJECT_SHIP
 @ $761A isub=LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
