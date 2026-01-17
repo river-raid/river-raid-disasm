@@ -2678,7 +2678,7 @@ check_player_2_lives:
 game_over:
   LD HL,msg_game_over                  ; Set scroller pointer to "GAME OVER" message
   LD (ptr_scroller),HL                 ;
-  CALL L93BE                           ; Display game over sequence
+  CALL update_high_score               ; Display game over sequence
   LD SP,(saved_stack_pointer)          ; Restore stack pointer to main loop
   JP start_overview                    ; Return to overview/demo mode
 
@@ -4521,7 +4521,7 @@ render_explosions:
   PUSH AF                              ;
   PUSH HL                              ;
   LD A,$02                             ; Call first sprite rendering pass.
-  CALL L928D                           ;
+  CALL set_sprite_attributes           ;
   POP HL                               ; Call second sprite rendering pass, loop to next entry.
   POP AF                               ;
   POP BC                               ;
@@ -7504,7 +7504,7 @@ render_object:
   PUSH DE
   LD (render_object_width),A
   NOP
-  CALL L928D
+  CALL set_sprite_attributes
   LD A,E
   AND $07
   SRL A
@@ -8308,13 +8308,13 @@ L9289:
 L928B:
   DEFW $0000
 
-; Routine at 928D
+; Set screen attributes for sprite area.
 ;
-; Used by the routines at render_explosions and render_object.
+; Calculates the attribute cells covered by a sprite and fills them with the specified color.
 ;
 ; I:A Sprite width in tiles
 ; I:E Screen attributes
-L928D:
+set_sprite_attributes:
   PUSH HL
   PUSH BC
   LD (L928B),A
@@ -8362,16 +8362,16 @@ L928D:
   AND $F8
   CP $00
   LD A,$0C
-  JP Z,L936F
+  JP Z,set_attr_wrap_old
   POP BC
-; This entry point is used by the routine at L936F.
-L928D_0:
+; This entry point is used by the routine at set_attr_wrap_old.
+set_sprite_attributes_0:
   PUSH BC
-L928D_1:
+set_sprite_attributes_1:
   LD (HL),A
   INC HL
   DEC C
-  JR NZ,L928D_1
+  JR NZ,set_sprite_attributes_1
   PUSH HL
   LD BC,$5A20
   OR A
@@ -8380,9 +8380,9 @@ L928D_1:
   JP P,L9367
   POP BC
   ADD HL,DE
-  DJNZ L928D_0
+  DJNZ set_sprite_attributes_0
 ; This entry point is used by the routine at L9367.
-L928D_2:
+set_sprite_attributes_2:
   LD BC,(object_coordinates)
   LD A,B
   AND $F8
@@ -8421,16 +8421,16 @@ L928D_2:
   CP $00
   LD BC,(L9287)
   LD A,C
-  JP Z,L9388
+  JP Z,set_attr_wrap_new
   POP BC
-; This entry point is used by the routine at L9388.
-L928D_3:
+; This entry point is used by the routine at set_attr_wrap_new.
+set_sprite_attributes_3:
   PUSH BC
-L928D_4:
+set_sprite_attributes_4:
   LD (HL),A
   INC HL
   DEC C
-  JR NZ,L928D_4
+  JR NZ,set_sprite_attributes_4
   PUSH HL
   LD BC,$5A20
   OR A
@@ -8439,8 +8439,11 @@ L928D_4:
   JP P,L936B
   POP BC
   ADD HL,DE
-  DJNZ L928D_3
-; This entry point is used by the routine at L936B.
+  DJNZ set_sprite_attributes_3
+
+; Return point when attributes are zero (skip attribute setting).
+;
+; Used by the routines at set_sprite_attributes and L936B.
 handle_zero_attributes:
   LD A,(L928B)
   POP BC
@@ -8448,33 +8451,33 @@ handle_zero_attributes:
   LD DE,(object_coordinates)
   RET
 
-; Routine at 9367
+; Early exit from old position attribute loop.
 ;
-; Used by the routine at L928D.
+; Used by the routine at set_sprite_attributes.
 L9367:
   POP BC
-  JP L928D_2
+  JP set_sprite_attributes_2
 
-; Routine at 936B
+; Early exit from new position attribute loop.
 ;
-; Used by the routine at L928D.
+; Used by the routine at set_sprite_attributes.
 L936B:
   POP BC
   JP handle_zero_attributes
 
-; Routine at 936F
+; Handle attribute wrap for old position at screen third boundary.
 ;
-; Used by the routine at L928D.
-L936F:
+; Used by the routine at set_sprite_attributes.
+set_attr_wrap_old:
   LD BC,$03DF
   ADD HL,BC
   POP BC
   PUSH BC
-L936F_0:
+set_attr_wrap_old_0:
   LD (HL),A
   INC HL
   DEC C
-  JR NZ,L936F_0
+  JR NZ,set_attr_wrap_old_0
   POP BC
   ADD HL,DE
   DEC B
@@ -8483,21 +8486,21 @@ L936F_0:
   OR A
   SBC HL,BC
   POP BC
-  JP L928D_0
+  JP set_sprite_attributes_0
 
-; Routine at 9388
+; Handle attribute wrap for new position at screen third boundary.
 ;
-; Used by the routine at L928D.
-L9388:
+; Used by the routine at set_sprite_attributes.
+set_attr_wrap_new:
   LD BC,$03DF
   ADD HL,BC
   POP BC
   PUSH BC
-L9388_0:
+set_attr_wrap_new_0:
   LD (HL),A
   INC HL
   DEC C
-  JR NZ,L9388_0
+  JR NZ,set_attr_wrap_new_0
   POP BC
   ADD HL,DE
   DEC B
@@ -8506,14 +8509,18 @@ L9388_0:
   OR A
   SBC HL,BC
   POP BC
-  JP L928D_3
+  JP set_sprite_attributes_3
 
-; Routine at 93A1
+; Compare two 6-digit scores.
 ;
-; Used by the routines at L93BE and L93F2.
-L93A1:
+; Compares score at HL with score at DE, digit by digit.
+;
+; I:HL Pointer to first score (6 ASCII digits)
+; I:DE Pointer to second score (6 ASCII digits)
+; O:A Result: 0 if equal, 1 if HL < DE, $FF if HL > DE
+compare_scores:
   LD C,$06
-L93A1_0:
+compare_scores_0:
   LD A,(HL)
   LD B,A
   LD A,(DE)
@@ -8524,31 +8531,31 @@ L93A1_0:
   INC HL
   INC DE
   DEC C
-  JP NZ,L93A1_0
+  JP NZ,compare_scores_0
   LD A,$00
   RET
 
-; Routine at 93B8
+; Return 1 (first score less than second).
 ;
-; Used by the routine at L93A1.
+; Used by the routine at compare_scores.
 L93B8:
   LD A,$01
   RET
 
-; Routine at 93BB
+; Return $FF (first score greater than second).
 ;
-; Used by the routine at L93A1.
+; Used by the routine at compare_scores.
 L93BB:
   LD A,$FF
   RET
 
-; Routine at 93BE
+; Update high score table from current player score.
 ;
-; Used by the routine at game_over.
-L93BE:
+; Compares player 1's score with the appropriate high score slot and updates if higher.
+update_high_score:
   LD A,(state_game_mode)
   BIT GAME_MODE_BIT_TWO_PLAYERS,A
-  CALL NZ,L93F2
+  CALL NZ,check_player2_high_score
   LD HL,L90C8
   LD A,(state_game_mode)
   AND $FE
@@ -8564,7 +8571,7 @@ L93BE:
   EX DE,HL
   LD HL,state_score_player_1_low
   PUSH DE
-  CALL L93A1
+  CALL compare_scores
   POP DE
   CP $01
   RET NZ
@@ -8573,13 +8580,13 @@ L93BE:
   LDIR
   RET
 
-; Routine at 93F2
+; Check if player 2 score beats player 1 score.
 ;
-; Used by the routine at L93BE.
-L93F2:
+; For 2-player games, copies player 2 score to player 1 slot if higher.
+check_player2_high_score:
   LD HL,state_score_player_1_low
   LD DE,state_score_player_2_low
-  CALL L93A1
+  CALL compare_scores
   CP $FF
   RET NZ
   LD HL,state_score_player_2_low

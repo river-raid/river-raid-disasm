@@ -3268,23 +3268,37 @@ g $9289
 W $9289
 g $928B
 W $928B
-c $928D
+@ $928D label=set_sprite_attributes
+c $928D Set screen attributes for sprite area.
+D $928D Calculates the attribute cells covered by a sprite and fills them with the specified color.
 R $928D I:A Sprite width in tiles
 R $928D I:E Screen attributes
 @ $92F1 nowarn
 @ $934F nowarn
 @ $935D label=handle_zero_attributes
-c $9367
-c $936B
-c $936F
-c $9388
-c $93A1
-c $93B8
-c $93BB
-c $93BE
+c $935D Return point when attributes are zero (skip attribute setting).
+c $9367 Early exit from old position attribute loop.
+c $936B Early exit from new position attribute loop.
+@ $936F label=set_attr_wrap_old
+c $936F Handle attribute wrap for old position at screen third boundary.
+@ $9388 label=set_attr_wrap_new
+c $9388 Handle attribute wrap for new position at screen third boundary.
+@ $93A1 label=compare_scores
+c $93A1 Compare two 6-digit scores.
+D $93A1 Compares score at HL with score at DE, digit by digit.
+R $93A1 I:HL Pointer to first score (6 ASCII digits)
+R $93A1 I:DE Pointer to second score (6 ASCII digits)
+R $93A1 O:A Result: 0 if equal, 1 if HL < DE, $FF if HL > DE
+c $93B8 Return 1 (first score less than second).
+c $93BB Return $FF (first score greater than second).
+@ $93BE label=update_high_score
+c $93BE Update high score table from current player score.
+D $93BE Compares player 1's score with the appropriate high score slot and updates if higher.
 @ $93C1 isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
 @ $93EC isub=LD BC,state_score_player_2_low - state_score_player_1_low
-c $93F2
+@ $93F2 label=check_player2_high_score
+c $93F2 Check if player 2 score beats player 1 score.
+D $93F2 For 2-player games, copies player 2 score to player 1 slot if higher.
 @ $9404 isub=LD BC,state_score_player_2_low - state_score_player_1_low
 @ $940A label=clear_screen
 c $940A Clear the screen by setting all pixel bytes to $00 and all attributes to the value set in #REGd.
