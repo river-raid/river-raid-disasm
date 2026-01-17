@@ -4184,7 +4184,7 @@ overview_loop:
   SUB B                                ;
   CP $05                               ;
   JP Z,return_to_control_selection     ;
-  CALL L8A1B                           ; Render frame: call delay, scroll, increment counter, render terrain/objects.
+  CALL scroll_attribute_row            ; Render frame: call delay, scroll, increment counter, render terrain/objects.
   CALL render_plane_and_terrain        ;
   LD HL,state_metronome                ;
   INC (HL)                             ;
@@ -4192,7 +4192,7 @@ overview_loop:
   CALL operate_tank_shell              ;
   CALL operate_helicopter_missile      ;
   CALL advance_scroll                  ; Call advance_scroll for rendering.
-  CALL L8A1B                           ; Call delay, increment frame counter L5F81, call ROM KEYBOARD ($02BF), enable
+  CALL scroll_attribute_row            ; Call delay, increment frame counter L5F81, call ROM KEYBOARD ($02BF), enable
   LD HL,L5F81                          ; interrupts.
   INC (HL)                             ;
   CALL KEYBOARD                        ;
@@ -4756,13 +4756,13 @@ ld_attributes_tank:
 
 ; Set XOR blending mode for sprite rendering
 ;
-; Modifies sprite rendering code via self-modifying instructions. Patches L8C3C with XOR B and L8C1B with NOP to enable
-; XOR blending mode for fighters/tanks.
+; Modifies sprite rendering code via self-modifying instructions. Patches blit_draw_op with XOR B and blit_erase_op with
+; NOP to enable XOR blending mode for fighters/tanks.
 blending_mode_xor_nop:
-  LD A,$A8                             ; Patch XOR B ($A8) into L8C3C and NOP ($00) into L8C1B for XOR rendering.
-  LD (L8C3C),A                         ;
+  LD A,$A8                             ; Patch XOR B ($A8) into blit_draw_op and NOP ($00) into blit_erase_op for XOR
+  LD (blit_draw_op),A                  ; rendering.
   LD A,$00                             ;
-  LD (L8C1B),A                         ;
+  LD (blit_erase_op),A                 ;
   RET                                  ;
 
 ; Render fuel station
@@ -5289,8 +5289,8 @@ operate_tank_0:
 ; Patches sprite renderer to use XOR for both mask and sprite operations. Used for tanks and fighters.
 blending_mode_xor_xor:
   LD A,$A8                             ; Load XOR B opcode ($A8).
-  LD (L8C1B),A                         ; Patch XOR B into L8C1B.
-  LD (L8C3C),A                         ; Patch XOR B into L8C3C.
+  LD (blit_erase_op),A                 ; Patch XOR B into blit_erase_op.
+  LD (blit_draw_op),A                  ; Patch XOR B into blit_draw_op.
   RET
 
 ; Set OR/OR blending mode
@@ -5298,8 +5298,8 @@ blending_mode_xor_xor:
 ; Patches sprite renderer to use OR for both mask and sprite operations. Restores default blending after XOR rendering.
 blending_mode_or_or:
   LD A,$B0                             ; Load OR B opcode ($B0).
-  LD (L8C1B),A                         ; Patch OR B into L8C1B.
-  LD (L8C3C),A                         ; Patch OR B into L8C3C.
+  LD (blit_erase_op),A                 ; Patch OR B into blit_erase_op.
+  LD (blit_draw_op),A                  ; Patch OR B into blit_draw_op.
   RET
 
 ; Adjust tank position for left orientation
@@ -6301,14 +6301,14 @@ instructions_input:
   LD SP,(setup_sp)
   RET
 
-; Routine at 7B57
+; Switch to overview/demo mode on timeout.
 ;
-; Used by the routine at controls_input.
+; Called when the control selection timer expires without user input.
 switch_to_overview_mode:
-  LD A,$01
-  LD (state_overview_mode),A
-  LD SP,(setup_sp)
-  RET
+  LD A,$01                             ; Set overview mode flag to $01 (enabled).
+  LD (state_overview_mode),A           ;
+  LD SP,(setup_sp)                     ; Restore stack pointer and return to caller.
+  RET                                  ;
 
 ; Unused
 L7B61:
@@ -7273,45 +7273,45 @@ terrain_edge_right:
   DEFB $0F,$FF                         ; 12 pixels
   DEFB $03,$FF                         ; 10 pixels
 
-; Invoked from the interrupt handler when FIRE is pressed
+; Generate firing sound effect.
 ;
-; Used by the routine at handle_controls.
+; Produces the "pew" sound when the player fires a missile by toggling the speaker port rapidly.
 do_fire:
-  LD C,$08
+  LD C,$08                             ; Loop 8 times for sound duration.
 do_fire_0:
-  LD A,$10
-  OUT ($FE),A
-  LD D,$20
+  LD A,$10                             ; Turn speaker ON (cyan border flash).
+  OUT ($FE),A                          ;
+  LD D,$20                             ; Delay loop for sound frequency.
 do_fire_1:
-  DEC D
-  JR NZ,do_fire_1
-  LD A,$00
-  OUT ($FE),A
-  LD D,$20
-  LD D,$20
-  DEFB $FD
-  DEC C
-  JP NZ,do_fire_0
+  DEC D                                ;
+  JR NZ,do_fire_1                      ;
+  LD A,$00                             ; Turn speaker OFF.
+  OUT ($FE),A                          ;
+  LD D,$20                             ; Delay and loop for next sound pulse.
+  LD D,$20                             ;
+  DEFB $FD                             ;
+  DEC C                                ;
+  JP NZ,do_fire_0                      ;
   RET
 
-; Routine at 8A1B
+; Scroll the bottom attribute row left by 1 pixel.
 ;
-; Used by the routine at overview.
-L8A1B:
-  LD HL,$57FF
-  LD C,$08
-L8A1B_0:
-  LD B,$20
-  OR A
-L8A1B_1:
-  RL (HL)
-  DEC HL
-  DJNZ L8A1B_1
-  LD DE,$00E0
-  OR A
-  SBC HL,DE
-  DEC C
-  JP NZ,L8A1B_0
+; Shifts the pixels in the bottom visible row (screen_attributes-1 down) left by 1 bit. Used during terrain scrolling.
+scroll_attribute_row:
+  LD HL,$57FF                          ; Start at screen_attributes-1 (bottom-right of visible area), loop 8 rows.
+  LD C,$08                             ;
+scroll_attribute_row_0:
+  LD B,$20                             ; Rotate 32 bytes left with carry propagation.
+  OR A                                 ;
+scroll_attribute_row_1:
+  RL (HL)                              ;
+  DEC HL                               ;
+  DJNZ scroll_attribute_row_1          ;
+  LD DE,$00E0                          ; Move up one row ($E0 bytes back), continue loop.
+  OR A                                 ;
+  SBC HL,DE                            ;
+  DEC C                                ;
+  JP NZ,scroll_attribute_row_0
   RET
 
 ; Routine at 8A33
@@ -7462,41 +7462,38 @@ render_object_width:
 L8B1B:
   DEFS $03
 
-; Routine at 8B1E
+; Render a sprite at position from previous_object_coordinates.
 ;
-; Used by the routines at animate_plane_missile, render_enemy, render_fuel, render_balloon, operate_fighter_continue,
-; operate_tank, operate_helicopter_missile, operate_tank_shell, operate_fuel and operate_baloon.
+; Calculates the correct animation frame from position and renders the sprite.
 ;
 ; I:A Sprite width in tiles
 ; I:BC Sprite frame size
-; I:D Frame number
+; I:D Sprite height in pixels
 ; I:E Screen attributes
 ; I:HL Pointer to the sprite array
 render_sprite:
-  PUSH DE
-  LD (render_object_width),A
-  LD DE,(previous_object_coordinates)
-  LD A,E
-  AND $07
-  SRL A
+  PUSH DE                              ; Save attributes/height, store sprite width.
+  LD (render_object_width),A           ;
+  LD DE,(previous_object_coordinates)  ; Calculate animation frame index from X position bits 1-2.
+  LD A,E                               ;
+  AND $07                              ;
+  SRL A                                ;
   INC A
-  PUSH HL
-  OR A
-  SBC HL,BC
+  PUSH HL                              ; Loop to add frame offset to sprite pointer, store to render_sprite_ptr.
+  OR A                                 ;
+  SBC HL,BC                            ;
 render_sprite_0:
-  ADD HL,BC
-  DEC A
-  JR NZ,render_sprite_0
+  ADD HL,BC                            ;
+  DEC A                                ;
+  JR NZ,render_sprite_0                ;
   LD (render_sprite_ptr),HL
-  POP HL
-  LD A,(render_object_width)
+  POP HL                               ; Reload width and restore attributes/height, fall through to render_object.
+  LD A,(render_object_width)           ;
   POP DE
 
-; Routine at 8B3C
+; Render an object with collision detection.
 ;
-; Used by the routines at render_plane_and_terrain, handle_right, handle_left, render_plane, finalize_collision,
-; render_rock, operate_ship_or_helicopter_continue, operate_tank_shell_explosion, animate_helicopter,
-; erase_tank_shell_offscreen, handle_object_proximity and L76DA.
+; Main rendering routine that blits sprite data to screen, checking for pixel collisions.
 ;
 ; I:A Sprite width in tiles
 ; I:BC Sprite size in bytes
@@ -7530,151 +7527,155 @@ render_object_1:
   LD BC,(previous_object_coordinates)
   CALL calculate_pixel_address
   LD (L8B14),HL
-  JP L8BC6_0
+  JP adjust_old_screen_third_0
 
-; Routine at 8B70
+; Process one row of sprite rendering.
 ;
-; Used by the routine at L8BC6.
-L8B70:
-  PUSH DE
-  LD BC,(object_coordinates)
-  LD A,B
-  AND $07
-  CP $00
-  JP NZ,L8BA3
-  LD A,B
-  AND $3F
-  CP $00
-  JP Z,L8B94
-  LD HL,(L8B12)
-  LD DE,$07E0
-  OR A
-  SBC HL,DE
-  LD (L8B12),HL
-  JP L8BA3
+; Handles screen boundary wrapping for the new object position and calls the blitter.
+render_row_loop:
+  PUSH DE                              ; Check if new Y position crosses character boundary.
+  LD BC,(object_coordinates)           ;
+  LD A,B                               ;
+  AND $07                              ;
+  CP $00                               ;
+  JP NZ,adjust_old_position            ;
+  LD A,B                               ; If crossing third-of-screen boundary, adjust screen address by $7E0.
+  AND $3F                              ;
+  CP $00                               ;
+  JP Z,adjust_new_screen_third         ;
+  LD HL,(L8B12)                        ; Store new screen address and continue.
+  LD DE,$07E0                          ;
+  OR A                                 ;
+  SBC HL,DE                            ;
+  LD (L8B12),HL                        ;
+  JP adjust_old_position
 
-; Routine at 8B94
+; Adjust screen address for third-of-screen crossing.
 ;
-; Used by the routine at L8B70.
-L8B94:
-  LD HL,(L8B12)
-  LD DE,$00E0
-  OR A
-  SBC HL,DE
-  LD (L8B12),HL
-  JP L8BA3
+; Subtracts $E0 to move screen pointer up one character row.
+adjust_new_screen_third:
+  LD HL,(L8B12)                        ; HL -= $E0 (adjust for character row boundary).
+  LD DE,$00E0                          ;
+  OR A                                 ;
+  SBC HL,DE                            ;
+  LD (L8B12),HL                        ;
+  JP adjust_old_position
 
-; Routine at 8BA3
+; Process old position screen address adjustment.
 ;
-; Used by the routines at L8B70 and L8B94.
-L8BA3:
-  LD BC,(previous_object_coordinates)
-  LD A,B
-  AND $07
-  CP $00
-  JP NZ,L8BC6_0
-  LD A,B
-  AND $3F
-  CP $00
-  JP Z,L8BC6
-  LD HL,(L8B14)
-  LD DE,$07E0
-  OR A
-  SBC HL,DE
+; Similar boundary handling for the old (erasure) position.
+adjust_old_position:
+  LD BC,(previous_object_coordinates)  ; Check if old Y position crosses character boundary.
+  LD A,B                               ;
+  AND $07                              ;
+  CP $00                               ;
+  JP NZ,adjust_old_screen_third_0
+  LD A,B                               ; If crossing third-of-screen boundary, adjust by $7E0.
+  AND $3F                              ;
+  CP $00                               ;
+  JP Z,adjust_old_screen_third         ;
+  LD HL,(L8B14)                        ; Store adjusted address.
+  LD DE,$07E0                          ;
+  OR A                                 ;
+  SBC HL,DE                            ;
+  LD (L8B14),HL                        ;
+  JP adjust_old_screen_third_0
+
+; Adjust old position for third-of-screen crossing.
+;
+; Used by the routine at adjust_old_position.
+adjust_old_screen_third:
+  LD HL,(L8B14)                        ; HL -= $E0, fall through to blitter.
+  LD DE,$00E0                          ;
+  OR A                                 ;
+  SBC HL,DE                            ;
   LD (L8B14),HL
-  JP L8BC6_0
-
-; Routine at 8BC6
-;
-; Used by the routine at L8BA3.
-L8BC6:
-  LD HL,(L8B14)
-  LD DE,$00E0
-  OR A
-  SBC HL,DE
-  LD (L8B14),HL
-; This entry point is used by the routines at render_object and L8BA3.
-L8BC6_0:
-  CALL L8C0B
-  LD A,(render_object_width)
-  LD D,$00
-  LD E,A
-  LD HL,(render_sprite_ptr)
-  ADD HL,DE
+; Main rendering loop - calls blitter and advances to next pixel row.
+adjust_old_screen_third_0:
+  CALL render_blit_row                 ; Call blitter for this row.
+  LD A,(render_object_width)           ; Advance sprite pointers by width.
+  LD D,$00                             ;
+  LD E,A                               ;
+  LD HL,(render_sprite_ptr)            ;
+  ADD HL,DE                            ;
   LD (render_sprite_ptr),HL
   LD HL,(L8B10)
   ADD HL,DE
   LD (L8B10),HL
-  LD HL,(previous_object_coordinates)
-  INC H
-  LD (previous_object_coordinates),HL
-  LD HL,(object_coordinates)
-  INC H
-  LD (object_coordinates),HL
-  LD HL,(L8B12)
-  INC H
-  LD (L8B12),HL
-  LD HL,(L8B14)
-  INC H
-  LD (L8B14),HL
-  POP DE
-  DEC D
-  JP NZ,L8B70
+  LD HL,(previous_object_coordinates)  ; Increment Y coordinate for all position/address variables.
+  INC H                                ;
+  LD (previous_object_coordinates),HL  ;
+  LD HL,(object_coordinates)           ;
+  INC H                                ;
+  LD (object_coordinates),HL           ;
+  LD HL,(L8B12)                        ;
+  INC H                                ;
+  LD (L8B12),HL                        ;
+  LD HL,(L8B14)                        ;
+  INC H                                ;
+  LD (L8B14),HL                        ;
+  POP DE                               ; Decrement row counter, loop if more rows.
+  DEC D                                ;
+  JP NZ,render_row_loop                ;
   RET
 
-; Routine at 8C0B
+; Blit one row of sprite data to screen.
 ;
-; Used by the routine at L8BC6.
-L8C0B:
-  LD A,(render_object_width)
-  LD C,A
-  LD HL,(L8B14)
-  LD DE,(render_sprite_ptr)
-; This entry point is used by the routine at L8C1B.
-L8C0B_0:
-  LD A,(DE)
-  LD B,A
-  LD A,(HL)
-  XOR $FF
+; XORs erasure pixels, then ORs new pixels, checking for collision.
+render_blit_row:
+  LD A,(render_object_width)           ; Get width, load new position screen address.
+  LD C,A                               ;
+  LD HL,(L8B14)                        ;
+  LD DE,(render_sprite_ptr)            ;
+; First pass: erase old sprite (XOR with screen).
+render_blit_row_0:
+  LD A,(DE)                            ; Read sprite byte, XOR $FF, combine with screen.
+  LD B,A                               ;
+  LD A,(HL)                            ;
+  XOR $FF                              ;
 
-; Routine at 8C1B
-L8C1B:
-  OR B
-  XOR $FF
-  LD (HL),A
-  INC DE
-  INC HL
-  DEC C
-  JR NZ,L8C0B_0
+; Self-modifying blending operation (erasure).
+;
+; This byte is patched to change blending mode: OR B for XOR mode, NOP for OR mode.
+blit_erase_op:
+  OR B                                 ; Apply blend, store result, advance pointers, loop.
+  XOR $FF                              ;
+  LD (HL),A                            ;
+  INC DE                               ;
+  INC HL                               ;
+  DEC C                                ;
+  JR NZ,render_blit_row_0              ;
   LD A,(render_object_width)
   LD C,A
   LD HL,(L8B12)
   LD DE,(L8B10)
-; This entry point is used by the routine at L8C3C.
-L8C1B_0:
-  PUSH DE
-  LD A,(DE)
-  LD B,A
-  LD A,(HL)
-  XOR B
-  LD D,A
-  XOR B
-  OR B
-  CP D
-  JP NZ,jp_collision_dispatcher
+; Second pass: draw new sprite (OR with screen), check collision.
+blit_erase_op_0:
+  PUSH DE                              ; Read sprite byte, XOR with screen to detect overlap.
+  LD A,(DE)                            ;
+  LD B,A                               ;
+  LD A,(HL)                            ;
+  XOR B                                ;
+  LD D,A                               ;
+  XOR B                                ;
+  OR B                                 ;
+  CP D                                 ;
+  JP NZ,jp_collision_dispatcher        ; If collision detected, jump to collision dispatcher.
 ; This entry point is used by the routines at collision_dispatcher and reset_gameplay_mode.
 handle_collision_mode_none:
   LD A,(HL)
 
-; Routine at 8C3C
-L8C3C:
-  OR B
-  LD (HL),A
-  POP DE
-  INC HL
-  INC DE
-  DEC C
-  JR NZ,L8C1B_0
+; Self-modifying blending operation (drawing).
+;
+; This byte is patched to change blending mode: OR B for OR mode, XOR B for XOR mode.
+blit_draw_op:
+  OR B                                 ; Apply blend, store result, advance pointers, loop.
+  LD (HL),A                            ;
+  POP DE                               ;
+  INC HL                               ;
+  INC DE                               ;
+  DEC C                                ;
+  JR NZ,blit_erase_op_0                ;
   RET
 
 ; Jump to collision dispatcher

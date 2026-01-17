@@ -2758,7 +2758,10 @@ c $7B07 Wait until the user chooses a valid game mode.
   $7B48 Loop until Enter is pressed
   $7B4D,5 Switch to the non-overview mode
 @ $7B57 label=switch_to_overview_mode
-c $7B57
+c $7B57 Switch to overview/demo mode on timeout.
+D $7B57 Called when the control selection timer expires without user input.
+  $7B57 Set overview mode flag to $01 (enabled).
+  $7B5C,5 Restore stack pointer and return to caller.
 u $7B61
 @ $8000 label=status_line_1
 @ $8000 isub=DEFM EXT_ATTR_PAPER,COLOR_BLACK
@@ -2999,8 +3002,20 @@ b $89FA
   $89FE,2,2 12 pixels
   $8A00,2,2 10 pixels
 @ $8A02 label=do_fire
-c $8A02 Invoked from the interrupt handler when FIRE is pressed
-c $8A1B
+c $8A02 Generate firing sound effect.
+D $8A02 Produces the "pew" sound when the player fires a missile by toggling the speaker port rapidly.
+  $8A02 Loop 8 times for sound duration.
+  $8A04 Turn speaker ON (cyan border flash).
+  $8A08 Delay loop for sound frequency.
+  $8A0D Turn speaker OFF.
+  $8A11,9 Delay and loop for next sound pulse.
+@ $8A1B label=scroll_attribute_row
+@ $8A1B ignoreua=$57FF
+c $8A1B Scroll the bottom attribute row left by 1 pixel.
+D $8A1B Shifts the pixels in the bottom visible row (#R$5800-1 down) left by 1 bit. Used during terrain scrolling.
+  $8A1B Start at #R$5800-1 (bottom-right of visible area), loop 8 rows.
+  $8A20 Rotate 32 bytes left with carry propagation.
+  $8A28,7 Move up one row ($E0 bytes back), continue loop.
 @ $8A33 label=init_udg
 c $8A33
 R $8A33 Sets BORDER to BLACK, sets screen attributes to WHITE-on-BLACK and copies #R$825D to the UDG area.
@@ -3056,29 +3071,67 @@ u $8B18
 g $8B1A
 s $8B1B
 @ $8B1E label=render_sprite
-c $8B1E
-R $8B1E I:A  Sprite width in tiles
+c $8B1E Render a sprite at position from #R$8B0A.
+D $8B1E Calculates the correct animation frame from position and renders the sprite.
+R $8B1E I:A Sprite width in tiles
 R $8B1E I:BC Sprite frame size
-R $8B1E I:D  Frame number
-R $8B1E I:E  Screen attributes
+R $8B1E I:D Sprite height in pixels
+R $8B1E I:E Screen attributes
 R $8B1E I:HL Pointer to the sprite array
+  $8B1E Save attributes/height, store sprite width.
+  $8B22,9 Calculate animation frame index from X position bits 1-2.
+  $8B2C,8 Loop to add frame offset to sprite pointer, store to #R$8B0E.
+  $8B37,4 Reload width and restore attributes/height, fall through to render_object.
 @ $8B3C label=render_object
-c $8B3C
-R $8B3C I:A  Sprite width in tiles
+c $8B3C Render an object with collision detection.
+D $8B3C Main rendering routine that blits sprite data to screen, checking for pixel collisions.
+R $8B3C I:A Sprite width in tiles
 R $8B3C I:BC Sprite size in bytes
 R $8B3C I:D  Frame number and some other info
 R $8B3C I:E  Screen attributes
 R $8B3C I:HL Pointer to the sprite array
-c $8B70
-c $8B94
-c $8BA3
-c $8BC6
-c $8C0B
-@ $8C1B label=L8C1B
-c $8C1B
+@ $8B70 label=render_row_loop
+c $8B70 Process one row of sprite rendering.
+D $8B70 Handles screen boundary wrapping for the new object position and calls the blitter.
+  $8B70 Check if new Y position crosses character boundary.
+  $8B7D If crossing third-of-screen boundary, adjust screen address by $7E0.
+  $8B85,12 Store new screen address and continue.
+@ $8B94 label=adjust_new_screen_third
+c $8B94 Adjust screen address for third-of-screen crossing.
+D $8B94 Subtracts $E0 to move screen pointer up one character row.
+  $8B94,12 HL -= $E0 (adjust for character row boundary).
+@ $8BA3 label=adjust_old_position
+c $8BA3 Process old position screen address adjustment.
+D $8BA3 Similar boundary handling for the old (erasure) position.
+  $8BA3,9 Check if old Y position crosses character boundary.
+  $8BAF If crossing third-of-screen boundary, adjust by $7E0.
+  $8BB7,12 Store adjusted address.
+@ $8BC6 label=adjust_old_screen_third
+c $8BC6 Adjust old position for third-of-screen crossing.
+  $8BC6,9 HL -= $E0, fall through to blitter.
+N $8BD2 Main rendering loop - calls blitter and advances to next pixel row.
+  $8BD2 Call blitter for this row.
+  $8BD5,10 Advance sprite pointers by width.
+  $8BE9 Increment Y coordinate for all position/address variables.
+  $8C05,5 Decrement row counter, loop if more rows.
+@ $8C0B label=render_blit_row
+c $8C0B Blit one row of sprite data to screen.
+D $8C0B XORs erasure pixels, then ORs new pixels, checking for collision.
+  $8C0B Get width, load new position screen address.
+N $8C16 First pass: erase old sprite (XOR with screen).
+  $8C16 Read sprite byte, XOR $FF, combine with screen.
+@ $8C1B label=blit_erase_op
+c $8C1B Self-modifying blending operation (erasure).
+D $8C1B This byte is patched to change blending mode: OR B for XOR mode, NOP for OR mode.
+  $8C1B,9 Apply blend, store result, advance pointers, loop.
+N $8C2F Second pass: draw new sprite (OR with screen), check collision.
+  $8C2F Read sprite byte, XOR with screen to detect overlap.
+  $8C38,3 If collision detected, jump to collision dispatcher.
 @ $8C3B label=handle_collision_mode_none
-@ $8C3C label=L8C3C
-c $8C3C
+@ $8C3C label=blit_draw_op
+c $8C3C Self-modifying blending operation (drawing).
+D $8C3C This byte is patched to change blending mode: OR B for OR mode, XOR B for XOR mode.
+  $8C3C,8 Apply blend, store result, advance pointers, loop.
 @ $8C45 label=jp_collision_dispatcher
 c $8C45 Jump to collision dispatcher
 D $8C45 This routine is called during sprite rendering to invoke the collision detection dispatcher. It performs an indirect jump through the collision_dispatcher_ptr to reach the collision_dispatcher routine.

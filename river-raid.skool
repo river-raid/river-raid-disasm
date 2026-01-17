@@ -7018,14 +7018,14 @@ c$7B07 LD A,($5C08)  ;
  $7B52 LD SP,($7810) ;
  $7B56 RET           ;
 
-; Routine at 7B57
+; Switch to overview/demo mode on timeout.
 ;
-; Used by the routine at #R$7ACD.
+; Called when the control selection timer expires without user input.
 @label=switch_to_overview_mode
-c$7B57 LD A,$01      ;
- $7B59 LD ($7801),A  ;
- $7B5C LD SP,($7810) ;
- $7B60 RET           ;
+c$7B57 LD A,$01      ; {Set overview mode flag to $01 (enabled).
+ $7B59 LD ($7801),A  ; }
+ $7B5C LD SP,($7810) ; {Restore stack pointer and return to caller.
+ $7B60 RET           ; }
 
 ; Unused
 u$7B61 DEFB $C3,$90,$EA,$00,$00,$00,$00,$00
@@ -8197,39 +8197,43 @@ b$89FA DEFB $FF,$FF  ; 16 pixels
  $89FE DEFB $0F,$FF  ; 12 pixels
  $8A00 DEFB $03,$FF  ; 10 pixels
 
-; Invoked from the interrupt handler when FIRE is pressed
+; Generate firing sound effect.
 ;
-; Used by the routine at #R$6BED.
+; Produces the "pew" sound when the player fires a missile by toggling the
+; speaker port rapidly.
 @label=do_fire
-c$8A02 LD C,$08      ;
-*$8A04 LD A,$10      ;
- $8A06 OUT ($FE),A   ;
- $8A08 LD D,$20      ;
+c$8A02 LD C,$08      ; Loop 8 times for sound duration.
+*$8A04 LD A,$10      ; {Turn speaker ON (cyan border flash).
+ $8A06 OUT ($FE),A   ; }
+ $8A08 LD D,$20      ; {Delay loop for sound frequency.
 *$8A0A DEC D         ;
- $8A0B JR NZ,$8A0A   ;
- $8A0D LD A,$00      ;
- $8A0F OUT ($FE),A   ;
- $8A11 LD D,$20      ;
+ $8A0B JR NZ,$8A0A   ; }
+ $8A0D LD A,$00      ; {Turn speaker OFF.
+ $8A0F OUT ($FE),A   ; }
+ $8A11 LD D,$20      ; {Delay and loop for next sound pulse.
  $8A13 LD D,$20      ;
  $8A15 DEFB $FD      ;
  $8A16 DEC C         ;
- $8A17 JP NZ,$8A04   ;
+ $8A17 JP NZ,$8A04   ; }
  $8A1A RET           ;
 
-; Routine at 8A1B
+; Scroll the bottom attribute row left by 1 pixel.
 ;
-; Used by the routine at #R$6D17.
-c$8A1B LD HL,$57FF   ;
- $8A1E LD C,$08      ;
-*$8A20 LD B,$20      ;
+; Shifts the pixels in the bottom visible row (#R$5800-1 down) left by 1 bit.
+; Used during terrain scrolling.
+@label=scroll_attribute_row
+@ignoreua=$57FF
+c$8A1B LD HL,$57FF   ; {Start at #R$5800-1 (bottom-right of visible area), loop
+ $8A1E LD C,$08      ; 8 rows.}
+*$8A20 LD B,$20      ; {Rotate 32 bytes left with carry propagation.
  $8A22 OR A          ;
 *$8A23 RL (HL)       ;
  $8A25 DEC HL        ;
- $8A26 DJNZ $8A23    ;
- $8A28 LD DE,$00E0   ;
+ $8A26 DJNZ $8A23    ; }
+ $8A28 LD DE,$00E0   ; {Move up one row ($E0 bytes back), continue loop.
  $8A2B OR A          ;
  $8A2C SBC HL,DE     ;
- $8A2E DEC C         ;
+ $8A2E DEC C         ; }
  $8A2F JP NZ,$8A20   ;
  $8A32 RET           ;
 
@@ -8386,39 +8390,38 @@ g$8B1A DEFB $00
 ; Unused
 s$8B1B DEFS $03
 
-; Routine at 8B1E
+; Render a sprite at position from #R$8B0A.
 ;
-; Used by the routines at #R$673D, #R$6FF6, #R$7051, #R$706C, #R$716B, #R$7296,
-; #R$7393, #R$7441, #R$754C and #R$7649.
+; Calculates the correct animation frame from position and renders the sprite.
 ;
 ; I:A Sprite width in tiles
 ; I:BC Sprite frame size
-; I:D Frame number
+; I:D Sprite height in pixels
 ; I:E Screen attributes
 ; I:HL Pointer to the sprite array
 @label=render_sprite
-c$8B1E PUSH DE       ;
- $8B1F LD ($8B1A),A  ;
- $8B22 LD DE,($8B0A) ;
- $8B26 LD A,E        ;
+c$8B1E PUSH DE       ; {Save attributes/height, store sprite width.
+ $8B1F LD ($8B1A),A  ; }
+ $8B22 LD DE,($8B0A) ; {Calculate animation frame index from X position bits
+ $8B26 LD A,E        ; 1-2.
  $8B27 AND $07       ;
- $8B29 SRL A         ;
+ $8B29 SRL A         ; }
  $8B2B INC A         ;
- $8B2C PUSH HL       ;
- $8B2D OR A          ;
+ $8B2C PUSH HL       ; {Loop to add frame offset to sprite pointer, store to
+ $8B2D OR A          ; #R$8B0E.
  $8B2E SBC HL,BC     ;
 *$8B30 ADD HL,BC     ;
  $8B31 DEC A         ;
- $8B32 JR NZ,$8B30   ;
+ $8B32 JR NZ,$8B30   ; }
  $8B34 LD ($8B0E),HL ;
- $8B37 POP HL        ;
- $8B38 LD A,($8B1A)  ;
+ $8B37 POP HL        ; {Reload width and restore attributes/height, fall
+ $8B38 LD A,($8B1A)  ; through to render_object.}
  $8B3B POP DE        ;
 
-; Routine at 8B3C
+; Render an object with collision detection.
 ;
-; Used by the routines at #R$60A5, #R$65F3, #R$6642, #R$6682, #R$6794, #R$6FBB,
-; #R$7128, #R$71A2, #R$7259, #R$74A0, #R$75D0 and #R$76DA.
+; Main rendering routine that blits sprite data to screen, checking for pixel
+; collisions.
 ;
 ; I:A Sprite width in tiles
 ; I:BC Sprite size in bytes
@@ -8452,76 +8455,81 @@ c$8B3C PUSH DE       ;
  $8B6A LD ($8B14),HL ;
  $8B6D JP $8BD2      ;
 
-; Routine at 8B70
+; Process one row of sprite rendering.
 ;
-; Used by the routine at #R$8BC6.
-c$8B70 PUSH DE       ;
+; Handles screen boundary wrapping for the new object position and calls the
+; blitter.
+@label=render_row_loop
+c$8B70 PUSH DE       ; {Check if new Y position crosses character boundary.
  $8B71 LD BC,($8B0C) ;
  $8B75 LD A,B        ;
  $8B76 AND $07       ;
  $8B78 CP $00        ;
- $8B7A JP NZ,$8BA3   ;
- $8B7D LD A,B        ;
- $8B7E AND $3F       ;
+ $8B7A JP NZ,$8BA3   ; }
+ $8B7D LD A,B        ; {If crossing third-of-screen boundary, adjust screen
+ $8B7E AND $3F       ; address by $7E0.
  $8B80 CP $00        ;
- $8B82 JP Z,$8B94    ;
- $8B85 LD HL,($8B12) ;
+ $8B82 JP Z,$8B94    ; }
+ $8B85 LD HL,($8B12) ; {Store new screen address and continue.
  $8B88 LD DE,$07E0   ;
  $8B8B OR A          ;
  $8B8C SBC HL,DE     ;
- $8B8E LD ($8B12),HL ;
+ $8B8E LD ($8B12),HL ; }
  $8B91 JP $8BA3      ;
 
-; Routine at 8B94
+; Adjust screen address for third-of-screen crossing.
 ;
-; Used by the routine at #R$8B70.
-c$8B94 LD HL,($8B12) ;
+; Subtracts $E0 to move screen pointer up one character row.
+@label=adjust_new_screen_third
+c$8B94 LD HL,($8B12) ; {HL -= $E0 (adjust for character row boundary).
  $8B97 LD DE,$00E0   ;
  $8B9A OR A          ;
  $8B9B SBC HL,DE     ;
- $8B9D LD ($8B12),HL ;
+ $8B9D LD ($8B12),HL ; }
  $8BA0 JP $8BA3      ;
 
-; Routine at 8BA3
+; Process old position screen address adjustment.
 ;
-; Used by the routines at #R$8B70 and #R$8B94.
-c$8BA3 LD BC,($8B0A) ;
+; Similar boundary handling for the old (erasure) position.
+@label=adjust_old_position
+c$8BA3 LD BC,($8B0A) ; {Check if old Y position crosses character boundary.
  $8BA7 LD A,B        ;
  $8BA8 AND $07       ;
- $8BAA CP $00        ;
+ $8BAA CP $00        ; }
  $8BAC JP NZ,$8BD2   ;
- $8BAF LD A,B        ;
+ $8BAF LD A,B        ; {If crossing third-of-screen boundary, adjust by $7E0.
  $8BB0 AND $3F       ;
  $8BB2 CP $00        ;
- $8BB4 JP Z,$8BC6    ;
- $8BB7 LD HL,($8B14) ;
+ $8BB4 JP Z,$8BC6    ; }
+ $8BB7 LD HL,($8B14) ; {Store adjusted address.
  $8BBA LD DE,$07E0   ;
  $8BBD OR A          ;
  $8BBE SBC HL,DE     ;
- $8BC0 LD ($8B14),HL ;
+ $8BC0 LD ($8B14),HL ; }
  $8BC3 JP $8BD2      ;
 
-; Routine at 8BC6
+; Adjust old position for third-of-screen crossing.
 ;
 ; Used by the routine at #R$8BA3.
-c$8BC6 LD HL,($8B14) ;
+@label=adjust_old_screen_third
+c$8BC6 LD HL,($8B14) ; {HL -= $E0, fall through to blitter.
  $8BC9 LD DE,$00E0   ;
  $8BCC OR A          ;
- $8BCD SBC HL,DE     ;
+ $8BCD SBC HL,DE     ; }
  $8BCF LD ($8B14),HL ;
-; This entry point is used by the routines at #R$8B3C and #R$8BA3.
-*$8BD2 CALL $8C0B    ;
- $8BD5 LD A,($8B1A)  ;
+; Main rendering loop - calls blitter and advances to next pixel row.
+*$8BD2 CALL $8C0B    ; Call blitter for this row.
+ $8BD5 LD A,($8B1A)  ; {Advance sprite pointers by width.
  $8BD8 LD D,$00      ;
  $8BDA LD E,A        ;
  $8BDB LD HL,($8B0E) ;
- $8BDE ADD HL,DE     ;
+ $8BDE ADD HL,DE     ; }
  $8BDF LD ($8B0E),HL ;
  $8BE2 LD HL,($8B10) ;
  $8BE5 ADD HL,DE     ;
  $8BE6 LD ($8B10),HL ;
- $8BE9 LD HL,($8B0A) ;
- $8BEC INC H         ;
+ $8BE9 LD HL,($8B0A) ; {Increment Y coordinate for all position/address
+ $8BEC INC H         ; variables.
  $8BED LD ($8B0A),HL ;
  $8BF0 LD HL,($8B0C) ;
  $8BF3 INC H         ;
@@ -8531,40 +8539,44 @@ c$8BC6 LD HL,($8B14) ;
  $8BFB LD ($8B12),HL ;
  $8BFE LD HL,($8B14) ;
  $8C01 INC H         ;
- $8C02 LD ($8B14),HL ;
- $8C05 POP DE        ;
+ $8C02 LD ($8B14),HL ; }
+ $8C05 POP DE        ; {Decrement row counter, loop if more rows.
  $8C06 DEC D         ;
- $8C07 JP NZ,$8B70   ;
+ $8C07 JP NZ,$8B70   ; }
  $8C0A RET           ;
 
-; Routine at 8C0B
+; Blit one row of sprite data to screen.
 ;
-; Used by the routine at #R$8BC6.
-c$8C0B LD A,($8B1A)  ;
+; XORs erasure pixels, then ORs new pixels, checking for collision.
+@label=render_blit_row
+c$8C0B LD A,($8B1A)  ; {Get width, load new position screen address.
  $8C0E LD C,A        ;
  $8C0F LD HL,($8B14) ;
- $8C12 LD DE,($8B0E) ;
-; This entry point is used by the routine at #R$8C1B.
-*$8C16 LD A,(DE)     ;
+ $8C12 LD DE,($8B0E) ; }
+; First pass: erase old sprite (XOR with screen).
+*$8C16 LD A,(DE)     ; {Read sprite byte, XOR $FF, combine with screen.
  $8C17 LD B,A        ;
  $8C18 LD A,(HL)     ;
- $8C19 XOR $FF       ;
+ $8C19 XOR $FF       ; }
 
-; Routine at 8C1B
-@label=L8C1B
-c$8C1B OR B          ;
+; Self-modifying blending operation (erasure).
+;
+; This byte is patched to change blending mode: OR B for XOR mode, NOP for OR
+; mode.
+@label=blit_erase_op
+c$8C1B OR B          ; {Apply blend, store result, advance pointers, loop.
  $8C1C XOR $FF       ;
  $8C1E LD (HL),A     ;
  $8C1F INC DE        ;
  $8C20 INC HL        ;
  $8C21 DEC C         ;
- $8C22 JR NZ,$8C16   ;
+ $8C22 JR NZ,$8C16   ; }
  $8C24 LD A,($8B1A)  ;
  $8C27 LD C,A        ;
  $8C28 LD HL,($8B12) ;
  $8C2B LD DE,($8B10) ;
-; This entry point is used by the routine at #R$8C3C.
-*$8C2F PUSH DE       ;
+; Second pass: draw new sprite (OR with screen), check collision.
+*$8C2F PUSH DE       ; {Read sprite byte, XOR with screen to detect overlap.
  $8C30 LD A,(DE)     ;
  $8C31 LD B,A        ;
  $8C32 LD A,(HL)     ;
@@ -8572,21 +8584,24 @@ c$8C1B OR B          ;
  $8C34 LD D,A        ;
  $8C35 XOR B         ;
  $8C36 OR B          ;
- $8C37 CP D          ;
- $8C38 JP NZ,$8C45   ;
+ $8C37 CP D          ; }
+ $8C38 JP NZ,$8C45   ; If collision detected, jump to collision dispatcher.
 ; This entry point is used by the routines at #R$6136 and #R$63FC.
 @label=handle_collision_mode_none
 *$8C3B LD A,(HL)     ;
 
-; Routine at 8C3C
-@label=L8C3C
-c$8C3C OR B          ;
+; Self-modifying blending operation (drawing).
+;
+; This byte is patched to change blending mode: OR B for OR mode, XOR B for XOR
+; mode.
+@label=blit_draw_op
+c$8C3C OR B          ; {Apply blend, store result, advance pointers, loop.
  $8C3D LD (HL),A     ;
  $8C3E POP DE        ;
  $8C3F INC HL        ;
  $8C40 INC DE        ;
  $8C41 DEC C         ;
- $8C42 JR NZ,$8C2F   ;
+ $8C42 JR NZ,$8C2F   ; }
  $8C44 RET           ;
 
 ; Jump to collision dispatcher
