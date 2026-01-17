@@ -5140,87 +5140,94 @@ finish_tank_shell_explosion:
 ;
 ; Processes objects that haven't been activated yet. Routes balloons to jp_operate_viewport_objects, checks animation
 ; timing for helicopter rotor animation.
-handle_inactive_object:
-  LD A,D
-  CP OBJECT_BALLOON
-  JP Z,jp_operate_viewport_objects
-  LD A,(state_metronome)
-  AND BALLOON_ANIMATION_METRONOME_MASK
-  CP BALLOON_ANIMATION_METRONOME_VALUE
-  JP Z,animate_object
-  LD A,D
-  AND SLOT_MASK_OBJECT_TYPE
-  CP OBJECT_HELICOPTER_REG
-  JP Z,handle_inactive_object_0
-  CP OBJECT_HELICOPTER_ADV
-  JP NZ,operate_viewport_objects
-handle_inactive_object_0:
-  LD (previous_object_coordinates),BC
-  JP operate_ship_or_helicopter_continue
-
-; Routine at 7248
 ;
-; Used by the routine at animate_helicopter.
+; I:B Y position
+; I:C X position
+; I:D Object definition byte
+handle_inactive_object:
+  LD A,D                               ; If object is OBJECT_BALLOON, jump to jp_operate_viewport_objects.
+  CP OBJECT_BALLOON                    ;
+  JP Z,jp_operate_viewport_objects     ;
+  LD A,(state_metronome)               ; Check metronome: if bit 0 == 1, jump to animate_object for animation.
+  AND BALLOON_ANIMATION_METRONOME_MASK ;
+  CP BALLOON_ANIMATION_METRONOME_VALUE ;
+  JP Z,animate_object
+  LD A,D                               ; If helicopter (REG or ADV), store position and continue to
+  AND SLOT_MASK_OBJECT_TYPE            ; operate_ship_or_helicopter_continue.
+  CP OBJECT_HELICOPTER_REG             ;
+  JP Z,handle_inactive_object_0        ;
+  CP OBJECT_HELICOPTER_ADV             ;
+  JP NZ,operate_viewport_objects         ; Not a helicopter: return to main loop. Helicopters store position and jump to
+handle_inactive_object_0:
+  LD (previous_object_coordinates),BC    ; operate_ship_or_helicopter_continue.
+  JP operate_ship_or_helicopter_continue ;
+
+; Load right-facing helicopter rotor sprite
+;
+; Returns pointer to right-facing helicopter rotor sprite at sprite_helicopter_rotor_right.
 ;
 ; O:HL Pointer to the sprite
 ld_sprite_helicopter_rotor_right:
-  LD HL,sprite_helicopter_rotor_right
+  LD HL,sprite_helicopter_rotor_right  ; Load HL with sprite_helicopter_rotor_right (right-facing rotor sprite).
   RET
 
-; Routine at 724C
+; Animate object (helicopter rotor)
 ;
-; Used by the routines at operate_ship_or_helicopter and handle_inactive_object.
+; Routes helicopters to rotor animation. Non-helicopters return to main loop.
+;
+; I:D Object definition byte
 animate_object:
-  LD A,D
-  AND SLOT_MASK_OBJECT_TYPE
-  CP OBJECT_HELICOPTER_REG
-  JP Z,animate_helicopter
-  CP OBJECT_HELICOPTER_ADV
+  LD A,D                               ; If helicopter (REG or ADV), animate rotor via animate_helicopter. Otherwise
+  AND SLOT_MASK_OBJECT_TYPE            ; return to main loop.
+  CP OBJECT_HELICOPTER_REG             ;
+  JP Z,animate_helicopter              ;
+  CP OBJECT_HELICOPTER_ADV             ;
   JP NZ,operate_viewport_objects
 
-; Routine at 7259
+; Animate helicopter rotor
 ;
-; Used by the routine at animate_object.
+; Renders the helicopter rotor sprite based on orientation. Uses left-facing (sprite_helicopter_rotor_left) or
+; right-facing (sprite_helicopter_rotor_right) rotor sprite.
 animate_helicopter:
-  LD HL,(viewport_ptr)
-  DEC HL
-  LD D,(HL)
-  DEC HL
-  LD B,(HL)
-  DEC HL
-  LD C,(HL)
-  LD HL,sprite_helicopter_rotor_left
-  BIT SLOT_BIT_ORIENTATION,D
-  CALL Z,ld_sprite_helicopter_rotor_right
-  LD (object_coordinates),BC
-  LD (previous_object_coordinates),BC
-  PUSH HL
-  CALL ld_enemy_sprites
-  LD HL,all_ff
-  LD (render_sprite_ptr),HL
-  POP HL
-  LD DE,SPRITE_ROTOR_HEIGHT_PIXELS<<8|SPRITE_ROTOR_ATTRIBUTES
-  LD BC,SPRITE_ROTOR_FRAME_SIZE
-  LD A,SPRITE_ROTOR_WIDTH_TILES
-  CALL render_object
+  LD HL,(viewport_ptr)                 ; Load viewport_ptr, extract [D, B, C] from current slot.
+  DEC HL                               ;
+  LD D,(HL)                            ;
+  DEC HL                               ;
+  LD B,(HL)                            ;
+  DEC HL                               ;
+  LD C,(HL)                            ;
+  LD HL,sprite_helicopter_rotor_left      ; Load left rotor sprite sprite_helicopter_rotor_left. If right-facing (bit 6
+  BIT SLOT_BIT_ORIENTATION,D              ; clear), load sprite_helicopter_rotor_right.
+  CALL Z,ld_sprite_helicopter_rotor_right ;
+  LD (object_coordinates),BC           ; Store positions to object_coordinates and previous_object_coordinates. Push
+  LD (previous_object_coordinates),BC  ; rotor sprite, get main sprite via ld_enemy_sprites.
+  PUSH HL                              ;
+  CALL ld_enemy_sprites                ;
+  LD HL,all_ff                         ; Store erase sprite all_ff to render_sprite_ptr. Pop rotor sprite.
+  LD (render_sprite_ptr),HL            ;
+  POP HL                               ;
+  LD DE,SPRITE_ROTOR_HEIGHT_PIXELS<<8|SPRITE_ROTOR_ATTRIBUTES ; Set rotor params: height=2, attributes=$0E, frame
+  LD BC,SPRITE_ROTOR_FRAME_SIZE                               ; size=4, width=2. Render via render_object.
+  LD A,SPRITE_ROTOR_WIDTH_TILES                               ;
+  CALL render_object                                          ;
   JP operate_viewport_objects
 
-; Routine at 728B
+; Advance tank right by 4 pixels
 ;
-; Used by the routine at operate_tank.
-L728B:
-  INC C
-  INC C
-  INC C
-  INC C
+; Increments X position by 4 pixels for right-moving tank.
+tank_advance_right:
+  INC C                                ; INC C × 4: move right 4 pixels.
+  INC C                                ;
+  INC C                                ;
+  INC C                                ;
   RET
 
-; Set tank shell state to active (tank is at firing position)
+; Set tank shell state to active
 ;
-; Used by the routine at operate_tank.
+; Sets state_tank_shell to TANK_SHELL_ACTIVE, indicating tank is at firing position.
 set_tank_shell_active:
-  LD A,TANK_SHELL_ACTIVE
-  LD (state_tank_shell),A
+  LD A,TANK_SHELL_ACTIVE               ; Set tank shell state to active ($01).
+  LD (state_tank_shell),A              ;
   RET
 
 ; Routine at 7296
@@ -5248,7 +5255,7 @@ operate_tank_0:
   DEC C
   DEC C
   BIT 6,D
-  CALL Z,L728B
+  CALL Z,tank_advance_right
   LD A,C
   CP $80
   CALL Z,set_tank_shell_active

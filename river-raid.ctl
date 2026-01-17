@@ -2225,30 +2225,53 @@ D $720E Clears the explosion object from the viewport and resets the tank shell 
 @ $7224 label=handle_inactive_object
 c $7224 Handle non-activated object
 D $7224 Processes objects that haven't been activated yet. Routes balloons to #R$76AC, checks animation timing for helicopter rotor animation.
+R $7224 I:B Y position
+R $7224 I:C X position
+R $7224 I:D Object definition byte
+  $7224 If object is OBJECT_BALLOON, jump to #R$76AC.
 @ $7225 isub=CP OBJECT_BALLOON
+  $722A,7 Check metronome: if bit 0 == 1, jump to #R$724C for animation.
 @ $722D isub=AND BALLOON_ANIMATION_METRONOME_MASK
 @ $722F isub=CP BALLOON_ANIMATION_METRONOME_VALUE
+  $7234 If helicopter (REG or ADV), store position and continue to #R$7128.
 @ $7235 isub=AND SLOT_MASK_OBJECT_TYPE
 @ $7237 isub=CP OBJECT_HELICOPTER_REG
 @ $723C isub=CP OBJECT_HELICOPTER_ADV
+  $723E Not a helicopter: return to main loop. Helicopters store position and jump to #R$7128.
 @ $7248 label=ld_sprite_helicopter_rotor_right
-c $7248
+c $7248 Load right-facing helicopter rotor sprite
+D $7248 Returns pointer to right-facing helicopter rotor sprite at #R$8AC8.
 R $7248 O:HL Pointer to the sprite
+  $7248,3 Load HL with #R$8AC8 (right-facing rotor sprite).
 @ $724C label=animate_object
-c $724C
+c $724C Animate object (helicopter rotor)
+D $724C Routes helicopters to rotor animation. Non-helicopters return to main loop.
+R $724C I:D Object definition byte
+  $724C,10 If helicopter (REG or ADV), animate rotor via #R$7259. Otherwise return to main loop.
 @ $724D isub=AND SLOT_MASK_OBJECT_TYPE
 @ $724F isub=CP OBJECT_HELICOPTER_REG
 @ $7254 isub=CP OBJECT_HELICOPTER_ADV
 @ $7259 label=animate_helicopter
-c $7259
+c $7259 Animate helicopter rotor
+D $7259 Renders the helicopter rotor sprite based on orientation. Uses left-facing (#R$8AB8) or right-facing (#R$8AC8) rotor sprite.
+  $7259 Load viewport_ptr, extract [D, B, C] from current slot.
+  $7262 Load left rotor sprite #R$8AB8. If right-facing (bit 6 clear), load #R$8AC8.
 @ $7265 isub=BIT SLOT_BIT_ORIENTATION,D
+  $726A Store positions to #R$8B0C and #R$8B0A. Push rotor sprite, get main sprite via #R$75BA.
+  $7276 Store erase sprite #R$82C5 to #R$8B0E. Pop rotor sprite.
 @ $727D isub=LD DE,SPRITE_ROTOR_HEIGHT_PIXELS<<8|SPRITE_ROTOR_ATTRIBUTES
+  $727D,11 Set rotor params: height=2, attributes=$0E, frame size=4, width=2. Render via #R$8B3C.
 @ $7280 isub=LD BC,SPRITE_ROTOR_FRAME_SIZE
 @ $7283 isub=LD A,SPRITE_ROTOR_WIDTH_TILES
-c $728B
-@ $7290 isub=LD A,TANK_SHELL_ACTIVE
+@ $728B label=tank_advance_right
+c $728B Advance tank right by 4 pixels
+D $728B Increments X position by 4 pixels for right-moving tank.
+  $728B,4 INC C × 4: move right 4 pixels.
 @ $7290 label=set_tank_shell_active
-c $7290 Set tank shell state to active (tank is at firing position)
+@ $7290 isub=LD A,TANK_SHELL_ACTIVE
+c $7290 Set tank shell state to active
+D $7290 Sets #R$5EF2 to TANK_SHELL_ACTIVE, indicating tank is at firing position.
+  $7290,5 Set tank shell state to active ($01).
 @ $7296 label=operate_tank
 c $7296
 R $7296 I:D OBJECT_DEFINITION

@@ -5715,99 +5715,107 @@ c$720E LD HL,($5F60) ; {Navigate to object slot, clear X position to remove
 ;
 ; Processes objects that haven't been activated yet. Routes balloons to
 ; #R$76AC, checks animation timing for helicopter rotor animation.
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition byte
 @label=handle_inactive_object
-c$7224 LD A,D        ;
+c$7224 LD A,D        ; {If object is OBJECT_BALLOON, jump to #R$76AC.
 @isub=CP OBJECT_BALLOON
  $7225 CP $06        ;
- $7227 JP Z,$76AC    ;
- $722A LD A,($5EEF)  ;
+ $7227 JP Z,$76AC    ; }
+ $722A LD A,($5EEF)  ; {Check metronome: if bit 0 == 1, jump to #R$724C for
 @isub=AND BALLOON_ANIMATION_METRONOME_MASK
- $722D AND $01       ;
+ $722D AND $01       ; animation.
 @isub=CP BALLOON_ANIMATION_METRONOME_VALUE
- $722F CP $01        ;
+ $722F CP $01        ; }
  $7231 JP Z,$724C    ;
- $7234 LD A,D        ;
+ $7234 LD A,D        ; {If helicopter (REG or ADV), store position and continue
 @isub=AND SLOT_MASK_OBJECT_TYPE
- $7235 AND $07       ;
+ $7235 AND $07       ; to #R$7128.
 @isub=CP OBJECT_HELICOPTER_REG
  $7237 CP $01        ;
  $7239 JP Z,$7241    ;
 @isub=CP OBJECT_HELICOPTER_ADV
- $723C CP $03        ;
- $723E JP NZ,$708E   ;
-*$7241 LD ($8B0A),BC ;
- $7245 JP $7128      ;
+ $723C CP $03        ; }
+ $723E JP NZ,$708E   ; {Not a helicopter: return to main loop. Helicopters
+*$7241 LD ($8B0A),BC ; store position and jump to #R$7128.
+ $7245 JP $7128      ; }
 
-; Routine at 7248
+; Load right-facing helicopter rotor sprite
 ;
-; Used by the routine at #R$7259.
+; Returns pointer to right-facing helicopter rotor sprite at #R$8AC8.
 ;
 ; O:HL Pointer to the sprite
 @label=ld_sprite_helicopter_rotor_right
-c$7248 LD HL,$8AC8   ;
+c$7248 LD HL,$8AC8   ; Load HL with #R$8AC8 (right-facing rotor sprite).
  $724B RET           ;
 
-; Routine at 724C
+; Animate object (helicopter rotor)
 ;
-; Used by the routines at #R$7104 and #R$7224.
+; Routes helicopters to rotor animation. Non-helicopters return to main loop.
+;
+; I:D Object definition byte
 @label=animate_object
-c$724C LD A,D        ;
+c$724C LD A,D        ; {If helicopter (REG or ADV), animate rotor via #R$7259.
 @isub=AND SLOT_MASK_OBJECT_TYPE
- $724D AND $07       ;
+ $724D AND $07       ; Otherwise return to main loop.
 @isub=CP OBJECT_HELICOPTER_REG
  $724F CP $01        ;
  $7251 JP Z,$7259    ;
 @isub=CP OBJECT_HELICOPTER_ADV
- $7254 CP $03        ;
+ $7254 CP $03        ; }
  $7256 JP NZ,$708E   ;
 
-; Routine at 7259
+; Animate helicopter rotor
 ;
-; Used by the routine at #R$724C.
+; Renders the helicopter rotor sprite based on orientation. Uses left-facing
+; (#R$8AB8) or right-facing (#R$8AC8) rotor sprite.
 @label=animate_helicopter
-c$7259 LD HL,($5F60) ;
+c$7259 LD HL,($5F60) ; {Load viewport_ptr, extract [D, B, C] from current slot.
  $725C DEC HL        ;
  $725D LD D,(HL)     ;
  $725E DEC HL        ;
  $725F LD B,(HL)     ;
  $7260 DEC HL        ;
- $7261 LD C,(HL)     ;
- $7262 LD HL,$8AB8   ;
+ $7261 LD C,(HL)     ; }
+ $7262 LD HL,$8AB8   ; {Load left rotor sprite #R$8AB8. If right-facing (bit 6
 @isub=BIT SLOT_BIT_ORIENTATION,D
- $7265 BIT 6,D       ;
- $7267 CALL Z,$7248  ;
- $726A LD ($8B0C),BC ;
- $726E LD ($8B0A),BC ;
+ $7265 BIT 6,D       ; clear), load #R$8AC8.
+ $7267 CALL Z,$7248  ; }
+ $726A LD ($8B0C),BC ; {Store positions to #R$8B0C and #R$8B0A. Push rotor
+ $726E LD ($8B0A),BC ; sprite, get main sprite via #R$75BA.
  $7272 PUSH HL       ;
- $7273 CALL $75BA    ;
- $7276 LD HL,$82C5   ;
- $7279 LD ($8B0E),HL ;
- $727C POP HL        ;
+ $7273 CALL $75BA    ; }
+ $7276 LD HL,$82C5   ; {Store erase sprite #R$82C5 to #R$8B0E. Pop rotor
+ $7279 LD ($8B0E),HL ; sprite.
+ $727C POP HL        ; }
 @isub=LD DE,SPRITE_ROTOR_HEIGHT_PIXELS<<8|SPRITE_ROTOR_ATTRIBUTES
- $727D LD DE,$020E   ;
+ $727D LD DE,$020E   ; {Set rotor params: height=2, attributes=$0E, frame
 @isub=LD BC,SPRITE_ROTOR_FRAME_SIZE
- $7280 LD BC,$0004   ;
+ $7280 LD BC,$0004   ; size=4, width=2. Render via #R$8B3C.
 @isub=LD A,SPRITE_ROTOR_WIDTH_TILES
  $7283 LD A,$02      ;
- $7285 CALL $8B3C    ;
+ $7285 CALL $8B3C    ; }
  $7288 JP $708E      ;
 
-; Routine at 728B
+; Advance tank right by 4 pixels
 ;
-; Used by the routine at #R$7296.
-c$728B INC C         ;
+; Increments X position by 4 pixels for right-moving tank.
+@label=tank_advance_right
+c$728B INC C         ; {INC C × 4: move right 4 pixels.
  $728C INC C         ;
  $728D INC C         ;
- $728E INC C         ;
+ $728E INC C         ; }
  $728F RET           ;
 
-; Set tank shell state to active (tank is at firing position)
+; Set tank shell state to active
 ;
-; Used by the routine at #R$7296.
-@isub=LD A,TANK_SHELL_ACTIVE
+; Sets #R$5EF2 to TANK_SHELL_ACTIVE, indicating tank is at firing position.
 @label=set_tank_shell_active
-c$7290 LD A,$01      ;
- $7292 LD ($5EF2),A  ;
+@isub=LD A,TANK_SHELL_ACTIVE
+c$7290 LD A,$01      ; {Set tank shell state to active ($01).
+ $7292 LD ($5EF2),A  ; }
  $7295 RET           ;
 
 ; Routine at 7296
