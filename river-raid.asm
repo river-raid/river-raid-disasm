@@ -3070,7 +3070,7 @@ clear_fire_bit:
 ; (1-4).
 finalize_collision:
   LD BC,(state_plane_missile_coordinates) ; Load missile coordinates from state_plane_missile_coordinates and call
-  CALL blenging_mode_or_or                ; blenging_mode_or_or to set OR blending.
+  CALL blending_mode_or_or                ; blending_mode_or_or to set OR blending.
   LD A,(state_gameplay_mode)           ; If GAMEPLAY_MODE_REFUEL, jump to handle_no_fuel.
   CP GAMEPLAY_MODE_REFUEL              ;
   JP Z,handle_no_fuel                  ;
@@ -4718,9 +4718,9 @@ render_enemy:
   CP OBJECT_TANK                       ;
   CALL Z,ld_attributes_tank            ;
   LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES   ; Set sprite dimensions: A=3 (width tiles), D=8 (height pixels). Call
-  LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS ; render_sprite and blenging_mode_or_or to render.
+  LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS ; render_sprite and blending_mode_or_or to render.
   CALL render_sprite                   ;
-  CALL blenging_mode_or_or             ;
+  CALL blending_mode_or_or             ;
   RET
 
 ; Load ship screen attributes
@@ -5023,13 +5023,13 @@ operate_fighter_continue:
   LD (HL),C                            ;
   LD (object_coordinates),BC           ; Store position to object_coordinates, get sprite pointer via ld_enemy_sprites.
   CALL ld_enemy_sprites                ;
-  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE   ; Set frame size=$18, call blenging_mode_xor_xor to set XOR blending mode.
-  CALL blenging_mode_xor_xor           ;
+  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE   ; Set frame size=$18, call blending_mode_xor_xor to set XOR blending mode.
+  CALL blending_mode_xor_xor           ;
   LD A,COLLISION_MODE_FIGHTER          ; Set collision mode to COLLISION_MODE_FIGHTER ($03) at state_collision_mode.
   LD (state_collision_mode),A          ;
   LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_FIGHTER_ATTRIBUTES ; Set height=8px, attributes=$00. Render via
   CALL render_sprite                                                 ; render_sprite, restore blending via
-  CALL blenging_mode_or_or                                           ; blenging_mode_or_or.
+  CALL blending_mode_or_or                                           ; blending_mode_or_or.
   JP operate_viewport_objects          ; Return to main viewport loop.
 
 ; Advance right-facing fighter
@@ -5230,68 +5230,76 @@ set_tank_shell_active:
   LD (state_tank_shell),A              ;
   RET
 
-; Routine at 7296
+; Tank operation routine
 ;
-; Used by the routine at operate_viewport_objects.
+; Operates tanks on the river. Tanks move 2 pixels per frame and fire shells when reaching the center position ($80).
+; Tanks on the river bank are handled separately via operate_tank_on_bank.
 ;
-; I:D OBJECT_DEFINITION
+; * Skips processing every other frame (metronome check)
+; * Tanks on bank (bit 5 set) handled via operate_tank_on_bank
+; * River tanks move left/right, fire at X=$80
+; * Uses XOR blending mode for rendering
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition byte
 operate_tank:
-  LD A,(state_metronome)
-  AND METRONOME_INTERVAL_1
-  CP METRONOME_INTERVAL_1
-  JP Z,operate_viewport_objects
-  LD (previous_object_coordinates),BC
+  LD A,(state_metronome)               ; Check metronome: if bit 0 == 1, skip to next object.
+  AND METRONOME_INTERVAL_1             ;
+  CP METRONOME_INTERVAL_1              ;
+  JP Z,operate_viewport_objects        ; Store position, push DE/BC for later.
+  LD (previous_object_coordinates),BC  ;
   PUSH DE
   PUSH BC
-  BIT SLOT_BIT_TANK_ON_BANK,D
-  JP NZ,operate_tank_on_bank
-  POP BC
-  POP DE
-  LD A,(state_bridge_destroyed)
-  CP $00
-  JP NZ,L74EE
+  BIT SLOT_BIT_TANK_ON_BANK,D          ; If SLOT_BIT_TANK_ON_BANK set, handle via operate_tank_on_bank.
+  JP NZ,operate_tank_on_bank           ;
+  POP BC                               ; Pop regs. If state_bridge_destroyed != 0, jump to L74EE.
+  POP DE                               ;
+  LD A,(state_bridge_destroyed)        ;
+  CP $00                               ;
+  JP NZ,L74EE                          ;
 ; This entry point is used by the routine at operate_tank_on_bank.
 operate_tank_0:
-  DEC C
-  DEC C
-  BIT 6,D
-  CALL Z,tank_advance_right
-  LD A,C
-  CP $80
-  CALL Z,set_tank_shell_active
-  LD HL,(viewport_ptr)
-  DEC HL
-  LD D,(HL)
-  DEC HL
-  LD (HL),B
-  DEC HL
-  LD (HL),C
-  LD (object_coordinates),BC
+  DEC C                                ; Move tank: DEC C twice (left), then INC C × 4 if right-facing.
+  DEC C                                ;
+  BIT 6,D                              ;
+  CALL Z,tank_advance_right            ;
+  LD A,C                               ; If X == $80 (center), set tank shell active via set_tank_shell_active.
+  CP $80                               ;
+  CALL Z,set_tank_shell_active         ;
+  LD HL,(viewport_ptr)                 ; Update position in viewport array, store to object_coordinates, get sprite via
+  DEC HL                               ; ld_enemy_sprites.
+  LD D,(HL)                            ;
+  DEC HL                               ;
+  LD (HL),B                            ;
+  DEC HL                               ;
+  LD (HL),C                            ;
+  LD (object_coordinates),BC           ;
   CALL ld_enemy_sprites
-  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
-  CALL blenging_mode_xor_xor
-  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
-  LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_TANK_ATTRIBUTES
-  CALL render_sprite
-  CALL blenging_mode_or_or
+  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE   ; Set frame size=$18, enable XOR blending via blending_mode_xor_xor.
+  CALL blending_mode_xor_xor           ;
+  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES                              ; Set width=3, height=8, attributes=$00. Render via
+  LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_TANK_ATTRIBUTES ; render_sprite, restore blending, return.
+  CALL render_sprite                                              ;
+  CALL blending_mode_or_or                                        ;
   JP operate_viewport_objects
 
-; Routine at 72E6
+; Set XOR/XOR blending mode
 ;
-; Used by the routines at operate_fighter_continue and operate_tank.
-blenging_mode_xor_xor:
-  LD A,$A8
-  LD (L8C1B),A                         ; Put "XOR B" into L8C1B
-  LD (L8C3C),A                         ; Put "XOR B" into L8C3C
+; Patches sprite renderer to use XOR for both mask and sprite operations. Used for tanks and fighters.
+blending_mode_xor_xor:
+  LD A,$A8                             ; Load XOR B opcode ($A8).
+  LD (L8C1B),A                         ; Patch XOR B into L8C1B.
+  LD (L8C3C),A                         ; Patch XOR B into L8C3C.
   RET
 
-; Routine at 72EF
+; Set OR/OR blending mode
 ;
-; Used by the routines at finalize_collision, render_enemy, operate_fighter_continue and operate_tank.
-blenging_mode_or_or:
-  LD A,$B0
-  LD (L8C1B),A                         ; Put "OR B" into L8C1B
-  LD (L8C3C),A                         ; Put "OR B" into L8C3C
+; Patches sprite renderer to use OR for both mask and sprite operations. Restores default blending after XOR rendering.
+blending_mode_or_or:
+  LD A,$B0                             ; Load OR B opcode ($B0).
+  LD (L8C1B),A                         ; Patch OR B into L8C1B.
+  LD (L8C3C),A                         ; Patch OR B into L8C3C.
   RET
 
 ; Decreases the value of XYZ stored in C by $20. Called if the tank is oriented left in order to compensate for the

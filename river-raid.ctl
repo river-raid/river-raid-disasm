@@ -2273,26 +2273,43 @@ c $7290 Set tank shell state to active
 D $7290 Sets #R$5EF2 to TANK_SHELL_ACTIVE, indicating tank is at firing position.
   $7290,5 Set tank shell state to active ($01).
 @ $7296 label=operate_tank
-c $7296
-R $7296 I:D OBJECT_DEFINITION
+c $7296 Tank operation routine
+D $7296 Operates tanks on the river. Tanks move 2 pixels per frame and fire shells when reaching the center position ($80). Tanks on the river bank are handled separately via #R$7302.
+D $7296 #LIST { Skips processing every other frame (metronome check) } { Tanks on bank (bit 5 set) handled via #R$7302 } { River tanks move left/right, fire at X=$80 } { Uses XOR blending mode for rendering } LIST#
+R $7296 I:B Y position
+R $7296 I:C X position
+R $7296 I:D Object definition byte
+  $7296 Check metronome: if bit 0 == 1, skip to next object.
 @ $7299 isub=AND METRONOME_INTERVAL_1
 @ $729B isub=CP METRONOME_INTERVAL_1
+  $729D,7 Store position, push DE/BC for later.
 @ $72A6 isub=BIT SLOT_BIT_TANK_ON_BANK,D
+  $72A6 If SLOT_BIT_TANK_ON_BANK set, handle via #R$7302.
+  $72AB Pop regs. If #R$5F6D != 0, jump to #R$74EE.
+  $72B5 Move tank: DEC C twice (left), then INC C × 4 if right-facing.
+  $72BC If X == $80 (center), set tank shell active via #R$7290.
+  $72C2,13 Update position in viewport array, store to #R$8B0C, get sprite via #R$75BA.
 @ $72D2 isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
+  $72D2 Set frame size=$18, enable XOR blending via #R$72E6.
 @ $72D8 isub=LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
+  $72D8,11 Set width=3, height=8, attributes=$00. Render via #R$8B1E, restore blending, return.
 @ $72DA isub=LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_TANK_ATTRIBUTES
-@ $72E6 label=blenging_mode_xor_xor
-c $72E6
+@ $72E6 label=blending_mode_xor_xor
+c $72E6 Set XOR/XOR blending mode
+D $72E6 Patches sprite renderer to use XOR for both mask and sprite operations. Used for tanks and fighters.
+  $72E6 Load XOR B opcode ($A8).
 @ $72E8 nowarn
-  $72E8 Put "XOR B" into #R$8C1B
+  $72E8 Patch XOR B into #R$8C1B.
 @ $72EB nowarn
-  $72EB,3 Put "XOR B" into #R$8C3C
-@ $72EF label=blenging_mode_or_or
-c $72EF
+  $72EB,3 Patch XOR B into #R$8C3C.
+@ $72EF label=blending_mode_or_or
+c $72EF Set OR/OR blending mode
+D $72EF Patches sprite renderer to use OR for both mask and sprite operations. Restores default blending after XOR rendering.
+  $72EF Load OR B opcode ($B0).
 @ $72F1 nowarn
-  $72F1 Put "OR B" into #R$8C1B
+  $72F1 Patch OR B into #R$8C1B.
 @ $72F4 nowarn
-  $72F4,3 Put "OR B" into #R$8C3C
+  $72F4,3 Patch OR B into #R$8C3C.
 @ $72F8 label=invert_tank_offset_delta
 c $72F8 Decreases the value of XYZ stored in #REGc by $20. Called if the tank is oriented left in order to compensate for the previous operation of adding $10.
 R $72F8 I:C Previous value of XYZ.

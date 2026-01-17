@@ -5818,77 +5818,90 @@ c$7290 LD A,$01      ; {Set tank shell state to active ($01).
  $7292 LD ($5EF2),A  ; }
  $7295 RET           ;
 
-; Routine at 7296
+; Tank operation routine
 ;
-; Used by the routine at #R$708E.
+; Operates tanks on the river. Tanks move 2 pixels per frame and fire shells
+; when reaching the center position ($80). Tanks on the river bank are handled
+; separately via #R$7302.
+; .
+; #LIST
+; { Skips processing every other frame (metronome check) }
+; { Tanks on bank (bit 5 set) handled via #R$7302 }
+; { River tanks move left/right, fire at X=$80 }
+; { Uses XOR blending mode for rendering }
+; LIST#
 ;
-; I:D OBJECT_DEFINITION
+; I:B Y position
+; I:C X position
+; I:D Object definition byte
 @label=operate_tank
-c$7296 LD A,($5EEF)  ;
+c$7296 LD A,($5EEF)  ; {Check metronome: if bit 0 == 1, skip to next object.
 @isub=AND METRONOME_INTERVAL_1
  $7299 AND $01       ;
 @isub=CP METRONOME_INTERVAL_1
- $729B CP $01        ;
- $729D JP Z,$708E    ;
- $72A0 LD ($8B0A),BC ;
+ $729B CP $01        ; }
+ $729D JP Z,$708E    ; {Store position, push DE/BC for later.
+ $72A0 LD ($8B0A),BC ; }
  $72A4 PUSH DE       ;
  $72A5 PUSH BC       ;
 @isub=BIT SLOT_BIT_TANK_ON_BANK,D
- $72A6 BIT 5,D       ;
- $72A8 JP NZ,$7302   ;
- $72AB POP BC        ;
+ $72A6 BIT 5,D       ; {If SLOT_BIT_TANK_ON_BANK set, handle via #R$7302.
+ $72A8 JP NZ,$7302   ; }
+ $72AB POP BC        ; {Pop regs. If #R$5F6D != 0, jump to #R$74EE.
  $72AC POP DE        ;
  $72AD LD A,($5F6D)  ;
  $72B0 CP $00        ;
- $72B2 JP NZ,$74EE   ;
+ $72B2 JP NZ,$74EE   ; }
 ; This entry point is used by the routine at #R$7302.
-*$72B5 DEC C         ;
- $72B6 DEC C         ;
+*$72B5 DEC C         ; {Move tank: DEC C twice (left), then INC C × 4 if
+ $72B6 DEC C         ; right-facing.
  $72B7 BIT 6,D       ;
- $72B9 CALL Z,$728B  ;
- $72BC LD A,C        ;
- $72BD CP $80        ;
- $72BF CALL Z,$7290  ;
- $72C2 LD HL,($5F60) ;
- $72C5 DEC HL        ;
+ $72B9 CALL Z,$728B  ; }
+ $72BC LD A,C        ; {If X == $80 (center), set tank shell active via
+ $72BD CP $80        ; #R$7290.
+ $72BF CALL Z,$7290  ; }
+ $72C2 LD HL,($5F60) ; {Update position in viewport array, store to #R$8B0C,
+ $72C5 DEC HL        ; get sprite via #R$75BA.
  $72C6 LD D,(HL)     ;
  $72C7 DEC HL        ;
  $72C8 LD (HL),B     ;
  $72C9 DEC HL        ;
  $72CA LD (HL),C     ;
- $72CB LD ($8B0C),BC ;
+ $72CB LD ($8B0C),BC ; }
  $72CF CALL $75BA    ;
 @isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
- $72D2 LD BC,$0018   ;
- $72D5 CALL $72E6    ;
+ $72D2 LD BC,$0018   ; {Set frame size=$18, enable XOR blending via #R$72E6.
+ $72D5 CALL $72E6    ; }
 @isub=LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
- $72D8 LD A,$03      ;
+ $72D8 LD A,$03      ; {Set width=3, height=8, attributes=$00. Render via
 @isub=LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_TANK_ATTRIBUTES
- $72DA LD DE,$0800   ;
+ $72DA LD DE,$0800   ; #R$8B1E, restore blending, return.
  $72DD CALL $8B1E    ;
- $72E0 CALL $72EF    ;
+ $72E0 CALL $72EF    ; }
  $72E3 JP $708E      ;
 
-; Routine at 72E6
+; Set XOR/XOR blending mode
 ;
-; Used by the routines at #R$716B and #R$7296.
-@label=blenging_mode_xor_xor
-c$72E6 LD A,$A8      ;
+; Patches sprite renderer to use XOR for both mask and sprite operations. Used
+; for tanks and fighters.
+@label=blending_mode_xor_xor
+c$72E6 LD A,$A8      ; Load XOR B opcode ($A8).
 @nowarn
- $72E8 LD ($8C1B),A  ; Put "XOR B" into #R$8C1B
+ $72E8 LD ($8C1B),A  ; Patch XOR B into #R$8C1B.
 @nowarn
- $72EB LD ($8C3C),A  ; Put "XOR B" into #R$8C3C
+ $72EB LD ($8C3C),A  ; Patch XOR B into #R$8C3C.
  $72EE RET           ;
 
-; Routine at 72EF
+; Set OR/OR blending mode
 ;
-; Used by the routines at #R$6794, #R$6FF6, #R$716B and #R$7296.
-@label=blenging_mode_or_or
-c$72EF LD A,$B0      ;
+; Patches sprite renderer to use OR for both mask and sprite operations.
+; Restores default blending after XOR rendering.
+@label=blending_mode_or_or
+c$72EF LD A,$B0      ; Load OR B opcode ($B0).
 @nowarn
- $72F1 LD ($8C1B),A  ; Put "OR B" into #R$8C1B
+ $72F1 LD ($8C1B),A  ; Patch OR B into #R$8C1B.
 @nowarn
- $72F4 LD ($8C3C),A  ; Put "OR B" into #R$8C3C
+ $72F4 LD ($8C3C),A  ; Patch OR B into #R$8C3C.
  $72F7 RET           ;
 
 ; Decreases the value of XYZ stored in #REGc by $20. Called if the tank is
