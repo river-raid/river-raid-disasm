@@ -2488,20 +2488,40 @@ D $74E4 Clears all tank shell state variables to remove it from the game.
   $74E4,9 Clear #R$7383 (state) and #R$7385 (coordinates) to $0000.
 @ $74EE label=handle_tank_at_boundary
 c $74EE Handle tank reaching river boundary
-D $74EE Called when a tank on the river reaches the viewport boundary. Reverses direction or removes the tank.
+D $74EE Called when a tank on the river reaches the viewport boundary. Checks if tank is within valid X range, creates explosion and awards points if tank destroyed.
+  $74EE Load viewport_ptr, navigate to X position in current slot.
+  $74F5 Check if X+$0A < $70: if true, tank at left boundary, jump to reverse.
+  $7502 Check if X > $90: if true, tank at right boundary, jump to reverse.
+  $750F Tank destroyed: clear X position, set D=$80 (explosion marker).
+  $7517,9 Call #R$6E9C to add explosion, award POINTS_TANK via #R$90E0.
 @ $7520 isub=LD A,POINTS_TANK
-  $7529,2 Set CONTROLS_BIT_BONUS_LIFE
+  $7525,6 Reload viewport_ptr, set bits 4 and 5 (direction change flags).
 @ $752B isub=SET CONTROLS_BIT_EXPLODING,(HL)
-c $7546
+  $752D Check difficulty level at #R$923D. If level 1, use alternate speed.
+  $7534,9 Load speed from #R$5F6B, check if 7-speed < 0, clear slot if needed.
+@ $7546 label=get_tank_speed_level_1
+c $7546 Get tank speed for level 1
+D $7546 Returns tank speed from #R$5F6A instead of #R$5F6B for difficulty level 1.
+  $7546,3 Load speed from #R$5F6A, continue at #R$753A.
 @ $754C label=operate_fuel
-c $754C
+c $754C Operate fuel station
+D $754C Processes fuel station rendering with animated lights. Checks viewport boundary and renders with alternating attributes based on metronome.
+D $754C #LIST { Stores position for rendering } { Checks if fuel station is within viewport } { Animates fuel lights based on metronome counter } { Renders 2-tile wide, 25-pixel tall sprite } LIST#
+  $754C,8 Store position to #R$8B0A and #R$8B0C. Set height=$19.
+  $7556 Check if Y+$19 is off-screen (boundary check).
+  $755D If off-screen, return to main loop.
 @ $7565 isub=AND VIEWPORT_HEIGHT
 @ $7567 isub=CP VIEWPORT_HEIGHT
+  $7569,11 Load fuel sprite #R$8A86, get sprite pointer via #R$75BA.
 @ $7577 isub=LD BC,SPRITE_FUEL_STATION_FRAME_SIZE
+  $7577 Set frame size=0, calculate animated attributes from metronome.
 @ $757D isub=AND METRONOME_INTERVAL_ANIMATE_FUEL
 @ $757F isub=ADD A,SPRITE_FUEL_STATION_ATTRIBUTES
 @ $7582 isub=LD A,SPRITE_FUEL_STATION_WIDTH_TILES
-c $758A
+  $7582,8 Set width=2, render via #R$8B1E.
+@ $758A label=handle_fuel_off_viewport
+c $758A Handle fuel station off viewport
+D $758A Removes fuel station from viewport when it scrolls off-screen.
 @ $75A2 label=ship_or_helicopter_right_advance
 c $75A2
 @ $75BA label=ld_enemy_sprites

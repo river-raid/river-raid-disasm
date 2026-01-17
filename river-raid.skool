@@ -6343,106 +6343,117 @@ c$74E4 LD HL,$0000   ; {Clear #R$7383 (state) and #R$7385 (coordinates) to
 
 ; Handle tank reaching river boundary
 ;
-; Called when a tank on the river reaches the viewport boundary. Reverses
-; direction or removes the tank.
+; Called when a tank on the river reaches the viewport boundary. Checks if tank
+; is within valid X range, creates explosion and awards points if tank
+; destroyed.
 @label=handle_tank_at_boundary
-c$74EE LD HL,($5F60) ;
- $74F1 DEC HL        ;
+c$74EE LD HL,($5F60) ; {Load viewport_ptr, navigate to X position in current
+ $74F1 DEC HL        ; slot.
  $74F2 DEC HL        ;
  $74F3 DEC HL        ;
- $74F4 LD C,(HL)     ;
- $74F5 LD H,$00      ;
- $74F7 LD L,$70      ;
+ $74F4 LD C,(HL)     ; }
+ $74F5 LD H,$00      ; {Check if X+$0A < $70: if true, tank at left boundary,
+ $74F7 LD L,$70      ; jump to reverse.
  $74F9 LD D,$00      ;
  $74FB LD A,C        ;
  $74FC ADD A,$0A     ;
  $74FE LD E,A        ;
  $74FF OR A          ;
- $7500 SBC HL,DE     ;
- $7502 JP P,$7525    ;
- $7505 LD H,$00      ;
+ $7500 SBC HL,DE     ; }
+ $7502 JP P,$7525    ; {Check if X > $90: if true, tank at right boundary, jump
+ $7505 LD H,$00      ; to reverse.
  $7507 LD L,$90      ;
  $7509 LD D,$00      ;
  $750B LD E,C        ;
  $750C OR A          ;
- $750D SBC HL,DE     ;
- $750F JP M,$7525    ;
- $7512 LD HL,($5F60) ;
+ $750D SBC HL,DE     ; }
+ $750F JP M,$7525    ; {Tank destroyed: clear X position, set D=$80 (explosion
+ $7512 LD HL,($5F60) ; marker).
  $7515 DEC HL        ;
- $7516 DEC HL        ;
- $7517 LD B,(HL)     ;
- $7518 DEC HL        ;
+ $7516 DEC HL        ; }
+ $7517 LD B,(HL)     ; {Call #R$6E9C to add explosion, award POINTS_TANK via
+ $7518 DEC HL        ; #R$90E0.
  $7519 LD (HL),$00   ;
  $751B LD D,$80      ;
- $751D CALL $6E9C    ;
+ $751D CALL $6E9C    ; }
 @isub=LD A,POINTS_TANK
  $7520 LD A,$25      ;
  $7522 CALL $90E0    ;
-*$7525 LD HL,($5F60) ;
- $7528 DEC HL        ;
- $7529 SET 4,(HL)    ; Set CONTROLS_BIT_BONUS_LIFE
+*$7525 LD HL,($5F60) ; {Reload viewport_ptr, set bits 4 and 5 (direction change
+ $7528 DEC HL        ; flags).
+ $7529 SET 4,(HL)    ; }
 @isub=SET CONTROLS_BIT_EXPLODING,(HL)
  $752B SET 5,(HL)    ;
- $752D DEC HL        ;
- $752E DEC HL        ;
+ $752D DEC HL        ; {Check difficulty level at #R$923D. If level 1, use
+ $752E DEC HL        ; alternate speed.
  $752F LD A,($923D)  ;
- $7532 CP $01        ;
- $7534 JP Z,$7546    ;
- $7537 LD A,($5F6B)  ;
+ $7532 CP $01        ; }
+ $7534 JP Z,$7546    ; {Load speed from #R$5F6B, check if 7-speed < 0, clear
+ $7537 LD A,($5F6B)  ; slot if needed.
 ; This entry point is used by the routine at #R$7546.
 *$753A LD B,A        ;
- $753B LD A,$07      ;
+ $753B LD A,$07      ; }
  $753D SUB B         ;
  $753E JP M,$708E    ;
  $7541 LD (HL),$00   ;
  $7543 JP $708E      ;
 
-; Routine at 7546
+; Get tank speed for level 1
 ;
-; Used by the routine at #R$74EE.
-c$7546 LD A,($5F6A)  ;
+; Returns tank speed from #R$5F6A instead of #R$5F6B for difficulty level 1.
+@label=get_tank_speed_level_1
+c$7546 LD A,($5F6A)  ; Load speed from #R$5F6A, continue at #R$753A.
  $7549 JP $753A      ;
 
-; Routine at 754C
+; Operate fuel station
 ;
-; Used by the routine at #R$708E.
+; Processes fuel station rendering with animated lights. Checks viewport
+; boundary and renders with alternating attributes based on metronome.
+; .
+; #LIST
+; { Stores position for rendering }
+; { Checks if fuel station is within viewport }
+; { Animates fuel lights based on metronome counter }
+; { Renders 2-tile wide, 25-pixel tall sprite }
+; LIST#
 @label=operate_fuel
-c$754C LD ($8B0A),BC ;
- $7550 LD ($8B0C),BC ;
+c$754C LD ($8B0A),BC ; {Store position to #R$8B0A and #R$8B0C. Set height=$19.
+ $7550 LD ($8B0C),BC ; }
  $7554 LD D,$19      ;
- $7556 LD A,B        ;
+ $7556 LD A,B        ; {Check if Y+$19 is off-screen (boundary check).
  $7557 ADD A,$19     ;
  $7559 AND $90       ;
- $755B CP $90        ;
- $755D CALL Z,$758A  ;
+ $755B CP $90        ; }
+ $755D CALL Z,$758A  ; {If off-screen, return to main loop.
  $7560 LD BC,($8B0A) ;
  $7564 LD A,B        ;
 @isub=AND VIEWPORT_HEIGHT
  $7565 AND $88       ;
 @isub=CP VIEWPORT_HEIGHT
- $7567 CP $88        ;
- $7569 JP Z,$708E    ;
- $756C LD A,B        ;
+ $7567 CP $88        ; }
+ $7569 JP Z,$708E    ; {Load fuel sprite #R$8A86, get sprite pointer via
+ $756C LD A,B        ; #R$75BA.
  $756D AND $87       ;
  $756F CP $87        ;
- $7571 JP Z,$708E    ;
+ $7571 JP Z,$708E    ; }
  $7574 LD HL,$8A86   ;
 @isub=LD BC,SPRITE_FUEL_STATION_FRAME_SIZE
- $7577 LD BC,$0000   ;
- $757A LD A,($5EEF)  ;
+ $7577 LD BC,$0000   ; {Set frame size=0, calculate animated attributes from
+ $757A LD A,($5EEF)  ; metronome.
 @isub=AND METRONOME_INTERVAL_ANIMATE_FUEL
  $757D AND $04       ;
 @isub=ADD A,SPRITE_FUEL_STATION_ATTRIBUTES
  $757F ADD A,$0B     ;
- $7581 LD E,A        ;
+ $7581 LD E,A        ; }
 @isub=LD A,SPRITE_FUEL_STATION_WIDTH_TILES
- $7582 LD A,$02      ;
+ $7582 LD A,$02      ; {Set width=2, render via #R$8B1E.
  $7584 CALL $8B1E    ;
- $7587 JP $708E      ;
+ $7587 JP $708E      ; }
 
-; Routine at 758A
+; Handle fuel station off viewport
 ;
-; Used by the routine at #R$754C.
+; Removes fuel station from viewport when it scrolls off-screen.
+@label=handle_fuel_off_viewport
 c$758A LD H,$00      ;
  $758C LD L,B        ;
  $758D LD BC,$0019   ;

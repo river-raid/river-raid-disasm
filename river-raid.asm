@@ -5697,101 +5697,108 @@ remove_tank_shell:
 
 ; Handle tank reaching river boundary
 ;
-; Called when a tank on the river reaches the viewport boundary. Reverses direction or removes the tank.
+; Called when a tank on the river reaches the viewport boundary. Checks if tank is within valid X range, creates
+; explosion and awards points if tank destroyed.
 handle_tank_at_boundary:
-  LD HL,(viewport_ptr)
-  DEC HL
-  DEC HL
-  DEC HL
-  LD C,(HL)
-  LD H,$00
-  LD L,$70
-  LD D,$00
-  LD A,C
-  ADD A,$0A
-  LD E,A
-  OR A
-  SBC HL,DE
-  JP P,handle_tank_at_boundary_0
-  LD H,$00
-  LD L,$90
-  LD D,$00
-  LD E,C
-  OR A
-  SBC HL,DE
-  JP M,handle_tank_at_boundary_0
-  LD HL,(viewport_ptr)
-  DEC HL
-  DEC HL
-  LD B,(HL)
-  DEC HL
-  LD (HL),$00
-  LD D,$80
-  CALL explode_fragment
+  LD HL,(viewport_ptr)                 ; Load viewport_ptr, navigate to X position in current slot.
+  DEC HL                               ;
+  DEC HL                               ;
+  DEC HL                               ;
+  LD C,(HL)                            ;
+  LD H,$00                             ; Check if X+$0A < $70: if true, tank at left boundary, jump to reverse.
+  LD L,$70                             ;
+  LD D,$00                             ;
+  LD A,C                               ;
+  ADD A,$0A                            ;
+  LD E,A                               ;
+  OR A                                 ;
+  SBC HL,DE                            ;
+  JP P,handle_tank_at_boundary_0       ; Check if X > $90: if true, tank at right boundary, jump to reverse.
+  LD H,$00                             ;
+  LD L,$90                             ;
+  LD D,$00                             ;
+  LD E,C                               ;
+  OR A                                 ;
+  SBC HL,DE                            ;
+  JP M,handle_tank_at_boundary_0       ; Tank destroyed: clear X position, set D=$80 (explosion marker).
+  LD HL,(viewport_ptr)                 ;
+  DEC HL                               ;
+  DEC HL                               ;
+  LD B,(HL)                            ; Call explode_fragment to add explosion, award POINTS_TANK via add_points.
+  DEC HL                               ;
+  LD (HL),$00                          ;
+  LD D,$80                             ;
+  CALL explode_fragment                ;
   LD A,POINTS_TANK
   CALL add_points
 handle_tank_at_boundary_0:
-  LD HL,(viewport_ptr)
-  DEC HL
-  SET 4,(HL)                           ; Set CONTROLS_BIT_BONUS_LIFE
+  LD HL,(viewport_ptr)                 ; Reload viewport_ptr, set bits 4 and 5 (direction change flags).
+  DEC HL                               ;
+  SET 4,(HL)                           ;
   SET CONTROLS_BIT_EXPLODING,(HL)
-  DEC HL
-  DEC HL
-  LD A,(state_player)
-  CP $01
-  JP Z,L7546
-  LD A,(state_bridge_player_2)
-; This entry point is used by the routine at L7546.
+  DEC HL                               ; Check difficulty level at state_player. If level 1, use alternate speed.
+  DEC HL                               ;
+  LD A,(state_player)                  ;
+  CP $01                               ;
+  JP Z,get_tank_speed_level_1          ; Load speed from state_bridge_player_2, check if 7-speed < 0, clear slot if
+  LD A,(state_bridge_player_2)         ; needed.
+; This entry point is used by the routine at get_tank_speed_level_1.
 handle_tank_at_boundary_1:
   LD B,A
-  LD A,$07
+  LD A,$07                             ; }
   SUB B
   JP M,operate_viewport_objects
   LD (HL),$00
   JP operate_viewport_objects
 
-; Routine at 7546
+; Get tank speed for level 1
 ;
-; Used by the routine at handle_tank_at_boundary.
-L7546:
-  LD A,(state_bridge_player_1)
+; Returns tank speed from state_bridge_player_1 instead of state_bridge_player_2 for difficulty level 1.
+get_tank_speed_level_1:
+  LD A,(state_bridge_player_1)         ; Load speed from state_bridge_player_1, continue at handle_tank_at_boundary_1.
   JP handle_tank_at_boundary_1
 
-; Routine at 754C
+; Operate fuel station
 ;
-; Used by the routine at operate_viewport_objects.
+; Processes fuel station rendering with animated lights. Checks viewport boundary and renders with alternating
+; attributes based on metronome.
+;
+; * Stores position for rendering
+; * Checks if fuel station is within viewport
+; * Animates fuel lights based on metronome counter
+; * Renders 2-tile wide, 25-pixel tall sprite
 operate_fuel:
-  LD (previous_object_coordinates),BC
-  LD (object_coordinates),BC
+  LD (previous_object_coordinates),BC  ; Store position to previous_object_coordinates and object_coordinates. Set
+  LD (object_coordinates),BC           ; height=$19.
   LD D,$19
-  LD A,B
-  ADD A,$19
-  AND $90
-  CP $90
-  CALL Z,L758A
-  LD BC,(previous_object_coordinates)
-  LD A,B
-  AND VIEWPORT_HEIGHT
-  CP VIEWPORT_HEIGHT
-  JP Z,operate_viewport_objects
-  LD A,B
-  AND $87
-  CP $87
-  JP Z,operate_viewport_objects
+  LD A,B                               ; Check if Y+$19 is off-screen (boundary check).
+  ADD A,$19                            ;
+  AND $90                              ;
+  CP $90                               ;
+  CALL Z,handle_fuel_off_viewport      ; If off-screen, return to main loop.
+  LD BC,(previous_object_coordinates)  ;
+  LD A,B                               ;
+  AND VIEWPORT_HEIGHT                  ;
+  CP VIEWPORT_HEIGHT                   ;
+  JP Z,operate_viewport_objects        ; Load fuel sprite sprite_fuel, get sprite pointer via ld_enemy_sprites.
+  LD A,B                               ;
+  AND $87                              ;
+  CP $87                               ;
+  JP Z,operate_viewport_objects        ;
   LD HL,sprite_fuel
-  LD BC,SPRITE_FUEL_STATION_FRAME_SIZE
-  LD A,(state_metronome)
-  AND METRONOME_INTERVAL_ANIMATE_FUEL
-  ADD A,SPRITE_FUEL_STATION_ATTRIBUTES
-  LD E,A
-  LD A,SPRITE_FUEL_STATION_WIDTH_TILES
-  CALL render_sprite
-  JP operate_viewport_objects
+  LD BC,SPRITE_FUEL_STATION_FRAME_SIZE ; Set frame size=0, calculate animated attributes from metronome.
+  LD A,(state_metronome)               ;
+  AND METRONOME_INTERVAL_ANIMATE_FUEL  ;
+  ADD A,SPRITE_FUEL_STATION_ATTRIBUTES ;
+  LD E,A                               ;
+  LD A,SPRITE_FUEL_STATION_WIDTH_TILES ; Set width=2, render via render_sprite.
+  CALL render_sprite                   ;
+  JP operate_viewport_objects          ;
 
-; Routine at 758A
+; Handle fuel station off viewport
 ;
-; Used by the routine at operate_fuel.
-L758A:
+; Removes fuel station from viewport when it scrolls off-screen.
+handle_fuel_off_viewport:
   LD H,$00
   LD L,B
   LD BC,$0019
