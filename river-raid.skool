@@ -6574,57 +6574,66 @@ c$75D0 LD ($8B0A),BC ;
 
 ; Point #R$5F60 to the head of #R$5F00.
 ;
-; Used by the routine at #R$708E.
+; Resets the viewport pointer to the beginning of the viewport array.
 @label=init_viewport_ptr
-c$7627 LD HL,$5F00   ;
- $762A LD ($5F60),HL ;
+c$7627 LD HL,$5F00   ; {Set viewport_ptr to start of viewport array.
+ $762A LD ($5F60),HL ; }
  $762D RET           ;
 
-; Routine at 762E
+; Remove an object from the viewport array.
 ;
-; Used by the routine at #R$708E.
+; Clears the object's slot marker and handles tank shell cleanup if the object
+; was a tank.
+;
+; I:HL Pointer to object's Y position in viewport array
+; I:D Object definition byte
 @label=remove_object_from_viewport
-c$762E DEC HL        ;
+c$762E DEC HL        ; {Decrement to definition byte and mark slot as empty.
 @isub=LD (HL),SET_MARKER_EMPTY_SLOT
- $762F LD (HL),$00   ;
- $7631 LD A,D        ;
+ $762F LD (HL),$00   ; }
+ $7631 LD A,D        ; {Extract object type. If not OBJECT_TANK, continue main
 @isub=AND SLOT_MASK_OBJECT_TYPE
- $7632 AND $07       ;
+ $7632 AND $07       ; loop.
 @isub=CP OBJECT_TANK
- $7634 CP $04        ;
+ $7634 CP $04        ; }
  $7636 JP NZ,$708E   ;
 @isub=LD A,TANK_SHELL_INACTIVE
- $7639 LD A,$00      ;
- $763B LD ($5EF2),A  ;
+ $7639 LD A,$00      ; {Mark tank shell as inactive.
+ $763B LD ($5EF2),A  ; }
 @isub=BIT SLOT_BIT_TANK_ON_BANK,D
- $763E BIT 5,D       ;
- $7640 JP Z,$708E    ;
- $7643 CALL $74E4    ;
- $7646 JP $708E      ;
+ $763E BIT 5,D       ; {Check if tank was on right bank.
+ $7640 JP Z,$708E    ; }
+ $7643 CALL $74E4    ; {If so, call #R$74E4 for right-bank tank shell removal.
+ $7646 JP $708E      ; }
 
-; Routine at 7649
+; Operate balloon movement and rendering.
 ;
-; Used by the routine at #R$708E.
+; Moves a balloon horizontally, checking for terrain collisions. Balloons
+; bounce off riverbanks by reversing direction.
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition (bit 6 = orientation: 0=right, 1=left)
 @label=operate_baloon
-c$7649 BIT 7,B       ;
- $764B JP NZ,$76AC   ;
- $764E LD A,($5EEF)  ;
- $7651 AND $03       ;
+c$7649 BIT 7,B       ; {If balloon is off-screen (Y bit 7 set), skip to main
+ $764B JP NZ,$76AC   ; loop.}
+ $764E LD A,($5EEF)  ; {Only operate every 4th frame (frame counter AND 3 ==
+ $7651 AND $03       ; 1). Check orientation.
  $7653 CP $01        ;
- $7655 JP NZ,$76AC   ;
+ $7655 JP NZ,$76AC   ; }
  $7658 BIT 6,D       ;
  $765A JP Z,$76AF    ;
- $765D PUSH BC       ;
- $765E LD A,C        ;
+ $765D PUSH BC       ; {Left-facing: Check terrain at (X-16, Y). If collision,
+ $765E LD A,C        ; reverse direction.
  $765F SUB $10       ;
  $7661 LD C,A        ;
  $7662 CALL $8A4E    ;
  $7665 LD A,(HL)     ;
  $7666 POP BC        ;
  $7667 CP $00        ;
- $7669 CALL NZ,$76DA ;
- $766C PUSH BC       ;
- $766D LD A,C        ;
+ $7669 CALL NZ,$76DA ; }
+ $766C PUSH BC       ; {Check terrain at (X-16, Y+8). If collision, reverse
+ $766D LD A,C        ; direction.
  $766E SUB $10       ;
  $7670 LD C,A        ;
  $7671 LD A,B        ;
@@ -6634,24 +6643,24 @@ c$7649 BIT 7,B       ;
  $7678 LD A,(HL)     ;
  $7679 POP BC        ;
  $767A CP $00        ;
- $767C CALL NZ,$76DA ;
- $767F LD ($8B0A),BC ;
+ $767C CALL NZ,$76DA ; }
+ $767F LD ($8B0A),BC ; {Save position, move left by 2 pixels.
  $7683 DEC C         ;
- $7684 DEC C         ;
-; This entry point is used by the routine at #R$76AF.
-*$7685 LD HL,($5F60) ;
- $7688 DEC HL        ;
+ $7684 DEC C         ; }
+; Shared entry point for balloon rendering (also used by right-facing balloon).
+*$7685 LD HL,($5F60) ; {Read object definition from viewport, write updated
+ $7688 DEC HL        ; position back.
  $7689 LD D,(HL)     ;
  $768A DEC HL        ;
  $768B LD (HL),B     ;
  $768C DEC HL        ;
- $768D LD (HL),C     ;
- $768E LD ($8B0C),BC ;
- $7692 LD HL,$8972   ;
- $7695 LD A,($5EEF)  ;
- $7698 AND $03       ;
+ $768D LD (HL),C     ; }
+ $768E LD ($8B0C),BC ; {Store render position and load balloon sprite pointer.
+ $7692 LD HL,$8972   ; }
+ $7695 LD A,($5EEF)  ; {Calculate frame offset from frame counter (unused -
+ $7698 AND $03       ; overwritten below).
  $769A ADD A,$0C     ;
- $769C LD E,A        ;
+ $769C LD E,A        ; }
 @isub=LD A,SPRITE_BALLOON_WIDTH_TILES
  $769D LD A,$02      ;
 @isub=LD BC,SPRITE_BALLOON_FRAME_SIZE
@@ -6660,8 +6669,8 @@ c$7649 BIT 7,B       ;
  $76A2 LD E,$0E      ;
 @isub=LD D,SPRITE_BALLOON_HEIGHT_PIXELS
  $76A4 LD D,$10      ;
- $76A6 CALL $8B1E    ;
- $76A9 JP $708E      ;
+ $76A6 CALL $8B1E    ; {Call #R$8B1E to render balloon, return to main loop.
+ $76A9 JP $708E      ; }
 
 ; A useless procedure that unconcditionally jumps to #R$708E.
 ;
@@ -6669,20 +6678,24 @@ c$7649 BIT 7,B       ;
 @label=jp_operate_viewport_objects
 c$76AC JP $708E      ;
 
-; Routine at 76AF
+; Right-facing balloon movement.
 ;
-; Used by the routine at #R$7649.
-c$76AF PUSH BC       ;
- $76B0 LD A,C        ;
+; Handles terrain collision checks and movement for a right-facing balloon.
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition
+c$76AF PUSH BC       ; {Check terrain at (X+32, Y). If collision, reverse
+ $76B0 LD A,C        ; direction via #R$76DA.
  $76B1 ADD A,$20     ;
  $76B3 LD C,A        ;
  $76B4 CALL $8A4E    ;
  $76B7 LD A,(HL)     ;
  $76B8 POP BC        ;
  $76B9 CP $00        ;
- $76BB CALL NZ,$76DA ;
- $76BE PUSH BC       ;
- $76BF LD A,C        ;
+ $76BB CALL NZ,$76DA ; }
+ $76BE PUSH BC       ; {Check terrain at (X+24, Y+8). If collision, reverse
+ $76BF LD A,C        ; direction.
  $76C0 ADD A,$18     ;
  $76C2 LD C,A        ;
  $76C3 LD A,B        ;
@@ -6692,50 +6705,54 @@ c$76AF PUSH BC       ;
  $76CA LD A,(HL)     ;
  $76CB POP BC        ;
  $76CC CP $00        ;
- $76CE CALL NZ,$76DA ;
- $76D1 LD ($8B0A),BC ;
- $76D5 INC C         ;
+ $76CE CALL NZ,$76DA ; }
+ $76D1 LD ($8B0A),BC ; {Save position, move right by 2 pixels, jump to render
+ $76D5 INC C         ; at #R$7685.
  $76D6 INC C         ;
- $76D7 JP $7685      ;
+ $76D7 JP $7685      ; }
 
-; Routine at 76DA
+; Handle balloon terrain collision.
 ;
-; Used by the routines at #R$7649 and #R$76AF.
-c$76DA LD ($8B0A),BC ;
- $76DE LD A,B        ;
+; Reverses balloon direction when it collides with terrain. Also handles
+; rendering.
+;
+; I:BC Position
+; I:D Object definition
+c$76DA LD ($8B0A),BC ; {Save position. If Y >= 128 (off visible area), return
+ $76DE LD A,B        ; early.
  $76DF SUB $80       ;
- $76E1 RET P         ;
- $76E2 LD BC,($8B0A) ;
+ $76E1 RET P         ; }
+ $76E2 LD BC,($8B0A) ; {Reload position, get object definition from viewport.
  $76E6 POP HL        ;
  $76E7 LD HL,($5F60) ;
  $76EA DEC HL        ;
- $76EB LD D,(HL)     ;
- $76EC LD HL,$8972   ;
+ $76EB LD D,(HL)     ; }
+ $76EC LD HL,$8972   ; {Calculate sprite frame offset from X position bits 1-2.
  $76EF LD BC,($8B0A) ;
  $76F3 LD A,C        ;
  $76F4 AND $06       ;
  $76F6 LD BC,$0020   ;
  $76F9 SRL A         ;
- $76FB INC A         ;
- $76FC OR A          ;
+ $76FB INC A         ; }
+ $76FC OR A          ; {Loop to select correct frame in sprite data.
  $76FD SBC HL,BC     ;
 *$76FF ADD HL,BC     ;
  $7700 DEC A         ;
- $7701 JR NZ,$76FF   ;
- $7703 LD ($8B0E),HL ;
+ $7701 JR NZ,$76FF   ; }
+ $7703 LD ($8B0E),HL ; {Store sprite pointer and render position.
  $7706 LD BC,($8B0A) ;
- $770A LD ($8B0C),BC ;
- $770E LD A,D        ;
+ $770A LD ($8B0C),BC ; }
+ $770E LD A,D        ; {Flip orientation bit and update in viewport array.
  $770F XOR $40       ;
  $7711 LD HL,($5F60) ;
  $7714 DEC HL        ;
- $7715 LD (HL),A     ;
- $7716 LD HL,$8972   ;
- $7719 LD DE,$100D   ;
+ $7715 LD (HL),A     ; }
+ $7716 LD HL,$8972   ; {Load sprite parameters, render balloon with new
+ $7719 LD DE,$100D   ; orientation, return to main loop.
  $771C LD A,$02      ;
  $771E LD BC,$0020   ;
  $7721 CALL $8B3C    ;
- $7724 JP $708E      ;
+ $7724 JP $708E      ; }
 
 ; Unused
 u$7727 DEFB $C3,$90,$EA,$0D,$00,$05,$1F,$00

@@ -5911,86 +5911,93 @@ handle_object_proximity_0:
 
 ; Point viewport_ptr to the head of viewport_objects.
 ;
-; Used by the routine at operate_viewport_objects.
+; Resets the viewport pointer to the beginning of the viewport array.
 init_viewport_ptr:
-  LD HL,viewport_objects
-  LD (viewport_ptr),HL
+  LD HL,viewport_objects               ; Set viewport_ptr to start of viewport array.
+  LD (viewport_ptr),HL                 ;
   RET
 
-; Routine at 762E
+; Remove an object from the viewport array.
 ;
-; Used by the routine at operate_viewport_objects.
+; Clears the object's slot marker and handles tank shell cleanup if the object was a tank.
+;
+; I:HL Pointer to object's Y position in viewport array
+; I:D Object definition byte
 remove_object_from_viewport:
-  DEC HL
-  LD (HL),SET_MARKER_EMPTY_SLOT
-  LD A,D
-  AND SLOT_MASK_OBJECT_TYPE
-  CP OBJECT_TANK
+  DEC HL                               ; Decrement to definition byte and mark slot as empty.
+  LD (HL),SET_MARKER_EMPTY_SLOT        ;
+  LD A,D                               ; Extract object type. If not OBJECT_TANK, continue main loop.
+  AND SLOT_MASK_OBJECT_TYPE            ;
+  CP OBJECT_TANK                       ;
   JP NZ,operate_viewport_objects
-  LD A,TANK_SHELL_INACTIVE
-  LD (state_tank_shell),A
-  BIT SLOT_BIT_TANK_ON_BANK,D
-  JP Z,operate_viewport_objects
-  CALL remove_tank_shell
-  JP operate_viewport_objects
+  LD A,TANK_SHELL_INACTIVE             ; Mark tank shell as inactive.
+  LD (state_tank_shell),A              ;
+  BIT SLOT_BIT_TANK_ON_BANK,D          ; Check if tank was on right bank.
+  JP Z,operate_viewport_objects        ;
+  CALL remove_tank_shell               ; If so, call remove_tank_shell for right-bank tank shell removal.
+  JP operate_viewport_objects          ;
 
-; Routine at 7649
+; Operate balloon movement and rendering.
 ;
-; Used by the routine at operate_viewport_objects.
+; Moves a balloon horizontally, checking for terrain collisions. Balloons bounce off riverbanks by reversing direction.
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition (bit 6 = orientation: 0=right, 1=left)
 operate_baloon:
-  BIT 7,B
-  JP NZ,jp_operate_viewport_objects
-  LD A,(state_metronome)
-  AND $03
-  CP $01
-  JP NZ,jp_operate_viewport_objects
+  BIT 7,B                              ; If balloon is off-screen (Y bit 7 set), skip to main loop.
+  JP NZ,jp_operate_viewport_objects    ;
+  LD A,(state_metronome)               ; Only operate every 4th frame (frame counter AND 3 == 1). Check orientation.
+  AND $03                              ;
+  CP $01                               ;
+  JP NZ,jp_operate_viewport_objects    ;
   BIT 6,D
   JP Z,L76AF
-  PUSH BC
-  LD A,C
-  SUB $10
-  LD C,A
-  CALL calculate_pixel_address
-  LD A,(HL)
-  POP BC
-  CP $00
-  CALL NZ,L76DA
-  PUSH BC
-  LD A,C
-  SUB $10
-  LD C,A
-  LD A,B
-  ADD A,$08
-  LD B,A
-  CALL calculate_pixel_address
-  LD A,(HL)
-  POP BC
-  CP $00
-  CALL NZ,L76DA
-  LD (previous_object_coordinates),BC
-  DEC C
-  DEC C
-; This entry point is used by the routine at L76AF.
+  PUSH BC                              ; Left-facing: Check terrain at (X-16, Y). If collision, reverse direction.
+  LD A,C                               ;
+  SUB $10                              ;
+  LD C,A                               ;
+  CALL calculate_pixel_address         ;
+  LD A,(HL)                            ;
+  POP BC                               ;
+  CP $00                               ;
+  CALL NZ,L76DA                        ;
+  PUSH BC                              ; Check terrain at (X-16, Y+8). If collision, reverse direction.
+  LD A,C                               ;
+  SUB $10                              ;
+  LD C,A                               ;
+  LD A,B                               ;
+  ADD A,$08                            ;
+  LD B,A                               ;
+  CALL calculate_pixel_address         ;
+  LD A,(HL)                            ;
+  POP BC                               ;
+  CP $00                               ;
+  CALL NZ,L76DA                        ;
+  LD (previous_object_coordinates),BC  ; Save position, move left by 2 pixels.
+  DEC C                                ;
+  DEC C                                ;
+; Shared entry point for balloon rendering (also used by right-facing balloon).
 operate_baloon_0:
-  LD HL,(viewport_ptr)
-  DEC HL
-  LD D,(HL)
-  DEC HL
-  LD (HL),B
-  DEC HL
-  LD (HL),C
-  LD (object_coordinates),BC
-  LD HL,sprite_balloon
-  LD A,(state_metronome)
-  AND $03
-  ADD A,$0C
-  LD E,A
+  LD HL,(viewport_ptr)                 ; Read object definition from viewport, write updated position back.
+  DEC HL                               ;
+  LD D,(HL)                            ;
+  DEC HL                               ;
+  LD (HL),B                            ;
+  DEC HL                               ;
+  LD (HL),C                            ;
+  LD (object_coordinates),BC           ; Store render position and load balloon sprite pointer.
+  LD HL,sprite_balloon                 ;
+  LD A,(state_metronome)               ; Calculate frame offset from frame counter (unused - overwritten below).
+  AND $03                              ;
+  ADD A,$0C                            ;
+  LD E,A                               ;
   LD A,SPRITE_BALLOON_WIDTH_TILES
   LD BC,SPRITE_BALLOON_FRAME_SIZE
   LD E,SPRITE_BALLOON_ATTRIBUTES
   LD D,SPRITE_BALLOON_HEIGHT_PIXELS
-  CALL render_sprite
-  JP operate_viewport_objects
+  CALL render_sprite                   ; Call render_sprite to render balloon, return to main loop.
+  JP operate_viewport_objects          ;
 
 ; A useless procedure that unconcditionally jumps to operate_viewport_objects.
 ;
@@ -5998,76 +6005,83 @@ operate_baloon_0:
 jp_operate_viewport_objects:
   JP operate_viewport_objects
 
-; Routine at 76AF
+; Right-facing balloon movement.
 ;
-; Used by the routine at operate_baloon.
+; Handles terrain collision checks and movement for a right-facing balloon.
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition
 L76AF:
-  PUSH BC
-  LD A,C
-  ADD A,$20
-  LD C,A
-  CALL calculate_pixel_address
-  LD A,(HL)
-  POP BC
-  CP $00
-  CALL NZ,L76DA
-  PUSH BC
-  LD A,C
-  ADD A,$18
-  LD C,A
-  LD A,B
-  ADD A,$08
-  LD B,A
-  CALL calculate_pixel_address
-  LD A,(HL)
-  POP BC
-  CP $00
-  CALL NZ,L76DA
-  LD (previous_object_coordinates),BC
-  INC C
-  INC C
-  JP operate_baloon_0
+  PUSH BC                              ; Check terrain at (X+32, Y). If collision, reverse direction via L76DA.
+  LD A,C                               ;
+  ADD A,$20                            ;
+  LD C,A                               ;
+  CALL calculate_pixel_address         ;
+  LD A,(HL)                            ;
+  POP BC                               ;
+  CP $00                               ;
+  CALL NZ,L76DA                        ;
+  PUSH BC                              ; Check terrain at (X+24, Y+8). If collision, reverse direction.
+  LD A,C                               ;
+  ADD A,$18                            ;
+  LD C,A                               ;
+  LD A,B                               ;
+  ADD A,$08                            ;
+  LD B,A                               ;
+  CALL calculate_pixel_address         ;
+  LD A,(HL)                            ;
+  POP BC                               ;
+  CP $00                               ;
+  CALL NZ,L76DA                        ;
+  LD (previous_object_coordinates),BC  ; Save position, move right by 2 pixels, jump to render at operate_baloon_0.
+  INC C                                ;
+  INC C                                ;
+  JP operate_baloon_0                  ;
 
-; Routine at 76DA
+; Handle balloon terrain collision.
 ;
-; Used by the routines at operate_baloon and L76AF.
+; Reverses balloon direction when it collides with terrain. Also handles rendering.
+;
+; I:BC Position
+; I:D Object definition
 L76DA:
-  LD (previous_object_coordinates),BC
-  LD A,B
-  SUB $80
-  RET P
-  LD BC,(previous_object_coordinates)
-  POP HL
-  LD HL,(viewport_ptr)
-  DEC HL
-  LD D,(HL)
-  LD HL,sprite_balloon
-  LD BC,(previous_object_coordinates)
-  LD A,C
-  AND $06
-  LD BC,$0020
-  SRL A
-  INC A
-  OR A
-  SBC HL,BC
+  LD (previous_object_coordinates),BC  ; Save position. If Y >= 128 (off visible area), return early.
+  LD A,B                               ;
+  SUB $80                              ;
+  RET P                                ;
+  LD BC,(previous_object_coordinates)  ; Reload position, get object definition from viewport.
+  POP HL                               ;
+  LD HL,(viewport_ptr)                 ;
+  DEC HL                               ;
+  LD D,(HL)                            ;
+  LD HL,sprite_balloon                 ; Calculate sprite frame offset from X position bits 1-2.
+  LD BC,(previous_object_coordinates)  ;
+  LD A,C                               ;
+  AND $06                              ;
+  LD BC,$0020                          ;
+  SRL A                                ;
+  INC A                                ;
+  OR A                                 ; Loop to select correct frame in sprite data.
+  SBC HL,BC                            ;
 L76DA_0:
-  ADD HL,BC
-  DEC A
-  JR NZ,L76DA_0
-  LD (render_sprite_ptr),HL
-  LD BC,(previous_object_coordinates)
-  LD (object_coordinates),BC
-  LD A,D
-  XOR $40
-  LD HL,(viewport_ptr)
-  DEC HL
-  LD (HL),A
-  LD HL,sprite_balloon
-  LD DE,$100D
-  LD A,$02
-  LD BC,$0020
-  CALL render_object
-  JP operate_viewport_objects
+  ADD HL,BC                            ;
+  DEC A                                ;
+  JR NZ,L76DA_0                        ;
+  LD (render_sprite_ptr),HL            ; Store sprite pointer and render position.
+  LD BC,(previous_object_coordinates)  ;
+  LD (object_coordinates),BC           ;
+  LD A,D                               ; Flip orientation bit and update in viewport array.
+  XOR $40                              ;
+  LD HL,(viewport_ptr)                 ;
+  DEC HL                               ;
+  LD (HL),A                            ;
+  LD HL,sprite_balloon                 ; Load sprite parameters, render balloon with new orientation, return to main
+  LD DE,$100D                          ; loop.
+  LD A,$02                             ;
+  LD BC,$0020                          ;
+  CALL render_object                   ;
+  JP operate_viewport_objects          ;
 
 ; Unused
 L7727:

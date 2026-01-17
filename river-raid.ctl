@@ -2566,23 +2566,64 @@ R $75D0 I:BC Object coordinates
 @ $761E isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
 @ $7627 label=init_viewport_ptr
 c $7627 Point #R$5F60 to the head of #R$5F00.
+D $7627 Resets the viewport pointer to the beginning of the viewport array.
+  $7627,6 Set viewport_ptr to start of viewport array.
 @ $762E label=remove_object_from_viewport
-c $762E
+c $762E Remove an object from the viewport array.
+D $762E Clears the object's slot marker and handles tank shell cleanup if the object was a tank.
+R $762E I:HL Pointer to object's Y position in viewport array
+R $762E I:D Object definition byte
+  $762E Decrement to definition byte and mark slot as empty.
 @ $762F isub=LD (HL),SET_MARKER_EMPTY_SLOT
+  $7631,5 Extract object type. If not OBJECT_TANK, continue main loop.
 @ $7632 isub=AND SLOT_MASK_OBJECT_TYPE
 @ $7634 isub=CP OBJECT_TANK
+  $7639 Mark tank shell as inactive.
 @ $7639 isub=LD A,TANK_SHELL_INACTIVE
+  $763E Check if tank was on right bank.
 @ $763E isub=BIT SLOT_BIT_TANK_ON_BANK,D
+  $7643 If so, call #R$74E4 for right-bank tank shell removal.
 @ $7649 label=operate_baloon
-c $7649
+c $7649 Operate balloon movement and rendering.
+D $7649 Moves a balloon horizontally, checking for terrain collisions. Balloons bounce off riverbanks by reversing direction.
+R $7649 I:B Y position
+R $7649 I:C X position
+R $7649 I:D Object definition (bit 6 = orientation: 0=right, 1=left)
+  $7649 If balloon is off-screen (Y bit 7 set), skip to main loop.
+  $764E,10 Only operate every 4th frame (frame counter AND 3 == 1). Check orientation.
+  $765D Left-facing: Check terrain at (X-16, Y). If collision, reverse direction.
+  $766C Check terrain at (X-16, Y+8). If collision, reverse direction.
+  $767F Save position, move left by 2 pixels.
+N $7685 Shared entry point for balloon rendering (also used by right-facing balloon).
+  $7685 Read object definition from viewport, write updated position back.
+  $768E Store render position and load balloon sprite pointer.
+  $7695,8 Calculate frame offset from frame counter (unused - overwritten below).
 @ $769D isub=LD A,SPRITE_BALLOON_WIDTH_TILES
 @ $769F isub=LD BC,SPRITE_BALLOON_FRAME_SIZE
 @ $76A2 isub=LD E,SPRITE_BALLOON_ATTRIBUTES
 @ $76A4 isub=LD D,SPRITE_BALLOON_HEIGHT_PIXELS
+  $76A6,6 Call #R$8B1E to render balloon, return to main loop.
 @ $76AC label=jp_operate_viewport_objects
 c $76AC A useless procedure that unconcditionally jumps to #R$708E.
-c $76AF
-c $76DA
+c $76AF Right-facing balloon movement.
+D $76AF Handles terrain collision checks and movement for a right-facing balloon.
+R $76AF I:B Y position
+R $76AF I:C X position
+R $76AF I:D Object definition
+  $76AF Check terrain at (X+32, Y). If collision, reverse direction via #R$76DA.
+  $76BE Check terrain at (X+24, Y+8). If collision, reverse direction.
+  $76D1 Save position, move right by 2 pixels, jump to render at #R$7685.
+c $76DA Handle balloon terrain collision.
+D $76DA Reverses balloon direction when it collides with terrain. Also handles rendering.
+R $76DA I:BC Position
+R $76DA I:D Object definition
+  $76DA Save position. If Y >= 128 (off visible area), return early.
+  $76E2 Reload position, get object definition from viewport.
+  $76EC Calculate sprite frame offset from X position bits 1-2.
+  $76FC Loop to select correct frame in sprite data.
+  $7703 Store sprite pointer and render position.
+  $770E Flip orientation bit and update in viewport array.
+  $7716,17 Load sprite parameters, render balloon with new orientation, return to main loop.
 u $7727
 @ $7800 label=tmp_control_type
 b $7800 Control type chosen from the dialog before the validation
