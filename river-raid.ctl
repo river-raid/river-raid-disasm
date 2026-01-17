@@ -2634,9 +2634,12 @@ b $7801 Overview mode flag ($00 - No, $01 - Yes)
 @ $7802 label=controls_timer
 w $7802 Stores the number of remaining iterations before the control choice dialog switches to overview mode
 @ $7804 label=clear_and_setup
-c $7804
+c $7804 Clear screen and enter setup menu.
+D $7804 Saves stack pointer, clears screen with white-on-black attributes, then jumps to setup routine.
+  $7804 Save current stack pointer to #R$7810.
 @ $7808 isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
-C $7808,2 PAPER BLACK; INK WHITE
+  $7808 Clear screen with white-on-black attributes.
+  $780D,3 Jump to #R$7AB9 (setup routine).
 @ $7810 label=setup_sp
 w $7810 Temporary stack pointer used by the control choice dialog
 @ $7812 label=msg_keyboard_config

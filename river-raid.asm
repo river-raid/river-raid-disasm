@@ -6126,14 +6126,14 @@ state_overview_mode:
 controls_timer:
   DEFW $0000
 
-; Routine at 7804
+; Clear screen and enter setup menu.
 ;
-; Used by the routine at return_to_control_selection.
+; Saves stack pointer, clears screen with white-on-black attributes, then jumps to setup routine.
 clear_and_setup:
-  LD (setup_sp),SP
-  LD D,COLOR_BLACK<<3|COLOR_WHITE      ; PAPER BLACK; INK WHITE
-  CALL clear_screen
-  JP setup
+  LD (setup_sp),SP                     ; Save current stack pointer to setup_sp.
+  LD D,COLOR_BLACK<<3|COLOR_WHITE      ; Clear screen with white-on-black attributes.
+  CALL clear_screen                    ;
+  JP setup                             ; Jump to setup (setup routine).
 
 ; Temporary stack pointer used by the control choice dialog
 setup_sp:

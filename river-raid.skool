@@ -6798,15 +6798,16 @@ b$7801 DEFB $00
 @label=controls_timer
 w$7802 DEFW $0000
 
-; Routine at 7804
+; Clear screen and enter setup menu.
 ;
-; Used by the routine at #R$5D06.
+; Saves stack pointer, clears screen with white-on-black attributes, then jumps
+; to setup routine.
 @label=clear_and_setup
-c$7804 LD ($7810),SP ;
+c$7804 LD ($7810),SP ; Save current stack pointer to #R$7810.
 @isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
- $7808 LD D,$07      ; PAPER BLACK; INK WHITE
- $780A CALL $940A    ;
- $780D JP $7AB9      ;
+ $7808 LD D,$07      ; {Clear screen with white-on-black attributes.
+ $780A CALL $940A    ; }
+ $780D JP $7AB9      ; Jump to #R$7AB9 (setup routine).
 
 ; Temporary stack pointer used by the control choice dialog
 @label=setup_sp
