@@ -4791,24 +4791,30 @@ render_fuel:
 
 ; Render balloon
 ;
-; Used by the routine at render_enemy.
+; Renders a balloon enemy sprite at the specified X position. Balloons are 2-tile wide animated objects that float above
+; the river. Unlike other enemies, balloons disable collision detection during rendering.
 ;
-; I:E X position
+; * Disables collision mode via state_collision_mode (allows plane to pass through during render)
+; * Animated sprite with $20 byte frames at sprite_balloon
+; * Dimensions: 2 tiles wide (16px) × 16 pixels tall
+; * Attributes: $0E (PAPER BLACK, INK YELLOW, BRIGHT)
+;
+; I:E X position of balloon
 render_balloon:
-  LD B,$00
-  LD C,E
-  LD HL,sprite_balloon
-  LD A,COLLISION_MODE_NONE
-  LD (state_collision_mode),A
-  PUSH HL
-  LD HL,viewport_objects
-  CALL add_object_to_set
-  POP HL
-  CALL setup_object_position
-  LD BC,SPRITE_BALLOON_FRAME_SIZE
-  LD A,SPRITE_BALLOON_WIDTH_TILES
-  LD DE,SPRITE_BALLOON_HEIGHT_PIXELS<<8|SPRITE_BALLOON_ATTRIBUTES
-  CALL render_sprite
+  LD B,$00                             ; BC = (0, E): set X position in BC for object entry.
+  LD C,E                               ;
+  LD HL,sprite_balloon                 ; Load balloon sprite sprite_balloon, set COLLISION_MODE_NONE to
+  LD A,COLLISION_MODE_NONE             ; state_collision_mode.
+  LD (state_collision_mode),A          ;
+  PUSH HL                              ; Push sprite addr, add balloon to viewport_objects objects set, pop and call
+  LD HL,viewport_objects               ; setup_object_position.
+  CALL add_object_to_set               ;
+  POP HL                               ;
+  CALL setup_object_position           ;
+  LD BC,SPRITE_BALLOON_FRAME_SIZE                                 ; Set sprite parameters: frame size=$20, width=2,
+  LD A,SPRITE_BALLOON_WIDTH_TILES                                 ; height=16px, attributes=$0E. Render via
+  LD DE,SPRITE_BALLOON_HEIGHT_PIXELS<<8|SPRITE_BALLOON_ATTRIBUTES ; render_sprite.
+  CALL render_sprite                                              ;
   RET
 
 ; Main viewport object processing loop.

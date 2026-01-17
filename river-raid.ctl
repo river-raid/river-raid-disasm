@@ -2024,9 +2024,15 @@ R $7051 I:E X position of fuel station
   $7068,3 Render fuel station sprite via #R$8B1E.
 @ $706C label=render_balloon
 c $706C Render balloon
-R $706C I:E X position
+D $706C Renders a balloon enemy sprite at the specified X position. Balloons are 2-tile wide animated objects that float above the river. Unlike other enemies, balloons disable collision detection during rendering.
+D $706C #LIST { Disables collision mode via #R$5EF5 (allows plane to pass through during render) } { Animated sprite with $20 byte frames at #R$8972 } { Dimensions: 2 tiles wide (16px) × 16 pixels tall } { Attributes: $0E (PAPER BLACK, INK YELLOW, BRIGHT) } LIST#
+R $706C I:E X position of balloon
+  $706C BC = (0, E): set X position in BC for object entry.
+  $706F Load balloon sprite #R$8972, set COLLISION_MODE_NONE to #R$5EF5.
 @ $7072 isub=LD A,COLLISION_MODE_NONE
+  $7077 Push sprite addr, add balloon to #R$5F00 objects set, pop and call #R$6FEA.
 @ $7082 isub=LD BC,SPRITE_BALLOON_FRAME_SIZE
+  $7082,11 Set sprite parameters: frame size=$20, width=2, height=16px, attributes=$0E. Render via #R$8B1E.
 @ $7085 isub=LD A,SPRITE_BALLOON_WIDTH_TILES
 @ $7087 isub=LD DE,SPRITE_BALLOON_HEIGHT_PIXELS<<8|SPRITE_BALLOON_ATTRIBUTES
 @ $708E label=operate_viewport_objects

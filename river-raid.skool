@@ -5294,28 +5294,38 @@ c$7051 LD B,$00      ; {BC = (0, E): set X position in BC for object entry.
 
 ; Render balloon
 ;
-; Used by the routine at #R$6FF6.
+; Renders a balloon enemy sprite at the specified X position. Balloons are
+; 2-tile wide animated objects that float above the river. Unlike other
+; enemies, balloons disable collision detection during rendering.
+; .
+; #LIST
+; { Disables collision mode via #R$5EF5 (allows plane to pass through during
+; render) }
+; { Animated sprite with $20 byte frames at #R$8972 }
+; { Dimensions: 2 tiles wide (16px) × 16 pixels tall }
+; { Attributes: $0E (PAPER BLACK, INK YELLOW, BRIGHT) }
+; LIST#
 ;
-; I:E X position
+; I:E X position of balloon
 @label=render_balloon
-c$706C LD B,$00      ;
- $706E LD C,E        ;
- $706F LD HL,$8972   ;
+c$706C LD B,$00      ; {BC = (0, E): set X position in BC for object entry.
+ $706E LD C,E        ; }
+ $706F LD HL,$8972   ; {Load balloon sprite #R$8972, set COLLISION_MODE_NONE to
 @isub=LD A,COLLISION_MODE_NONE
- $7072 LD A,$00      ;
- $7074 LD ($5EF5),A  ;
- $7077 PUSH HL       ;
- $7078 LD HL,$5F00   ;
+ $7072 LD A,$00      ; #R$5EF5.
+ $7074 LD ($5EF5),A  ; }
+ $7077 PUSH HL       ; {Push sprite addr, add balloon to #R$5F00 objects set,
+ $7078 LD HL,$5F00   ; pop and call #R$6FEA.
  $707B CALL $6EAB    ;
  $707E POP HL        ;
- $707F CALL $6FEA    ;
+ $707F CALL $6FEA    ; }
 @isub=LD BC,SPRITE_BALLOON_FRAME_SIZE
- $7082 LD BC,$0020   ;
+ $7082 LD BC,$0020   ; {Set sprite parameters: frame size=$20, width=2,
 @isub=LD A,SPRITE_BALLOON_WIDTH_TILES
- $7085 LD A,$02      ;
+ $7085 LD A,$02      ; height=16px, attributes=$0E. Render via #R$8B1E.
 @isub=LD DE,SPRITE_BALLOON_HEIGHT_PIXELS<<8|SPRITE_BALLOON_ATTRIBUTES
  $7087 LD DE,$100E   ;
- $708A CALL $8B1E    ;
+ $708A CALL $8B1E    ; }
  $708D RET           ;
 
 ; Main viewport object processing loop.
