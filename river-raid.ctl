@@ -2311,32 +2311,67 @@ D $72EF Patches sprite renderer to use OR for both mask and sprite operations. R
 @ $72F4 nowarn
   $72F4,3 Patch OR B into #R$8C3C.
 @ $72F8 label=invert_tank_offset_delta
-c $72F8 Decreases the value of XYZ stored in #REGc by $20. Called if the tank is oriented left in order to compensate for the previous operation of adding $10.
-R $72F8 I:C Previous value of XYZ.
-R $72F8 O:C New value of XYZ.
-c $72FD
+c $72F8 Adjust tank position for left orientation
+D $72F8 Subtracts $20 from X position to compensate for right-bias offset. Called for left-facing tanks on bank.
+R $72F8 I:C X position + $10 offset
+R $72F8 O:C Corrected X position
+  $72F8,4 C = C - $20.
+@ $72FD label=add_tank_offset_delta
+c $72FD Adjust tank position for right orientation
+D $72FD Adds $28 to X position for right-facing tank shell spawn point.
+R $72FD I:C X position
+R $72FD O:C X position + $28
+  $72FD,4 C = C + $28.
 @ $7302 label=operate_tank_on_bank
-c $7302
-R $7302 I:D OBJECT_DEFINITION
+c $7302 Operate tank on river bank
+D $7302 Handles tanks positioned on the river bank. These tanks check terrain ahead and fire shells when path is clear. The shell trajectory depends on tank orientation and uses pseudo-random speed.
+R $7302 I:B Y position (on stack)
+R $7302 I:C X position (on stack)
+R $7302 I:D Object definition byte
+  $7302,7 Load stored position, add $10 offset to X.
 @ $730A isub=BIT SLOT_BIT_ORIENTATION,D
+  $730A If left-facing, adjust offset via #R$72F8.
+  $730F Call #R$8A4E for terrain check. If terrain == $FF, move tank normally.
+  $7317 Pop BC/DE, jump to #R$72B5 if terrain clear.
+  $731A,5 Check shell state: if already flying, return to main loop.
 @ $731D isub=BIT TANK_SHELL_BIT_FLYING,A
 @ $7322 isub=BIT TANK_SHELL_BIT_EXPLODING,A
+  $7322 If shell exploding, return to main loop.
 @ $7327 isub=CP TANK_SHELL_STATE_UNITIALIZED
+  $7327 If shell uninitialized, initialize via #R$7343.
 @ $732C isub=RES TANK_SHELL_BIT_EXPLODING,A
+  $732C Clear exploding bit, set flying bit.
 @ $732E isub=SET TANK_SHELL_BIT_FLYING,A
+  $7330,6 Store shell state, calculate spawn X position.
 @ $7337 isub=BIT SLOT_BIT_ORIENTATION,D
+  $7337,9 If right-facing, add offset via #R$72FD. Store shell coordinates.
 @ $7343 label=init_tank_shell_state
-c $7343 Initialize tank shell state.
-R $7343 I:D OBJECT_DEFINITION
-R $7343 O:A Shell state with the speed and orientation bits initialized.
-  $7348 Copy the orientation bit from the object definition to the shell state.
+c $7343 Initialize tank shell state
+D $7343 Sets up shell with orientation from tank and pseudo-random speed from interrupt counter.
+R $7343 I:D Object definition byte (bit 6 = orientation)
+R $7343 O:A Shell state with orientation and speed bits
+  $7343 If bit 4 set, use alternate initialization via #R$735E.
+  $7348 Copy orientation bit from object definition to shell state.
 @ $7349 isub=AND 1<<SLOT_BIT_ORIENTATION
-  $734C,5 Derive the speed from the interrupt counter (sort of a PRNG).
-  $7353,1 Make sure the speed is never zero.
-c $7358
-c $735E
+  $734C Derive speed from interrupt counter (pseudo-random 1-4).
+  $7351 Store in E, load D into A.
+  $7353 Ensure speed >= 1, combine with orientation, continue to fire shell.
+@ $7358 label=cancel_and_remove_shell
+c $7358 Cancel and remove tank shell
+D $7358 Removes the tank shell via #R$74E4 and returns to main loop.
+  $7358 Call #R$74E4 to remove shell, return to main loop.
+@ $735E label=check_shell_init_condition
+c $735E Check shell initialization condition
+D $735E Alternative shell initialization when bit 4 is set. Checks if tank can fire based on shell active state and position.
+  $735E If TANK_SHELL_ACTIVE, cancel shell via #R$7358.
 @ $7361 isub=CP TANK_SHELL_ACTIVE
-c $7380
+  $7366 Push BC, check X position sign bit, invert if positive via #R$7380.
+  $7373 Shift right 4 times to get upper nibble.
+  $737B Combine with orientation, pop BC, continue to fire shell.
+@ $7380 label=invert_coordinate_sign
+c $7380 Invert coordinate for position calculation
+D $7380 XORs A with $7F to flip coordinate sign for shell trajectory.
+  $7380,2 A = A XOR $7F.
 @ $7383 label=tank_shell_state
 g $7383
 @ $7384 label=tank_shell_trajectory_step

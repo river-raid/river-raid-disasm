@@ -5904,126 +5904,138 @@ c$72EF LD A,$B0      ; Load OR B opcode ($B0).
  $72F4 LD ($8C3C),A  ; Patch OR B into #R$8C3C.
  $72F7 RET           ;
 
-; Decreases the value of XYZ stored in #REGc by $20. Called if the tank is
-; oriented left in order to compensate for the previous operation of adding
-; $10.
+; Adjust tank position for left orientation
 ;
-; Used by the routine at #R$7302.
+; Subtracts $20 from X position to compensate for right-bias offset. Called for
+; left-facing tanks on bank.
 ;
-; I:C Previous value of XYZ.
-; O:C New value of XYZ.
+; I:C X position + $10 offset
+; O:C Corrected X position
 @label=invert_tank_offset_delta
-c$72F8 LD A,C        ;
+c$72F8 LD A,C        ; {C = C - $20.
  $72F9 SUB $20       ;
- $72FB LD C,A        ;
+ $72FB LD C,A        ; }
  $72FC RET           ;
 
-; Routine at 72FD
+; Adjust tank position for right orientation
 ;
-; Used by the routine at #R$7302.
-c$72FD LD A,C        ;
+; Adds $28 to X position for right-facing tank shell spawn point.
+;
+; I:C X position
+; O:C X position + $28
+@label=add_tank_offset_delta
+c$72FD LD A,C        ; {C = C + $28.
  $72FE ADD A,$28     ;
- $7300 LD C,A        ;
+ $7300 LD C,A        ; }
  $7301 RET           ;
 
-; Routine at 7302
+; Operate tank on river bank
 ;
-; Used by the routine at #R$7296.
+; Handles tanks positioned on the river bank. These tanks check terrain ahead
+; and fire shells when path is clear. The shell trajectory depends on tank
+; orientation and uses pseudo-random speed.
 ;
-; I:D OBJECT_DEFINITION
+; I:B Y position (on stack)
+; I:C X position (on stack)
+; I:D Object definition byte
 @label=operate_tank_on_bank
-c$7302 LD BC,($8B0A) ;
+c$7302 LD BC,($8B0A) ; {Load stored position, add $10 offset to X.
  $7306 LD A,C        ;
- $7307 ADD A,$10     ;
+ $7307 ADD A,$10     ; }
  $7309 LD C,A        ;
 @isub=BIT SLOT_BIT_ORIENTATION,D
- $730A BIT 6,D       ;
- $730C CALL NZ,$72F8 ;
- $730F CALL $8A4E    ;
- $7312 LD A,(HL)     ;
+ $730A BIT 6,D       ; {If left-facing, adjust offset via #R$72F8.
+ $730C CALL NZ,$72F8 ; }
+ $730F CALL $8A4E    ; {Call #R$8A4E for terrain check. If terrain == $FF, move
+ $7312 LD A,(HL)     ; tank normally.
  $7313 CP $FF        ;
  $7315 POP BC        ;
- $7316 POP DE        ;
- $7317 JP Z,$72B5    ;
- $731A LD A,($7383)  ;
+ $7316 POP DE        ; }
+ $7317 JP Z,$72B5    ; Pop BC/DE, jump to #R$72B5 if terrain clear.
+ $731A LD A,($7383)  ; {Check shell state: if already flying, return to main
 @isub=BIT TANK_SHELL_BIT_FLYING,A
- $731D BIT 7,A       ;
+ $731D BIT 7,A       ; loop.}
  $731F JP NZ,$708E   ;
 @isub=BIT TANK_SHELL_BIT_EXPLODING,A
- $7322 BIT 5,A       ;
- $7324 JP NZ,$708E   ;
+ $7322 BIT 5,A       ; {If shell exploding, return to main loop.
+ $7324 JP NZ,$708E   ; }
 @isub=CP TANK_SHELL_STATE_UNITIALIZED
- $7327 CP $00        ;
- $7329 JP Z,$7343    ;
+ $7327 CP $00        ; {If shell uninitialized, initialize via #R$7343.
+ $7329 JP Z,$7343    ; }
 @isub=RES TANK_SHELL_BIT_EXPLODING,A
- $732C RES 5,A       ;
+ $732C RES 5,A       ; {Clear exploding bit, set flying bit.
 ; This entry point is used by the routines at #R$7343 and #R$735E.
 @isub=SET TANK_SHELL_BIT_FLYING,A
-*$732E SET 7,A       ;
- $7330 LD ($7383),A  ;
+*$732E SET 7,A       ; }
+ $7330 LD ($7383),A  ; {Store shell state, calculate spawn X position.
  $7333 LD A,C        ;
- $7334 SUB $10       ;
+ $7334 SUB $10       ; }
  $7336 LD C,A        ;
 @isub=BIT SLOT_BIT_ORIENTATION,D
- $7337 BIT 6,D       ;
- $7339 CALL Z,$72FD  ;
- $733C LD ($7385),BC ;
+ $7337 BIT 6,D       ; {If right-facing, add offset via #R$72FD. Store shell
+ $7339 CALL Z,$72FD  ; coordinates.
+ $733C LD ($7385),BC ; }
  $7340 JP $708E      ;
 
-; Initialize tank shell state.
+; Initialize tank shell state
 ;
-; Used by the routine at #R$7302.
+; Sets up shell with orientation from tank and pseudo-random speed from
+; interrupt counter.
 ;
-; I:D OBJECT_DEFINITION
-; O:A Shell state with the speed and orientation bits initialized.
+; I:D Object definition byte (bit 6 = orientation)
+; O:A Shell state with orientation and speed bits
 @label=init_tank_shell_state
-c$7343 BIT 4,D       ;
- $7345 JP NZ,$735E   ;
- $7348 LD A,D        ; {Copy the orientation bit from the object definition to
+c$7343 BIT 4,D       ; {If bit 4 set, use alternate initialization via #R$735E.
+ $7345 JP NZ,$735E   ; }
+ $7348 LD A,D        ; {Copy orientation bit from object definition to shell
 @isub=AND 1<<SLOT_BIT_ORIENTATION
- $7349 AND $40       ; the shell state.
+ $7349 AND $40       ; state.
  $734B LD D,A        ; }
- $734C LD A,($5C78)  ; {Derive the speed from the interrupt counter (sort of a
- $734F AND $03       ; PRNG).}
- $7351 LD E,A        ;
- $7352 LD A,D        ;
- $7353 INC E         ; Make sure the speed is never zero.
- $7354 ADD A,E       ;
- $7355 JP $732E      ;
+ $734C LD A,($5C78)  ; {Derive speed from interrupt counter (pseudo-random
+ $734F AND $03       ; 1-4).}
+ $7351 LD E,A        ; {Store in E, load D into A.
+ $7352 LD A,D        ; }
+ $7353 INC E         ; {Ensure speed >= 1, combine with orientation, continue
+ $7354 ADD A,E       ; to fire shell.
+ $7355 JP $732E      ; }
 
-; Routine at 7358
+; Cancel and remove tank shell
 ;
-; Used by the routine at #R$735E.
-c$7358 CALL $74E4    ;
- $735B JP $708E      ;
+; Removes the tank shell via #R$74E4 and returns to main loop.
+@label=cancel_and_remove_shell
+c$7358 CALL $74E4    ; {Call #R$74E4 to remove shell, return to main loop.
+ $735B JP $708E      ; }
 
-; Routine at 735E
+; Check shell initialization condition
 ;
-; Used by the routine at #R$7343.
-c$735E LD A,($5EF2)  ;
+; Alternative shell initialization when bit 4 is set. Checks if tank can fire
+; based on shell active state and position.
+@label=check_shell_init_condition
+c$735E LD A,($5EF2)  ; {If TANK_SHELL_ACTIVE, cancel shell via #R$7358.
 @isub=CP TANK_SHELL_ACTIVE
  $7361 CP $01        ;
- $7363 JP Z,$7358    ;
- $7366 PUSH BC       ;
- $7367 LD A,C        ;
+ $7363 JP Z,$7358    ; }
+ $7366 PUSH BC       ; {Push BC, check X position sign bit, invert if positive
+ $7367 LD A,C        ; via #R$7380.
  $7368 BIT 7,A       ;
  $736A CALL Z,$7380  ;
  $736D RES 7,A       ;
  $736F SRL A         ;
- $7371 SRL A         ;
- $7373 SRL A         ;
+ $7371 SRL A         ; }
+ $7373 SRL A         ; {Shift right 4 times to get upper nibble.
  $7375 SRL A         ;
  $7377 LD B,A        ;
  $7378 LD A,D        ;
- $7379 AND $40       ;
- $737B ADD A,B       ;
- $737C POP BC        ;
- $737D JP $732E      ;
+ $7379 AND $40       ; }
+ $737B ADD A,B       ; {Combine with orientation, pop BC, continue to fire
+ $737C POP BC        ; shell.
+ $737D JP $732E      ; }
 
-; Routine at 7380
+; Invert coordinate for position calculation
 ;
-; Used by the routine at #R$735E.
-c$7380 XOR $7F       ;
+; XORs A with $7F to flip coordinate sign for shell trajectory.
+@label=invert_coordinate_sign
+c$7380 XOR $7F       ; A = A XOR $7F.
  $7382 RET           ;
 
 ; Game status buffer entry at 7383

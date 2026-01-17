@@ -4821,8 +4821,8 @@ render_balloon:
 ;
 ; Used by the routines at play, main_loop, overview, operate_ship_or_helicopter_continue, operate_fighter_continue,
 ; operate_tank_shell_explosion, handle_inactive_object, animate_object, animate_helicopter, operate_tank,
-; operate_tank_on_bank, L7358, L74EE, operate_fuel, handle_object_proximity, remove_object_from_viewport,
-; operate_baloon, jp_operate_viewport_objects and L76DA.
+; operate_tank_on_bank, cancel_and_remove_shell, L74EE, operate_fuel, handle_object_proximity,
+; remove_object_from_viewport, operate_baloon, jp_operate_viewport_objects and L76DA.
 ;
 ; Iterates through the viewport_objects array, processing each active object. Each object slot is a 3-byte structure: [X
 ; position, Y position, OBJECT_DEFINITION byte].
@@ -5302,121 +5302,126 @@ blending_mode_or_or:
   LD (L8C3C),A                         ; Patch OR B into L8C3C.
   RET
 
-; Decreases the value of XYZ stored in C by $20. Called if the tank is oriented left in order to compensate for the
-; previous operation of adding $10.
+; Adjust tank position for left orientation
 ;
-; Used by the routine at operate_tank_on_bank.
+; Subtracts $20 from X position to compensate for right-bias offset. Called for left-facing tanks on bank.
 ;
-; I:C Previous value of XYZ.
-; O:C New value of XYZ.
+; I:C X position + $10 offset
+; O:C Corrected X position
 invert_tank_offset_delta:
-  LD A,C
-  SUB $20
-  LD C,A
+  LD A,C                               ; C = C - $20.
+  SUB $20                              ;
+  LD C,A                               ;
   RET
 
-; Routine at 72FD
+; Adjust tank position for right orientation
 ;
-; Used by the routine at operate_tank_on_bank.
-L72FD:
-  LD A,C
-  ADD A,$28
-  LD C,A
+; Adds $28 to X position for right-facing tank shell spawn point.
+;
+; I:C X position
+; O:C X position + $28
+add_tank_offset_delta:
+  LD A,C                               ; C = C + $28.
+  ADD A,$28                            ;
+  LD C,A                               ;
   RET
 
-; Routine at 7302
+; Operate tank on river bank
 ;
-; Used by the routine at operate_tank.
+; Handles tanks positioned on the river bank. These tanks check terrain ahead and fire shells when path is clear. The
+; shell trajectory depends on tank orientation and uses pseudo-random speed.
 ;
-; I:D OBJECT_DEFINITION
+; I:B Y position (on stack)
+; I:C X position (on stack)
+; I:D Object definition byte
 operate_tank_on_bank:
-  LD BC,(previous_object_coordinates)
-  LD A,C
-  ADD A,$10
+  LD BC,(previous_object_coordinates)  ; Load stored position, add $10 offset to X.
+  LD A,C                               ;
+  ADD A,$10                            ;
   LD C,A
-  BIT SLOT_BIT_ORIENTATION,D
-  CALL NZ,invert_tank_offset_delta
-  CALL calculate_pixel_address
-  LD A,(HL)
-  CP $FF
-  POP BC
-  POP DE
-  JP Z,operate_tank_0
-  LD A,(tank_shell_state)
-  BIT TANK_SHELL_BIT_FLYING,A
+  BIT SLOT_BIT_ORIENTATION,D           ; If left-facing, adjust offset via invert_tank_offset_delta.
+  CALL NZ,invert_tank_offset_delta     ;
+  CALL calculate_pixel_address         ; Call calculate_pixel_address for terrain check. If terrain == $FF, move tank
+  LD A,(HL)                            ; normally.
+  CP $FF                               ;
+  POP BC                               ;
+  POP DE                               ;
+  JP Z,operate_tank_0                  ; Pop BC/DE, jump to operate_tank_0 if terrain clear.
+  LD A,(tank_shell_state)              ; Check shell state: if already flying, return to main loop.
+  BIT TANK_SHELL_BIT_FLYING,A          ;
   JP NZ,operate_viewport_objects
-  BIT TANK_SHELL_BIT_EXPLODING,A
-  JP NZ,operate_viewport_objects
-  CP TANK_SHELL_STATE_UNITIALIZED
-  JP Z,init_tank_shell_state
-  RES TANK_SHELL_BIT_EXPLODING,A
-; This entry point is used by the routines at init_tank_shell_state and L735E.
+  BIT TANK_SHELL_BIT_EXPLODING,A       ; If shell exploding, return to main loop.
+  JP NZ,operate_viewport_objects       ;
+  CP TANK_SHELL_STATE_UNITIALIZED      ; If shell uninitialized, initialize via init_tank_shell_state.
+  JP Z,init_tank_shell_state           ;
+  RES TANK_SHELL_BIT_EXPLODING,A       ; Clear exploding bit, set flying bit.
+; This entry point is used by the routines at init_tank_shell_state and check_shell_init_condition.
 operate_tank_on_bank_0:
-  SET TANK_SHELL_BIT_FLYING,A
-  LD (tank_shell_state),A
-  LD A,C
-  SUB $10
+  SET TANK_SHELL_BIT_FLYING,A          ; }
+  LD (tank_shell_state),A              ; Store shell state, calculate spawn X position.
+  LD A,C                               ;
+  SUB $10                              ;
   LD C,A
-  BIT SLOT_BIT_ORIENTATION,D
-  CALL Z,L72FD
-  LD (tank_shell_coordinates),BC
+  BIT SLOT_BIT_ORIENTATION,D           ; If right-facing, add offset via add_tank_offset_delta. Store shell coordinates.
+  CALL Z,add_tank_offset_delta         ;
+  LD (tank_shell_coordinates),BC       ;
   JP operate_viewport_objects
 
-; Initialize tank shell state.
+; Initialize tank shell state
 ;
-; Used by the routine at operate_tank_on_bank.
+; Sets up shell with orientation from tank and pseudo-random speed from interrupt counter.
 ;
-; I:D OBJECT_DEFINITION
-; O:A Shell state with the speed and orientation bits initialized.
+; I:D Object definition byte (bit 6 = orientation)
+; O:A Shell state with orientation and speed bits
 init_tank_shell_state:
-  BIT 4,D
-  JP NZ,L735E
-  LD A,D                               ; Copy the orientation bit from the object definition to the shell state.
+  BIT 4,D                              ; If bit 4 set, use alternate initialization via check_shell_init_condition.
+  JP NZ,check_shell_init_condition     ;
+  LD A,D                               ; Copy orientation bit from object definition to shell state.
   AND 1<<SLOT_BIT_ORIENTATION          ;
   LD D,A                               ;
-  LD A,(int_counter)                   ; Derive the speed from the interrupt counter (sort of a PRNG).
+  LD A,(int_counter)                   ; Derive speed from interrupt counter (pseudo-random 1-4).
   AND $03                              ;
-  LD E,A
-  LD A,D
-  INC E                                ; Make sure the speed is never zero.
-  ADD A,E
-  JP operate_tank_on_bank_0
+  LD E,A                               ; Store in E, load D into A.
+  LD A,D                               ;
+  INC E                                ; Ensure speed >= 1, combine with orientation, continue to fire shell.
+  ADD A,E                              ;
+  JP operate_tank_on_bank_0            ;
 
-; Routine at 7358
+; Cancel and remove tank shell
 ;
-; Used by the routine at L735E.
-L7358:
-  CALL remove_tank_shell
-  JP operate_viewport_objects
+; Removes the tank shell via remove_tank_shell and returns to main loop.
+cancel_and_remove_shell:
+  CALL remove_tank_shell               ; Call remove_tank_shell to remove shell, return to main loop.
+  JP operate_viewport_objects          ;
 
-; Routine at 735E
+; Check shell initialization condition
 ;
-; Used by the routine at init_tank_shell_state.
-L735E:
-  LD A,(state_tank_shell)
-  CP TANK_SHELL_ACTIVE
-  JP Z,L7358
-  PUSH BC
-  LD A,C
-  BIT 7,A
-  CALL Z,L7380
-  RES 7,A
-  SRL A
-  SRL A
-  SRL A
-  SRL A
-  LD B,A
-  LD A,D
-  AND $40
-  ADD A,B
-  POP BC
-  JP operate_tank_on_bank_0
+; Alternative shell initialization when bit 4 is set. Checks if tank can fire based on shell active state and position.
+check_shell_init_condition:
+  LD A,(state_tank_shell)              ; If TANK_SHELL_ACTIVE, cancel shell via cancel_and_remove_shell.
+  CP TANK_SHELL_ACTIVE                 ;
+  JP Z,cancel_and_remove_shell         ;
+  PUSH BC                              ; Push BC, check X position sign bit, invert if positive via
+  LD A,C                               ; invert_coordinate_sign.
+  BIT 7,A                              ;
+  CALL Z,invert_coordinate_sign        ;
+  RES 7,A                              ;
+  SRL A                                ;
+  SRL A                                ;
+  SRL A                                ; Shift right 4 times to get upper nibble.
+  SRL A                                ;
+  LD B,A                               ;
+  LD A,D                               ;
+  AND $40                              ;
+  ADD A,B                              ; Combine with orientation, pop BC, continue to fire shell.
+  POP BC                               ;
+  JP operate_tank_on_bank_0            ;
 
-; Routine at 7380
+; Invert coordinate for position calculation
 ;
-; Used by the routine at L735E.
-L7380:
-  XOR $7F
+; XORs A with $7F to flip coordinate sign for shell trajectory.
+invert_coordinate_sign:
+  XOR $7F                              ; A = A XOR $7F.
   RET
 
 ; Game status buffer entry at 7383
@@ -5649,7 +5654,7 @@ render_tank_shell_explosion:
 
 ; Routine at 74E4
 ;
-; Used by the routines at init_current_bridge, L7358, L74A0 and remove_object_from_viewport.
+; Used by the routines at init_current_bridge, cancel_and_remove_shell, L74A0 and remove_object_from_viewport.
 remove_tank_shell:
   LD HL,$0000
   LD (tank_shell_state),HL
