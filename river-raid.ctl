@@ -2006,15 +2006,22 @@ R $703E O:E Attributes value $00 or $04.
 @ $7046 label=blending_mode_xor_nop
 c $7046 Set XOR blending mode for sprite rendering
 D $7046 Modifies sprite rendering code via self-modifying instructions. Patches #R$8C3C with XOR B and #R$8C1B with NOP to enable XOR blending mode for fighters/tanks.
-  $7046,11 Patch XOR B ($A8) into #R$8C3C and NOP ($00) into #R$8C1B for XOR rendering.
+  $7046 Patch XOR B ($A8) into #R$8C3C and NOP ($00) into #R$8C1B for XOR rendering.
 @ $7048 nowarn
 @ $704D nowarn
 @ $7051 label=render_fuel
 c $7051 Render fuel station
-R $7051 I:E X position
+D $7051 Renders a fuel station sprite at the specified X position. Fuel stations are static 2-tile wide (16 pixels) objects that the player can fly over to refuel.
+D $7051 #LIST { Adds fuel station to #R$5F00 active objects set } { Sprite located at #R$8A86 (single frame, no animation) } { Dimensions: 2 tiles wide (16px) × 25 pixels tall } { Attributes: $0B (PAPER BLACK, INK CYAN, BRIGHT) } LIST#
+R $7051 I:E X position of fuel station
+  $7051 BC = (0, E): set X position in BC for object entry.
+  $7054 Add fuel station to #R$5F00 active objects set via #R$6EAB.
+  $705A Load fuel sprite address #R$8A86 and call #R$6FEA to set up screen position.
 @ $7060 isub=LD BC,SPRITE_FUEL_STATION_FRAME_SIZE
+  $7060 Set sprite parameters: frame size=0, width=2 tiles, height=25 pixels, attributes=$0B.
 @ $7063 isub=LD A,SPRITE_FUEL_STATION_WIDTH_TILES
 @ $7065 isub=LD DE,SPRITE_FUEL_STATION_HEIGHT_PIXELS<<8|SPRITE_FUEL_STATION_ATTRIBUTES
+  $7068,3 Render fuel station sprite via #R$8B1E.
 @ $706C label=render_balloon
 c $706C Render balloon
 R $706C I:E X position

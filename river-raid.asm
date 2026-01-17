@@ -4767,20 +4767,26 @@ blending_mode_xor_nop:
 
 ; Render fuel station
 ;
-; Used by the routine at next_row.
+; Renders a fuel station sprite at the specified X position. Fuel stations are static 2-tile wide (16 pixels) objects
+; that the player can fly over to refuel.
 ;
-; I:E X position
+; * Adds fuel station to viewport_objects active objects set
+; * Sprite located at sprite_fuel (single frame, no animation)
+; * Dimensions: 2 tiles wide (16px) × 25 pixels tall
+; * Attributes: $0B (PAPER BLACK, INK CYAN, BRIGHT)
+;
+; I:E X position of fuel station
 render_fuel:
-  LD B,$00
-  LD C,E
-  LD HL,viewport_objects
-  CALL add_object_to_set
-  LD HL,sprite_fuel
-  CALL setup_object_position
-  LD BC,SPRITE_FUEL_STATION_FRAME_SIZE
-  LD A,SPRITE_FUEL_STATION_WIDTH_TILES
-  LD DE,SPRITE_FUEL_STATION_HEIGHT_PIXELS<<8|SPRITE_FUEL_STATION_ATTRIBUTES
-  CALL render_sprite
+  LD B,$00                             ; BC = (0, E): set X position in BC for object entry.
+  LD C,E                               ;
+  LD HL,viewport_objects               ; Add fuel station to viewport_objects active objects set via add_object_to_set.
+  CALL add_object_to_set               ;
+  LD HL,sprite_fuel                    ; Load fuel sprite address sprite_fuel and call setup_object_position to set up
+  CALL setup_object_position           ; screen position.
+  LD BC,SPRITE_FUEL_STATION_FRAME_SIZE                                      ; Set sprite parameters: frame size=0,
+  LD A,SPRITE_FUEL_STATION_WIDTH_TILES                                      ; width=2 tiles, height=25 pixels,
+  LD DE,SPRITE_FUEL_STATION_HEIGHT_PIXELS<<8|SPRITE_FUEL_STATION_ATTRIBUTES ; attributes=$0B.
+  CALL render_sprite                   ; Render fuel station sprite via render_sprite.
   RET
 
 ; Render balloon

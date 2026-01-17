@@ -5264,23 +5264,32 @@ c$7046 LD A,$A8      ; {Patch XOR B ($A8) into #R$8C3C and NOP ($00) into
 
 ; Render fuel station
 ;
-; Used by the routine at #R$6F80.
+; Renders a fuel station sprite at the specified X position. Fuel stations are
+; static 2-tile wide (16 pixels) objects that the player can fly over to
+; refuel.
+; .
+; #LIST
+; { Adds fuel station to #R$5F00 active objects set }
+; { Sprite located at #R$8A86 (single frame, no animation) }
+; { Dimensions: 2 tiles wide (16px) × 25 pixels tall }
+; { Attributes: $0B (PAPER BLACK, INK CYAN, BRIGHT) }
+; LIST#
 ;
-; I:E X position
+; I:E X position of fuel station
 @label=render_fuel
-c$7051 LD B,$00      ;
- $7053 LD C,E        ;
- $7054 LD HL,$5F00   ;
- $7057 CALL $6EAB    ;
- $705A LD HL,$8A86   ;
- $705D CALL $6FEA    ;
+c$7051 LD B,$00      ; {BC = (0, E): set X position in BC for object entry.
+ $7053 LD C,E        ; }
+ $7054 LD HL,$5F00   ; {Add fuel station to #R$5F00 active objects set via
+ $7057 CALL $6EAB    ; #R$6EAB.}
+ $705A LD HL,$8A86   ; {Load fuel sprite address #R$8A86 and call #R$6FEA to
+ $705D CALL $6FEA    ; set up screen position.}
 @isub=LD BC,SPRITE_FUEL_STATION_FRAME_SIZE
- $7060 LD BC,$0000   ;
+ $7060 LD BC,$0000   ; {Set sprite parameters: frame size=0, width=2 tiles,
 @isub=LD A,SPRITE_FUEL_STATION_WIDTH_TILES
- $7063 LD A,$02      ;
+ $7063 LD A,$02      ; height=25 pixels, attributes=$0B.
 @isub=LD DE,SPRITE_FUEL_STATION_HEIGHT_PIXELS<<8|SPRITE_FUEL_STATION_ATTRIBUTES
- $7065 LD DE,$190B   ;
- $7068 CALL $8B1E    ;
+ $7065 LD DE,$190B   ; }
+ $7068 CALL $8B1E    ; Render fuel station sprite via #R$8B1E.
  $706B RET           ;
 
 ; Render balloon
