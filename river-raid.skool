@@ -8238,32 +8238,30 @@ c$8A1B LD HL,$57FF   ; {Start at #R$5800-1 (bottom-right of visible area), loop
  $8A2F JP NZ,$8A20   ;
  $8A32 RET           ;
 
-; Routine at 8A33
+; Initialize UDG and screen attributes.
 ;
-; Used by the routines at #R$5DA6 and #R$6D17.
-;
-; Sets BORDER to BLACK, sets screen attributes to WHITE-on-BLACK and copies
-; .    #R$825D to the UDG area.
+; Sets border to black, fills lower screen attributes with white-on-black, and
+; copies UDG graphics to the UDG area.
 @label=init_udg
-c$8A33 LD A,$00      ;
- $8A35 OUT ($FE),A   ;
- $8A37 LD B,$C0      ;
+c$8A33 LD A,$00      ; {Set border to black via OUT to port $FE.
+ $8A35 OUT ($FE),A   ; }
+@ignoreua=$5A40
+ $8A37 LD B,$C0      ; {Fill $C0 (192) attribute bytes starting at $5A40 with
 @nowarn
- $8A39 LD HL,$5A40   ;
+ $8A39 LD HL,$5A40   ; $07 (white on black).
 @label=init_udg_loop
 *$8A3C LD (HL),$07   ;
  $8A3E INC HL        ;
- $8A3F DJNZ $8A3C    ;
- $8A41 LD HL,$825D   ;
- $8A44 LD DE,($5C7B) ;
+ $8A3F DJNZ $8A3C    ; }
+ $8A41 LD HL,$825D   ; {Copy $68 bytes from #R$825D to UDG area pointed by
+ $8A44 LD DE,($5C7B) ; CHARS system variable.
  $8A48 LD BC,$0068   ;
- $8A4B LDIR          ;
+ $8A4B LDIR          ; }
  $8A4D RET           ;
 
-; Routine at 8A4E
+; Calculate screen address from pixel coordinates.
 ;
-; Used by the routines at #R$6DFF, #R$6E40, #R$7113, #R$7302, #R$75A2, #R$7649,
-; #R$76AF and #R$8B3C.
+; Converts X,Y pixel coordinates to a ZX Spectrum screen memory address.
 ;
 ; I:B Vertical coordinate of the object in pixels.
 ; I:C Horizontal coordinate of the object in pixels.

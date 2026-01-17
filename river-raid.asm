@@ -7314,30 +7314,27 @@ scroll_attribute_row_1:
   JP NZ,scroll_attribute_row_0
   RET
 
-; Routine at 8A33
+; Initialize UDG and screen attributes.
 ;
-; Used by the routines at play and overview.
-;
-; Sets BORDER to BLACK, sets screen attributes to WHITE-on-BLACK and copies udg_data to the UDG area.
+; Sets border to black, fills lower screen attributes with white-on-black, and copies UDG graphics to the UDG area.
 init_udg:
-  LD A,$00
-  OUT ($FE),A
-  LD B,$C0
-  LD HL,$5A40
+  LD A,$00                             ; Set border to black via OUT to port $FE.
+  OUT ($FE),A                          ;
+  LD B,$C0                             ; Fill $C0 (192) attribute bytes starting at $5A40 with $07 (white on black).
+  LD HL,$5A40                          ;
 init_udg_loop:
-  LD (HL),$07
-  INC HL
-  DJNZ init_udg_loop
-  LD HL,udg_data
-  LD DE,(UDG)
-  LD BC,$0068
-  LDIR
+  LD (HL),$07                          ;
+  INC HL                               ;
+  DJNZ init_udg_loop                   ;
+  LD HL,udg_data                       ; Copy $68 bytes from udg_data to UDG area pointed by CHARS system variable.
+  LD DE,(UDG)                          ;
+  LD BC,$0068                          ;
+  LDIR                                 ;
   RET
 
-; Routine at 8A4E
+; Calculate screen address from pixel coordinates.
 ;
-; Used by the routines at consume_fuel, add_fuel, ship_or_helicopter_left_advance, operate_tank_on_bank,
-; ship_or_helicopter_right_advance, operate_baloon, L76AF and render_object.
+; Converts X,Y pixel coordinates to a ZX Spectrum screen memory address.
 ;
 ; I:B Vertical coordinate of the object in pixels.
 ; I:C Horizontal coordinate of the object in pixels.

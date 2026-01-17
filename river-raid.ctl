@@ -3021,12 +3021,17 @@ D $8A1B Shifts the pixels in the bottom visible row (#R$5800-1 down) left by 1 b
   $8A20 Rotate 32 bytes left with carry propagation.
   $8A28,7 Move up one row ($E0 bytes back), continue loop.
 @ $8A33 label=init_udg
-c $8A33
-R $8A33 Sets BORDER to BLACK, sets screen attributes to WHITE-on-BLACK and copies #R$825D to the UDG area.
+c $8A33 Initialize UDG and screen attributes.
+D $8A33 Sets border to black, fills lower screen attributes with white-on-black, and copies UDG graphics to the UDG area.
+  $8A33 Set border to black via OUT to port $FE.
+@ $8A37 ignoreua=$5A40
+  $8A37 Fill $C0 (192) attribute bytes starting at $5A40 with $07 (white on black).
 @ $8A39 nowarn
 @ $8A3C label=init_udg_loop
+  $8A41,12 Copy $68 bytes from #R$825D to UDG area pointed by CHARS system variable.
 @ $8A4E label=calculate_pixel_address
-c $8A4E
+c $8A4E Calculate screen address from pixel coordinates.
+D $8A4E Converts X,Y pixel coordinates to a ZX Spectrum screen memory address.
 R $8A4E I:B Vertical coordinate of the object in pixels.
 R $8A4E I:C Horizontal coordinate of the object in pixels.
 R $8A4E O:B Horizontal coordinate of the object in pixels relative to its tile.
