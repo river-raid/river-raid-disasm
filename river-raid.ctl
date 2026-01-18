@@ -3299,12 +3299,16 @@ R $9122 I:A Update type (1=player 1, 2=player 2, 4=both)
   $912E Calculate digit offset: C = 6 - update_type.
   $9133 Load current player number.
 @ $9136 isub=CP PLAYER_2
-  $9136,5 Route to player 2 handler if current player is PLAYER_2.
+  $9136 Route to player 2 handler if current player is PLAYER_2.
 @ $913B label=inc_player_1_score_digit
 c $913B Increase a digit in the player 1's score.
-R $913B I:C Offset of the digit to increase.
-R $913B O:D Offset of the digit to increase.
-  $9145,2 Check for digit overflow (the value got beyond the 0-9 ASCII range).
+D $913B Increments the ASCII digit at the specified offset in the score buffer. If the digit overflows past '9', it jumps to the carry routine. Otherwise prints the updated digit.
+R $913B I:C Offset of the digit to increase (0=leftmost, 5=rightmost).
+R $913B O:D Offset of the digit (passed to print routine).
+  $913B Load #R$90BC (player 1 score), add offset C to get digit pointer.
+  $9140 Save offset to D, load digit, increment it.
+  $9144 If digit > '9' ($3A), jump to #R$9191 for carry.
+  $914A Store incremented digit, fall through to print.
 @ $914B label=print_player_1_score_digit
 @ $914B isub=LD A,EXT_ATTR_INK
   $914B INK of Player 1 color

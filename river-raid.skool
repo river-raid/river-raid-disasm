@@ -9002,22 +9002,23 @@ c$9122 PUSH AF       ; {Save A, open upper screen channel via ROM CHAN_OPEN,
 
 ; Increase a digit in the player 1's score.
 ;
-; .
+; Increments the ASCII digit at the specified offset in the score buffer. If
+; the digit overflows past '9', it jumps to the carry routine. Otherwise prints
+; the updated digit.
 ;
-; I:C Offset of the digit to increase.
-; O:D Offset of the digit to increase.
+; I:C Offset of the digit to increase (0=leftmost, 5=rightmost).
+; O:D Offset of the digit (passed to print routine).
 @label=inc_player_1_score_digit
-c$913B LD HL,$90BC   ;
- $913E LD B,$00      ;
- $9140 LD A,C        ;
+c$913B LD HL,$90BC   ; {Load #R$90BC (player 1 score), add offset C to get
+ $913E LD B,$00      ; digit pointer.}
+ $9140 LD A,C        ; {Save offset to D, load digit, increment it.
  $9141 ADD HL,BC     ;
  $9142 LD D,A        ;
- $9143 LD A,(HL)     ;
- $9144 INC A         ;
- $9145 CP $3A        ; Check for digit overflow (the value got beyond the 0-9
-                     ; ASCII range).
- $9147 JP Z,$9191    ;
- $914A LD (HL),A     ;
+ $9143 LD A,(HL)     ; }
+ $9144 INC A         ; {If digit > '9' ($3A), jump to #R$9191 for carry.
+ $9145 CP $3A        ;
+ $9147 JP Z,$9191    ; }
+ $914A LD (HL),A     ; Store incremented digit, fall through to print.
 ; This entry point is used by the routine at #R$9191.
 @label=print_player_1_score_digit
 @isub=LD A,EXT_ATTR_INK

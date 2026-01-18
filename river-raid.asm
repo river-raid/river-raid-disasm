@@ -8026,19 +8026,22 @@ update_score:
 
 ; Increase a digit in the player 1's score.
 ;
-; I:C Offset of the digit to increase.
-; O:D Offset of the digit to increase.
+; Increments the ASCII digit at the specified offset in the score buffer. If the digit overflows past '9', it jumps to
+; the carry routine. Otherwise prints the updated digit.
+;
+; I:C Offset of the digit to increase (0=leftmost, 5=rightmost).
+; O:D Offset of the digit (passed to print routine).
 inc_player_1_score_digit:
-  LD HL,state_score_player_1_low
-  LD B,$00
-  LD A,C
-  ADD HL,BC
-  LD D,A
-  LD A,(HL)
-  INC A
-  CP $3A                               ; Check for digit overflow (the value got beyond the 0-9 ASCII range).
-  JP Z,carry_player_1_score_digit
-  LD (HL),A
+  LD HL,state_score_player_1_low       ; Load state_score_player_1_low (player 1 score), add offset C to get digit
+  LD B,$00                             ; pointer.
+  LD A,C                               ; Save offset to D, load digit, increment it.
+  ADD HL,BC                            ;
+  LD D,A                               ;
+  LD A,(HL)                            ;
+  INC A                                ; If digit > '9' ($3A), jump to carry_player_1_score_digit for carry.
+  CP $3A                               ;
+  JP Z,carry_player_1_score_digit      ;
+  LD (HL),A                            ; Store incremented digit, fall through to print.
 ; This entry point is used by the routine at carry_player_1_score_digit.
 print_player_1_score_digit:
   LD A,EXT_ATTR_INK                    ; INK of Player 1 color
