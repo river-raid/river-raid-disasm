@@ -9667,18 +9667,19 @@ c$940A LD HL,$4000   ; Point HL to start of screen memory ($4000).
  $9420 JR NZ,$941B   ; blocks done.}
  $9422 RET           ;
 
-; Load current player lives
+; Load pointer to current player's lives counter.
 ;
-; Used by the routine at #R$9109.
+; Returns HL pointing to player 1's lives by default. If current player is
+; player 2, adjusts to point to player 2's lives instead.
 ;
-; O:HL Pointer to the current player lives
+; O:HL Pointer to the current player's lives counter.
 @label=ld_lives
-c$9423 LD HL,$923B   ;
- $9426 LD A,($923D)  ;
+c$9423 LD HL,$923B   ; Load address of player 1 lives (#R$923B) into HL.
+ $9426 LD A,($923D)  ; {If current player is not PLAYER_2, return with player 1
 @isub=CP PLAYER_2
- $9429 CP $02        ;
- $942B RET NZ        ;
- $942C LD HL,$923C   ;
+ $9429 CP $02        ; address.}
+ $942B RET NZ        ; {Otherwise load player 2 lives address (#R$923C) and
+ $942C LD HL,$923C   ; return.}
  $942F RET           ;
 
 ; Unused

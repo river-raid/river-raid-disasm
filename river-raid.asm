@@ -8657,17 +8657,18 @@ clear_scr_attr:
   JR NZ,clear_scr_attr                 ;
   RET
 
-; Load current player lives
+; Load pointer to current player's lives counter.
 ;
-; Used by the routine at add_life.
+; Returns HL pointing to player 1's lives by default. If current player is player 2, adjusts to point to player 2's
+; lives instead.
 ;
-; O:HL Pointer to the current player lives
+; O:HL Pointer to the current player's lives counter.
 ld_lives:
-  LD HL,state_lives_player_1
-  LD A,(state_player)
-  CP PLAYER_2
-  RET NZ
-  LD HL,state_lives_player_2
+  LD HL,state_lives_player_1           ; Load address of player 1 lives (state_lives_player_1) into HL.
+  LD A,(state_player)                  ; If current player is not PLAYER_2, return with player 1 address.
+  CP PLAYER_2                          ;
+  RET NZ                               ; Otherwise load player 2 lives address (state_lives_player_2) and return.
+  LD HL,state_lives_player_2           ;
   RET
 
 ; Unused

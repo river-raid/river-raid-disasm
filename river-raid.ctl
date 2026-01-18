@@ -3533,9 +3533,13 @@ R $940A I:D Attribute value to fill the attribute area.
   $941B Write attribute value D to byte, advance HL, loop until block cleared.
   $941F,3 Decrement block counter, continue until all attribute blocks done.
 @ $9423 label=ld_lives
-c $9423 Load current player lives
-R $9423 O:HL Pointer to the current player lives
+c $9423 Load pointer to current player's lives counter.
+D $9423 Returns HL pointing to player 1's lives by default. If current player is player 2, adjusts to point to player 2's lives instead.
+R $9423 O:HL Pointer to the current player's lives counter.
+  $9423 Load address of player 1 lives (#R$923B) into HL.
+  $9426 If current player is not PLAYER_2, return with player 1 address.
 @ $9429 isub=CP PLAYER_2
+  $942B,4 Otherwise load player 2 lives address (#R$923C) and return.
 u $9430
 @ $9500 label=level_terrains
 b $9500 Array [48] of level terrain data (256 bytes each).
