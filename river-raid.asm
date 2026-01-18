@@ -6296,20 +6296,22 @@ game_mode_input:
   LD DE,msg_keyboard_config            ; Print keyboard configuration
   LD BC,$0070                          ;
   CALL PR_STRING                       ;
+; Print instructions and wait for Enter key.
 instructions_print:
-  LD DE,msg_instructions
-  LD BC,$00A8
-  CALL PR_STRING
-  LD A,$20
-  LD (LAST_K),A
+  LD DE,msg_instructions               ; Print instructions text (msg_instructions, 168 bytes) via ROM PR_STRING.
+  LD BC,$00A8                          ;
+  CALL PR_STRING                       ;
+  LD A,$20                             ; Initialize LAST_K to space character.
+  LD (LAST_K),A                        ;
+; Wait for user to press Enter.
 instructions_input:
-  LD A,(LAST_K)
-  CALL KEYBOARD                        ; Scan keyboard
+  LD A,(LAST_K)                        ; Read last key pressed from LAST_K.
+  CALL KEYBOARD                        ; Scan keyboard via ROM routine.
   EI                                   ;
-  LD A,(LAST_K)
-  CP $0D                               ; Loop until Enter is pressed
-  JP NZ,instructions_input             ;
-  LD A,$00                             ; Switch to the non-overview mode
+  LD A,(LAST_K)                        ; Loop until Enter ($0D) is pressed.
+  CP $0D                               ;
+  JP NZ,instructions_input             ; Exit loop when Enter detected.
+  LD A,$00                             ; Clear overview mode flag (start game).
   LD (state_overview_mode),A           ;
   LD SP,(setup_sp)
   RET
@@ -8003,23 +8005,24 @@ add_life:
 
 ; Update and print score for current player.
 ;
-; Adds points to the current player's score and refreshes the on-screen display.
+; Adds points to the current player's score and refreshes the on-screen display. The update type determines which digit
+; to increment: type 1 = 100,000s, type 2 = 10,000s, etc. Type 4 is special and awards a bonus life.
 ;
 ; I:A Update type (1=player 1, 2=player 2, 4=both)
 update_score:
-  PUSH AF
-  LD A,$01
-  CALL CHAN_OPEN
-  POP AF
-  CP $04
-  CALL Z,add_life
-  LD B,A
-  LD A,$06
-  SUB B
-  LD C,A
-  LD A,(state_player)
-  CP PLAYER_2
-  JP Z,inc_player_2_score_digit
+  PUSH AF                              ; Save A, open upper screen channel via ROM CHAN_OPEN, restore A.
+  LD A,$01                             ;
+  CALL CHAN_OPEN                       ;
+  POP AF                               ;
+  CP $04                               ; If update type is 4, award bonus life via add_life.
+  CALL Z,add_life                      ;
+  LD B,A                               ; Calculate digit offset: C = 6 - update_type.
+  LD A,$06                             ;
+  SUB B                                ;
+  LD C,A                               ;
+  LD A,(state_player)                  ; Load current player number.
+  CP PLAYER_2                          ; Route to player 2 handler if current player is PLAYER_2.
+  JP Z,inc_player_2_score_digit        ;
 
 ; Increase a digit in the player 1's score.
 ;

@@ -2830,12 +2830,18 @@ c $7B07 Wait until the user chooses a valid game mode.
   $7B17 Repeat if a valid key was not pressed.
 @ $7B1A isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
   $7B1A,2 PAPER BLACK; INK WHITE
-  $7B27,9 Print keyboard configuration
+  $7B27 Print keyboard configuration
 @ $7B30 label=instructions_print
+N $7B30 Print instructions and wait for Enter key.
+  $7B30 Print instructions text (#R$7882, 168 bytes) via ROM PR_STRING.
+  $7B39 Initialize LAST_K to space character.
 @ $7B3E label=instructions_input
-  $7B41,4 Scan keyboard
-  $7B48 Loop until Enter is pressed
-  $7B4D,5 Switch to the non-overview mode
+N $7B3E Wait for user to press Enter.
+  $7B3E Read last key pressed from LAST_K.
+  $7B41 Scan keyboard via ROM routine.
+  $7B45 Loop until Enter ($0D) is pressed.
+  $7B4A Exit loop when Enter detected.
+  $7B4D,5 Clear overview mode flag (start game).
 @ $7B57 label=switch_to_overview_mode
 c $7B57 Switch to overview/demo mode on timeout.
 D $7B57 Called when the control selection timer expires without user input.
@@ -3286,9 +3292,14 @@ D $9109 Increments the current player's life count and triggers the bonus life s
   $9119,2 Set CONTROLS_BIT_BONUS_LIFE to trigger bonus sound.
 @ $9122 label=update_score
 c $9122 Update and print score for current player.
-D $9122 Adds points to the current player's score and refreshes the on-screen display.
+D $9122 Adds points to the current player's score and refreshes the on-screen display. The update type determines which digit to increment: type 1 = 100,000s, type 2 = 10,000s, etc. Type 4 is special and awards a bonus life.
 R $9122 I:A Update type (1=player 1, 2=player 2, 4=both)
+  $9122 Save A, open upper screen channel via ROM CHAN_OPEN, restore A.
+  $9129 If update type is 4, award bonus life via #R$9109.
+  $912E Calculate digit offset: C = 6 - update_type.
+  $9133 Load current player number.
 @ $9136 isub=CP PLAYER_2
+  $9136,5 Route to player 2 handler if current player is PLAYER_2.
 @ $913B label=inc_player_1_score_digit
 c $913B Increase a digit in the player 1's score.
 R $913B I:C Offset of the digit to increase.

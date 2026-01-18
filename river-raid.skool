@@ -7049,20 +7049,22 @@ c$7B07 LD A,($5C08)  ;
  $7B27 LD DE,$7812   ; {Print keyboard configuration
  $7B2A LD BC,$0070   ;
  $7B2D CALL $203C    ; }
+; Print instructions and wait for Enter key.
 @label=instructions_print
-*$7B30 LD DE,$7882   ;
- $7B33 LD BC,$00A8   ;
- $7B36 CALL $203C    ;
- $7B39 LD A,$20      ;
- $7B3B LD ($5C08),A  ;
+*$7B30 LD DE,$7882   ; {Print instructions text (#R$7882, 168 bytes) via ROM
+ $7B33 LD BC,$00A8   ; PR_STRING.
+ $7B36 CALL $203C    ; }
+ $7B39 LD A,$20      ; {Initialize LAST_K to space character.
+ $7B3B LD ($5C08),A  ; }
+; Wait for user to press Enter.
 @label=instructions_input
-*$7B3E LD A,($5C08)  ;
- $7B41 CALL $02BF    ; {Scan keyboard
+*$7B3E LD A,($5C08)  ; Read last key pressed from LAST_K.
+ $7B41 CALL $02BF    ; {Scan keyboard via ROM routine.
  $7B44 EI            ; }
- $7B45 LD A,($5C08)  ;
- $7B48 CP $0D        ; {Loop until Enter is pressed
- $7B4A JP NZ,$7B3E   ; }
- $7B4D LD A,$00      ; {Switch to the non-overview mode
+ $7B45 LD A,($5C08)  ; {Loop until Enter ($0D) is pressed.
+ $7B48 CP $0D        ; }
+ $7B4A JP NZ,$7B3E   ; Exit loop when Enter detected.
+ $7B4D LD A,$00      ; {Clear overview mode flag (start game).
  $7B4F LD ($7801),A  ; }
  $7B52 LD SP,($7810) ;
  $7B56 RET           ;
@@ -8978,24 +8980,25 @@ c$9109 PUSH AF       ;
 ; Update and print score for current player.
 ;
 ; Adds points to the current player's score and refreshes the on-screen
-; display.
+; display. The update type determines which digit to increment: type 1 =
+; 100,000s, type 2 = 10,000s, etc. Type 4 is special and awards a bonus life.
 ;
 ; I:A Update type (1=player 1, 2=player 2, 4=both)
 @label=update_score
-c$9122 PUSH AF       ;
- $9123 LD A,$01      ;
+c$9122 PUSH AF       ; {Save A, open upper screen channel via ROM CHAN_OPEN,
+ $9123 LD A,$01      ; restore A.
  $9125 CALL $1601    ;
- $9128 POP AF        ;
- $9129 CP $04        ;
- $912B CALL Z,$9109  ;
- $912E LD B,A        ;
+ $9128 POP AF        ; }
+ $9129 CP $04        ; {If update type is 4, award bonus life via #R$9109.
+ $912B CALL Z,$9109  ; }
+ $912E LD B,A        ; {Calculate digit offset: C = 6 - update_type.
  $912F LD A,$06      ;
  $9131 SUB B         ;
- $9132 LD C,A        ;
- $9133 LD A,($923D)  ;
+ $9132 LD C,A        ; }
+ $9133 LD A,($923D)  ; Load current player number.
 @isub=CP PLAYER_2
- $9136 CP $02        ;
- $9138 JP Z,$9169    ;
+ $9136 CP $02        ; {Route to player 2 handler if current player is
+ $9138 JP Z,$9169    ; PLAYER_2.}
 
 ; Increase a digit in the player 1's score.
 ;
