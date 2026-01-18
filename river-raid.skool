@@ -9102,29 +9102,28 @@ c$9179 LD A,$10      ; {Set INK to player 2 color (cyan).
  $918D CALL $1601    ;
  $9190 RET           ; }
 
-; Carry
+; Handle carry for player 1's score digit.
 ;
-; Used by the routine at #R$913B.
+; When a digit overflows past '9', this routine sets it to '0' and propagates
+; the carry to the next higher digit by recursively calling update_score.
 ;
-; I:D Offset of the digit to carry.
-; I:HL Pointer to the digit.
+; I:D Offset of the overflowed digit.
+; I:HL Pointer to the overflowed digit.
 @label=carry_player_1_score_digit
-c$9191 LD (HL),$30   ; Write "0" to the overflown digit.
- $9193 LD A,$06      ; Check if #REGd is equal to 0 in a very weird way: set
-                     ; #REGa to 6.
- $9195 SUB D         ; Subtract #REGd from it.
- $9196 INC A         ; Increase #REGa by one.
- $9197 CP $07        ; Check if we got 7 (which is only possible if #REGd is
-                     ; 0).
- $9199 RET Z         ;
- $919A PUSH HL       ;
- $919B PUSH DE       ;
- $919C CALL $9122    ;
- $919F LD A,$01      ;
- $91A1 CALL $1601    ;
- $91A4 POP DE        ;
+c$9191 LD (HL),$30   ; Write '0' to the overflowed digit.
+ $9193 LD A,$06      ; {Check if this is the leftmost digit (offset 0): A =
+ $9195 SUB D         ; 6-D+1, if A == 7 then return.
+ $9196 INC A         ;
+ $9197 CP $07        ; }
+ $9199 RET Z         ; Return if leftmost digit (no more digits to carry into).
+ $919A PUSH HL       ; {Save HL/DE, call #R$9122 to increment next higher
+ $919B PUSH DE       ; digit.
+ $919C CALL $9122    ; }
+ $919F LD A,$01      ; {Open channel 1 (upper screen) for printing.
+ $91A1 CALL $1601    ; }
+ $91A4 POP DE        ; {Restore HL/DE, jump to #R$914B to print the '0' digit.
  $91A5 POP HL        ;
- $91A6 JP $914B      ;
+ $91A6 JP $914B      ; }
 
 ; Carry
 ;
