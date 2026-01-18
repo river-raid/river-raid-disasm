@@ -3388,15 +3388,15 @@ D $91E8 In 2-player mode, prints player 2's score. In 1-player mode, prints the 
   $91E8 Open channel 1 (upper screen).
 @ $91ED isub=LD A,EXT_ATTR_AT
   $91ED Position cursor at row 1, column 21.
-  $91F6,5 If 2-player mode, jump to #R$91C1 to print player 2 score.
+  $91F6 If 2-player mode, jump to #R$91C1 to print player 2 score.
 @ $91F9 isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
 @ $91FE isub=LD A,EXT_ATTR_INK
   $91FE Set INK to white (for high score display).
 @ $9201 isub=LD A,COLOR_WHITE
-  $9204,27 Calculate high score offset from starting bridge, print 6-digit high score.
+  $9204 Calculate high score address: base ($90C8) + ((game_mode AND $FE) * 3). Print 6-digit high score with leading '0'.
 @ $9225 isub=LD A,EXT_ATTR_AT
   $9225 Position cursor at row 1, column 18.
-  $922E,11 Print "HI" label, switch to channel 2.
+  $922E,11 Print "HI" label, switch to channel 2 (main screen).
 @ $923A label=state_game_mode
 b $923A The game mode storing the number of players in the first bit and the starting bridge in the next two.
   $923A,1
@@ -3407,36 +3407,26 @@ g $923C Number of player 2 lives.
 @ $923D label=state_player
 b $923D Current player
 @ $923E label=print_lives
-c $923E Print remaining lives for current player.
-D $923E Displays plane symbols on the status line to show remaining lives. Routes to player-specific color and lives count.
-  $923E,5 If current player is PLAYER_2, jump to #R$9277.
+c $923E Print lives.
 @ $9241 isub=CP PLAYER_2
 @ $9246 isub=LD A,EXT_ATTR_INK
-  $9246 Set INK to player 1 color (yellow).
+  $9246,6 INK of Player 1 color
 @ $9249 isub=LD A,COLOR_PLAYER_1
-  $924C Load player 1's lives count, fall through to print.
 @ $924F label=print_lives_continue
-c $924F Continue printing lives after the value has been loaded into A.
-D $924F Common code path for printing lives as plane symbols at row 20, column 18.
-R $924F I:A Number of lives to display.
-  $924F Save lives count in B.
+c $924F Continue printing lives after the value has been loaded into #REGa.
+R $924F I:A Number of lives.
 @ $9250 isub=LD A,EXT_ATTR_AT
-  $9250 Position cursor at row 20, column 18.
-  $9259 If lives count is 0, skip to padding.
+  $9250,9 AT 20,18
 @ $925F label=print_lives_loop
-  $925F Print ✈ UDG symbol, loop B times.
+  $925F,5 Print ✈ UDG symbol, loop B times.
 @ $9264 label=print_lives_padding
-c $9264 Print six spaces to clear any leftover plane symbols.
-D $9264 Called after printing lives to overwrite any previous extra planes.
-  $9264 Print 6 space characters and return.
+c $9264 Print six spaces
 @ $9277 label=print_lives_player_2
 @ $9277 isub=LD A,EXT_ATTR_INK
-c $9277 Print lives for player 2.
-D $9277 Sets player 2's color and loads player 2's lives count, then jumps to common print routine.
-R $9277 O:A Number of lives (passed to #R$924F).
-  $9277 Set INK to player 2 color (cyan).
+c $9277 The player 2 branch of the #R$923E routine.
+R $9277 O:A Number of lives.
+  $9277,6 INK of Player 2 color
 @ $927A isub=LD A,COLOR_PLAYER_2
-  $927D,6 Load player 2's lives count, jump to #R$924F.
 @ $9283 label=ptr_state_controls
 g $9283 Pointer to #R$6BB0
 W $9283 Pointer to #R$6BB0
@@ -3450,21 +3440,15 @@ g $928B
 W $928B
 @ $928D label=set_sprite_attributes
 c $928D Set screen attributes for sprite area.
-D $928D Calculates the attribute cells covered by a sprite at both old and new positions and fills them with the specified color. Handles screen third boundary wrapping.
-N $928D The routine first erases attributes at the old position (#R$8B0A), then sets attributes at the new position (#R$8B0C). Width and height determine the number of attribute cells to fill.
-R $928D I:A Sprite width in tiles.
-R $928D I:E Screen attributes to set (0 = skip attribute setting).
-  $928D Save registers, store width. If attributes = 0, skip to #R$935D.
-  $9295 Save parameters, calculate attribute address from old position Y.
-  $92AA Add X offset, get width and height for row/column loops.
-  $92BC,45 Set up loop counters and fill old position attributes.
+D $928D Calculates the attribute cells covered by a sprite and fills them with the specified color.
+R $928D I:A Sprite width in tiles
+R $928D I:E Screen attributes
+  $928D,92 Calculate old position attribute area and fill.
 @ $92EA label=set_attr_old_outer_loop
 @ $92EB label=set_attr_old_inner_loop
 @ $92F1 nowarn
 @ $92FF label=set_attr_new_position_entry
-N $92FF Process new position attribute area.
-  $92FF Calculate attribute address from new position (#R$8B0C).
-  $9319,47 Set up loop counters and fill new position attributes.
+  $92FF,73 Calculate new position attribute area and fill.
 @ $9348 label=set_attr_new_outer_loop
 @ $9349 label=set_attr_new_inner_loop
 @ $934F nowarn

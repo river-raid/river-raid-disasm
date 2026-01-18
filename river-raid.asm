@@ -8201,13 +8201,13 @@ print_player_2_score_area:
   RST $10                              ;
   LD A,(state_game_mode)               ; If 2-player mode, jump to print_score_player_2 to print player 2 score.
   BIT GAME_MODE_BIT_TWO_PLAYERS,A      ;
-  JP NZ,print_score_player_2
+  JP NZ,print_score_player_2           ;
   LD A,EXT_ATTR_INK                    ; Set INK to white (for high score display).
   RST $10                              ;
   LD A,COLOR_WHITE                     ;
   RST $10                              ;
-  LD BC,$0006                          ; Calculate high score offset from starting bridge, print 6-digit high score.
-  LD HL,L90C8                          ;
+  LD BC,$0006                          ; Calculate high score address: base ($90C8) + ((game_mode AND $FE) * 3). Print
+  LD HL,L90C8                          ; 6-digit high score with leading '0'.
   LD A,(state_game_mode)               ;
   AND $FE                              ;
   LD E,A                               ;
@@ -8220,16 +8220,16 @@ print_player_2_score_area:
   LD E,A                               ;
   ADD HL,DE                            ;
   EX DE,HL                             ;
-  CALL PR_STRING
-  LD A,$30
-  RST $10
+  CALL PR_STRING                       ;
+  LD A,$30                             ;
+  RST $10                              ;
   LD A,EXT_ATTR_AT                     ; Position cursor at row 1, column 18.
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
   LD A,$12                             ;
   RST $10                              ;
-  LD A,$48                             ; Print "HI" label, switch to channel 2.
+  LD A,$48                             ; Print "HI" label, switch to channel 2 (main screen).
   RST $10                              ;
   LD A,$49                             ;
   RST $10                              ;
@@ -8253,70 +8253,70 @@ state_lives_player_2:
 state_player:
   DEFB $00
 
-; Print remaining lives for current player.
+; Print lives.
 ;
-; Displays plane symbols on the status line to show remaining lives. Routes to player-specific color and lives count.
+; Used by the routines at play and add_life.
 print_lives:
-  LD A,(state_player)                  ; If current player is PLAYER_2, jump to print_lives_player_2.
-  CP PLAYER_2                          ;
+  LD A,(state_player)
+  CP PLAYER_2
   JP Z,print_lives_player_2
-  LD A,EXT_ATTR_INK                    ; Set INK to player 1 color (yellow).
+  LD A,EXT_ATTR_INK                    ; INK of Player 1 color
   RST $10                              ;
   LD A,COLOR_PLAYER_1                  ;
   RST $10                              ;
-  LD A,(state_lives_player_1)          ; Load player 1's lives count, fall through to print.
+  LD A,(state_lives_player_1)
 
 ; Continue printing lives after the value has been loaded into A.
 ;
-; Common code path for printing lives as plane symbols at row 20, column 18.
+; Used by the routine at print_lives_player_2.
 ;
-; I:A Number of lives to display.
+; I:A Number of lives.
 print_lives_continue:
-  LD B,A                               ; Save lives count in B.
-  LD A,EXT_ATTR_AT                     ; Position cursor at row 20, column 18.
+  LD B,A
+  LD A,EXT_ATTR_AT                     ; AT 20,18
   RST $10                              ;
   LD A,$14                             ;
   RST $10                              ;
   LD A,$12                             ;
   RST $10                              ;
-  LD A,B                               ; If lives count is 0, skip to padding.
-  CP $00                               ;
-  JP Z,print_lives_padding             ;
+  LD A,B
+  CP $00
+  JP Z,print_lives_padding
 print_lives_loop:
   LD A,$9C                             ; Print ✈ UDG symbol, loop B times.
   RST $10                              ;
   DJNZ print_lives_loop                ;
 
-; Print six spaces to clear any leftover plane symbols.
+; Print six spaces
 ;
-; Called after printing lives to overwrite any previous extra planes.
+; Used by the routine at print_lives_continue.
 print_lives_padding:
-  LD A,$20                             ; Print 6 space characters and return.
-  RST $10                              ;
-  LD A,$20                             ;
-  RST $10                              ;
-  LD A,$20                             ;
-  RST $10                              ;
-  LD A,$20                             ;
-  RST $10                              ;
-  LD A,$20                             ;
-  RST $10                              ;
-  LD A,$20                             ;
-  RST $10                              ;
-  RET                                  ;
+  LD A,$20
+  RST $10
+  LD A,$20
+  RST $10
+  LD A,$20
+  RST $10
+  LD A,$20
+  RST $10
+  LD A,$20
+  RST $10
+  LD A,$20
+  RST $10
+  RET
 
-; Print lives for player 2.
+; The player 2 branch of the print_lives routine.
 ;
-; Sets player 2's color and loads player 2's lives count, then jumps to common print routine.
+; Used by the routine at print_lives.
 ;
-; O:A Number of lives (passed to print_lives_continue).
+; O:A Number of lives.
 print_lives_player_2:
-  LD A,EXT_ATTR_INK                    ; Set INK to player 2 color (cyan).
+  LD A,EXT_ATTR_INK                    ; INK of Player 2 color
   RST $10                              ;
   LD A,COLOR_PLAYER_2                  ;
   RST $10                              ;
-  LD A,(state_lives_player_2)          ; Load player 2's lives count, jump to print_lives_continue.
-  JP print_lives_continue              ;
+  LD A,(state_lives_player_2)
+  JP print_lives_continue
 
 ; Pointer to state_controls
 ptr_state_controls:
@@ -8340,28 +8340,24 @@ L928B:
 
 ; Set screen attributes for sprite area.
 ;
-; Calculates the attribute cells covered by a sprite at both old and new positions and fills them with the specified
-; color. Handles screen third boundary wrapping.
+; Calculates the attribute cells covered by a sprite and fills them with the specified color.
 ;
-; I:A Sprite width in tiles.
-; I:E Screen attributes to set (0 = skip attribute setting).
-;
-; The routine first erases attributes at the old position (previous_object_coordinates), then sets attributes at the new
-; position (object_coordinates). Width and height determine the number of attribute cells to fill.
+; I:A Sprite width in tiles
+; I:E Screen attributes
 set_sprite_attributes:
-  PUSH HL                              ; Save registers, store width. If attributes = 0, skip to handle_zero_attributes.
+  PUSH HL                              ; Calculate old position attribute area and fill.
   PUSH BC                              ;
   LD (L928B),A                         ;
   LD A,E                               ;
   CP $00                               ;
-  JP Z,handle_zero_attributes          ; Save parameters, calculate attribute address from old position Y.
+  JP Z,handle_zero_attributes          ;
   LD (L9287),DE                        ;
   LD (L9285),BC                        ;
   LD (L9289),HL                        ;
   LD BC,(previous_object_coordinates)  ;
   LD A,B                               ;
   AND $F8                              ;
-  LD H,$00                             ; Add X offset, get width and height for row/column loops.
+  LD H,$00                             ;
   LD L,A                               ;
   ADD HL,HL                            ;
   ADD HL,HL                            ;
@@ -8372,7 +8368,7 @@ set_sprite_attributes:
   SRL E                                ;
   SRL E                                ;
   SRL E                                ;
-  ADD HL,DE                            ; Set up loop counters and fill old position attributes.
+  ADD HL,DE                            ;
   LD A,(L928B)                         ;
   LD C,A                               ;
   LD DE,(L9287)                        ;
@@ -8415,9 +8411,9 @@ set_attr_old_inner_loop:
   POP BC
   ADD HL,DE
   DJNZ set_attr_old_outer_loop
-; Process new position attribute area.
+; This entry point is used by the routine at L9367.
 set_attr_new_position_entry:
-  LD BC,(object_coordinates)           ; Calculate attribute address from new position (object_coordinates).
+  LD BC,(object_coordinates)           ; Calculate new position attribute area and fill.
   LD A,B                               ;
   AND $F8                              ;
   LD H,$00                             ;
@@ -8432,7 +8428,7 @@ set_attr_new_position_entry:
   SRL E                                ;
   SRL E                                ;
   ADD HL,DE                            ;
-  LD A,(L928B)                         ; Set up loop counters and fill new position attributes.
+  LD A,(L928B)                         ;
   LD C,A                               ;
   LD DE,(L9287)                        ;
   LD A,D                               ;

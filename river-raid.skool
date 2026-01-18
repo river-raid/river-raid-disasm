@@ -9195,17 +9195,17 @@ c$91E8 LD A,$01      ; {Open channel 1 (upper screen).
  $91F5 RST $10       ; }
  $91F6 LD A,($923A)  ; {If 2-player mode, jump to #R$91C1 to print player 2
 @isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
- $91F9 BIT 0,A       ; score.}
- $91FB JP NZ,$91C1   ;
+ $91F9 BIT 0,A       ; score.
+ $91FB JP NZ,$91C1   ; }
 @isub=LD A,EXT_ATTR_INK
  $91FE LD A,$10      ; {Set INK to white (for high score display).
  $9200 RST $10       ;
 @isub=LD A,COLOR_WHITE
  $9201 LD A,$07      ;
  $9203 RST $10       ; }
- $9204 LD BC,$0006   ; {Calculate high score offset from starting bridge, print
- $9207 LD HL,$90C8   ; 6-digit high score.
- $920A LD A,($923A)  ;
+ $9204 LD BC,$0006   ; {Calculate high score address: base ($90C8) +
+ $9207 LD HL,$90C8   ; ((game_mode AND $FE) * 3). Print 6-digit high score with
+ $920A LD A,($923A)  ; leading '0'.
  $920D AND $FE       ;
  $920F LD E,A        ;
  $9210 LD A,($923A)  ;
@@ -9216,10 +9216,10 @@ c$91E8 LD A,$01      ; {Open channel 1 (upper screen).
  $921A LD D,$00      ;
  $921C LD E,A        ;
  $921D ADD HL,DE     ;
- $921E EX DE,HL      ; }
+ $921E EX DE,HL      ;
  $921F CALL $203C    ;
  $9222 LD A,$30      ;
- $9224 RST $10       ;
+ $9224 RST $10       ; }
 @isub=LD A,EXT_ATTR_AT
  $9225 LD A,$16      ; {Position cursor at row 1, column 18.
  $9227 RST $10       ;
@@ -9227,7 +9227,7 @@ c$91E8 LD A,$01      ; {Open channel 1 (upper screen).
  $922A RST $10       ;
  $922B LD A,$12      ;
  $922D RST $10       ; }
- $922E LD A,$48      ; {Print "HI" label, switch to channel 2.
+ $922E LD A,$48      ; {Print "HI" label, switch to channel 2 (main screen).
  $9230 RST $10       ;
  $9231 LD A,$49      ;
  $9233 RST $10       ;
@@ -9252,50 +9252,49 @@ g$923C DEFB $00
 @label=state_player
 b$923D DEFB $00
 
-; Print remaining lives for current player.
+; Print lives.
 ;
-; Displays plane symbols on the status line to show remaining lives. Routes to
-; player-specific color and lives count.
+; Used by the routines at #R$5DA6 and #R$9109.
 @label=print_lives
-c$923E LD A,($923D)  ; {If current player is PLAYER_2, jump to #R$9277.
+c$923E LD A,($923D)  ;
 @isub=CP PLAYER_2
- $9241 CP $02        ; }
+ $9241 CP $02        ;
  $9243 JP Z,$9277    ;
 @isub=LD A,EXT_ATTR_INK
- $9246 LD A,$10      ; {Set INK to player 1 color (yellow).
+ $9246 LD A,$10      ; {INK of Player 1 color
  $9248 RST $10       ;
 @isub=LD A,COLOR_PLAYER_1
  $9249 LD A,$06      ;
  $924B RST $10       ; }
- $924C LD A,($923B)  ; Load player 1's lives count, fall through to print.
+ $924C LD A,($923B)  ;
 
-; Continue printing lives after the value has been loaded into A.
+; Continue printing lives after the value has been loaded into #REGa.
 ;
-; Common code path for printing lives as plane symbols at row 20, column 18.
+; Used by the routine at #R$9277.
 ;
-; I:A Number of lives to display.
+; I:A Number of lives.
 @label=print_lives_continue
-c$924F LD B,A        ; Save lives count in B.
+c$924F LD B,A        ;
 @isub=LD A,EXT_ATTR_AT
- $9250 LD A,$16      ; {Position cursor at row 20, column 18.
+ $9250 LD A,$16      ; {AT 20,18
  $9252 RST $10       ;
  $9253 LD A,$14      ;
  $9255 RST $10       ;
  $9256 LD A,$12      ;
  $9258 RST $10       ; }
- $9259 LD A,B        ; {If lives count is 0, skip to padding.
+ $9259 LD A,B        ;
  $925A CP $00        ;
- $925C JP Z,$9264    ; }
+ $925C JP Z,$9264    ;
 @label=print_lives_loop
 *$925F LD A,$9C      ; {Print ✈ UDG symbol, loop B times.
  $9261 RST $10       ;
  $9262 DJNZ $925F    ; }
 
-; Print six spaces to clear any leftover plane symbols.
+; Print six spaces
 ;
-; Called after printing lives to overwrite any previous extra planes.
+; Used by the routine at #R$924F.
 @label=print_lives_padding
-c$9264 LD A,$20      ; {Print 6 space characters and return.
+c$9264 LD A,$20      ;
  $9266 RST $10       ;
  $9267 LD A,$20      ;
  $9269 RST $10       ;
@@ -9307,23 +9306,22 @@ c$9264 LD A,$20      ; {Print 6 space characters and return.
  $9272 RST $10       ;
  $9273 LD A,$20      ;
  $9275 RST $10       ;
- $9276 RET           ; }
+ $9276 RET           ;
 
-; Print lives for player 2.
+; The player 2 branch of the #R$923E routine.
 ;
-; Sets player 2's color and loads player 2's lives count, then jumps to common
-; print routine.
+; Used by the routine at #R$923E.
 ;
-; O:A Number of lives (passed to #R$924F).
+; O:A Number of lives.
 @label=print_lives_player_2
 @isub=LD A,EXT_ATTR_INK
-c$9277 LD A,$10      ; {Set INK to player 2 color (cyan).
+c$9277 LD A,$10      ; {INK of Player 2 color
  $9279 RST $10       ;
 @isub=LD A,COLOR_PLAYER_2
  $927A LD A,$05      ;
  $927C RST $10       ; }
- $927D LD A,($923C)  ; {Load player 2's lives count, jump to #R$924F.
- $9280 JP $924F      ; }
+ $927D LD A,($923C)  ;
+ $9280 JP $924F      ;
 
 ; Pointer to #R$6BB0
 @label=ptr_state_controls
@@ -9343,31 +9341,26 @@ g$928B DEFW $0000
 
 ; Set screen attributes for sprite area.
 ;
-; Calculates the attribute cells covered by a sprite at both old and new
-; positions and fills them with the specified color. Handles screen third
-; boundary wrapping.
+; Calculates the attribute cells covered by a sprite and fills them with the
+; specified color.
 ;
-; I:A Sprite width in tiles.
-; I:E Screen attributes to set (0 = skip attribute setting).
-;
-; The routine first erases attributes at the old position (#R$8B0A), then sets
-; attributes at the new position (#R$8B0C). Width and height determine the
-; number of attribute cells to fill.
+; I:A Sprite width in tiles
+; I:E Screen attributes
 @label=set_sprite_attributes
-c$928D PUSH HL       ; {Save registers, store width. If attributes = 0, skip to
- $928E PUSH BC       ; #R$935D.
+c$928D PUSH HL       ; {Calculate old position attribute area and fill.
+ $928E PUSH BC       ;
  $928F LD ($928B),A  ;
  $9292 LD A,E        ;
- $9293 CP $00        ; }
- $9295 JP Z,$935D    ; {Save parameters, calculate attribute address from old
- $9298 LD ($9287),DE ; position Y.
+ $9293 CP $00        ;
+ $9295 JP Z,$935D    ;
+ $9298 LD ($9287),DE ;
  $929C LD ($9285),BC ;
  $92A0 LD ($9289),HL ;
  $92A3 LD BC,($8B0A) ;
  $92A7 LD A,B        ;
- $92A8 AND $F8       ; }
- $92AA LD H,$00      ; {Add X offset, get width and height for row/column
- $92AC LD L,A        ; loops.
+ $92A8 AND $F8       ;
+ $92AA LD H,$00      ;
+ $92AC LD L,A        ;
  $92AD ADD HL,HL     ;
  $92AE ADD HL,HL     ;
  $92AF LD DE,$5800   ;
@@ -9376,8 +9369,8 @@ c$928D PUSH HL       ; {Save registers, store width. If attributes = 0, skip to
  $92B5 LD E,C        ;
  $92B6 SRL E         ;
  $92B8 SRL E         ;
- $92BA SRL E         ; }
- $92BC ADD HL,DE     ; {Set up loop counters and fill old position attributes.
+ $92BA SRL E         ;
+ $92BC ADD HL,DE     ;
  $92BD LD A,($928B)  ;
  $92C0 LD C,A        ;
  $92C1 LD DE,($9287) ;
@@ -9421,10 +9414,10 @@ c$928D PUSH HL       ; {Save registers, store width. If attributes = 0, skip to
  $92FB POP BC        ;
  $92FC ADD HL,DE     ;
  $92FD DJNZ $92EA    ;
-; Process new position attribute area.
+; This entry point is used by the routine at #R$9367.
 @label=set_attr_new_position_entry
-*$92FF LD BC,($8B0C) ; {Calculate attribute address from new position
- $9303 LD A,B        ; (#R$8B0C).
+*$92FF LD BC,($8B0C) ; {Calculate new position attribute area and fill.
+ $9303 LD A,B        ;
  $9304 AND $F8       ;
  $9306 LD H,$00      ;
  $9308 LD L,A        ;
@@ -9437,8 +9430,8 @@ c$928D PUSH HL       ; {Save registers, store width. If attributes = 0, skip to
  $9312 SRL E         ;
  $9314 SRL E         ;
  $9316 SRL E         ;
- $9318 ADD HL,DE     ; }
- $9319 LD A,($928B)  ; {Set up loop counters and fill new position attributes.
+ $9318 ADD HL,DE     ;
+ $9319 LD A,($928B)  ;
  $931C LD C,A        ;
  $931D LD DE,($9287) ;
  $9321 LD A,D        ;
