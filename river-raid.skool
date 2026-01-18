@@ -9073,27 +9073,34 @@ c$9169 LD HL,$90C2   ; {Load #R$90C2 (player 2 score), add offset C to get
  $9173 CP $3A        ;
  $9175 JP Z,$91A9    ; }
  $9178 LD (HL),A     ; Store incremented digit, fall through to print.
-; This entry point is used by the routine at #R$91A9.
+
+; Print a digit from player 2's score.
+;
+; Prints a single score digit at the correct screen position using ROM RST $10
+; character output.
+;
+; I:D Digit offset (0-5, used to calculate column).
+; I:HL Pointer to the digit character.
 @label=print_player_2_score_digit
 @isub=LD A,EXT_ATTR_INK
-*$9179 LD A,$10      ; {INK of Player 2 color
+c$9179 LD A,$10      ; {Set INK to player 2 color (cyan).
  $917B RST $10       ;
 @isub=LD A,COLOR_PLAYER_2
  $917C LD A,$05      ;
  $917E RST $10       ; }
 @isub=LD A,EXT_ATTR_AT
- $917F LD A,$16      ; {AT 1,...
+ $917F LD A,$16      ; {Set cursor position to row 1.
  $9181 RST $10       ;
  $9182 LD A,$01      ;
  $9184 RST $10       ; }
- $9185 LD A,D        ;
+ $9185 LD A,D        ; {Calculate column = offset + 21, print column position.
  $9186 ADD A,$15     ;
- $9188 RST $10       ;
- $9189 LD A,(HL)     ;
- $918A RST $10       ;
- $918B LD A,$02      ;
+ $9188 RST $10       ; }
+ $9189 LD A,(HL)     ; {Load digit from score buffer and print it.
+ $918A RST $10       ; }
+ $918B LD A,$02      ; {Switch to channel 2 (main screen) and return.
  $918D CALL $1601    ;
- $9190 RET           ;
+ $9190 RET           ; }
 
 ; Carry
 ;
