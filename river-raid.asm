@@ -8137,27 +8137,28 @@ carry_player_1_score_digit:
   POP HL                               ;
   JP print_player_1_score_digit        ;
 
-; Carry
+; Handle carry for player 2's score digit.
 ;
-; Used by the routine at inc_player_2_score_digit.
+; When a digit overflows past '9', this routine sets it to '0' and propagates the carry to the next higher digit by
+; recursively calling update_score.
 ;
-; I:D Offset of the digit to carry.
-; I:HL Pointer to the digit.
+; I:D Offset of the overflowed digit.
+; I:HL Pointer to the overflowed digit.
 carry_player_2_score_digit:
-  LD (HL),$30
-  LD A,$06
-  SUB D
-  INC A
-  CP $07
-  RET Z
-  PUSH HL
-  PUSH DE
-  CALL update_score
-  LD A,$01
-  CALL CHAN_OPEN
-  POP DE
-  POP HL
-  JP print_player_2_score_digit
+  LD (HL),$30                          ; Write '0' to the overflowed digit.
+  LD A,$06                             ; Check if this is the leftmost digit (offset 0): A = 6-D+1, if A == 7 then
+  SUB D                                ; return.
+  INC A                                ;
+  CP $07                               ;
+  RET Z                                ; Return if leftmost digit (no more digits to carry into).
+  PUSH HL                              ; Save HL/DE, call update_score to increment next higher digit.
+  PUSH DE                              ;
+  CALL update_score                    ;
+  LD A,$01                             ; Open channel 1 (upper screen) for printing.
+  CALL CHAN_OPEN                       ;
+  POP DE                               ; Restore HL/DE, jump to print_player_2_score_digit to print the '0' digit.
+  POP HL                               ;
+  JP print_player_2_score_digit        ;
 
 ; Print player 2's score on the status line.
 ;

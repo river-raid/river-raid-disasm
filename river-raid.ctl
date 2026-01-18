@@ -3357,11 +3357,18 @@ R $9191 I:HL Pointer to the overflowed digit.
   $9199 Return if leftmost digit (no more digits to carry into).
   $919A Save HL/DE, call #R$9122 to increment next higher digit.
   $919F Open channel 1 (upper screen) for printing.
-  $91A4,5 Restore HL/DE, jump to #R$914B to print the '0' digit.
+  $91A4 Restore HL/DE, jump to #R$914B to print the '0' digit.
 @ $91A9 label=carry_player_2_score_digit
-c $91A9 Carry
-R $91A9 I:D Offset of the digit to carry.
-R $91A9 I:HL Pointer to the digit.
+c $91A9 Handle carry for player 2's score digit.
+D $91A9 When a digit overflows past '9', this routine sets it to '0' and propagates the carry to the next higher digit by recursively calling update_score.
+R $91A9 I:D Offset of the overflowed digit.
+R $91A9 I:HL Pointer to the overflowed digit.
+  $91A9 Write '0' to the overflowed digit.
+  $91AB Check if this is the leftmost digit (offset 0): A = 6-D+1, if A == 7 then return.
+  $91B1 Return if leftmost digit (no more digits to carry into).
+  $91B2 Save HL/DE, call #R$9122 to increment next higher digit.
+  $91B7 Open channel 1 (upper screen) for printing.
+  $91BC Restore HL/DE, jump to #R$9179 to print the '0' digit.
 @ $91C1 label=print_score_player_2
 @ $91C1 isub=LD A,EXT_ATTR_INK
 c $91C1 Print player 2's score on the status line.
