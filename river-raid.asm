@@ -4529,7 +4529,7 @@ render_explosions:
   POP DE                               ;
 render_explosions_next:
   LD A,$02                             ; Call second sprite rendering pass, loop to next entry.
-  CALL render_object_blit_entry        ;
+  CALL render_object_entry             ;
   JP render_explosions                 ;
 
 ; Load frame 1/5 explosion sprite
@@ -4760,13 +4760,13 @@ ld_attributes_tank:
 
 ; Set XOR blending mode for sprite rendering
 ;
-; Modifies sprite rendering code via self-modifying instructions. Patches blit_draw_op with XOR B and blit_erase_op with
-; NOP to enable XOR blending mode for fighters/tanks.
+; Modifies sprite rendering code via self-modifying instructions. Patches sprite_draw_op with XOR B and sprite_erase_op
+; with NOP to enable XOR blending mode for fighters/tanks.
 blending_mode_xor_nop:
-  LD A,$A8                             ; Patch XOR B ($A8) into blit_draw_op and NOP ($00) into blit_erase_op for XOR
-  LD (blit_draw_op),A                  ; rendering.
+  LD A,$A8                             ; Patch XOR B ($A8) into sprite_draw_op and NOP ($00) into sprite_erase_op for
+  LD (sprite_draw_op),A                ; XOR rendering.
   LD A,$00                             ;
-  LD (blit_erase_op),A                 ;
+  LD (sprite_erase_op),A               ;
   RET                                  ;
 
 ; Render fuel station
@@ -5293,8 +5293,8 @@ tank_move_entry:
 ; Patches sprite renderer to use XOR for both mask and sprite operations. Used for tanks and fighters.
 blending_mode_xor_xor:
   LD A,$A8                             ; Load XOR B opcode ($A8).
-  LD (blit_erase_op),A                 ; Patch XOR B into blit_erase_op.
-  LD (blit_draw_op),A                  ; Patch XOR B into blit_draw_op.
+  LD (sprite_erase_op),A               ; Patch XOR B into sprite_erase_op.
+  LD (sprite_draw_op),A                ; Patch XOR B into sprite_draw_op.
   RET
 
 ; Set OR/OR blending mode
@@ -5302,8 +5302,8 @@ blending_mode_xor_xor:
 ; Patches sprite renderer to use OR for both mask and sprite operations. Restores default blending after XOR rendering.
 blending_mode_or_or:
   LD A,$B0                             ; Load OR B opcode ($B0).
-  LD (blit_erase_op),A                 ; Patch OR B into blit_erase_op.
-  LD (blit_draw_op),A                  ; Patch OR B into blit_draw_op.
+  LD (sprite_erase_op),A               ; Patch OR B into sprite_erase_op.
+  LD (sprite_draw_op),A                ; Patch OR B into sprite_draw_op.
   RET
 
 ; Adjust tank position for left orientation
@@ -7503,7 +7503,7 @@ render_sprite_frame_loop:
 
 ; Render an object with collision detection.
 ;
-; Main rendering routine that blits sprite data to screen, checking for pixel collisions.
+; Main rendering routine that copies sprite data to screen, checking for pixel collisions.
 ;
 ; I:A Sprite width in tiles
 ; I:BC Sprite size in bytes
@@ -7529,7 +7529,7 @@ render_object_frame_loop:
   LD (render_sprite_ptr_out),HL        ;
   POP DE
 ; This entry point is used by the routine at render_explosions.
-render_object_blit_entry:
+render_object_entry:
   PUSH DE                              ; Save DE, load object_coordinates.
   LD BC,(object_coordinates)           ;
   CALL calculate_pixel_address         ; Calculate screen address for new position.
@@ -7537,11 +7537,11 @@ render_object_blit_entry:
   LD BC,(previous_object_coordinates)  ; Calculate screen address for old position.
   CALL calculate_pixel_address         ;
   LD (render_old_screen_addr),HL
-  JP adjust_old_screen_third_loop      ; Jump to blit loop.
+  JP adjust_old_screen_third_loop      ; Jump to render loop.
 
 ; Process one row of sprite rendering.
 ;
-; Handles screen boundary wrapping for the new object position and calls the blitter.
+; Handles screen boundary wrapping for the new object position and calls the sprite renderer.
 render_row_loop:
   PUSH DE                              ; Check if new Y position crosses character boundary.
   LD BC,(object_coordinates)           ;
@@ -7595,14 +7595,14 @@ adjust_old_position:
 ;
 ; Used by the routine at adjust_old_position.
 adjust_old_screen_third:
-  LD HL,(render_old_screen_addr)       ; HL -= $E0, fall through to blitter.
+  LD HL,(render_old_screen_addr)       ; HL -= $E0, fall through to sprite renderer.
   LD DE,$00E0                          ;
   OR A                                 ;
   SBC HL,DE                            ;
   LD (render_old_screen_addr),HL
-; Main rendering loop - calls blitter and advances to next pixel row.
+; Main rendering loop - draws sprite row and advances to next pixel row.
 adjust_old_screen_third_loop:
-  CALL render_blit_row                 ; Call blitter for this row.
+  CALL render_sprite_row               ; Render this sprite row.
   LD A,(render_object_width)           ; Advance sprite pointers by width.
   LD D,$00                             ;
   LD E,A                               ;
@@ -7629,16 +7629,16 @@ adjust_old_screen_third_loop:
   JP NZ,render_row_loop                ;
   RET
 
-; Blit one row of sprite data to screen.
+; Render one row of sprite data to screen.
 ;
 ; XORs erasure pixels, then ORs new pixels, checking for collision.
-render_blit_row:
+render_sprite_row:
   LD A,(render_object_width)           ; Get width, load screen addresses for new and old positions.
   LD C,A                               ;
   LD HL,(render_old_screen_addr)       ;
   LD DE,(render_sprite_ptr)            ;
 ; First pass: erase old sprite (XOR with screen).
-render_blit_erase_loop:
+render_erase_loop:
   LD A,(DE)                            ; Read sprite byte, XOR $FF, combine with screen.
   LD B,A                               ;
   LD A,(HL)                            ;
@@ -7647,20 +7647,20 @@ render_blit_erase_loop:
 ; Self-modifying blending operation (erasure).
 ;
 ; This byte is patched to change blending mode: OR B for XOR mode, NOP for OR mode.
-blit_erase_op:
+sprite_erase_op:
   OR B                                 ; Apply blend, store result, advance pointers, loop.
   XOR $FF                              ;
   LD (HL),A                            ;
   INC DE                               ;
   INC HL                               ;
   DEC C                                ;
-  JR NZ,render_blit_erase_loop         ;
+  JR NZ,render_erase_loop              ;
   LD A,(render_object_width)
   LD C,A
   LD HL,(render_new_screen_addr)
   LD DE,(render_old_sprite_ptr)
 ; Second pass: draw new sprite (OR with screen), check collision.
-blit_draw_loop:
+sprite_draw_loop:
   PUSH DE                              ; Read sprite byte, XOR with screen to detect overlap.
   LD A,(DE)                            ;
   LD B,A                               ;
@@ -7678,14 +7678,14 @@ handle_collision_mode_none:
 ; Self-modifying blending operation (drawing).
 ;
 ; This byte is patched to change blending mode: OR B for OR mode, XOR B for XOR mode.
-blit_draw_op:
+sprite_draw_op:
   OR B                                 ; Apply blend, store result, advance pointers, loop.
   LD (HL),A                            ;
   POP DE                               ;
   INC HL                               ;
   INC DE                               ;
   DEC C                                ;
-  JR NZ,blit_draw_loop                 ;
+  JR NZ,sprite_draw_loop               ;
   RET
 
 ; Jump to collision dispatcher

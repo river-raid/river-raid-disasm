@@ -3181,7 +3181,7 @@ R $8B1E I:HL Pointer to the sprite array
   $8B37,4 Reload width and restore attributes/height, fall through to render_object.
 @ $8B3C label=render_object
 c $8B3C Render an object with collision detection.
-D $8B3C Main rendering routine that blits sprite data to screen, checking for pixel collisions.
+D $8B3C Main rendering routine that copies sprite data to screen, checking for pixel collisions.
 R $8B3C I:A Sprite width in tiles
 R $8B3C I:BC Sprite size in bytes
 R $8B3C I:D  Frame number and some other info
@@ -3193,14 +3193,14 @@ R $8B3C I:HL Pointer to the sprite array
 @ $8B4D label=render_object_frame_loop
   $8B4D Add frame offset to HL, loop until done.
   $8B51,6 Store sprite pointers to render_old_sprite_ptr and render_sprite_ptr_out.
-@ $8B58 label=render_object_blit_entry
+@ $8B58 label=render_object_entry
   $8B58 Save DE, load object_coordinates.
   $8B5D,3 Calculate screen address for new position.
   $8B63,7 Calculate screen address for old position.
-  $8B6D Jump to blit loop.
+  $8B6D Jump to render loop.
 @ $8B70 label=render_row_loop
 c $8B70 Process one row of sprite rendering.
-D $8B70 Handles screen boundary wrapping for the new object position and calls the blitter.
+D $8B70 Handles screen boundary wrapping for the new object position and calls the sprite renderer.
   $8B70 Check if new Y position crosses character boundary.
   $8B7D If crossing third-of-screen boundary, adjust screen address by $7E0.
   $8B85,12 Store new screen address and continue.
@@ -3216,30 +3216,30 @@ D $8BA3 Similar boundary handling for the old (erasure) position.
   $8BB7,12 Store adjusted address.
 @ $8BC6 label=adjust_old_screen_third
 c $8BC6 Adjust old position for third-of-screen crossing.
-  $8BC6,9 HL -= $E0, fall through to blitter.
+  $8BC6,9 HL -= $E0, fall through to sprite renderer.
 @ $8BD2 label=adjust_old_screen_third_loop
-N $8BD2 Main rendering loop - calls blitter and advances to next pixel row.
-  $8BD2 Call blitter for this row.
+N $8BD2 Main rendering loop - draws sprite row and advances to next pixel row.
+  $8BD2 Render this sprite row.
   $8BD5 Advance sprite pointers by width.
   $8BE9 Increment Y coordinate for all position/address variables.
   $8C05,5 Decrement row counter, loop if more rows.
-@ $8C0B label=render_blit_row
-c $8C0B Blit one row of sprite data to screen.
+@ $8C0B label=render_sprite_row
+c $8C0B Render one row of sprite data to screen.
 D $8C0B XORs erasure pixels, then ORs new pixels, checking for collision.
   $8C0B Get width, load screen addresses for new and old positions.
-@ $8C16 label=render_blit_erase_loop
+@ $8C16 label=render_erase_loop
 N $8C16 First pass: erase old sprite (XOR with screen).
   $8C16 Read sprite byte, XOR $FF, combine with screen.
-@ $8C1B label=blit_erase_op
+@ $8C1B label=sprite_erase_op
 c $8C1B Self-modifying blending operation (erasure).
 D $8C1B This byte is patched to change blending mode: OR B for XOR mode, NOP for OR mode.
   $8C1B,9 Apply blend, store result, advance pointers, loop.
-@ $8C2F label=blit_draw_loop
+@ $8C2F label=sprite_draw_loop
 N $8C2F Second pass: draw new sprite (OR with screen), check collision.
   $8C2F Read sprite byte, XOR with screen to detect overlap.
   $8C38,3 If collision detected, jump to collision dispatcher.
 @ $8C3B label=handle_collision_mode_none
-@ $8C3C label=blit_draw_op
+@ $8C3C label=sprite_draw_op
 c $8C3C Self-modifying blending operation (drawing).
 D $8C3C This byte is patched to change blending mode: OR B for OR mode, XOR B for XOR mode.
   $8C3C,8 Apply blend, store result, advance pointers, loop.
