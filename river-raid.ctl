@@ -3503,12 +3503,19 @@ c $93B8 Return 1 (first score less than second).
 c $93BB Return $FF (first score greater than second).
 @ $93BE label=update_high_score
 c $93BE Update high score table from current player score.
-D $93BE Compares player 1's score with the appropriate high score slot and updates if higher.
+D $93BE Compares player 1's score with the appropriate high score slot (based on starting bridge) and updates if higher. In 2-player mode, first checks if player 2 beat player 1.
+  $93BE If 2-player mode, call #R$93F2 to check player 2 score first.
 @ $93C1 isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
+  $93C6 Calculate high score slot address: base ($90C8) + ((game_mode AND $FE) * 3).
+  $93DD Compare player 1 score with high score slot. Return if not higher.
+  $93E9,8 Copy player 1 score (6 bytes) to high score slot.
 @ $93EC isub=LD BC,state_score_player_2_low - state_score_player_1_low
 @ $93F2 label=check_player2_high_score
 c $93F2 Check if player 2 score beats player 1 score.
-D $93F2 For 2-player games, copies player 2 score to player 1 slot if higher.
+D $93F2 For 2-player games, compares scores and copies player 2 score to player 1 slot if higher. This ensures the best score from either player is compared against the high score.
+  $93F2 Compare player 1 score (#R$90BC) with player 2 score (#R$90C2).
+  $93FB Return if player 2 score is not greater.
+  $93FE,11 Copy player 2 score to player 1 score slot (6 bytes).
 @ $9404 isub=LD BC,state_score_player_2_low - state_score_player_1_low
 @ $940A label=clear_screen
 c $940A Clear the screen by setting all pixel bytes to $00 and all attributes to the value set in #REGd.

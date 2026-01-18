@@ -9586,15 +9586,16 @@ c$93BB LD A,$FF      ;
 
 ; Update high score table from current player score.
 ;
-; Compares player 1's score with the appropriate high score slot and updates if
-; higher.
+; Compares player 1's score with the appropriate high score slot (based on
+; starting bridge) and updates if higher. In 2-player mode, first checks if
+; player 2 beat player 1.
 @label=update_high_score
-c$93BE LD A,($923A)  ;
+c$93BE LD A,($923A)  ; {If 2-player mode, call #R$93F2 to check player 2 score
 @isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
- $93C1 BIT 0,A       ;
- $93C3 CALL NZ,$93F2 ;
- $93C6 LD HL,$90C8   ;
- $93C9 LD A,($923A)  ;
+ $93C1 BIT 0,A       ; first.
+ $93C3 CALL NZ,$93F2 ; }
+ $93C6 LD HL,$90C8   ; {Calculate high score slot address: base ($90C8) +
+ $93C9 LD A,($923A)  ; ((game_mode AND $FE) * 3).
  $93CC AND $FE       ;
  $93CE LD E,A        ;
  $93CF LD A,($923A)  ;
@@ -9604,34 +9605,36 @@ c$93BE LD A,($923A)  ;
  $93D8 SUB E         ;
  $93D9 LD D,$00      ;
  $93DB LD E,A        ;
- $93DC ADD HL,DE     ;
- $93DD EX DE,HL      ;
- $93DE LD HL,$90BC   ;
+ $93DC ADD HL,DE     ; }
+ $93DD EX DE,HL      ; {Compare player 1 score with high score slot. Return if
+ $93DE LD HL,$90BC   ; not higher.
  $93E1 PUSH DE       ;
  $93E2 CALL $93A1    ;
  $93E5 POP DE        ;
  $93E6 CP $01        ;
- $93E8 RET NZ        ;
- $93E9 LD HL,$90BC   ;
+ $93E8 RET NZ        ; }
+ $93E9 LD HL,$90BC   ; {Copy player 1 score (6 bytes) to high score slot.
 @isub=LD BC,state_score_player_2_low - state_score_player_1_low
  $93EC LD BC,$0006   ;
- $93EF LDIR          ;
+ $93EF LDIR          ; }
  $93F1 RET           ;
 
 ; Check if player 2 score beats player 1 score.
 ;
-; For 2-player games, copies player 2 score to player 1 slot if higher.
+; For 2-player games, compares scores and copies player 2 score to player 1
+; slot if higher. This ensures the best score from either player is compared
+; against the high score.
 @label=check_player2_high_score
-c$93F2 LD HL,$90BC   ;
- $93F5 LD DE,$90C2   ;
- $93F8 CALL $93A1    ;
- $93FB CP $FF        ;
- $93FD RET NZ        ;
- $93FE LD HL,$90C2   ;
+c$93F2 LD HL,$90BC   ; {Compare player 1 score (#R$90BC) with player 2 score
+ $93F5 LD DE,$90C2   ; (#R$90C2).
+ $93F8 CALL $93A1    ; }
+ $93FB CP $FF        ; {Return if player 2 score is not greater.
+ $93FD RET NZ        ; }
+ $93FE LD HL,$90C2   ; {Copy player 2 score to player 1 score slot (6 bytes).
  $9401 LD DE,$90BC   ;
 @isub=LD BC,state_score_player_2_low - state_score_player_1_low
  $9404 LD BC,$0006   ;
- $9407 LDIR          ;
+ $9407 LDIR          ; }
  $9409 RET           ;
 
 ; Clear the screen by setting all pixel bytes to $00 and all attributes to the

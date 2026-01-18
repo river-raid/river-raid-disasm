@@ -8585,48 +8585,50 @@ L93BB:
 
 ; Update high score table from current player score.
 ;
-; Compares player 1's score with the appropriate high score slot and updates if higher.
+; Compares player 1's score with the appropriate high score slot (based on starting bridge) and updates if higher. In
+; 2-player mode, first checks if player 2 beat player 1.
 update_high_score:
-  LD A,(state_game_mode)
-  BIT GAME_MODE_BIT_TWO_PLAYERS,A
-  CALL NZ,check_player2_high_score
-  LD HL,L90C8
-  LD A,(state_game_mode)
-  AND $FE
-  LD E,A
-  LD A,(state_game_mode)
-  AND $FE
-  SLA A
-  SLA A
-  SUB E
-  LD D,$00
-  LD E,A
-  ADD HL,DE
-  EX DE,HL
-  LD HL,state_score_player_1_low
-  PUSH DE
-  CALL compare_scores
-  POP DE
-  CP $01
-  RET NZ
-  LD HL,state_score_player_1_low
-  LD BC,state_score_player_2_low - state_score_player_1_low
-  LDIR
+  LD A,(state_game_mode)               ; If 2-player mode, call check_player2_high_score to check player 2 score first.
+  BIT GAME_MODE_BIT_TWO_PLAYERS,A      ;
+  CALL NZ,check_player2_high_score     ;
+  LD HL,L90C8                          ; Calculate high score slot address: base ($90C8) + ((game_mode AND $FE) * 3).
+  LD A,(state_game_mode)               ;
+  AND $FE                              ;
+  LD E,A                               ;
+  LD A,(state_game_mode)               ;
+  AND $FE                              ;
+  SLA A                                ;
+  SLA A                                ;
+  SUB E                                ;
+  LD D,$00                             ;
+  LD E,A                               ;
+  ADD HL,DE                            ;
+  EX DE,HL                             ; Compare player 1 score with high score slot. Return if not higher.
+  LD HL,state_score_player_1_low       ;
+  PUSH DE                              ;
+  CALL compare_scores                  ;
+  POP DE                               ;
+  CP $01                               ;
+  RET NZ                               ;
+  LD HL,state_score_player_1_low                            ; Copy player 1 score (6 bytes) to high score slot.
+  LD BC,state_score_player_2_low - state_score_player_1_low ;
+  LDIR                                                      ;
   RET
 
 ; Check if player 2 score beats player 1 score.
 ;
-; For 2-player games, copies player 2 score to player 1 slot if higher.
+; For 2-player games, compares scores and copies player 2 score to player 1 slot if higher. This ensures the best score
+; from either player is compared against the high score.
 check_player2_high_score:
-  LD HL,state_score_player_1_low
-  LD DE,state_score_player_2_low
-  CALL compare_scores
-  CP $FF
-  RET NZ
-  LD HL,state_score_player_2_low
-  LD DE,state_score_player_1_low
-  LD BC,state_score_player_2_low - state_score_player_1_low
-  LDIR
+  LD HL,state_score_player_1_low       ; Compare player 1 score (state_score_player_1_low) with player 2 score
+  LD DE,state_score_player_2_low       ; (state_score_player_2_low).
+  CALL compare_scores                  ;
+  CP $FF                               ; Return if player 2 score is not greater.
+  RET NZ                               ;
+  LD HL,state_score_player_2_low                            ; Copy player 2 score to player 1 score slot (6 bytes).
+  LD DE,state_score_player_1_low                            ;
+  LD BC,state_score_player_2_low - state_score_player_1_low ;
+  LDIR                                                      ;
   RET
 
 ; Clear the screen by setting all pixel bytes to $00 and all attributes to the value set in D.
