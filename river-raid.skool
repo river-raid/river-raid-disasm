@@ -9462,22 +9462,21 @@ c$928D PUSH HL       ; {Save registers, store width, check if attribute is 0
  $9347 POP BC        ;
 ; This entry point is used by the routine at #R$9388.
 @label=set_attr_new_outer_loop
-*$9348 PUSH BC       ;
+*$9348 PUSH BC       ; Outer loop: save row counter B and column count C.
 @label=set_attr_new_inner_loop
-*$9349 LD (HL),A     ;
- $934A INC HL        ;
+*$9349 LD (HL),A     ; {Inner loop: write attribute A to cell, advance HL, loop
+ $934A INC HL        ; for C columns.
  $934B DEC C         ;
- $934C JR NZ,$9349   ;
- $934E PUSH HL       ;
-@nowarn
- $934F LD BC,$5A20   ;
+ $934C JR NZ,$9349   ; }
+ $934E PUSH HL       ; {Check if HL past attribute area end ($5A20). If so,
+ $934F LD BC,$5A20   ; exit early to #R$936B.
  $9352 OR A          ;
  $9353 SBC HL,BC     ;
  $9355 POP HL        ;
- $9356 JP P,$936B    ;
- $9359 POP BC        ;
- $935A ADD HL,DE     ;
- $935B DJNZ $9348    ;
+ $9356 JP P,$936B    ; }
+ $9359 POP BC        ; {Restore counter, advance HL by row stride DE, loop for
+ $935A ADD HL,DE     ; B rows.
+ $935B DJNZ $9348    ; }
 
 ; Return point when attributes are zero (skip attribute setting).
 ;

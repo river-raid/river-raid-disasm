@@ -3474,8 +3474,11 @@ R $928D I:HL New position coordinates.
   $9329 Set up row stride, check for screen third boundary.
   $933B,12 If at screen top, use wrapped attribute fill at #R$9388.
 @ $9348 label=set_attr_new_outer_loop
+  $9348 Outer loop: save row counter B and column count C.
 @ $9349 label=set_attr_new_inner_loop
-@ $934F nowarn
+  $9349 Inner loop: write attribute A to cell, advance HL, loop for C columns.
+  $934E Check if HL past attribute area end ($5A20). If so, exit early to #R$936B.
+  $9359 Restore counter, advance HL by row stride DE, loop for B rows.
 @ $935D label=handle_zero_attributes
 c $935D Return point when attributes are zero (skip attribute setting).
 c $9367 Early exit from old position attribute loop.
