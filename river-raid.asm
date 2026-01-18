@@ -8341,22 +8341,25 @@ L928B:
 
 ; Set screen attributes for sprite area.
 ;
-; Calculates the attribute cells covered by a sprite and fills them with the specified color.
+; Updates attribute cells for both old (erase) and new (draw) sprite positions. Calculates attribute address as
+; screen_attributes + (Y AND $F8) * 4 + (X >> 3).
 ;
-; I:A Sprite width in tiles
-; I:E Screen attributes
+; I:A Sprite width in tiles.
+; I:DE Sprite height in D, attribute color in E.
+; I:BC Old position coordinates.
+; I:HL New position coordinates.
 set_sprite_attributes:
-  PUSH HL                              ; Calculate old position attribute area and fill.
+  PUSH HL                              ; Save registers, store width, check if attribute is 0 (skip if so).
   PUSH BC                              ;
   LD (L928B),A                         ;
   LD A,E                               ;
   CP $00                               ;
-  JP Z,handle_zero_attributes          ;
-  LD (L9287),DE                        ;
+  JP Z,handle_zero_attributes          ; Jump to handle_zero_attributes if attribute is 0.
+  LD (L9287),DE                        ; Save DE, BC, HL to memory for later use.
   LD (L9285),BC                        ;
   LD (L9289),HL                        ;
-  LD BC,(previous_object_coordinates)  ;
-  LD A,B                               ;
+  LD BC,(previous_object_coordinates)  ; Calculate attribute address for old position from stored coordinates at
+  LD A,B                               ; previous_object_coordinates.
   AND $F8                              ;
   LD H,$00                             ;
   LD L,A                               ;
@@ -8370,7 +8373,7 @@ set_sprite_attributes:
   SRL E                                ;
   SRL E                                ;
   ADD HL,DE                            ;
-  LD A,(L928B)                         ;
+  LD A,(L928B)                         ; Calculate row count from height: (height >> 3) + 3. Set up row offset.
   LD C,A                               ;
   LD DE,(L9287)                        ;
   LD A,D                               ;
@@ -8380,7 +8383,7 @@ set_sprite_attributes:
   INC A                                ;
   INC A                                ;
   INC A                                ;
-  LD B,A                               ;
+  LD B,A                               ; Set up row stride ($20 - width), check for screen third boundary.
   EX DE,HL                             ;
   LD HL,$0020                          ;
   PUSH BC                              ;
@@ -8391,7 +8394,7 @@ set_sprite_attributes:
   LD BC,(previous_object_coordinates)  ;
   LD A,B                               ;
   AND $F8                              ;
-  CP $00                               ;
+  CP $00                               ; If at screen top, use wrapped attribute fill at set_attr_wrap_old.
   LD A,$0C                             ;
   JP Z,set_attr_wrap_old               ;
   POP BC
@@ -8414,8 +8417,8 @@ set_attr_old_inner_loop:
   DJNZ set_attr_old_outer_loop
 ; This entry point is used by the routine at L9367.
 set_attr_new_position_entry:
-  LD BC,(object_coordinates)           ; Calculate new position attribute area and fill.
-  LD A,B                               ;
+  LD BC,(object_coordinates)           ; Calculate attribute address for new position from stored coordinates at
+  LD A,B                               ; object_coordinates.
   AND $F8                              ;
   LD H,$00                             ;
   LD L,A                               ;
@@ -8428,7 +8431,7 @@ set_attr_new_position_entry:
   SRL E                                ;
   SRL E                                ;
   SRL E                                ;
-  ADD HL,DE                            ;
+  ADD HL,DE                            ; Calculate row count from height: (height >> 3) + 2. Set up row offset.
   LD A,(L928B)                         ;
   LD C,A                               ;
   LD DE,(L9287)                        ;
@@ -8437,7 +8440,7 @@ set_attr_new_position_entry:
   SRL A                                ;
   SRL A                                ;
   INC A                                ;
-  INC A                                ;
+  INC A                                ; Set up row stride, check for screen third boundary.
   LD B,A                               ;
   EX DE,HL                             ;
   LD HL,$0020                          ;
@@ -8448,12 +8451,12 @@ set_attr_new_position_entry:
   EX DE,HL                             ;
   LD BC,(object_coordinates)           ;
   LD A,B                               ;
-  AND $F8                              ;
+  AND $F8                              ; If at screen top, use wrapped attribute fill at set_attr_wrap_new.
   CP $00                               ;
   LD BC,(L9287)                        ;
   LD A,C                               ;
   JP Z,set_attr_wrap_new               ;
-  POP BC                               ;
+  POP BC
 ; This entry point is used by the routine at set_attr_wrap_new.
 set_attr_new_outer_loop:
   PUSH BC

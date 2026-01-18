@@ -3450,15 +3450,26 @@ g $928B
 W $928B
 @ $928D label=set_sprite_attributes
 c $928D Set screen attributes for sprite area.
-D $928D Calculates the attribute cells covered by a sprite and fills them with the specified color.
-R $928D I:A Sprite width in tiles
-R $928D I:E Screen attributes
-  $928D,92 Calculate old position attribute area and fill.
+D $928D Updates attribute cells for both old (erase) and new (draw) sprite positions. Calculates attribute address as #R$5800 + (Y AND $F8) * 4 + (X >> 3).
+R $928D I:A Sprite width in tiles.
+R $928D I:DE Sprite height in D, attribute color in E.
+R $928D I:BC Old position coordinates.
+R $928D I:HL New position coordinates.
+  $928D Save registers, store width, check if attribute is 0 (skip if so).
+  $9295 Jump to #R$935D if attribute is 0.
+  $9298 Save DE, BC, HL to memory for later use.
+  $92A3 Calculate attribute address for old position from stored coordinates at #R$8B0A.
+  $92BD Calculate row count from height: (height >> 3) + 3. Set up row offset.
+  $92CF Set up row stride ($20 - width), check for screen third boundary.
+  $92E2,7 If at screen top, use wrapped attribute fill at #R$936F.
 @ $92EA label=set_attr_old_outer_loop
 @ $92EB label=set_attr_old_inner_loop
 @ $92F1 nowarn
 @ $92FF label=set_attr_new_position_entry
-  $92FF,73 Calculate new position attribute area and fill.
+  $92FF Calculate attribute address for new position from stored coordinates at #R$8B0C.
+  $9318 Calculate row count from height: (height >> 3) + 2. Set up row offset.
+  $9329 Set up row stride, check for screen third boundary.
+  $933B,12 If at screen top, use wrapped attribute fill at #R$9388.
 @ $9348 label=set_attr_new_outer_loop
 @ $9349 label=set_attr_new_inner_loop
 @ $934F nowarn

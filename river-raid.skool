@@ -9344,23 +9344,25 @@ g$928B DEFW $0000
 
 ; Set screen attributes for sprite area.
 ;
-; Calculates the attribute cells covered by a sprite and fills them with the
-; specified color.
+; Updates attribute cells for both old (erase) and new (draw) sprite positions.
+; Calculates attribute address as #R$5800 + (Y AND $F8) * 4 + (X >> 3).
 ;
-; I:A Sprite width in tiles
-; I:E Screen attributes
+; I:A Sprite width in tiles.
+; I:DE Sprite height in D, attribute color in E.
+; I:BC Old position coordinates.
+; I:HL New position coordinates.
 @label=set_sprite_attributes
-c$928D PUSH HL       ; {Calculate old position attribute area and fill.
- $928E PUSH BC       ;
+c$928D PUSH HL       ; {Save registers, store width, check if attribute is 0
+ $928E PUSH BC       ; (skip if so).
  $928F LD ($928B),A  ;
  $9292 LD A,E        ;
- $9293 CP $00        ;
- $9295 JP Z,$935D    ;
- $9298 LD ($9287),DE ;
+ $9293 CP $00        ; }
+ $9295 JP Z,$935D    ; Jump to #R$935D if attribute is 0.
+ $9298 LD ($9287),DE ; {Save DE, BC, HL to memory for later use.
  $929C LD ($9285),BC ;
- $92A0 LD ($9289),HL ;
- $92A3 LD BC,($8B0A) ;
- $92A7 LD A,B        ;
+ $92A0 LD ($9289),HL ; }
+ $92A3 LD BC,($8B0A) ; {Calculate attribute address for old position from
+ $92A7 LD A,B        ; stored coordinates at #R$8B0A.
  $92A8 AND $F8       ;
  $92AA LD H,$00      ;
  $92AC LD L,A        ;
@@ -9373,9 +9375,9 @@ c$928D PUSH HL       ; {Calculate old position attribute area and fill.
  $92B6 SRL E         ;
  $92B8 SRL E         ;
  $92BA SRL E         ;
- $92BC ADD HL,DE     ;
- $92BD LD A,($928B)  ;
- $92C0 LD C,A        ;
+ $92BC ADD HL,DE     ; }
+ $92BD LD A,($928B)  ; {Calculate row count from height: (height >> 3) + 3. Set
+ $92C0 LD C,A        ; up row offset.
  $92C1 LD DE,($9287) ;
  $92C5 LD A,D        ;
  $92C6 SRL A         ;
@@ -9383,9 +9385,9 @@ c$928D PUSH HL       ; {Calculate old position attribute area and fill.
  $92CA SRL A         ;
  $92CC INC A         ;
  $92CD INC A         ;
- $92CE INC A         ;
- $92CF LD B,A        ;
- $92D0 EX DE,HL      ;
+ $92CE INC A         ; }
+ $92CF LD B,A        ; {Set up row stride ($20 - width), check for screen third
+ $92D0 EX DE,HL      ; boundary.
  $92D1 LD HL,$0020   ;
  $92D4 PUSH BC       ;
  $92D5 LD B,$00      ;
@@ -9394,9 +9396,9 @@ c$928D PUSH HL       ; {Calculate old position attribute area and fill.
  $92DA EX DE,HL      ;
  $92DB LD BC,($8B0A) ;
  $92DF LD A,B        ;
- $92E0 AND $F8       ;
- $92E2 CP $00        ;
- $92E4 LD A,$0C      ;
+ $92E0 AND $F8       ; }
+ $92E2 CP $00        ; {If at screen top, use wrapped attribute fill at
+ $92E4 LD A,$0C      ; #R$936F.
  $92E6 JP Z,$936F    ; }
  $92E9 POP BC        ;
 ; This entry point is used by the routine at #R$936F.
@@ -9419,8 +9421,8 @@ c$928D PUSH HL       ; {Calculate old position attribute area and fill.
  $92FD DJNZ $92EA    ;
 ; This entry point is used by the routine at #R$9367.
 @label=set_attr_new_position_entry
-*$92FF LD BC,($8B0C) ; {Calculate new position attribute area and fill.
- $9303 LD A,B        ;
+*$92FF LD BC,($8B0C) ; {Calculate attribute address for new position from
+ $9303 LD A,B        ; stored coordinates at #R$8B0C.
  $9304 AND $F8       ;
  $9306 LD H,$00      ;
  $9308 LD L,A        ;
@@ -9432,17 +9434,17 @@ c$928D PUSH HL       ; {Calculate old position attribute area and fill.
  $9311 LD E,C        ;
  $9312 SRL E         ;
  $9314 SRL E         ;
- $9316 SRL E         ;
- $9318 ADD HL,DE     ;
- $9319 LD A,($928B)  ;
+ $9316 SRL E         ; }
+ $9318 ADD HL,DE     ; {Calculate row count from height: (height >> 3) + 2. Set
+ $9319 LD A,($928B)  ; up row offset.
  $931C LD C,A        ;
  $931D LD DE,($9287) ;
  $9321 LD A,D        ;
  $9322 SRL A         ;
  $9324 SRL A         ;
  $9326 SRL A         ;
- $9328 INC A         ;
- $9329 INC A         ;
+ $9328 INC A         ; }
+ $9329 INC A         ; {Set up row stride, check for screen third boundary.
  $932A LD B,A        ;
  $932B EX DE,HL      ;
  $932C LD HL,$0020   ;
@@ -9452,13 +9454,13 @@ c$928D PUSH HL       ; {Calculate old position attribute area and fill.
  $9333 SBC HL,BC     ;
  $9335 EX DE,HL      ;
  $9336 LD BC,($8B0C) ;
- $933A LD A,B        ;
- $933B AND $F8       ;
- $933D CP $00        ;
+ $933A LD A,B        ; }
+ $933B AND $F8       ; {If at screen top, use wrapped attribute fill at
+ $933D CP $00        ; #R$9388.
  $933F LD BC,($9287) ;
  $9343 LD A,C        ;
- $9344 JP Z,$9388    ;
- $9347 POP BC        ; }
+ $9344 JP Z,$9388    ; }
+ $9347 POP BC        ;
 ; This entry point is used by the routine at #R$9388.
 @label=set_attr_new_outer_loop
 *$9348 PUSH BC       ;
