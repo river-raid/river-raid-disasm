@@ -3450,51 +3450,61 @@ g $928B
 W $928B
 @ $928D label=set_sprite_attributes
 c $928D Set screen attributes for sprite area.
-D $928D Updates attribute cells for both old (erase) and new (draw) sprite positions. Calculates attribute address as #R$5800 + (Y AND $F8) * 4 + (X >> 3).
-R $928D I:A Sprite width in tiles.
-R $928D I:DE Sprite height in D, attribute color in E.
-R $928D I:BC Old position coordinates.
-R $928D I:HL New position coordinates.
-  $928D Save registers, store width, check if attribute is 0 (skip if so).
-  $9295 Jump to #R$935D if attribute is 0.
-  $9298 Save DE, BC, HL to memory for later use.
-  $92A3 Calculate attribute address for old position from stored coordinates at #R$8B0A.
-  $92BD Calculate row count from height: (height >> 3) + 3. Set up row offset.
-  $92CF Set up row stride ($20 - width), check for screen third boundary.
-  $92E2,7 If at screen top, use wrapped attribute fill at #R$936F.
+D $928D Fills rectangular regions of attribute cells for both old (erase) and new (draw) sprite positions. ZX Spectrum attribute memory is at $5800-$5AFF, organized as 24 rows × 32 columns (768 bytes). Each 8×8 pixel character cell has one attribute byte controlling ink/paper/bright/flash.
+D $928D .
+D $928D Algorithm: For each position (old then new), calculate the top-left attribute address, then fill a rectangle of B rows × C columns with attribute value A. After filling each row, advance HL by stride DE to reach the next row's starting column.
+R $928D I:A Sprite width in tiles (columns to fill).
+R $928D I:DE Sprite height in pixels (D), attribute color byte (E).
+R $928D I:BC Old position coordinates from #R$8B0A.
+R $928D I:HL New position coordinates from #R$8B0C.
+  $928D Save registers, store width to #R$928B. If attribute E is 0, skip to #R$935D.
+  $9295 Jump to #R$935D if attribute is 0 (nothing to draw).
+  $9298 Save DE, BC, HL to memory at #R$9287, #R$9285, #R$9289 for later use.
+  $92A3 Calculate attribute address for old position: HL = $5800 + (Y AND $F8) * 4 + (X >> 3). Y coordinate is in B of stored BC at #R$8B0A, X in C.
+  $92BD Calculate row count B = (height >> 3) + 3. This covers sprite height plus padding. Load width into C.
+  $92CF Calculate row stride DE = $20 - width. After filling C columns, add DE to reach column 0 of next row. Check if Y is at screen top (row 0).
+  $92E0,9 If at screen top (Y AND $F8 = 0), use wrapped fill at #R$936F to handle attribute area start.
 @ $92EA label=set_attr_old_outer_loop
-  $92EA Outer loop: save row counter B and column count C.
+  $92EA Outer loop start: push BC to preserve row count (B) and column count (C) for this row.
 @ $92EB label=set_attr_old_inner_loop
-  $92EB Inner loop: write attribute A to cell, advance HL, loop for C columns.
-  $92F0 Check if HL past attribute area end ($5A20). If so, exit early to #R$9367.
-  $92FB Restore counter, advance HL by row stride DE, loop for B rows.
+  $92EB Inner loop: write attribute byte A to address HL, increment HL, decrement column counter C, repeat until row complete.
+  $92F0 Boundary check: compare HL against $5A20 (row 16 of attributes). If HL >= $5A20, sprite has scrolled off visible area, exit early via #R$9367.
+  $92FB Row complete: restore BC, add stride DE to HL (moves to same column on next row), decrement row counter B, repeat outer loop.
 @ $92FF label=set_attr_new_position_entry
-  $92FF Calculate attribute address for new position from stored coordinates at #R$8B0C.
-  $9318 Calculate row count from height: (height >> 3) + 2. Set up row offset.
-  $9329 Set up row stride, check for screen third boundary.
-  $933B,12 If at screen top, use wrapped attribute fill at #R$9388.
+  $92FF Calculate attribute address for new position: HL = $5800 + (Y AND $F8) * 4 + (X >> 3) using coordinates from #R$8B0C.
+  $9318 Calculate row count B = (height >> 3) + 2 (one less row than old position). Load width into C.
+  $9329 Calculate row stride DE = $20 - width. Check if Y is at screen top.
+  $933B,12 If at screen top, use wrapped fill at #R$9388.
 @ $9348 label=set_attr_new_outer_loop
-  $9348 Outer loop: save row counter B and column count C.
+  $9348 Outer loop start: push BC to preserve row count (B) and column count (C) for this row.
 @ $9349 label=set_attr_new_inner_loop
-  $9349 Inner loop: write attribute A to cell, advance HL, loop for C columns.
-  $934E Check if HL past attribute area end ($5A20). If so, exit early to #R$936B.
-  $9359 Restore counter, advance HL by row stride DE, loop for B rows.
+  $9349 Inner loop: write attribute byte A to address HL, increment HL, decrement column counter C, repeat until row complete.
+  $934E Boundary check: compare HL against $5A20. If HL >= $5A20, exit early via #R$936B.
+  $9359 Row complete: restore BC, add stride DE to HL, decrement row counter B, repeat outer loop.
 @ $935D label=handle_zero_attributes
-c $935D Return point when attributes are zero (skip attribute setting).
+c $935D Return point when attribute color is zero.
+D $935D Restores registers and returns without filling any attributes. Called when sprite has no visible color.
+  $935D,9 Restore width from #R$928B, pop BC and HL, load new coordinates from #R$8B0C into DE, return.
 c $9367 Early exit from old position attribute loop.
+D $9367 Called when old position boundary check detects HL >= $5A20 (past visible attribute area).
+  $9367,1 Pop BC (discard saved counter) and continue to new position processing at #R$92FF.
 c $936B Early exit from new position attribute loop.
+D $936B Called when new position boundary check detects HL >= $5A20.
+  $936B,1 Pop BC and jump to #R$935D to restore registers and return.
 @ $936F label=set_attr_wrap_old
-c $936F Handle attribute wrap for old position at screen third boundary.
-  $936F Adjust HL by $03DF, restore and save BC.
+c $936F Handle old position attributes when sprite is at screen top (row 0).
+D $936F When Y AND $F8 = 0, the sprite is in the top character row. The attribute address calculation would underflow, so this routine adds $03DF to wrap the address correctly within the attribute area, then fills using a modified loop that subtracts $03DF after each row instead of adding the normal stride.
+  $936F Add $03DF to HL to correct wrapped address. Restore and re-save BC.
 @ $9375 label=set_attr_wrap_old_loop
-  $9375 Fill attribute row, advance pointer, loop.
-  $937A Restore BC, adjust HL, loop back to outer.
+  $9375 Inner loop: write attribute A to HL, increment HL, decrement C, repeat for row width.
+  $937A After row: restore BC, add stride DE, decrement B, re-save BC. Subtract $03DF from HL to maintain wrap. Jump back to #R$92EA for next row.
 @ $9388 label=set_attr_wrap_new
-c $9388 Handle attribute wrap for new position at screen third boundary.
-  $9388 Adjust HL by $03DF, restore and save BC.
+c $9388 Handle new position attributes when sprite is at screen top (row 0).
+D $9388 Same wrap handling as #R$936F but for new position.
+  $9388 Add $03DF to HL to correct wrapped address. Restore and re-save BC.
 @ $938E label=set_attr_wrap_new_loop
-  $938E Fill attribute row, advance pointer, loop.
-  $9393 Restore BC, adjust HL, loop back to outer.
+  $938E Inner loop: write attribute A to HL, increment HL, decrement C, repeat for row width.
+  $9393 After row: restore BC, add stride DE, decrement B, re-save BC. Subtract $03DF from HL to maintain wrap. Jump back to #R$9348 for next row.
 @ $93A1 label=compare_scores
 c $93A1 Compare two 6-digit scores.
 D $93A1 Compares score at HL with score at DE, digit by digit.

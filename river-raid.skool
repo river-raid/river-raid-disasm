@@ -9344,26 +9344,35 @@ g$928B DEFW $0000
 
 ; Set screen attributes for sprite area.
 ;
-; Updates attribute cells for both old (erase) and new (draw) sprite positions.
-; Calculates attribute address as #R$5800 + (Y AND $F8) * 4 + (X >> 3).
+; Fills rectangular regions of attribute cells for both old (erase) and new
+; (draw) sprite positions. ZX Spectrum attribute memory is at $5800-$5AFF,
+; organized as 24 rows × 32 columns (768 bytes). Each 8×8 pixel character cell
+; has one attribute byte controlling ink/paper/bright/flash.
+; .
+; .
+; .
+; Algorithm: For each position (old then new), calculate the top-left attribute
+; address, then fill a rectangle of B rows × C columns with attribute value A.
+; After filling each row, advance HL by stride DE to reach the next row's
+; starting column.
 ;
-; I:A Sprite width in tiles.
-; I:DE Sprite height in D, attribute color in E.
-; I:BC Old position coordinates.
-; I:HL New position coordinates.
+; I:A Sprite width in tiles (columns to fill).
+; I:DE Sprite height in pixels (D), attribute color byte (E).
+; I:BC Old position coordinates from #R$8B0A.
+; I:HL New position coordinates from #R$8B0C.
 @label=set_sprite_attributes
-c$928D PUSH HL       ; {Save registers, store width, check if attribute is 0
- $928E PUSH BC       ; (skip if so).
+c$928D PUSH HL       ; {Save registers, store width to #R$928B. If attribute E
+ $928E PUSH BC       ; is 0, skip to #R$935D.
  $928F LD ($928B),A  ;
  $9292 LD A,E        ;
  $9293 CP $00        ; }
- $9295 JP Z,$935D    ; Jump to #R$935D if attribute is 0.
- $9298 LD ($9287),DE ; {Save DE, BC, HL to memory for later use.
- $929C LD ($9285),BC ;
+ $9295 JP Z,$935D    ; Jump to #R$935D if attribute is 0 (nothing to draw).
+ $9298 LD ($9287),DE ; {Save DE, BC, HL to memory at #R$9287, #R$9285, #R$9289
+ $929C LD ($9285),BC ; for later use.
  $92A0 LD ($9289),HL ; }
- $92A3 LD BC,($8B0A) ; {Calculate attribute address for old position from
- $92A7 LD A,B        ; stored coordinates at #R$8B0A.
- $92A8 AND $F8       ;
+ $92A3 LD BC,($8B0A) ; {Calculate attribute address for old position: HL =
+ $92A7 LD A,B        ; $5800 + (Y AND $F8) * 4 + (X >> 3). Y coordinate is in B
+ $92A8 AND $F8       ; of stored BC at #R$8B0A, X in C.
  $92AA LD H,$00      ;
  $92AC LD L,A        ;
  $92AD ADD HL,HL     ;
@@ -9376,8 +9385,8 @@ c$928D PUSH HL       ; {Save registers, store width, check if attribute is 0
  $92B8 SRL E         ;
  $92BA SRL E         ;
  $92BC ADD HL,DE     ; }
- $92BD LD A,($928B)  ; {Calculate row count from height: (height >> 3) + 3. Set
- $92C0 LD C,A        ; up row offset.
+ $92BD LD A,($928B)  ; {Calculate row count B = (height >> 3) + 3. This covers
+ $92C0 LD C,A        ; sprite height plus padding. Load width into C.
  $92C1 LD DE,($9287) ;
  $92C5 LD A,D        ;
  $92C6 SRL A         ;
@@ -9386,43 +9395,44 @@ c$928D PUSH HL       ; {Save registers, store width, check if attribute is 0
  $92CC INC A         ;
  $92CD INC A         ;
  $92CE INC A         ; }
- $92CF LD B,A        ; {Set up row stride ($20 - width), check for screen third
- $92D0 EX DE,HL      ; boundary.
- $92D1 LD HL,$0020   ;
+ $92CF LD B,A        ; {Calculate row stride DE = $20 - width. After filling C
+ $92D0 EX DE,HL      ; columns, add DE to reach column 0 of next row. Check if
+ $92D1 LD HL,$0020   ; Y is at screen top (row 0).
  $92D4 PUSH BC       ;
  $92D5 LD B,$00      ;
  $92D7 OR A          ;
  $92D8 SBC HL,BC     ;
  $92DA EX DE,HL      ;
  $92DB LD BC,($8B0A) ;
- $92DF LD A,B        ;
- $92E0 AND $F8       ; }
- $92E2 CP $00        ; {If at screen top, use wrapped attribute fill at
- $92E4 LD A,$0C      ; #R$936F.
+ $92DF LD A,B        ; }
+ $92E0 AND $F8       ; {If at screen top (Y AND $F8 = 0), use wrapped fill at
+ $92E2 CP $00        ; #R$936F to handle attribute area start.
+ $92E4 LD A,$0C      ;
  $92E6 JP Z,$936F    ; }
  $92E9 POP BC        ;
 ; This entry point is used by the routine at #R$936F.
 @label=set_attr_old_outer_loop
-*$92EA PUSH BC       ; Outer loop: save row counter B and column count C.
+*$92EA PUSH BC       ; Outer loop start: push BC to preserve row count (B) and
+                     ; column count (C) for this row.
 @label=set_attr_old_inner_loop
-*$92EB LD (HL),A     ; {Inner loop: write attribute A to cell, advance HL, loop
- $92EC INC HL        ; for C columns.
- $92ED DEC C         ;
+*$92EB LD (HL),A     ; {Inner loop: write attribute byte A to address HL,
+ $92EC INC HL        ; increment HL, decrement column counter C, repeat until
+ $92ED DEC C         ; row complete.
  $92EE JR NZ,$92EB   ; }
- $92F0 PUSH HL       ; {Check if HL past attribute area end ($5A20). If so,
- $92F1 LD BC,$5A20   ; exit early to #R$9367.
- $92F4 OR A          ;
+ $92F0 PUSH HL       ; {Boundary check: compare HL against $5A20 (row 16 of
+ $92F1 LD BC,$5A20   ; attributes). If HL >= $5A20, sprite has scrolled off
+ $92F4 OR A          ; visible area, exit early via #R$9367.
  $92F5 SBC HL,BC     ;
  $92F7 POP HL        ;
  $92F8 JP P,$9367    ; }
- $92FB POP BC        ; {Restore counter, advance HL by row stride DE, loop for
- $92FC ADD HL,DE     ; B rows.
- $92FD DJNZ $92EA    ; }
+ $92FB POP BC        ; {Row complete: restore BC, add stride DE to HL (moves to
+ $92FC ADD HL,DE     ; same column on next row), decrement row counter B,
+ $92FD DJNZ $92EA    ; repeat outer loop.}
 ; This entry point is used by the routine at #R$9367.
 @label=set_attr_new_position_entry
-*$92FF LD BC,($8B0C) ; {Calculate attribute address for new position from
- $9303 LD A,B        ; stored coordinates at #R$8B0C.
- $9304 AND $F8       ;
+*$92FF LD BC,($8B0C) ; {Calculate attribute address for new position: HL =
+ $9303 LD A,B        ; $5800 + (Y AND $F8) * 4 + (X >> 3) using coordinates
+ $9304 AND $F8       ; from #R$8B0C.
  $9306 LD H,$00      ;
  $9308 LD L,A        ;
  $9309 ADD HL,HL     ;
@@ -9434,8 +9444,8 @@ c$928D PUSH HL       ; {Save registers, store width, check if attribute is 0
  $9312 SRL E         ;
  $9314 SRL E         ;
  $9316 SRL E         ; }
- $9318 ADD HL,DE     ; {Calculate row count from height: (height >> 3) + 2. Set
- $9319 LD A,($928B)  ; up row offset.
+ $9318 ADD HL,DE     ; {Calculate row count B = (height >> 3) + 2 (one less row
+ $9319 LD A,($928B)  ; than old position). Load width into C.
  $931C LD C,A        ;
  $931D LD DE,($9287) ;
  $9321 LD A,D        ;
@@ -9443,8 +9453,8 @@ c$928D PUSH HL       ; {Save registers, store width, check if attribute is 0
  $9324 SRL A         ;
  $9326 SRL A         ;
  $9328 INC A         ; }
- $9329 INC A         ; {Set up row stride, check for screen third boundary.
- $932A LD B,A        ;
+ $9329 INC A         ; {Calculate row stride DE = $20 - width. Check if Y is at
+ $932A LD B,A        ; screen top.
  $932B EX DE,HL      ;
  $932C LD HL,$0020   ;
  $932F PUSH BC       ;
@@ -9454,68 +9464,76 @@ c$928D PUSH HL       ; {Save registers, store width, check if attribute is 0
  $9335 EX DE,HL      ;
  $9336 LD BC,($8B0C) ;
  $933A LD A,B        ; }
- $933B AND $F8       ; {If at screen top, use wrapped attribute fill at
- $933D CP $00        ; #R$9388.
+ $933B AND $F8       ; {If at screen top, use wrapped fill at #R$9388.
+ $933D CP $00        ;
  $933F LD BC,($9287) ;
  $9343 LD A,C        ;
  $9344 JP Z,$9388    ; }
  $9347 POP BC        ;
 ; This entry point is used by the routine at #R$9388.
 @label=set_attr_new_outer_loop
-*$9348 PUSH BC       ; Outer loop: save row counter B and column count C.
+*$9348 PUSH BC       ; Outer loop start: push BC to preserve row count (B) and
+                     ; column count (C) for this row.
 @label=set_attr_new_inner_loop
-*$9349 LD (HL),A     ; {Inner loop: write attribute A to cell, advance HL, loop
- $934A INC HL        ; for C columns.
- $934B DEC C         ;
+*$9349 LD (HL),A     ; {Inner loop: write attribute byte A to address HL,
+ $934A INC HL        ; increment HL, decrement column counter C, repeat until
+ $934B DEC C         ; row complete.
  $934C JR NZ,$9349   ; }
- $934E PUSH HL       ; {Check if HL past attribute area end ($5A20). If so,
- $934F LD BC,$5A20   ; exit early to #R$936B.
+ $934E PUSH HL       ; {Boundary check: compare HL against $5A20. If HL >=
+ $934F LD BC,$5A20   ; $5A20, exit early via #R$936B.
  $9352 OR A          ;
  $9353 SBC HL,BC     ;
  $9355 POP HL        ;
  $9356 JP P,$936B    ; }
- $9359 POP BC        ; {Restore counter, advance HL by row stride DE, loop for
- $935A ADD HL,DE     ; B rows.
+ $9359 POP BC        ; {Row complete: restore BC, add stride DE to HL,
+ $935A ADD HL,DE     ; decrement row counter B, repeat outer loop.
  $935B DJNZ $9348    ; }
 
-; Return point when attributes are zero (skip attribute setting).
+; Return point when attribute color is zero.
 ;
-; Used by the routines at #R$928D and #R$936B.
+; Restores registers and returns without filling any attributes. Called when
+; sprite has no visible color.
 @label=handle_zero_attributes
-c$935D LD A,($928B)  ;
- $9360 POP BC        ;
+c$935D LD A,($928B)  ; {Restore width from #R$928B, pop BC and HL, load new
+ $9360 POP BC        ; coordinates from #R$8B0C into DE, return.
  $9361 POP HL        ;
- $9362 LD DE,($8B0C) ;
+ $9362 LD DE,($8B0C) ; }
  $9366 RET           ;
 
 ; Early exit from old position attribute loop.
 ;
-; Used by the routine at #R$928D.
-c$9367 POP BC        ;
+; Called when old position boundary check detects HL >= $5A20 (past visible
+; attribute area).
+c$9367 POP BC        ; Pop BC (discard saved counter) and continue to new
+                     ; position processing at #R$92FF.
  $9368 JP $92FF      ;
 
 ; Early exit from new position attribute loop.
 ;
-; Used by the routine at #R$928D.
-c$936B POP BC        ;
+; Called when new position boundary check detects HL >= $5A20.
+c$936B POP BC        ; Pop BC and jump to #R$935D to restore registers and
+                     ; return.
  $936C JP $935D      ;
 
-; Handle attribute wrap for old position at screen third boundary.
+; Handle old position attributes when sprite is at screen top (row 0).
 ;
-; Used by the routine at #R$928D.
+; When Y AND $F8 = 0, the sprite is in the top character row. The attribute
+; address calculation would underflow, so this routine adds $03DF to wrap the
+; address correctly within the attribute area, then fills using a modified loop
+; that subtracts $03DF after each row instead of adding the normal stride.
 @label=set_attr_wrap_old
-c$936F LD BC,$03DF   ; {Adjust HL by $03DF, restore and save BC.
- $9372 ADD HL,BC     ;
+c$936F LD BC,$03DF   ; {Add $03DF to HL to correct wrapped address. Restore and
+ $9372 ADD HL,BC     ; re-save BC.
  $9373 POP BC        ;
  $9374 PUSH BC       ; }
 @label=set_attr_wrap_old_loop
-*$9375 LD (HL),A     ; {Fill attribute row, advance pointer, loop.
- $9376 INC HL        ;
+*$9375 LD (HL),A     ; {Inner loop: write attribute A to HL, increment HL,
+ $9376 INC HL        ; decrement C, repeat for row width.
  $9377 DEC C         ;
  $9378 JR NZ,$9375   ; }
- $937A POP BC        ; {Restore BC, adjust HL, loop back to outer.
- $937B ADD HL,DE     ;
- $937C DEC B         ;
+ $937A POP BC        ; {After row: restore BC, add stride DE, decrement B,
+ $937B ADD HL,DE     ; re-save BC. Subtract $03DF from HL to maintain wrap.
+ $937C DEC B         ; Jump back to #R$92EA for next row.
  $937D PUSH BC       ;
  $937E LD BC,$03DF   ;
  $9381 OR A          ;
@@ -9523,22 +9541,22 @@ c$936F LD BC,$03DF   ; {Adjust HL by $03DF, restore and save BC.
  $9384 POP BC        ;
  $9385 JP $92EA      ; }
 
-; Handle attribute wrap for new position at screen third boundary.
+; Handle new position attributes when sprite is at screen top (row 0).
 ;
-; Used by the routine at #R$928D.
+; Same wrap handling as #R$936F but for new position.
 @label=set_attr_wrap_new
-c$9388 LD BC,$03DF   ; {Adjust HL by $03DF, restore and save BC.
- $938B ADD HL,BC     ;
+c$9388 LD BC,$03DF   ; {Add $03DF to HL to correct wrapped address. Restore and
+ $938B ADD HL,BC     ; re-save BC.
  $938C POP BC        ;
  $938D PUSH BC       ; }
 @label=set_attr_wrap_new_loop
-*$938E LD (HL),A     ; {Fill attribute row, advance pointer, loop.
- $938F INC HL        ;
+*$938E LD (HL),A     ; {Inner loop: write attribute A to HL, increment HL,
+ $938F INC HL        ; decrement C, repeat for row width.
  $9390 DEC C         ;
  $9391 JR NZ,$938E   ; }
- $9393 POP BC        ; {Restore BC, adjust HL, loop back to outer.
- $9394 ADD HL,DE     ;
- $9395 DEC B         ;
+ $9393 POP BC        ; {After row: restore BC, add stride DE, decrement B,
+ $9394 ADD HL,DE     ; re-save BC. Subtract $03DF from HL to maintain wrap.
+ $9395 DEC B         ; Jump back to #R$9348 for next row.
  $9396 PUSH BC       ;
  $9397 LD BC,$03DF   ;
  $939A OR A          ;
