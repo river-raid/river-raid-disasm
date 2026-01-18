@@ -3393,7 +3393,7 @@ D $91E8 In 2-player mode, prints player 2's score. In 1-player mode, prints the 
 @ $91FE isub=LD A,EXT_ATTR_INK
   $91FE Set INK to white (for high score display).
 @ $9201 isub=LD A,COLOR_WHITE
-  $9204 Calculate high score address: base ($90C8) + ((game_mode AND $FE) * 3). Print 6-digit high score with leading '0'.
+  $9204 Calculate high score address: base (#R$90C8) + ((game_mode AND $FE) * 3). Print 6-digit high score with leading '0'.
 @ $9225 isub=LD A,EXT_ATTR_AT
   $9225 Position cursor at row 1, column 18.
   $922E,11 Print "HI" label, switch to channel 2 (main screen).
@@ -3407,26 +3407,36 @@ g $923C Number of player 2 lives.
 @ $923D label=state_player
 b $923D Current player
 @ $923E label=print_lives
-c $923E Print lives.
+c $923E Print lives for current player.
+D $923E Displays the remaining lives as plane UDG symbols at row 20, column 18. Uses the appropriate player color (yellow for player 1, cyan for player 2).
+  $923E,5 If current player is player 2, jump to #R$9277.
 @ $9241 isub=CP PLAYER_2
 @ $9246 isub=LD A,EXT_ATTR_INK
-  $9246,6 INK of Player 1 color
+  $9246 Set INK to player 1 color (yellow).
 @ $9249 isub=LD A,COLOR_PLAYER_1
+  $924C Load player 1 lives count and fall through.
 @ $924F label=print_lives_continue
-c $924F Continue printing lives after the value has been loaded into #REGa.
+c $924F Continue printing lives after count has been loaded.
+D $924F Positions cursor and prints plane symbols for each life. Pads with spaces to clear any previous display.
 R $924F I:A Number of lives.
+  $924F Store lives count in B for loop counter.
 @ $9250 isub=LD A,EXT_ATTR_AT
-  $9250,9 AT 20,18
+  $9250 Position cursor at row 20, column 18.
+  $9259 If lives count is 0, skip to padding.
 @ $925F label=print_lives_loop
-  $925F,5 Print ✈ UDG symbol, loop B times.
+  $925F Print ✈ UDG symbol, loop B times.
 @ $9264 label=print_lives_padding
-c $9264 Print six spaces
+c $9264 Print six spaces to clear old lives display.
+D $9264 Ensures any previously displayed lives that no longer exist are erased.
+  $9264,18 Print 6 space characters.
 @ $9277 label=print_lives_player_2
 @ $9277 isub=LD A,EXT_ATTR_INK
-c $9277 The player 2 branch of the #R$923E routine.
+c $9277 Player 2 branch of #R$923E.
+D $9277 Sets player 2 color and loads player 2 lives count before jumping to common display code.
 R $9277 O:A Number of lives.
-  $9277,6 INK of Player 2 color
+  $9277 Set INK to player 2 color (cyan).
 @ $927A isub=LD A,COLOR_PLAYER_2
+  $927D,6 Load player 2 lives count and jump to #R$924F.
 @ $9283 label=ptr_state_controls
 g $9283 Pointer to #R$6BB0
 W $9283 Pointer to #R$6BB0

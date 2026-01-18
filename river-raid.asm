@@ -8206,7 +8206,7 @@ print_player_2_score_area:
   RST $10                              ;
   LD A,COLOR_WHITE                     ;
   RST $10                              ;
-  LD BC,$0006                          ; Calculate high score address: base ($90C8) + ((game_mode AND $FE) * 3). Print
+  LD BC,$0006                          ; Calculate high score address: base (L90C8) + ((game_mode AND $FE) * 3). Print
   LD HL,L90C8                          ; 6-digit high score with leading '0'.
   LD A,(state_game_mode)               ;
   AND $FE                              ;
@@ -8253,70 +8253,71 @@ state_lives_player_2:
 state_player:
   DEFB $00
 
-; Print lives.
+; Print lives for current player.
 ;
-; Used by the routines at play and add_life.
+; Displays the remaining lives as plane UDG symbols at row 20, column 18. Uses the appropriate player color (yellow for
+; player 1, cyan for player 2).
 print_lives:
-  LD A,(state_player)
-  CP PLAYER_2
+  LD A,(state_player)                  ; If current player is player 2, jump to print_lives_player_2.
+  CP PLAYER_2                          ;
   JP Z,print_lives_player_2
-  LD A,EXT_ATTR_INK                    ; INK of Player 1 color
+  LD A,EXT_ATTR_INK                    ; Set INK to player 1 color (yellow).
   RST $10                              ;
   LD A,COLOR_PLAYER_1                  ;
   RST $10                              ;
-  LD A,(state_lives_player_1)
+  LD A,(state_lives_player_1)          ; Load player 1 lives count and fall through.
 
-; Continue printing lives after the value has been loaded into A.
+; Continue printing lives after count has been loaded.
 ;
-; Used by the routine at print_lives_player_2.
+; Positions cursor and prints plane symbols for each life. Pads with spaces to clear any previous display.
 ;
 ; I:A Number of lives.
 print_lives_continue:
-  LD B,A
-  LD A,EXT_ATTR_AT                     ; AT 20,18
+  LD B,A                               ; Store lives count in B for loop counter.
+  LD A,EXT_ATTR_AT                     ; Position cursor at row 20, column 18.
   RST $10                              ;
   LD A,$14                             ;
   RST $10                              ;
   LD A,$12                             ;
   RST $10                              ;
-  LD A,B
-  CP $00
-  JP Z,print_lives_padding
+  LD A,B                               ; If lives count is 0, skip to padding.
+  CP $00                               ;
+  JP Z,print_lives_padding             ;
 print_lives_loop:
   LD A,$9C                             ; Print ✈ UDG symbol, loop B times.
   RST $10                              ;
   DJNZ print_lives_loop                ;
 
-; Print six spaces
+; Print six spaces to clear old lives display.
 ;
-; Used by the routine at print_lives_continue.
+; Ensures any previously displayed lives that no longer exist are erased.
 print_lives_padding:
-  LD A,$20
-  RST $10
-  LD A,$20
-  RST $10
-  LD A,$20
-  RST $10
-  LD A,$20
-  RST $10
-  LD A,$20
-  RST $10
-  LD A,$20
-  RST $10
+  LD A,$20                             ; Print 6 space characters.
+  RST $10                              ;
+  LD A,$20                             ;
+  RST $10                              ;
+  LD A,$20                             ;
+  RST $10                              ;
+  LD A,$20                             ;
+  RST $10                              ;
+  LD A,$20                             ;
+  RST $10                              ;
+  LD A,$20                             ;
+  RST $10                              ;
   RET
 
-; The player 2 branch of the print_lives routine.
+; Player 2 branch of print_lives.
 ;
-; Used by the routine at print_lives.
+; Sets player 2 color and loads player 2 lives count before jumping to common display code.
 ;
 ; O:A Number of lives.
 print_lives_player_2:
-  LD A,EXT_ATTR_INK                    ; INK of Player 2 color
+  LD A,EXT_ATTR_INK                    ; Set INK to player 2 color (cyan).
   RST $10                              ;
   LD A,COLOR_PLAYER_2                  ;
   RST $10                              ;
-  LD A,(state_lives_player_2)
-  JP print_lives_continue
+  LD A,(state_lives_player_2)          ; Load player 2 lives count and jump to print_lives_continue.
+  JP print_lives_continue              ;
 
 ; Pointer to state_controls
 ptr_state_controls:
