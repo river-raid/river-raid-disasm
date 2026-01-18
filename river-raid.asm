@@ -8400,21 +8400,21 @@ set_sprite_attributes:
   POP BC
 ; This entry point is used by the routine at set_attr_wrap_old.
 set_attr_old_outer_loop:
-  PUSH BC
+  PUSH BC                              ; Outer loop: save row counter B and column count C.
 set_attr_old_inner_loop:
-  LD (HL),A
-  INC HL
-  DEC C
-  JR NZ,set_attr_old_inner_loop
-  PUSH HL
-  LD BC,$5A20
-  OR A
-  SBC HL,BC
-  POP HL
-  JP P,L9367
-  POP BC
-  ADD HL,DE
-  DJNZ set_attr_old_outer_loop
+  LD (HL),A                            ; Inner loop: write attribute A to cell, advance HL, loop for C columns.
+  INC HL                               ;
+  DEC C                                ;
+  JR NZ,set_attr_old_inner_loop        ;
+  PUSH HL                              ; Check if HL past attribute area end ($5A20). If so, exit early to L9367.
+  LD BC,$5A20                          ;
+  OR A                                 ;
+  SBC HL,BC                            ;
+  POP HL                               ;
+  JP P,L9367                           ;
+  POP BC                               ; Restore counter, advance HL by row stride DE, loop for B rows.
+  ADD HL,DE                            ;
+  DJNZ set_attr_old_outer_loop         ;
 ; This entry point is used by the routine at L9367.
 set_attr_new_position_entry:
   LD BC,(object_coordinates)           ; Calculate attribute address for new position from stored coordinates at
