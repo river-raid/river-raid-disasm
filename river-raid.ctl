@@ -3311,13 +3311,20 @@ R $913B O:D Offset of the digit (passed to print routine).
   $914A Store incremented digit, fall through to print.
 @ $914B label=print_player_1_score_digit
 @ $914B isub=LD A,EXT_ATTR_INK
-  $914B INK of Player 1 color
+c $914B Print a digit from player 1's score.
+D $914B Prints a single score digit at the correct screen position using ROM RST $10 character output.
+R $914B I:D Digit offset (0-5, used to calculate column).
+R $914B I:HL Pointer to the digit character.
+  $914B Set INK to player 1 color (yellow).
 @ $914E isub=LD A,COLOR_PLAYER_1
 @ $9151 isub=LD A,EXT_ATTR_PAPER
-  $9151 PAPER BLACK
+  $9151 Set PAPER to black.
 @ $9154 isub=LD A,COLOR_BLACK
 @ $9157 isub=LD A,EXT_ATTR_AT
-  $9157,6 AT 1,...
+  $9157 Set cursor position to row 1.
+  $915D Calculate column = offset + 5, print column position.
+  $9161 Load digit from score buffer and print it.
+  $9163,6 Switch to channel 2 (main screen) and return.
 @ $9169 label=inc_player_2_score_digit
 c $9169 Increase a digit in the player 2's score.
 R $9169 I:C Offset of the digit to increase.

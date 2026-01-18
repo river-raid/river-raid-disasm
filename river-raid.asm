@@ -8042,28 +8042,34 @@ inc_player_1_score_digit:
   CP $3A                               ;
   JP Z,carry_player_1_score_digit      ;
   LD (HL),A                            ; Store incremented digit, fall through to print.
-; This entry point is used by the routine at carry_player_1_score_digit.
+
+; Print a digit from player 1's score.
+;
+; Prints a single score digit at the correct screen position using ROM RST $10 character output.
+;
+; I:D Digit offset (0-5, used to calculate column).
+; I:HL Pointer to the digit character.
 print_player_1_score_digit:
-  LD A,EXT_ATTR_INK                    ; INK of Player 1 color
+  LD A,EXT_ATTR_INK                    ; Set INK to player 1 color (yellow).
   RST $10                              ;
   LD A,COLOR_PLAYER_1                  ;
   RST $10                              ;
-  LD A,EXT_ATTR_PAPER                  ; PAPER BLACK
+  LD A,EXT_ATTR_PAPER                  ; Set PAPER to black.
   RST $10                              ;
   LD A,COLOR_BLACK                     ;
   RST $10                              ;
-  LD A,EXT_ATTR_AT                     ; AT 1,...
+  LD A,EXT_ATTR_AT                     ; Set cursor position to row 1.
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
-  LD A,D
-  ADD A,$05
-  RST $10
-  LD A,(HL)
-  RST $10
-  LD A,$02
-  CALL CHAN_OPEN
-  RET
+  LD A,D                               ; Calculate column = offset + 5, print column position.
+  ADD A,$05                            ;
+  RST $10                              ;
+  LD A,(HL)                            ; Load digit from score buffer and print it.
+  RST $10                              ;
+  LD A,$02                             ; Switch to channel 2 (main screen) and return.
+  CALL CHAN_OPEN                       ;
+  RET                                  ;
 
 ; Increase a digit in the player 2's score.
 ;
