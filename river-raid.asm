@@ -5251,9 +5251,9 @@ operate_tank:
   LD A,(state_metronome)               ; Check metronome: if bit 0 == 1, skip to next object.
   AND METRONOME_INTERVAL_1             ;
   CP METRONOME_INTERVAL_1              ;
-  JP Z,operate_viewport_objects        ; Store position, push DE/BC for later.
+  JP Z,operate_viewport_objects        ; Store position, check bank bit, handle terrain check.
   LD (previous_object_coordinates),BC  ;
-  PUSH DE
+  PUSH DE                              ;
   PUSH BC
   BIT SLOT_BIT_TANK_ON_BANK,D          ; If SLOT_BIT_TANK_ON_BANK set, handle via operate_tank_on_bank.
   JP NZ,operate_tank_on_bank           ;
@@ -5263,14 +5263,14 @@ operate_tank:
   CP $00                               ;
   JP NZ,handle_tank_at_boundary        ;
 ; This entry point is used by the routine at operate_tank_on_bank.
-operate_tank_0:
+tank_move_entry:
   DEC C                                ; Move tank: DEC C twice (left), then INC C × 4 if right-facing.
   DEC C                                ;
   BIT 6,D                              ;
   CALL Z,tank_advance_right            ;
   LD A,C                               ; If X == $80 (center), set tank shell active via set_tank_shell_active.
   CP $80                               ;
-  CALL Z,set_tank_shell_active         ;
+  CALL Z,set_tank_shell_active
   LD HL,(viewport_ptr)                 ; Update position in viewport array, store to object_coordinates, get sprite via
   DEC HL                               ; ld_enemy_sprites.
   LD D,(HL)                            ;
@@ -5350,7 +5350,7 @@ operate_tank_on_bank:
   CP $FF                               ;
   POP BC                               ;
   POP DE                               ;
-  JP Z,operate_tank_0                  ; Pop BC/DE, jump to operate_tank_0 if terrain clear.
+  JP Z,tank_move_entry                 ; Pop BC/DE, jump to tank_move_entry if terrain clear.
   LD A,(tank_shell_state)              ; Check shell state: if already flying, return to main loop.
   BIT TANK_SHELL_BIT_FLYING,A          ;
   JP NZ,operate_viewport_objects
@@ -5358,10 +5358,10 @@ operate_tank_on_bank:
   JP NZ,operate_viewport_objects       ;
   CP TANK_SHELL_STATE_UNITIALIZED      ; If shell uninitialized, initialize via init_tank_shell_state.
   JP Z,init_tank_shell_state           ;
-  RES TANK_SHELL_BIT_EXPLODING,A       ; Clear exploding bit, set flying bit.
+  RES TANK_SHELL_BIT_EXPLODING,A       ; Clear exploding bit.
 ; This entry point is used by the routines at init_tank_shell_state and check_shell_init_condition.
-operate_tank_on_bank_0:
-  SET TANK_SHELL_BIT_FLYING,A          ; }
+tank_fire_shell_entry:
+  SET TANK_SHELL_BIT_FLYING,A          ; Set flying bit.
   LD (tank_shell_state),A              ; Store shell state, calculate spawn X position.
   LD A,C                               ;
   SUB $10                              ;
@@ -5389,7 +5389,7 @@ init_tank_shell_state:
   LD A,D                               ;
   INC E                                ; Ensure speed >= 1, combine with orientation, continue to fire shell.
   ADD A,E                              ;
-  JP operate_tank_on_bank_0            ;
+  JP tank_fire_shell_entry             ;
 
 ; Cancel and remove tank shell
 ;
@@ -5419,7 +5419,7 @@ check_shell_init_condition:
   AND $40                              ;
   ADD A,B                              ; Combine with orientation, pop BC, continue to fire shell.
   POP BC                               ;
-  JP operate_tank_on_bank_0            ;
+  JP tank_fire_shell_entry             ;
 
 ; Invert coordinate for position calculation
 ;
@@ -5577,19 +5577,19 @@ render_helicopter_missile:
 handle_collision_mode_helicopter_missile:
   LD BC,(helicopter_missile_coordinates_ptr) ; Load missile coords. If Y bit 7 clear, clear missile and return.
   BIT 7,B                                    ;
-  JP Z,handle_collision_mode_helicopter_missile_0 ; Clear Y bit 7, check if Y-8 is negative (missile above screen).
-  RES 7,B                                         ;
-  LD A,B                                          ;
-  SUB $08                                         ;
-  JP P,handle_collision_mode_helicopter_missile_0 ; Compare missile X with player X (from state_x). If match, player
-  LD A,(state_x)                                  ; hit.
-  AND $F8                                         ;
-  CP C                                            ;
-  JP Z,handle_no_fuel                             ;
+  JP Z,handle_collision_mode_missile_miss ; Clear Y bit 7, check if Y-8 is negative (missile above screen).
+  RES 7,B                                 ;
+  LD A,B                                  ;
+  SUB $08                                 ;
+  JP P,handle_collision_mode_missile_miss ; Compare missile X with player X (from state_x). If match, player hit.
+  LD A,(state_x)                          ;
+  AND $F8                                 ;
+  CP C                                    ;
+  JP Z,handle_no_fuel                     ;
   ADD A,$08                            ; Check adjacent X position. If match, player hit.
   CP C                                 ;
   JP Z,handle_no_fuel                  ;
-handle_collision_mode_helicopter_missile_0:
+handle_collision_mode_missile_miss:
   LD BC,$0000                                ; Clear missile coords, pop 4 return addresses, return.
   LD (helicopter_missile_coordinates_ptr),BC ;
   POP DE                                     ;
@@ -5717,14 +5717,14 @@ handle_tank_at_boundary:
   LD E,A                               ;
   OR A                                 ;
   SBC HL,DE                            ;
-  JP P,handle_tank_at_boundary_0       ; Check if X > $90: if true, tank at right boundary, jump to reverse.
+  JP P,tank_reverse_direction          ; Check if X > $90: if true, tank at right boundary, jump to reverse.
   LD H,$00                             ;
   LD L,$90                             ;
   LD D,$00                             ;
   LD E,C                               ;
   OR A                                 ;
   SBC HL,DE                            ;
-  JP M,handle_tank_at_boundary_0       ; Tank destroyed: clear X position, set D=$80 (explosion marker).
+  JP M,tank_reverse_direction          ; Tank destroyed: clear X position, set D=$80 (explosion marker).
   LD HL,(viewport_ptr)                 ;
   DEC HL                               ;
   DEC HL                               ;
@@ -5735,7 +5735,7 @@ handle_tank_at_boundary:
   CALL explode_fragment                ;
   LD A,POINTS_TANK
   CALL add_points
-handle_tank_at_boundary_0:
+tank_reverse_direction:
   LD HL,(viewport_ptr)                 ; Reload viewport_ptr, set bits 4 and 5 (direction change flags).
   DEC HL                               ;
   SET 4,(HL)                           ;
@@ -5744,23 +5744,23 @@ handle_tank_at_boundary_0:
   DEC HL                               ;
   LD A,(state_player)                  ;
   CP $01                               ;
-  JP Z,get_tank_speed_level_1          ; Load speed from state_bridge_player_2, check if 7-speed < 0, clear slot if
-  LD A,(state_bridge_player_2)         ; needed.
+  JP Z,get_tank_speed_level_1          ; Load speed from state_bridge_player_2.
+  LD A,(state_bridge_player_2)         ;
 ; This entry point is used by the routine at get_tank_speed_level_1.
-handle_tank_at_boundary_1:
-  LD B,A
-  LD A,$07                             ; }
-  SUB B
-  JP M,operate_viewport_objects
-  LD (HL),$00
+tank_speed_check:
+  LD B,A                               ; Check if 7-speed < 0, clear slot if needed.
+  LD A,$07                             ;
+  SUB B                                ;
+  JP M,operate_viewport_objects        ;
+  LD (HL),$00                          ;
   JP operate_viewport_objects
 
 ; Get tank speed for level 1
 ;
 ; Returns tank speed from state_bridge_player_1 instead of state_bridge_player_2 for difficulty level 1.
 get_tank_speed_level_1:
-  LD A,(state_bridge_player_1)         ; Load speed from state_bridge_player_1, continue at handle_tank_at_boundary_1.
-  JP handle_tank_at_boundary_1
+  LD A,(state_bridge_player_1)         ; Load speed from state_bridge_player_1, continue at tank_speed_check.
+  JP tank_speed_check
 
 ; Operate fuel station
 ;
@@ -5896,12 +5896,12 @@ handle_object_proximity:
   SRL A                                ;
   OR A                                 ;
   INC A                                ;
-  SBC HL,BC                            ; Loop to add frame offset to sprite pointer, store to render_sprite_ptr.
-handle_object_proximity_0:
-  ADD HL,BC                            ;
-  DEC A                                ;
-  JR NZ,handle_object_proximity_0      ;
-  LD (render_sprite_ptr),HL            ;
+  SBC HL,BC                            ; Subtract frame size for pre-decrement.
+handle_object_proximity_frame_loop:
+  ADD HL,BC                                ; Loop to add frame offset to sprite pointer, store to render_sprite_ptr.
+  DEC A                                    ;
+  JR NZ,handle_object_proximity_frame_loop ;
+  LD (render_sprite_ptr),HL                ;
   LD BC,(previous_object_coordinates)  ; Reload position, store to object_coordinates.
   LD (object_coordinates),BC           ;
   LD A,D                               ; Invert object orientation (XOR bit 6).
@@ -5991,7 +5991,7 @@ operate_baloon:
   DEC C                                ;
   DEC C                                ;
 ; Shared entry point for balloon rendering (also used by right-facing balloon).
-operate_baloon_0:
+operate_balloon_shared:
   LD HL,(viewport_ptr)                 ; Read object definition from viewport, write updated position back.
   DEC HL                               ;
   LD D,(HL)                            ;
@@ -6047,10 +6047,10 @@ L76AF:
   POP BC                               ;
   CP $00                               ;
   CALL NZ,L76DA                        ;
-  LD (previous_object_coordinates),BC  ; Save position, move right by 2 pixels, jump to render at operate_baloon_0.
+  LD (previous_object_coordinates),BC  ; Save position, move right by 2 pixels, jump to render at
+  INC C                                ; operate_balloon_shared.
   INC C                                ;
-  INC C                                ;
-  JP operate_baloon_0                  ;
+  JP operate_balloon_shared            ;
 
 ; Handle balloon terrain collision.
 ;
@@ -6264,9 +6264,9 @@ controls_input:
   JR NZ,controls_input                 ; Repeat if a valid key was not pressed.
   LD A,$FF
 game_mode_print:
-  LD B,$00                             ; The purpose of this block is really unclear
-controls_input_0:
-  DJNZ controls_input_0                ;
+  LD B,$00                             ; Initialize delay counter.
+controls_input_delay_loop:
+  DJNZ controls_input_delay_loop       ; Delay loop (purpose unclear).
   DEC A                                ;
   JR NZ,game_mode_print                ;
   LD D,COLOR_BLACK<<3|COLOR_WHITE      ; PAPER BLACK; INK WHITE
@@ -7291,20 +7291,20 @@ terrain_edge_right:
 ; Produces the "pew" sound when the player fires a missile by toggling the speaker port rapidly.
 do_fire:
   LD C,$08                             ; Loop 8 times for sound duration.
-do_fire_0:
+do_fire_pulse_loop:
   LD A,$10                             ; Turn speaker ON (cyan border flash).
   OUT ($FE),A                          ;
-  LD D,$20                             ; Delay loop for sound frequency.
-do_fire_1:
-  DEC D                                ;
-  JR NZ,do_fire_1                      ;
+  LD D,$20                             ; Initialize delay counter for sound frequency.
+do_fire_delay_loop:
+  DEC D                                ; Delay loop for sound frequency.
+  JR NZ,do_fire_delay_loop             ;
   LD A,$00                             ; Turn speaker OFF.
   OUT ($FE),A                          ;
   LD D,$20                             ; Delay and loop for next sound pulse.
   LD D,$20                             ;
   DEFB $FD                             ;
   DEC C                                ;
-  JP NZ,do_fire_0                      ;
+  JP NZ,do_fire_pulse_loop             ;
   RET
 
 ; Scroll the bottom attribute row left by 1 pixel.
@@ -7313,18 +7313,18 @@ do_fire_1:
 scroll_attribute_row:
   LD HL,$57FF                          ; Start at screen_attributes-1 (bottom-right of visible area), loop 8 rows.
   LD C,$08                             ;
-scroll_attribute_row_0:
-  LD B,$20                             ; Rotate 32 bytes left with carry propagation.
+scroll_attr_outer_loop:
+  LD B,$20                             ; Set up inner loop for 32 bytes.
   OR A                                 ;
-scroll_attribute_row_1:
-  RL (HL)                              ;
+scroll_attr_inner_loop:
+  RL (HL)                              ; Rotate byte left, advance, loop 32 times.
   DEC HL                               ;
-  DJNZ scroll_attribute_row_1          ;
-  LD DE,$00E0                          ; Move up one row ($E0 bytes back), continue loop.
+  DJNZ scroll_attr_inner_loop          ;
+  LD DE,$00E0                          ; Move up one row ($E0 bytes back), continue outer loop.
   OR A                                 ;
   SBC HL,DE                            ;
   DEC C                                ;
-  JP NZ,scroll_attribute_row_0
+  JP NZ,scroll_attr_outer_loop         ;
   RET
 
 ; Initialize UDG and screen attributes.
@@ -7361,10 +7361,10 @@ calculate_pixel_address:
   RLCA                                 ;
   AND $03                              ;
   INC A                                ;
-calculate_pixel_address_0:
+calc_pixel_screen_third_loop:
   ADD HL,DE                            ; Load the starting address of the third of the screen into HL.
   DEC A                                ;
-  JP NZ,calculate_pixel_address_0      ;
+  JP NZ,calc_pixel_screen_third_loop   ;
   LD A,B                               ; Leave only the 6 lowest bits in B which define the coordinate of the object
   AND $3F                              ; relative to its third of the screen.
   LD B,A                               ;
@@ -7381,22 +7381,22 @@ calculate_pixel_address_0:
   LD A,B                               ; Leave only the 3 lowest bits in B which define the coordinate of the object
   AND $07                              ; relative to it tile.
   LD B,A                               ;
-  INC B
-  DEC H
-calculate_pixel_address_1:
-  INC H
-  DJNZ calculate_pixel_address_1
-  LD A,C
-  SRL A
-  SRL A
-  SRL A
-  LD D,C
-  LD C,A
-  ADD HL,BC
-  LD A,D
-  AND $07
-  LD B,A
-  RET
+  INC B                                ; Prepare for row loop.
+  DEC H                                ;
+calc_pixel_row_loop:
+  INC H                                ; Increment H (row within tile) B times.
+  DJNZ calc_pixel_row_loop             ;
+  LD A,C                               ;
+  SRL A                                ; Add column offset and extract bit position.
+  SRL A                                ;
+  SRL A                                ;
+  LD D,C                               ;
+  LD C,A                               ;
+  ADD HL,BC                            ;
+  LD A,D                               ;
+  AND $07                              ;
+  LD B,A                               ;
+  RET                                  ;
 
 ; Fuel sprite
 ;
@@ -7537,7 +7537,7 @@ render_object_blit_entry:
   LD BC,(previous_object_coordinates)  ; Calculate screen address for old position.
   CALL calculate_pixel_address         ;
   LD (render_old_screen_addr),HL
-  JP adjust_old_screen_third_0         ; Jump to blit loop.
+  JP adjust_old_screen_third_loop      ; Jump to blit loop.
 
 ; Process one row of sprite rendering.
 ;
@@ -7579,7 +7579,7 @@ adjust_old_position:
   LD A,B                               ;
   AND $07                              ;
   CP $00                               ;
-  JP NZ,adjust_old_screen_third_0
+  JP NZ,adjust_old_screen_third_loop
   LD A,B                               ; If crossing third-of-screen boundary, adjust by $7E0.
   AND $3F                              ;
   CP $00                               ;
@@ -7589,7 +7589,7 @@ adjust_old_position:
   OR A                                 ;
   SBC HL,DE                            ;
   LD (render_old_screen_addr),HL       ;
-  JP adjust_old_screen_third_0
+  JP adjust_old_screen_third_loop
 
 ; Adjust old position for third-of-screen crossing.
 ;
@@ -7601,7 +7601,7 @@ adjust_old_screen_third:
   SBC HL,DE                            ;
   LD (render_old_screen_addr),HL
 ; Main rendering loop - calls blitter and advances to next pixel row.
-adjust_old_screen_third_0:
+adjust_old_screen_third_loop:
   CALL render_blit_row                 ; Call blitter for this row.
   LD A,(render_object_width)           ; Advance sprite pointers by width.
   LD D,$00                             ;
@@ -7638,7 +7638,7 @@ render_blit_row:
   LD HL,(render_old_screen_addr)       ;
   LD DE,(render_sprite_ptr)            ;
 ; First pass: erase old sprite (XOR with screen).
-render_blit_row_0:
+render_blit_erase_loop:
   LD A,(DE)                            ; Read sprite byte, XOR $FF, combine with screen.
   LD B,A                               ;
   LD A,(HL)                            ;
@@ -7654,13 +7654,13 @@ blit_erase_op:
   INC DE                               ;
   INC HL                               ;
   DEC C                                ;
-  JR NZ,render_blit_row_0              ;
+  JR NZ,render_blit_erase_loop         ;
   LD A,(render_object_width)
   LD C,A
   LD HL,(render_new_screen_addr)
   LD DE,(render_old_sprite_ptr)
 ; Second pass: draw new sprite (OR with screen), check collision.
-blit_erase_op_0:
+blit_draw_loop:
   PUSH DE                              ; Read sprite byte, XOR with screen to detect overlap.
   LD A,(DE)                            ;
   LD B,A                               ;
@@ -7685,7 +7685,7 @@ blit_draw_op:
   INC HL                               ;
   INC DE                               ;
   DEC C                                ;
-  JR NZ,blit_erase_op_0                ;
+  JR NZ,blit_draw_loop                 ;
   RET
 
 ; Jump to collision dispatcher
@@ -8324,63 +8324,63 @@ L928B:
 ; I:A Sprite width in tiles
 ; I:E Screen attributes
 set_sprite_attributes:
-  PUSH HL
-  PUSH BC
-  LD (L928B),A
-  LD A,E
-  CP $00
-  JP Z,handle_zero_attributes
-  LD (L9287),DE
-  LD (L9285),BC
-  LD (L9289),HL
-  LD BC,(previous_object_coordinates)
-  LD A,B
-  AND $F8
-  LD H,$00
-  LD L,A
-  ADD HL,HL
-  ADD HL,HL
-  LD DE,screen_attributes
-  ADD HL,DE
-  LD D,$00
-  LD E,C
-  SRL E
-  SRL E
-  SRL E
-  ADD HL,DE
-  LD A,(L928B)
-  LD C,A
-  LD DE,(L9287)
-  LD A,D
-  SRL A
-  SRL A
-  SRL A
-  INC A
-  INC A
-  INC A
-  LD B,A
-  EX DE,HL
-  LD HL,$0020
-  PUSH BC
-  LD B,$00
-  OR A
-  SBC HL,BC
-  EX DE,HL
-  LD BC,(previous_object_coordinates)
-  LD A,B
-  AND $F8
-  CP $00
-  LD A,$0C
-  JP Z,set_attr_wrap_old
+  PUSH HL                              ; Calculate old position attribute area and fill.
+  PUSH BC                              ;
+  LD (L928B),A                         ;
+  LD A,E                               ;
+  CP $00                               ;
+  JP Z,handle_zero_attributes          ;
+  LD (L9287),DE                        ;
+  LD (L9285),BC                        ;
+  LD (L9289),HL                        ;
+  LD BC,(previous_object_coordinates)  ;
+  LD A,B                               ;
+  AND $F8                              ;
+  LD H,$00                             ;
+  LD L,A                               ;
+  ADD HL,HL                            ;
+  ADD HL,HL                            ;
+  LD DE,screen_attributes              ;
+  ADD HL,DE                            ;
+  LD D,$00                             ;
+  LD E,C                               ;
+  SRL E                                ;
+  SRL E                                ;
+  SRL E                                ;
+  ADD HL,DE                            ;
+  LD A,(L928B)                         ;
+  LD C,A                               ;
+  LD DE,(L9287)                        ;
+  LD A,D                               ;
+  SRL A                                ;
+  SRL A                                ;
+  SRL A                                ;
+  INC A                                ;
+  INC A                                ;
+  INC A                                ;
+  LD B,A                               ;
+  EX DE,HL                             ;
+  LD HL,$0020                          ;
+  PUSH BC                              ;
+  LD B,$00                             ;
+  OR A                                 ;
+  SBC HL,BC                            ;
+  EX DE,HL                             ;
+  LD BC,(previous_object_coordinates)  ;
+  LD A,B                               ;
+  AND $F8                              ;
+  CP $00                               ;
+  LD A,$0C                             ;
+  JP Z,set_attr_wrap_old               ;
   POP BC
 ; This entry point is used by the routine at set_attr_wrap_old.
-set_sprite_attributes_0:
+set_attr_old_outer_loop:
   PUSH BC
-set_sprite_attributes_1:
+set_attr_old_inner_loop:
   LD (HL),A
   INC HL
   DEC C
-  JR NZ,set_sprite_attributes_1
+  JR NZ,set_attr_old_inner_loop
   PUSH HL
   LD BC,$5A20
   OR A
@@ -8389,57 +8389,57 @@ set_sprite_attributes_1:
   JP P,L9367
   POP BC
   ADD HL,DE
-  DJNZ set_sprite_attributes_0
+  DJNZ set_attr_old_outer_loop
 ; This entry point is used by the routine at L9367.
-set_sprite_attributes_2:
-  LD BC,(object_coordinates)
-  LD A,B
-  AND $F8
-  LD H,$00
-  LD L,A
-  ADD HL,HL
-  ADD HL,HL
-  LD DE,screen_attributes
-  ADD HL,DE
-  LD D,$00
-  LD E,C
-  SRL E
-  SRL E
-  SRL E
-  ADD HL,DE
-  LD A,(L928B)
-  LD C,A
-  LD DE,(L9287)
-  LD A,D
-  SRL A
-  SRL A
-  SRL A
-  INC A
-  INC A
-  LD B,A
-  EX DE,HL
-  LD HL,$0020
-  PUSH BC
-  LD B,$00
-  OR A
-  SBC HL,BC
-  EX DE,HL
-  LD BC,(object_coordinates)
-  LD A,B
-  AND $F8
-  CP $00
-  LD BC,(L9287)
-  LD A,C
-  JP Z,set_attr_wrap_new
-  POP BC
+set_attr_new_position_entry:
+  LD BC,(object_coordinates)           ; Calculate new position attribute area and fill.
+  LD A,B                               ;
+  AND $F8                              ;
+  LD H,$00                             ;
+  LD L,A                               ;
+  ADD HL,HL                            ;
+  ADD HL,HL                            ;
+  LD DE,screen_attributes              ;
+  ADD HL,DE                            ;
+  LD D,$00                             ;
+  LD E,C                               ;
+  SRL E                                ;
+  SRL E                                ;
+  SRL E                                ;
+  ADD HL,DE                            ;
+  LD A,(L928B)                         ;
+  LD C,A                               ;
+  LD DE,(L9287)                        ;
+  LD A,D                               ;
+  SRL A                                ;
+  SRL A                                ;
+  SRL A                                ;
+  INC A                                ;
+  INC A                                ;
+  LD B,A                               ;
+  EX DE,HL                             ;
+  LD HL,$0020                          ;
+  PUSH BC                              ;
+  LD B,$00                             ;
+  OR A                                 ;
+  SBC HL,BC                            ;
+  EX DE,HL                             ;
+  LD BC,(object_coordinates)           ;
+  LD A,B                               ;
+  AND $F8                              ;
+  CP $00                               ;
+  LD BC,(L9287)                        ;
+  LD A,C                               ;
+  JP Z,set_attr_wrap_new               ;
+  POP BC                               ;
 ; This entry point is used by the routine at set_attr_wrap_new.
-set_sprite_attributes_3:
+set_attr_new_outer_loop:
   PUSH BC
-set_sprite_attributes_4:
+set_attr_new_inner_loop:
   LD (HL),A
   INC HL
   DEC C
-  JR NZ,set_sprite_attributes_4
+  JR NZ,set_attr_new_inner_loop
   PUSH HL
   LD BC,$5A20
   OR A
@@ -8448,7 +8448,7 @@ set_sprite_attributes_4:
   JP P,L936B
   POP BC
   ADD HL,DE
-  DJNZ set_sprite_attributes_3
+  DJNZ set_attr_new_outer_loop
 
 ; Return point when attributes are zero (skip attribute setting).
 ;
@@ -8465,7 +8465,7 @@ handle_zero_attributes:
 ; Used by the routine at set_sprite_attributes.
 L9367:
   POP BC
-  JP set_sprite_attributes_2
+  JP set_attr_new_position_entry
 
 ; Early exit from new position attribute loop.
 ;
@@ -8478,47 +8478,47 @@ L936B:
 ;
 ; Used by the routine at set_sprite_attributes.
 set_attr_wrap_old:
-  LD BC,$03DF
-  ADD HL,BC
-  POP BC
-  PUSH BC
-set_attr_wrap_old_0:
-  LD (HL),A
-  INC HL
-  DEC C
-  JR NZ,set_attr_wrap_old_0
-  POP BC
-  ADD HL,DE
-  DEC B
-  PUSH BC
-  LD BC,$03DF
-  OR A
-  SBC HL,BC
-  POP BC
-  JP set_sprite_attributes_0
+  LD BC,$03DF                          ; Adjust HL by $03DF, restore and save BC.
+  ADD HL,BC                            ;
+  POP BC                               ;
+  PUSH BC                              ;
+set_attr_wrap_old_loop:
+  LD (HL),A                            ; Fill attribute row, advance pointer, loop.
+  INC HL                               ;
+  DEC C                                ;
+  JR NZ,set_attr_wrap_old_loop         ;
+  POP BC                               ; Restore BC, adjust HL, loop back to outer.
+  ADD HL,DE                            ;
+  DEC B                                ;
+  PUSH BC                              ;
+  LD BC,$03DF                          ;
+  OR A                                 ;
+  SBC HL,BC                            ;
+  POP BC                               ;
+  JP set_attr_old_outer_loop           ;
 
 ; Handle attribute wrap for new position at screen third boundary.
 ;
 ; Used by the routine at set_sprite_attributes.
 set_attr_wrap_new:
-  LD BC,$03DF
-  ADD HL,BC
-  POP BC
-  PUSH BC
-set_attr_wrap_new_0:
-  LD (HL),A
-  INC HL
-  DEC C
-  JR NZ,set_attr_wrap_new_0
-  POP BC
-  ADD HL,DE
-  DEC B
-  PUSH BC
-  LD BC,$03DF
-  OR A
-  SBC HL,BC
-  POP BC
-  JP set_sprite_attributes_3
+  LD BC,$03DF                          ; Adjust HL by $03DF, restore and save BC.
+  ADD HL,BC                            ;
+  POP BC                               ;
+  PUSH BC                              ;
+set_attr_wrap_new_loop:
+  LD (HL),A                            ; Fill attribute row, advance pointer, loop.
+  INC HL                               ;
+  DEC C                                ;
+  JR NZ,set_attr_wrap_new_loop         ;
+  POP BC                               ; Restore BC, adjust HL, loop back to outer.
+  ADD HL,DE                            ;
+  DEC B                                ;
+  PUSH BC                              ;
+  LD BC,$03DF                          ;
+  OR A                                 ;
+  SBC HL,BC                            ;
+  POP BC                               ;
+  JP set_attr_new_outer_loop           ;
 
 ; Compare two 6-digit scores.
 ;
@@ -8528,21 +8528,21 @@ set_attr_wrap_new_0:
 ; I:DE Pointer to second score (6 ASCII digits)
 ; O:A Result: 0 if equal, 1 if HL < DE, $FF if HL > DE
 compare_scores:
-  LD C,$06
-compare_scores_0:
-  LD A,(HL)
-  LD B,A
-  LD A,(DE)
-  SUB B
-  JP M,L93B8
-  CP $00
-  JP NZ,L93BB
-  INC HL
-  INC DE
-  DEC C
-  JP NZ,compare_scores_0
-  LD A,$00
-  RET
+  LD C,$06                             ; Initialize digit counter to 6.
+compare_scores_loop:
+  LD A,(HL)                            ; Compare digits, return if different, advance pointers, loop.
+  LD B,A                               ;
+  LD A,(DE)                            ;
+  SUB B                                ;
+  JP M,L93B8                           ;
+  CP $00                               ;
+  JP NZ,L93BB                          ;
+  INC HL                               ;
+  INC DE                               ;
+  DEC C                                ;
+  JP NZ,compare_scores_loop            ;
+  LD A,$00                             ;
+  RET                                  ; Return 0 (scores equal).
 
 ; Return 1 (first score less than second).
 ;

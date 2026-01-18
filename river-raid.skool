@@ -5868,9 +5868,9 @@ c$7296 LD A,($5EEF)  ; {Check metronome: if bit 0 == 1, skip to next object.
  $7299 AND $01       ;
 @isub=CP METRONOME_INTERVAL_1
  $729B CP $01        ; }
- $729D JP Z,$708E    ; {Store position, push DE/BC for later.
- $72A0 LD ($8B0A),BC ; }
- $72A4 PUSH DE       ;
+ $729D JP Z,$708E    ; {Store position, check bank bit, handle terrain check.
+ $72A0 LD ($8B0A),BC ;
+ $72A4 PUSH DE       ; }
  $72A5 PUSH BC       ;
 @isub=BIT SLOT_BIT_TANK_ON_BANK,D
  $72A6 BIT 5,D       ; {If SLOT_BIT_TANK_ON_BANK set, handle via #R$7302.
@@ -5881,13 +5881,14 @@ c$7296 LD A,($5EEF)  ; {Check metronome: if bit 0 == 1, skip to next object.
  $72B0 CP $00        ;
  $72B2 JP NZ,$74EE   ; }
 ; This entry point is used by the routine at #R$7302.
+@label=tank_move_entry
 *$72B5 DEC C         ; {Move tank: DEC C twice (left), then INC C × 4 if
  $72B6 DEC C         ; right-facing.
  $72B7 BIT 6,D       ;
  $72B9 CALL Z,$728B  ; }
  $72BC LD A,C        ; {If X == $80 (center), set tank shell active via
- $72BD CP $80        ; #R$7290.
- $72BF CALL Z,$7290  ; }
+ $72BD CP $80        ; #R$7290.}
+ $72BF CALL Z,$7290  ;
  $72C2 LD HL,($5F60) ; {Update position in viewport array, store to #R$8B0C,
  $72C5 DEC HL        ; get sprite via #R$75BA.
  $72C6 LD D,(HL)     ;
@@ -5991,10 +5992,11 @@ c$7302 LD BC,($8B0A) ; {Load stored position, add $10 offset to X.
  $7327 CP $00        ; {If shell uninitialized, initialize via #R$7343.
  $7329 JP Z,$7343    ; }
 @isub=RES TANK_SHELL_BIT_EXPLODING,A
- $732C RES 5,A       ; {Clear exploding bit, set flying bit.
+ $732C RES 5,A       ; Clear exploding bit.
 ; This entry point is used by the routines at #R$7343 and #R$735E.
+@label=tank_fire_shell_entry
 @isub=SET TANK_SHELL_BIT_FLYING,A
-*$732E SET 7,A       ; }
+*$732E SET 7,A       ; Set flying bit.
  $7330 LD ($7383),A  ; {Store shell state, calculate spawn X position.
  $7333 LD A,C        ;
  $7334 SUB $10       ; }
@@ -6245,6 +6247,7 @@ c$7415 LD BC,($5F73) ; {Load missile coords. If Y bit 7 clear, clear missile
  $742F ADD A,$08     ; {Check adjacent X position. If match, player hit.
  $7431 CP C          ;
  $7432 JP Z,$650A    ; }
+@label=handle_collision_mode_missile_miss
 *$7435 LD BC,$0000   ; {Clear missile coords, pop 4 return addresses, return.
  $7438 LD ($5F73),BC ;
  $743C POP DE        ;
@@ -6407,6 +6410,7 @@ c$74EE LD HL,($5F60) ; {Load viewport_ptr, navigate to X position in current
 @isub=LD A,POINTS_TANK
  $7520 LD A,$25      ;
  $7522 CALL $90E0    ;
+@label=tank_reverse_direction
 *$7525 LD HL,($5F60) ; {Reload viewport_ptr, set bits 4 and 5 (direction change
  $7528 DEC HL        ; flags).
  $7529 SET 4,(HL)    ; }
@@ -6416,14 +6420,15 @@ c$74EE LD HL,($5F60) ; {Load viewport_ptr, navigate to X position in current
  $752E DEC HL        ; alternate speed.
  $752F LD A,($923D)  ;
  $7532 CP $01        ; }
- $7534 JP Z,$7546    ; {Load speed from #R$5F6B, check if 7-speed < 0, clear
- $7537 LD A,($5F6B)  ; slot if needed.
+ $7534 JP Z,$7546    ; {Load speed from #R$5F6B.
+ $7537 LD A,($5F6B)  ; }
 ; This entry point is used by the routine at #R$7546.
-*$753A LD B,A        ;
- $753B LD A,$07      ; }
+@label=tank_speed_check
+*$753A LD B,A        ; {Check if 7-speed < 0, clear slot if needed.
+ $753B LD A,$07      ;
  $753D SUB B         ;
  $753E JP M,$708E    ;
- $7541 LD (HL),$00   ;
+ $7541 LD (HL),$00   ; }
  $7543 JP $708E      ;
 
 ; Get tank speed for level 1
@@ -6581,9 +6586,10 @@ c$75D0 LD ($8B0A),BC ;
  $75EF SRL A         ;
  $75F1 OR A          ;
  $75F2 INC A         ; }
- $75F3 SBC HL,BC     ; {Loop to add frame offset to sprite pointer, store to
-*$75F5 ADD HL,BC     ; #R$8B0E.
- $75F6 DEC A         ;
+ $75F3 SBC HL,BC     ; Subtract frame size for pre-decrement.
+@label=handle_object_proximity_frame_loop
+*$75F5 ADD HL,BC     ; {Loop to add frame offset to sprite pointer, store to
+ $75F6 DEC A         ; #R$8B0E.
  $75F7 JR NZ,$75F5   ;
  $75F9 LD ($8B0E),HL ; }
  $75FC LD BC,($8B0A) ; {Reload position, store to #R$8B0C.
@@ -6688,6 +6694,7 @@ c$7649 BIT 7,B       ; {If balloon is off-screen (Y bit 7 set), skip to main
  $7683 DEC C         ;
  $7684 DEC C         ; }
 ; Shared entry point for balloon rendering (also used by right-facing balloon).
+@label=operate_balloon_shared
 *$7685 LD HL,($5F60) ; {Read object definition from viewport, write updated
  $7688 DEC HL        ; position back.
  $7689 LD D,(HL)     ;
@@ -7007,8 +7014,9 @@ c$7ACD LD HL,($7802) ; {Decrease timer
  $7AE9 JR NZ,$7ACD   ; Repeat if a valid key was not pressed.
  $7AEB LD A,$FF      ;
 @label=game_mode_print
-*$7AED LD B,$00      ; {The purpose of this block is really unclear
-*$7AEF DJNZ $7AEF    ;
+*$7AED LD B,$00      ; Initialize delay counter.
+@label=controls_input_delay_loop
+*$7AEF DJNZ $7AEF    ; {Delay loop (purpose unclear).
  $7AF1 DEC A         ;
  $7AF2 JR NZ,$7AED   ; }
 @isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
@@ -8244,10 +8252,12 @@ b$89FA DEFB $FF,$FF  ; 16 pixels
 ; speaker port rapidly.
 @label=do_fire
 c$8A02 LD C,$08      ; Loop 8 times for sound duration.
+@label=do_fire_pulse_loop
 *$8A04 LD A,$10      ; {Turn speaker ON (cyan border flash).
  $8A06 OUT ($FE),A   ; }
- $8A08 LD D,$20      ; {Delay loop for sound frequency.
-*$8A0A DEC D         ;
+ $8A08 LD D,$20      ; Initialize delay counter for sound frequency.
+@label=do_fire_delay_loop
+*$8A0A DEC D         ; {Delay loop for sound frequency.
  $8A0B JR NZ,$8A0A   ; }
  $8A0D LD A,$00      ; {Turn speaker OFF.
  $8A0F OUT ($FE),A   ; }
@@ -8265,16 +8275,18 @@ c$8A02 LD C,$08      ; Loop 8 times for sound duration.
 @label=scroll_attribute_row
 c$8A1B LD HL,$57FF   ; {Start at #R$5800-1 (bottom-right of visible area), loop
  $8A1E LD C,$08      ; 8 rows.}
-*$8A20 LD B,$20      ; {Rotate 32 bytes left with carry propagation.
- $8A22 OR A          ;
-*$8A23 RL (HL)       ;
+@label=scroll_attr_outer_loop
+*$8A20 LD B,$20      ; {Set up inner loop for 32 bytes.
+ $8A22 OR A          ; }
+@label=scroll_attr_inner_loop
+*$8A23 RL (HL)       ; {Rotate byte left, advance, loop 32 times.
  $8A25 DEC HL        ;
  $8A26 DJNZ $8A23    ; }
- $8A28 LD DE,$00E0   ; {Move up one row ($E0 bytes back), continue loop.
+ $8A28 LD DE,$00E0   ; {Move up one row ($E0 bytes back), continue outer loop.
  $8A2B OR A          ;
  $8A2C SBC HL,DE     ;
- $8A2E DEC C         ; }
- $8A2F JP NZ,$8A20   ;
+ $8A2E DEC C         ;
+ $8A2F JP NZ,$8A20   ; }
  $8A32 RET           ;
 
 ; Initialize UDG and screen attributes.
@@ -8314,6 +8326,7 @@ c$8A4E LD DE,$0800   ;
  $8A56 RLCA          ; into #REGa.
  $8A57 AND $03       ;
  $8A59 INC A         ; }
+@label=calc_pixel_screen_third_loop
 *$8A5A ADD HL,DE     ; {Load the starting address of the third of the screen
  $8A5B DEC A         ; into #REGhl.
  $8A5C JP NZ,$8A5A   ; }
@@ -8334,12 +8347,13 @@ c$8A4E LD DE,$0800   ;
  $8A6E LD A,B        ; {Leave only the 3 lowest bits in #REGb which define the
  $8A6F AND $07       ; coordinate of the object relative to it tile.
  $8A71 LD B,A        ; }
- $8A72 INC B         ;
- $8A73 DEC H         ;
-*$8A74 INC H         ;
+ $8A72 INC B         ; {Prepare for row loop.
+ $8A73 DEC H         ; }
+@label=calc_pixel_row_loop
+*$8A74 INC H         ; {Increment H (row within tile) B times.
  $8A75 DJNZ $8A74    ;
- $8A77 LD A,C        ;
- $8A78 SRL A         ;
+ $8A77 LD A,C        ; }
+ $8A78 SRL A         ; {Add column offset and extract bit position.
  $8A7A SRL A         ;
  $8A7C SRL A         ;
  $8A7E LD D,C        ;
@@ -8348,7 +8362,7 @@ c$8A4E LD DE,$0800   ;
  $8A81 LD A,D        ;
  $8A82 AND $07       ;
  $8A84 LD B,A        ;
- $8A85 RET           ;
+ $8A85 RET           ; }
 
 ; Fuel sprite
 ;
@@ -8559,6 +8573,7 @@ c$8BC6 LD HL,($8B14) ; {HL -= $E0, fall through to blitter.
  $8BCD SBC HL,DE     ; }
  $8BCF LD ($8B14),HL ;
 ; Main rendering loop - calls blitter and advances to next pixel row.
+@label=adjust_old_screen_third_loop
 *$8BD2 CALL $8C0B    ; Call blitter for this row.
  $8BD5 LD A,($8B1A)  ; {Advance sprite pointers by width.
  $8BD8 LD D,$00      ;
@@ -8595,6 +8610,7 @@ c$8C0B LD A,($8B1A)  ; {Get width, load screen addresses for new and old
  $8C0F LD HL,($8B14) ;
  $8C12 LD DE,($8B0E) ; }
 ; First pass: erase old sprite (XOR with screen).
+@label=render_blit_erase_loop
 *$8C16 LD A,(DE)     ; {Read sprite byte, XOR $FF, combine with screen.
  $8C17 LD B,A        ;
  $8C18 LD A,(HL)     ;
@@ -8617,6 +8633,7 @@ c$8C1B OR B          ; {Apply blend, store result, advance pointers, loop.
  $8C28 LD HL,($8B12) ;
  $8C2B LD DE,($8B10) ;
 ; Second pass: draw new sprite (OR with screen), check collision.
+@label=blit_draw_loop
 *$8C2F PUSH DE       ; {Read sprite byte, XOR with screen to detect overlap.
  $8C30 LD A,(DE)     ;
  $8C31 LD B,A        ;
@@ -9310,7 +9327,7 @@ g$928B DEFW $0000
 ; I:A Sprite width in tiles
 ; I:E Screen attributes
 @label=set_sprite_attributes
-c$928D PUSH HL       ;
+c$928D PUSH HL       ; {Calculate old position attribute area and fill.
  $928E PUSH BC       ;
  $928F LD ($928B),A  ;
  $9292 LD A,E        ;
@@ -9357,10 +9374,12 @@ c$928D PUSH HL       ;
  $92E0 AND $F8       ;
  $92E2 CP $00        ;
  $92E4 LD A,$0C      ;
- $92E6 JP Z,$936F    ;
+ $92E6 JP Z,$936F    ; }
  $92E9 POP BC        ;
 ; This entry point is used by the routine at #R$936F.
+@label=set_attr_old_outer_loop
 *$92EA PUSH BC       ;
+@label=set_attr_old_inner_loop
 *$92EB LD (HL),A     ;
  $92EC INC HL        ;
  $92ED DEC C         ;
@@ -9376,7 +9395,8 @@ c$928D PUSH HL       ;
  $92FC ADD HL,DE     ;
  $92FD DJNZ $92EA    ;
 ; This entry point is used by the routine at #R$9367.
-*$92FF LD BC,($8B0C) ;
+@label=set_attr_new_position_entry
+*$92FF LD BC,($8B0C) ; {Calculate new position attribute area and fill.
  $9303 LD A,B        ;
  $9304 AND $F8       ;
  $9306 LD H,$00      ;
@@ -9415,9 +9435,11 @@ c$928D PUSH HL       ;
  $933F LD BC,($9287) ;
  $9343 LD A,C        ;
  $9344 JP Z,$9388    ;
- $9347 POP BC        ;
+ $9347 POP BC        ; }
 ; This entry point is used by the routine at #R$9388.
+@label=set_attr_new_outer_loop
 *$9348 PUSH BC       ;
+@label=set_attr_new_inner_loop
 *$9349 LD (HL),A     ;
  $934A INC HL        ;
  $934B DEC C         ;
@@ -9459,15 +9481,16 @@ c$936B POP BC        ;
 ;
 ; Used by the routine at #R$928D.
 @label=set_attr_wrap_old
-c$936F LD BC,$03DF   ;
+c$936F LD BC,$03DF   ; {Adjust HL by $03DF, restore and save BC.
  $9372 ADD HL,BC     ;
  $9373 POP BC        ;
- $9374 PUSH BC       ;
-*$9375 LD (HL),A     ;
+ $9374 PUSH BC       ; }
+@label=set_attr_wrap_old_loop
+*$9375 LD (HL),A     ; {Fill attribute row, advance pointer, loop.
  $9376 INC HL        ;
  $9377 DEC C         ;
- $9378 JR NZ,$9375   ;
- $937A POP BC        ;
+ $9378 JR NZ,$9375   ; }
+ $937A POP BC        ; {Restore BC, adjust HL, loop back to outer.
  $937B ADD HL,DE     ;
  $937C DEC B         ;
  $937D PUSH BC       ;
@@ -9475,21 +9498,22 @@ c$936F LD BC,$03DF   ;
  $9381 OR A          ;
  $9382 SBC HL,BC     ;
  $9384 POP BC        ;
- $9385 JP $92EA      ;
+ $9385 JP $92EA      ; }
 
 ; Handle attribute wrap for new position at screen third boundary.
 ;
 ; Used by the routine at #R$928D.
 @label=set_attr_wrap_new
-c$9388 LD BC,$03DF   ;
+c$9388 LD BC,$03DF   ; {Adjust HL by $03DF, restore and save BC.
  $938B ADD HL,BC     ;
  $938C POP BC        ;
- $938D PUSH BC       ;
-*$938E LD (HL),A     ;
+ $938D PUSH BC       ; }
+@label=set_attr_wrap_new_loop
+*$938E LD (HL),A     ; {Fill attribute row, advance pointer, loop.
  $938F INC HL        ;
  $9390 DEC C         ;
- $9391 JR NZ,$938E   ;
- $9393 POP BC        ;
+ $9391 JR NZ,$938E   ; }
+ $9393 POP BC        ; {Restore BC, adjust HL, loop back to outer.
  $9394 ADD HL,DE     ;
  $9395 DEC B         ;
  $9396 PUSH BC       ;
@@ -9497,7 +9521,7 @@ c$9388 LD BC,$03DF   ;
  $939A OR A          ;
  $939B SBC HL,BC     ;
  $939D POP BC        ;
- $939E JP $9348      ;
+ $939E JP $9348      ; }
 
 ; Compare two 6-digit scores.
 ;
@@ -9507,9 +9531,10 @@ c$9388 LD BC,$03DF   ;
 ; I:DE Pointer to second score (6 ASCII digits)
 ; O:A Result: 0 if equal, 1 if HL < DE, $FF if HL > DE
 @label=compare_scores
-c$93A1 LD C,$06      ;
-*$93A3 LD A,(HL)     ;
- $93A4 LD B,A        ;
+c$93A1 LD C,$06      ; Initialize digit counter to 6.
+@label=compare_scores_loop
+*$93A3 LD A,(HL)     ; {Compare digits, return if different, advance pointers,
+ $93A4 LD B,A        ; loop.
  $93A5 LD A,(DE)     ;
  $93A6 SUB B         ;
  $93A7 JP M,$93B8    ;
@@ -9519,8 +9544,8 @@ c$93A1 LD C,$06      ;
  $93B0 INC DE        ;
  $93B1 DEC C         ;
  $93B2 JP NZ,$93A3   ;
- $93B5 LD A,$00      ;
- $93B7 RET           ;
+ $93B5 LD A,$00      ; }
+ $93B7 RET           ; Return 0 (scores equal).
 
 ; Return 1 (first score less than second).
 ;

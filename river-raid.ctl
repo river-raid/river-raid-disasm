@@ -2338,10 +2338,12 @@ R $7296 I:D Object definition byte
   $7296 Check metronome: if bit 0 == 1, skip to next object.
 @ $7299 isub=AND METRONOME_INTERVAL_1
 @ $729B isub=CP METRONOME_INTERVAL_1
-  $729D,7 Store position, push DE/BC for later.
+  $729D,8 Store position, check bank bit, handle terrain check.
 @ $72A6 isub=BIT SLOT_BIT_TANK_ON_BANK,D
   $72A6 If SLOT_BIT_TANK_ON_BANK set, handle via #R$7302.
   $72AB Pop regs. If #R$5F6D != 0, jump to #R$74EE.
+@ $72B5 label=tank_move_entry
+  $72B5,10 Move tank: DEC C twice (left), then INC C × 4 if right-facing.
   $72B5 Move tank: DEC C twice (left), then INC C × 4 if right-facing.
   $72BC If X == $80 (center), set tank shell active via #R$7290.
   $72C2,13 Update position in viewport array, store to #R$8B0C, get sprite via #R$75BA.
@@ -2396,8 +2398,10 @@ R $7302 I:D Object definition byte
 @ $7327 isub=CP TANK_SHELL_STATE_UNITIALIZED
   $7327 If shell uninitialized, initialize via #R$7343.
 @ $732C isub=RES TANK_SHELL_BIT_EXPLODING,A
-  $732C Clear exploding bit, set flying bit.
+  $732C Clear exploding bit.
+@ $732E label=tank_fire_shell_entry
 @ $732E isub=SET TANK_SHELL_BIT_FLYING,A
+  $732E Set flying bit.
   $7330,6 Store shell state, calculate spawn X position.
 @ $7337 isub=BIT SLOT_BIT_ORIENTATION,D
   $7337,9 If right-facing, add offset via #R$72FD. Store shell coordinates.
@@ -2494,6 +2498,7 @@ D $7415 #LIST { Checks missile position against player position } { If collision
   $741B Clear Y bit 7, check if Y-8 is negative (missile above screen).
   $7423 Compare missile X with player X (from #R$5F72). If match, player hit.
   $742F Check adjacent X position. If match, player hit.
+@ $7435 label=handle_collision_mode_missile_miss
   $7435,11 Clear missile coords, pop 4 return addresses, return.
 @ $7441 label=operate_tank_shell
 c $7441 Operate tank shell
@@ -2551,10 +2556,13 @@ D $74EE Called when a tank on the river reaches the viewport boundary. Checks if
   $750F Tank destroyed: clear X position, set D=$80 (explosion marker).
   $7517,9 Call #R$6E9C to add explosion, award POINTS_TANK via #R$90E0.
 @ $7520 isub=LD A,POINTS_TANK
+@ $7525 label=tank_reverse_direction
   $7525,6 Reload viewport_ptr, set bits 4 and 5 (direction change flags).
 @ $752B isub=SET CONTROLS_BIT_EXPLODING,(HL)
   $752D Check difficulty level at #R$923D. If level 1, use alternate speed.
-  $7534,9 Load speed from #R$5F6B, check if 7-speed < 0, clear slot if needed.
+  $7534 Load speed from #R$5F6B.
+@ $753A label=tank_speed_check
+  $753A,9 Check if 7-speed < 0, clear slot if needed.
 @ $7546 label=get_tank_speed_level_1
 c $7546 Get tank speed for level 1
 D $7546 Returns tank speed from #R$5F6A instead of #R$5F6B for difficulty level 1.
@@ -2617,7 +2625,9 @@ R $75D0 I:BC Object coordinates
   $75E9 Calculate animation frame offset from X position.
 @ $75EC isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
   $75EC Set frame size, shift and increment offset.
-  $75F3 Loop to add frame offset to sprite pointer, store to #R$8B0E.
+  $75F3 Subtract frame size for pre-decrement.
+@ $75F5 label=handle_object_proximity_frame_loop
+  $75F5 Loop to add frame offset to sprite pointer, store to #R$8B0E.
   $75FC Reload position, store to #R$8B0C.
   $7604 Invert object orientation (XOR bit 6).
 @ $7605 isub=XOR 1<<SLOT_BIT_ORIENTATION
@@ -2657,6 +2667,7 @@ R $7649 I:D Object definition (bit 6 = orientation: 0=right, 1=left)
   $765D Left-facing: Check terrain at (X-16, Y). If collision, reverse direction.
   $766C Check terrain at (X-16, Y+8). If collision, reverse direction.
   $767F Save position, move left by 2 pixels.
+@ $7685 label=operate_balloon_shared
 N $7685 Shared entry point for balloon rendering (also used by right-facing balloon).
   $7685 Read object definition from viewport, write updated position back.
   $768E Store render position and load balloon sprite pointer.
@@ -2805,7 +2816,9 @@ c $7ACD Wait until the user chooses a valid control type or switch to the overvi
   $7AE5 Validate the pressed key by making sure that none of the bits older than the first two are set, effectively allowing values 0 through 3.
   $7AE9,2 Repeat if a valid key was not pressed.
 @ $7AED label=game_mode_print
-  $7AED The purpose of this block is really unclear
+  $7AED Initialize delay counter.
+@ $7AEF label=controls_input_delay_loop
+  $7AEF Delay loop (purpose unclear).
 @ $7AF4 isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
   $7AF4,2 PAPER BLACK; INK WHITE
   $7AF9,9 Print game mode dialog
@@ -3071,16 +3084,22 @@ b $89FA
 c $8A02 Generate firing sound effect.
 D $8A02 Produces the "pew" sound when the player fires a missile by toggling the speaker port rapidly.
   $8A02 Loop 8 times for sound duration.
+@ $8A04 label=do_fire_pulse_loop
   $8A04 Turn speaker ON (cyan border flash).
-  $8A08 Delay loop for sound frequency.
+  $8A08 Initialize delay counter for sound frequency.
+@ $8A0A label=do_fire_delay_loop
+  $8A0A Delay loop for sound frequency.
   $8A0D Turn speaker OFF.
   $8A11,9 Delay and loop for next sound pulse.
 @ $8A1B label=scroll_attribute_row
 c $8A1B Scroll the bottom attribute row left by 1 pixel.
 D $8A1B Shifts the pixels in the bottom visible row (#R$5800-1 down) left by 1 bit. Used during terrain scrolling.
   $8A1B Start at #R$5800-1 (bottom-right of visible area), loop 8 rows.
-  $8A20 Rotate 32 bytes left with carry propagation.
-  $8A28,7 Move up one row ($E0 bytes back), continue loop.
+@ $8A20 label=scroll_attr_outer_loop
+  $8A20 Set up inner loop for 32 bytes.
+@ $8A23 label=scroll_attr_inner_loop
+  $8A23 Rotate byte left, advance, loop 32 times.
+  $8A28,10 Move up one row ($E0 bytes back), continue outer loop.
 @ $8A33 label=init_udg
 c $8A33 Initialize UDG and screen attributes.
 D $8A33 Sets border to black, fills lower screen attributes with white-on-black, and copies UDG graphics to the UDG area.
@@ -3098,12 +3117,17 @@ R $8A4E I:C Horizontal coordinate of the object in pixels.
 R $8A4E O:B Horizontal coordinate of the object in pixels relative to its tile.
 R $8A4E O:HL Screen address corresponding to the coordinates.
 C $8A54,6 Load the number of the third of the screen corresponding to the vertical coordinate of the object into #REGa.
+@ $8A5A label=calc_pixel_screen_third_loop
 C $8A5A,5 Load the starting address of the third of the screen into #REGhl.
 C $8A5F,4 Leave only the 6 lowest bits in #REGb which define the coordinate of the object relative to its third of the screen.
 C $8A63,2 Unset the 3 lowest bits, so now #REGa contains the coordinate of starting tile relative to its third of the screen.
 C $8A66,6 Multiply the value of #REGa by 4 and put into #REGde which makes the offset of the starting tile address from its third of the screen.
 C $8A6C,2 Now #REGhl contains the screen address of the tile.
 C $8A6E,4 Leave only the 3 lowest bits in #REGb which define the coordinate of the object relative to it tile.
+C $8A72,2 Prepare for row loop.
+@ $8A74 label=calc_pixel_row_loop
+C $8A74,4 Increment H (row within tile) B times.
+C $8A78,14 Add column offset and extract bit position.
 @ $8A86 label=sprite_fuel
 b $8A86 Fuel sprite
 N $8A86 #UDGTABLE { #UDGARRAY2,11,4,2;$8A86-$8AB8-1-16{0,0,64,100}(sprite-fuel) } TABLE#
@@ -3193,6 +3217,7 @@ D $8BA3 Similar boundary handling for the old (erasure) position.
 @ $8BC6 label=adjust_old_screen_third
 c $8BC6 Adjust old position for third-of-screen crossing.
   $8BC6,9 HL -= $E0, fall through to blitter.
+@ $8BD2 label=adjust_old_screen_third_loop
 N $8BD2 Main rendering loop - calls blitter and advances to next pixel row.
   $8BD2 Call blitter for this row.
   $8BD5 Advance sprite pointers by width.
@@ -3202,12 +3227,14 @@ N $8BD2 Main rendering loop - calls blitter and advances to next pixel row.
 c $8C0B Blit one row of sprite data to screen.
 D $8C0B XORs erasure pixels, then ORs new pixels, checking for collision.
   $8C0B Get width, load screen addresses for new and old positions.
+@ $8C16 label=render_blit_erase_loop
 N $8C16 First pass: erase old sprite (XOR with screen).
   $8C16 Read sprite byte, XOR $FF, combine with screen.
 @ $8C1B label=blit_erase_op
 c $8C1B Self-modifying blending operation (erasure).
 D $8C1B This byte is patched to change blending mode: OR B for XOR mode, NOP for OR mode.
   $8C1B,9 Apply blend, store result, advance pointers, loop.
+@ $8C2F label=blit_draw_loop
 N $8C2F Second pass: draw new sprite (OR with screen), check collision.
   $8C2F Read sprite byte, XOR with screen to detect overlap.
   $8C38,3 If collision detected, jump to collision dispatcher.
@@ -3368,7 +3395,14 @@ c $928D Set screen attributes for sprite area.
 D $928D Calculates the attribute cells covered by a sprite and fills them with the specified color.
 R $928D I:A Sprite width in tiles
 R $928D I:E Screen attributes
+  $928D,92 Calculate old position attribute area and fill.
+@ $92EA label=set_attr_old_outer_loop
+@ $92EB label=set_attr_old_inner_loop
 @ $92F1 nowarn
+@ $92FF label=set_attr_new_position_entry
+  $92FF,73 Calculate new position attribute area and fill.
+@ $9348 label=set_attr_new_outer_loop
+@ $9349 label=set_attr_new_inner_loop
 @ $934F nowarn
 @ $935D label=handle_zero_attributes
 c $935D Return point when attributes are zero (skip attribute setting).
@@ -3376,14 +3410,26 @@ c $9367 Early exit from old position attribute loop.
 c $936B Early exit from new position attribute loop.
 @ $936F label=set_attr_wrap_old
 c $936F Handle attribute wrap for old position at screen third boundary.
+  $936F Adjust HL by $03DF, restore and save BC.
+@ $9375 label=set_attr_wrap_old_loop
+  $9375 Fill attribute row, advance pointer, loop.
+  $937A Restore BC, adjust HL, loop back to outer.
 @ $9388 label=set_attr_wrap_new
 c $9388 Handle attribute wrap for new position at screen third boundary.
+  $9388 Adjust HL by $03DF, restore and save BC.
+@ $938E label=set_attr_wrap_new_loop
+  $938E Fill attribute row, advance pointer, loop.
+  $9393 Restore BC, adjust HL, loop back to outer.
 @ $93A1 label=compare_scores
 c $93A1 Compare two 6-digit scores.
 D $93A1 Compares score at HL with score at DE, digit by digit.
 R $93A1 I:HL Pointer to first score (6 ASCII digits)
 R $93A1 I:DE Pointer to second score (6 ASCII digits)
 R $93A1 O:A Result: 0 if equal, 1 if HL < DE, $FF if HL > DE
+  $93A1 Initialize digit counter to 6.
+@ $93A3 label=compare_scores_loop
+  $93A3 Compare digits, return if different, advance pointers, loop.
+  $93B7,1 Return 0 (scores equal).
 c $93B8 Return 1 (first score less than second).
 c $93BB Return $FF (first score greater than second).
 @ $93BE label=update_high_score
