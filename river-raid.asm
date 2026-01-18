@@ -1087,8 +1087,8 @@ screen_attributes:
   DEFB $07,$07,$07,$07,$07,$07,$07,$07
   DEFB $07,$07,$07,$07,$07,$38,$38,$38
 
-; Data block at 5B00
-L5B00:
+; Lookup table for screen row addresses, used in island rendering.
+screen_row_table:
   DEFB $1F,$40,$1F,$41,$1F,$42,$1F,$43
   DEFB $1F,$44,$1F,$45,$1F,$46,$1F,$47
   DEFB $3F,$40,$3F,$41,$3F,$42,$3F,$43
@@ -1142,7 +1142,7 @@ int_counter:
   DEFB $00
 
 ; Unused
-L5C79:
+data_unused_5C79:
   DEFB $00,$00,$58,$FF,$00,$00,$21,$00
   DEFB $5B,$05,$17,$00,$40,$FC,$50,$21
   DEFB $18,$05,$17,$01,$00,$00,$38,$00
@@ -1501,7 +1501,7 @@ state_island_line_idx:
   DEFB $10
 
 ; Unused
-L5EFE:
+data_unused_5EFE:
   DEFB $FF,$FF
 
 ; Game status buffer entry at 5F00
@@ -1650,7 +1650,7 @@ ptr_scroller:
   DEFW $0000
 
 ; Unused
-L5F80:
+data_unused_5F80:
   DEFB $00
 
 ; Game status buffer entry at 5F81
@@ -1658,7 +1658,7 @@ state_overview_frame:
   DEFB $00
 
 ; Unused
-L5F82:
+data_unused_5F82:
   DEFB $00
 
 ; Main stack pointer saved at startup
@@ -2100,7 +2100,7 @@ next_bridge_player_2:
   JP finalize_collision                ; Finalize collision.
 
 ; Unused
-L6253:
+data_unused_6253:
   DEFB $3E,$00,$C9
 
 ; Handle COLLISION_MODE_FUEL_DEPOT (initiate refueling)
@@ -2531,7 +2531,7 @@ refuel_from_depot:
   JP reset_gameplay_mode               ;
 
 ; Unused
-L64B4:
+data_unused_64B4:
   DEFB $D1,$D1,$D1,$D1,$D1,$C3,$0A,$65
 
 ; Print current bridge number on status line
@@ -3168,7 +3168,7 @@ handle_island_rendering:
 process_island_line:
   LD (state_island_render_idx),A
   AND $3F                              ; Mask to get lower 6 bits (index 0-63).
-  LD HL,L5B00                          ; Look up pointer in table at L5B00 (index × 2).
+  LD HL,screen_row_table               ; Look up pointer in table at screen_row_table (index × 2).
   LD C,A                               ;
   SLA C                                ;
   LD B,$00                             ;
@@ -3183,7 +3183,7 @@ process_island_line:
   BIT 6,A                              ; If bit 6 set, add $0800 offset to island pointer.
   CALL NZ,add_island_offset_800        ;
   PUSH HL                              ; Save adjusted island pointer.
-  LD HL,L5B00                          ; Look up pointer for (counter - speed) in table at L5B00.
+  LD HL,screen_row_table               ; Look up pointer for (counter - speed) in table at screen_row_table.
   LD A,(state_speed)                   ;
   LD B,A                               ;
   LD A,(state_island_render_idx)       ;
@@ -3903,7 +3903,7 @@ int_return:
   RETN                                 ;
 
 ; Unused
-L6C2B:
+data_unused_6C2B:
   DEFB $ED,$56,$C3,$08,$00
 
 ; Bonus life sound progress counter (0-64)
@@ -4826,7 +4826,7 @@ render_balloon:
 ; Used by the routines at play, main_loop, overview, operate_ship_or_helicopter_continue, operate_fighter_continue,
 ; operate_tank_shell_explosion, handle_inactive_object, animate_object, animate_helicopter, operate_tank,
 ; operate_tank_on_bank, cancel_and_remove_shell, handle_tank_at_boundary, operate_fuel, handle_object_proximity,
-; remove_object_from_viewport, operate_baloon, jp_operate_viewport_objects and L76DA.
+; remove_object_from_viewport, operate_baloon, jp_operate_viewport_objects and reverse_balloon_direction.
 ;
 ; Iterates through the viewport_objects array, processing each active object. Each object slot is a 3-byte structure: [X
 ; position, Y position, OBJECT_DEFINITION byte].
@@ -5965,7 +5965,7 @@ operate_baloon:
   CP $01                               ;
   JP NZ,jp_operate_viewport_objects    ;
   BIT 6,D
-  JP Z,L76AF
+  JP Z,operate_balloon_right
   PUSH BC                              ; Left-facing: Check terrain at (X-16, Y). If collision, reverse direction.
   LD A,C                               ;
   SUB $10                              ;
@@ -5974,7 +5974,7 @@ operate_baloon:
   LD A,(HL)                            ;
   POP BC                               ;
   CP $00                               ;
-  CALL NZ,L76DA                        ;
+  CALL NZ,reverse_balloon_direction    ;
   PUSH BC                              ; Check terrain at (X-16, Y+8). If collision, reverse direction.
   LD A,C                               ;
   SUB $10                              ;
@@ -5986,7 +5986,7 @@ operate_baloon:
   LD A,(HL)                            ;
   POP BC                               ;
   CP $00                               ;
-  CALL NZ,L76DA                        ;
+  CALL NZ,reverse_balloon_direction    ;
   LD (previous_object_coordinates),BC  ; Save position, move left by 2 pixels.
   DEC C                                ;
   DEC C                                ;
@@ -6025,16 +6025,16 @@ jp_operate_viewport_objects:
 ; I:B Y position
 ; I:C X position
 ; I:D Object definition
-L76AF:
-  PUSH BC                              ; Check terrain at (X+32, Y). If collision, reverse direction via L76DA.
-  LD A,C                               ;
+operate_balloon_right:
+  PUSH BC                              ; Check terrain at (X+32, Y). If collision, reverse direction via
+  LD A,C                               ; reverse_balloon_direction.
   ADD A,$20                            ;
   LD C,A                               ;
   CALL calculate_pixel_address         ;
   LD A,(HL)                            ;
   POP BC                               ;
   CP $00                               ;
-  CALL NZ,L76DA                        ;
+  CALL NZ,reverse_balloon_direction    ;
   PUSH BC                              ; Check terrain at (X+24, Y+8). If collision, reverse direction.
   LD A,C                               ;
   ADD A,$18                            ;
@@ -6046,7 +6046,7 @@ L76AF:
   LD A,(HL)                            ;
   POP BC                               ;
   CP $00                               ;
-  CALL NZ,L76DA                        ;
+  CALL NZ,reverse_balloon_direction    ;
   LD (previous_object_coordinates),BC  ; Save position, move right by 2 pixels, jump to render at
   INC C                                ; operate_balloon_shared.
   INC C                                ;
@@ -6058,7 +6058,7 @@ L76AF:
 ;
 ; I:BC Position
 ; I:D Object definition
-L76DA:
+reverse_balloon_direction:
   LD (previous_object_coordinates),BC  ; Save position. If Y >= 128 (off visible area), return early.
   LD A,B                               ;
   SUB $80                              ;
@@ -6075,12 +6075,13 @@ L76DA:
   LD BC,$0020                          ;
   SRL A                                ;
   INC A                                ;
+reverse_balloon_frame_loop:
   OR A                                 ; Loop to select correct frame in sprite data.
   SBC HL,BC                            ;
-L76DA_0:
+reverse_balloon_direction_0:
   ADD HL,BC                            ;
   DEC A                                ;
-  JR NZ,L76DA_0                        ;
+  JR NZ,reverse_balloon_direction_0    ;
   LD (render_sprite_ptr),HL            ; Store sprite pointer and render position.
   LD BC,(previous_object_coordinates)  ;
   LD (object_coordinates),BC           ;
@@ -6097,7 +6098,7 @@ L76DA_0:
   JP operate_viewport_objects          ;
 
 ; Unused
-L7727:
+data_unused_7727:
   DEFB $C3,$90,$EA,$0D,$00,$05,$1F,$00
   DEFB $F5,$AC,$30,$0E,$00,$00,$00,$00
   DEFB $00,$2C,$30,$0E,$00,$00,$00,$00
@@ -6326,7 +6327,7 @@ switch_to_overview_mode:
   RET                                  ;
 
 ; Unused
-L7B61:
+data_unused_7B61:
   DEFB $C3,$90,$EA,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
@@ -6629,7 +6630,7 @@ sprite_road_attributes:
   DEFB $3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C
 
 ; Unused
-L8391:
+data_unused_8391:
   DEFB $3F,$3F,$3F,$3F,$3F,$3F,$3F,$3F
   DEFB $3F,$3F,$3F,$3F,$3F,$3F,$C0,$C0
   DEFB $C0,$C0,$3F,$3F,$3F,$3F,$3F,$3F
@@ -6853,8 +6854,8 @@ sprite_rock:
   DEFB $7F,$FF,$DF                     ;
   DEFB $FF,$FF,$EF                     ;
 
-; Message at 8561
-L8561:
+; Control selection menu text.
+msg_control_menu:
   DEFM $11,$00
   DEFB $10,$07
   DEFB $16,$05,$05
@@ -7422,7 +7423,7 @@ sprite_helicopter_rotor_right:
   DEFB $01,$E0,$00,$3C,$00,$78,$00,$0F
 
 ; Unused
-L8AD8:
+data_unused_8AD8:
   DEFB $00,$00,$00,$10,$00,$00,$00,$00
   DEFB $00,$00,$00,$18,$18,$00,$00,$00
   DEFB $00,$00,$38,$38,$38,$00,$00,$00
@@ -7463,7 +7464,7 @@ render_sprite_ptr_out:
   DEFW $2020
 
 ; Unused
-L8B18:
+data_unused_8B18:
   DEFB $20,$20
 
 ; Game status buffer entry at 8B1A
@@ -7471,7 +7472,7 @@ render_object_width:
   DEFB $00
 
 ; Unused
-L8B1B:
+data_unused_8B1B:
   DEFS $03
 
 ; Render a sprite at position from previous_object_coordinates.
@@ -7700,7 +7701,7 @@ jp_collision_dispatcher:
   JP (HL)
 
 ; Unused
-L8C4A:
+data_unused_8C4A:
   DEFB $C3,$90,$EA,$0E,$8B,$E9,$C3,$90
   DEFB $EA,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
@@ -7944,12 +7945,12 @@ state_score_player_2_mid:
 state_score_player_2_high:
   DEFM "00"
 
-; Message at 90C8
-L90C8:
+; High score storage for bridge 1 (6 ASCII digits).
+high_score_bridge_1:
   DEFM "000000"
 
-; Message at 90CE
-L90CE:
+; High score storage for bridges 2-4 (18 ASCII digits, 6 per bridge).
+high_scores_extended:
   DEFM "000000000000000000"
 
 ; Add score points for a hit target
@@ -8168,9 +8169,9 @@ print_score_player_2:
   RST $10                              ;
   LD A,COLOR_PLAYER_2                  ;
   RST $10                              ;
-  LD BC,L90C8 - state_score_player_2_low ; Print 6-digit score from state_score_player_2_low via ROM PR_STRING.
-  LD DE,state_score_player_2_low         ;
-  CALL PR_STRING                         ;
+  LD BC,high_score_bridge_1 - state_score_player_2_low ; Print 6-digit score from state_score_player_2_low via ROM
+  LD DE,state_score_player_2_low                       ; PR_STRING.
+  CALL PR_STRING                                       ;
   LD A,$30                             ; Print trailing '0' after score.
   RST $10                              ;
   LD A,EXT_ATTR_AT                     ; Position cursor at row 1, column 18.
@@ -8206,8 +8207,8 @@ print_player_2_score_area:
   RST $10                              ;
   LD A,COLOR_WHITE                     ;
   RST $10                              ;
-  LD BC,$0006                          ; Calculate high score address: base (L90C8) + ((game_mode AND $FE) * 3). Print
-  LD HL,L90C8                          ; 6-digit high score with leading '0'.
+  LD BC,$0006                          ; Calculate high score address: base (high_score_bridge_1) + ((game_mode AND $FE)
+  LD HL,high_score_bridge_1            ; * 3). Print 6-digit high score with leading '0'.
   LD A,(state_game_mode)               ;
   AND $FE                              ;
   LD E,A                               ;
@@ -8323,20 +8324,20 @@ print_lives_player_2:
 ptr_state_controls:
   DEFW $0000                           ; Pointer to state_controls
 
-; Game status buffer entry at 9285
-L9285:
+; Saved BC register for attribute routine.
+attr_saved_bc:
   DEFW $0000
 
-; Game status buffer entry at 9287
-L9287:
+; Saved DE register for attribute routine.
+attr_saved_de:
   DEFW $0000
 
-; Game status buffer entry at 9289
-L9289:
+; Saved HL register for attribute routine.
+attr_saved_hl:
   DEFW $0000
 
-; Game status buffer entry at 928B
-L928B:
+; Sprite width for attribute routine.
+attr_sprite_width:
   DEFW $0000
 
 ; Set screen attributes for sprite area.
@@ -8354,15 +8355,15 @@ L928B:
 ; I:BC Old position coordinates from previous_object_coordinates.
 ; I:HL New position coordinates from object_coordinates.
 set_sprite_attributes:
-  PUSH HL                              ; Save registers, store width to L928B. If attribute E is 0, skip to
+  PUSH HL                              ; Save registers, store width to attr_sprite_width. If attribute E is 0, skip to
   PUSH BC                              ; handle_zero_attributes.
-  LD (L928B),A                         ;
+  LD (attr_sprite_width),A             ;
   LD A,E                               ;
   CP $00                               ;
   JP Z,handle_zero_attributes          ; Jump to handle_zero_attributes if attribute is 0 (nothing to draw).
-  LD (L9287),DE                        ; Save DE, BC, HL to memory at L9287, L9285, L9289 for later use.
-  LD (L9285),BC                        ;
-  LD (L9289),HL                        ;
+  LD (attr_saved_de),DE                ; Save DE, BC, HL to memory at attr_saved_de, attr_saved_bc, attr_saved_hl for
+  LD (attr_saved_bc),BC                ; later use.
+  LD (attr_saved_hl),HL                ;
   LD BC,(previous_object_coordinates)  ; Calculate attribute address for old position: HL = $5800 + (Y AND $F8) * 4 + (X
   LD A,B                               ; >> 3). Y coordinate is in B of stored BC at previous_object_coordinates, X in
   AND $F8                              ; C.
@@ -8378,9 +8379,9 @@ set_sprite_attributes:
   SRL E                                ;
   SRL E                                ;
   ADD HL,DE                            ;
-  LD A,(L928B)                         ; Calculate row count B = (height >> 3) + 3. This covers sprite height plus
+  LD A,(attr_sprite_width)             ; Calculate row count B = (height >> 3) + 3. This covers sprite height plus
   LD C,A                               ; padding. Load width into C.
-  LD DE,(L9287)                        ;
+  LD DE,(attr_saved_de)                ;
   LD A,D                               ;
   SRL A                                ;
   SRL A                                ;
@@ -8413,15 +8414,15 @@ set_attr_old_inner_loop:
   DEC C                                ;
   JR NZ,set_attr_old_inner_loop        ;
   PUSH HL                              ; Boundary check: compare HL against $5A20 (row 16 of attributes). If HL >=
-  LD BC,$5A20                          ; $5A20, sprite has scrolled off visible area, exit early via L9367.
-  OR A                                 ;
+  LD BC,$5A20                          ; $5A20, sprite has scrolled off visible area, exit early via
+  OR A                                 ; attr_old_exit_early.
   SBC HL,BC                            ;
   POP HL                               ;
-  JP P,L9367                           ;
+  JP P,attr_old_exit_early             ;
   POP BC                               ; Row complete: restore BC, add stride DE to HL (moves to same column on next
   ADD HL,DE                            ; row), decrement row counter B, repeat outer loop.
   DJNZ set_attr_old_outer_loop         ;
-; This entry point is used by the routine at L9367.
+; This entry point is used by the routine at attr_old_exit_early.
 set_attr_new_position_entry:
   LD BC,(object_coordinates)           ; Calculate attribute address for new position: HL = $5800 + (Y AND $F8) * 4 + (X
   LD A,B                               ; >> 3) using coordinates from object_coordinates.
@@ -8438,9 +8439,9 @@ set_attr_new_position_entry:
   SRL E                                ;
   SRL E                                ;
   ADD HL,DE                            ; Calculate row count B = (height >> 3) + 2 (one less row than old position).
-  LD A,(L928B)                         ; Load width into C.
+  LD A,(attr_sprite_width)             ; Load width into C.
   LD C,A                               ;
-  LD DE,(L9287)                        ;
+  LD DE,(attr_saved_de)                ;
   LD A,D                               ;
   SRL A                                ;
   SRL A                                ;
@@ -8459,7 +8460,7 @@ set_attr_new_position_entry:
   LD A,B                               ;
   AND $F8                              ; If at screen top, use wrapped fill at set_attr_wrap_new.
   CP $00                               ;
-  LD BC,(L9287)                        ;
+  LD BC,(attr_saved_de)                ;
   LD A,C                               ;
   JP Z,set_attr_wrap_new               ;
   POP BC
@@ -8472,12 +8473,12 @@ set_attr_new_inner_loop:
   INC HL                               ; column counter C, repeat until row complete.
   DEC C                                ;
   JR NZ,set_attr_new_inner_loop        ;
-  PUSH HL                              ; Boundary check: compare HL against $5A20. If HL >= $5A20, exit early via L936B.
-  LD BC,$5A20                          ;
+  PUSH HL                              ; Boundary check: compare HL against $5A20. If HL >= $5A20, exit early via
+  LD BC,$5A20                          ; attr_new_exit_early.
   OR A                                 ;
   SBC HL,BC                            ;
   POP HL                               ;
-  JP P,L936B                           ;
+  JP P,attr_new_exit_early             ;
   POP BC                               ; Row complete: restore BC, add stride DE to HL, decrement row counter B, repeat
   ADD HL,DE                            ; outer loop.
   DJNZ set_attr_new_outer_loop         ;
@@ -8486,7 +8487,7 @@ set_attr_new_inner_loop:
 ;
 ; Restores registers and returns without filling any attributes. Called when sprite has no visible color.
 handle_zero_attributes:
-  LD A,(L928B)                         ; Restore width from L928B, pop BC and HL, load new coordinates from
+  LD A,(attr_sprite_width)             ; Restore width from attr_sprite_width, pop BC and HL, load new coordinates from
   POP BC                               ; object_coordinates into DE, return.
   POP HL                               ;
   LD DE,(object_coordinates)           ;
@@ -8495,7 +8496,7 @@ handle_zero_attributes:
 ; Early exit from old position attribute loop.
 ;
 ; Called when old position boundary check detects HL >= $5A20 (past visible attribute area).
-L9367:
+attr_old_exit_early:
   POP BC                               ; Pop BC (discard saved counter) and continue to new position processing at
                                        ; set_attr_new_position_entry.
   JP set_attr_new_position_entry
@@ -8503,7 +8504,7 @@ L9367:
 ; Early exit from new position attribute loop.
 ;
 ; Called when new position boundary check detects HL >= $5A20.
-L936B:
+attr_new_exit_early:
   POP BC                               ; Pop BC and jump to handle_zero_attributes to restore registers and return.
   JP handle_zero_attributes
 
@@ -8569,9 +8570,9 @@ compare_scores_loop:
   LD B,A                               ;
   LD A,(DE)                            ;
   SUB B                                ;
-  JP M,L93B8                           ;
+  JP M,compare_scores_less             ;
   CP $00                               ;
-  JP NZ,L93BB                          ;
+  JP NZ,compare_scores_greater         ;
   INC HL                               ;
   INC DE                               ;
   DEC C                                ;
@@ -8582,14 +8583,14 @@ compare_scores_loop:
 ; Return 1 (first score less than second).
 ;
 ; Used by the routine at compare_scores.
-L93B8:
+compare_scores_less:
   LD A,$01
   RET
 
 ; Return $FF (first score greater than second).
 ;
 ; Used by the routine at compare_scores.
-L93BB:
+compare_scores_greater:
   LD A,$FF
   RET
 
@@ -8601,7 +8602,7 @@ update_high_score:
   LD A,(state_game_mode)               ; If 2-player mode, call check_player2_high_score to check player 2 score first.
   BIT GAME_MODE_BIT_TWO_PLAYERS,A      ;
   CALL NZ,check_player2_high_score     ;
-  LD HL,L90C8                          ; Calculate high score slot address: base ($90C8) + ((game_mode AND $FE) * 3).
+  LD HL,high_score_bridge_1            ; Calculate high score slot address: base ($90C8) + ((game_mode AND $FE) * 3).
   LD A,(state_game_mode)               ;
   AND $FE                              ;
   LD E,A                               ;
@@ -8682,7 +8683,7 @@ ld_lives:
   RET
 
 ; Unused
-L9430:
+data_unused_9430:
   DEFB $C3,$90,$EA,$30,$06,$79,$CD,$6E
   DEFB $F7,$18,$C9,$22,$95,$FA,$7E,$FE
   DEFB $82,$20,$3E,$23,$22,$95,$FA,$CD

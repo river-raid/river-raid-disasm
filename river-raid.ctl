@@ -222,9 +222,11 @@ b $4000 Screen pixels.
 D $4000 #UDGTABLE { #SCR(loading) } TABLE#
 @ $5800 label=screen_attributes
 b $5800 Screen attributes.
-b $5B00
+@ $5B00 label=screen_row_table
+b $5B00 Lookup table for screen row addresses, used in island rendering.
 @ $5C78 label=int_counter
 g $5C78 Interrupt counter
+@ $5C79 label=data_unused_5C79
 u $5C79
 @ $5CD2 label=init
 c $5CD2 Game initialization and interrupt setup
@@ -506,6 +508,7 @@ g $5EFB
 g $5EFC
 @ $5EFD label=state_island_line_idx
 g $5EFD
+@ $5EFE label=data_unused_5EFE
 u $5EFE
 @ $5F00 label=viewport_objects
 g $5F00
@@ -570,9 +573,11 @@ g $5F7D Inner array index in the terrain definition.
 @ $5F7E label=ptr_scroller
 g $5F7E Pointer to the text to be displayed in the scroller.
 W $5F7E
+@ $5F80 label=data_unused_5F80
 u $5F80
 @ $5F81 label=state_overview_frame
 g $5F81
+@ $5F82 label=data_unused_5F82
 u $5F82
 @ $5F83 label=saved_stack_pointer
 g $5F83 Main stack pointer saved at startup
@@ -821,6 +826,7 @@ N $61D3 Bridge hit - award points and spawn explosions.
 c $6249 Increment player 2's bridge counter
   $6249 Increment player 2 bridge counter at #R$5F6B and print.
   $6250,3 Finalize collision.
+@ $6253 label=data_unused_6253
 u $6253
 @ $6256 label=handle_collision_mode_fuel_depot
 @ $6256 isub=LD A,GAMEPLAY_MODE_REFUEL
@@ -1022,6 +1028,7 @@ N $64A1 Called when the plane touches a fuel depot during REFUEL mode. Marks the
   $64A1 Mark depot slot as empty.
   $64A2 Reset #R$5F60 and #R$5F62 to list starts.
   $64AE,6 Add fuel and jump to #R$63FC to reset gameplay mode.
+@ $64B4 label=data_unused_64B4
 u $64B4
 @ $64BC label=print_bridge
 c $64BC Print current bridge number on status line
@@ -1665,6 +1672,7 @@ c $6C24 Return from the non-maskable interrupt handler.
 D $6C24 Restores all saved registers and returns from NMI using RETN instruction.
   $6C24 Restore registers (AF, BC, DE, HL).
   $6C28,3 Enable interrupts and return from NMI.
+@ $6C2B label=data_unused_6C2B
 u $6C2B
 @ $6C30 label=bonus_life_sound_counter
 g $6C30 Bonus life sound progress counter (0-64)
@@ -2679,6 +2687,7 @@ N $7685 Shared entry point for balloon rendering (also used by right-facing ball
   $76A6,6 Call #R$8B1E to render balloon, return to main loop.
 @ $76AC label=jp_operate_viewport_objects
 c $76AC A useless procedure that unconcditionally jumps to #R$708E.
+@ $76AF label=operate_balloon_right
 c $76AF Right-facing balloon movement.
 D $76AF Handles terrain collision checks and movement for a right-facing balloon.
 R $76AF I:B Y position
@@ -2687,6 +2696,7 @@ R $76AF I:D Object definition
   $76AF Check terrain at (X+32, Y). If collision, reverse direction via #R$76DA.
   $76BE Check terrain at (X+24, Y+8). If collision, reverse direction.
   $76D1 Save position, move right by 2 pixels, jump to render at #R$7685.
+@ $76DA label=reverse_balloon_direction
 c $76DA Handle balloon terrain collision.
 D $76DA Reverses balloon direction when it collides with terrain. Also handles rendering.
 R $76DA I:BC Position
@@ -2694,10 +2704,12 @@ R $76DA I:D Object definition
   $76DA Save position. If Y >= 128 (off visible area), return early.
   $76E2 Reload position, get object definition from viewport.
   $76EC Calculate sprite frame offset from X position bits 1-2.
+@ $76FC label=reverse_balloon_frame_loop
   $76FC Loop to select correct frame in sprite data.
   $7703 Store sprite pointer and render position.
   $770E Flip orientation bit and update in viewport array.
   $7716,17 Load sprite parameters, render balloon with new orientation, return to main loop.
+@ $7727 label=data_unused_7727
 u $7727
 @ $7800 label=tmp_control_type
 b $7800 Control type chosen from the dialog before the validation
@@ -2847,6 +2859,7 @@ c $7B57 Switch to overview/demo mode on timeout.
 D $7B57 Called when the control selection timer expires without user input.
   $7B57 Set overview mode flag to $01 (enabled).
   $7B5C,5 Restore stack pointer and return to caller.
+@ $7B61 label=data_unused_7B61
 u $7B61
 @ $8000 label=status_line_1
 @ $8000 isub=DEFM EXT_ATTR_PAPER,COLOR_BLACK
@@ -2937,6 +2950,7 @@ b $8331
 b $8351
 @ $8371 label=sprite_road_attributes
 b $8371
+@ $8391 label=data_unused_8391
 u $8391
 @ $83B1 label=sprite_plane
 b $83B1
@@ -2985,7 +2999,8 @@ N $8501 #UDGTABLE { #UDGARRAY3,34,4,3;$8501-$8530-1-24(rock-3) } TABLE#
   $8501,48,3 Rock 3
 N $8531 #UDGTABLE { #UDGARRAY3,34,4,3;$8531-$8560-1-24(rock-4) } TABLE#
   $8531,48,3 Rock 4
-t $8561
+@ $8561 label=msg_control_menu
+t $8561 Control selection menu text.
 B $8563
 B $8565
 T $8568
@@ -3141,6 +3156,7 @@ N $8A86 #UDGTABLE { #UDGARRAY2,11,4,2;$8A86-$8AB8-1-16{0,0,64,100}(sprite-fuel) 
 b $8AB8
 @ $8AC8 label=sprite_helicopter_rotor_right
 b $8AC8
+@ $8AD8 label=data_unused_8AD8
 u $8AD8
 @ $8B08 label=collision_dispatcher_ptr
 g $8B08 Pointer to #R$6136 (collision dispatcher)
@@ -3166,9 +3182,11 @@ W $8B14
 @ $8B16 label=render_sprite_ptr_out
 g $8B16
 W $8B16
+@ $8B18 label=data_unused_8B18
 u $8B18
 @ $8B1A label=render_object_width
 g $8B1A
+@ $8B1B label=data_unused_8B1B
 s $8B1B
 @ $8B1E label=render_sprite
 c $8B1E Render a sprite at position from #R$8B0A.
@@ -3252,6 +3270,7 @@ D $8C3C This byte is patched to change blending mode: OR B for OR mode, XOR B fo
 @ $8C45 label=jp_collision_dispatcher
 c $8C45 Jump to collision dispatcher
 D $8C45 This routine is called during sprite rendering to invoke the collision detection dispatcher. It performs an indirect jump through the collision_dispatcher_ptr to reach the collision_dispatcher routine.
+@ $8C4A label=data_unused_8C4A
 u $8C4A
 @ $8FFC label=sprite_tank_shell_explosion
 b $8FFC
@@ -3273,8 +3292,10 @@ t $90C2
 t $90C4
 @ $90C6 label=state_score_player_2_high
 t $90C6
-t $90C8
-t $90CE
+@ $90C8 label=high_score_bridge_1
+t $90C8 High score storage for bridge 1 (6 ASCII digits).
+@ $90CE label=high_scores_extended
+t $90CE High score storage for bridges 2-4 (18 ASCII digits, 6 per bridge).
 @ $90E0 label=add_points
 c $90E0 Add score points for a hit target
 D $90E0 Adds points encoded in A (divided by 10). High nibble = tens, low nibble = units.
@@ -3375,7 +3396,7 @@ c $91C1 Print player 2's score on the status line.
 D $91C1 Displays player 2's full score area including "P2" label and leading zero.
   $91C1 Set INK to player 2 color (cyan).
 @ $91C4 isub=LD A,COLOR_PLAYER_2
-@ $91C7 isub=LD BC,L90C8 - state_score_player_2_low
+@ $91C7 isub=LD BC,high_score_bridge_1 - state_score_player_2_low
   $91C7 Print 6-digit score from #R$90C2 via ROM PR_STRING.
   $91D0 Print trailing '0' after score.
 @ $91D3 isub=LD A,EXT_ATTR_AT
@@ -3440,13 +3461,17 @@ R $9277 O:A Number of lives.
 @ $9283 label=ptr_state_controls
 g $9283 Pointer to #R$6BB0
 W $9283 Pointer to #R$6BB0
-g $9285
+@ $9285 label=attr_saved_bc
+g $9285 Saved BC register for attribute routine.
 W $9285
-g $9287
+@ $9287 label=attr_saved_de
+g $9287 Saved DE register for attribute routine.
 W $9287
-g $9289
+@ $9289 label=attr_saved_hl
+g $9289 Saved HL register for attribute routine.
 W $9289
-g $928B
+@ $928B label=attr_sprite_width
+g $928B Sprite width for attribute routine.
 W $928B
 @ $928D label=set_sprite_attributes
 c $928D Set screen attributes for sprite area.
@@ -3485,9 +3510,11 @@ R $928D I:HL New position coordinates from #R$8B0C.
 c $935D Return point when attribute color is zero.
 D $935D Restores registers and returns without filling any attributes. Called when sprite has no visible color.
   $935D,9 Restore width from #R$928B, pop BC and HL, load new coordinates from #R$8B0C into DE, return.
+@ $9367 label=attr_old_exit_early
 c $9367 Early exit from old position attribute loop.
 D $9367 Called when old position boundary check detects HL >= $5A20 (past visible attribute area).
   $9367,1 Pop BC (discard saved counter) and continue to new position processing at #R$92FF.
+@ $936B label=attr_new_exit_early
 c $936B Early exit from new position attribute loop.
 D $936B Called when new position boundary check detects HL >= $5A20.
   $936B,1 Pop BC and jump to #R$935D to restore registers and return.
@@ -3515,7 +3542,9 @@ R $93A1 O:A Result: 0 if equal, 1 if HL < DE, $FF if HL > DE
 @ $93A3 label=compare_scores_loop
   $93A3 Compare digits, return if different, advance pointers, loop.
   $93B7,1 Return 0 (scores equal).
+@ $93B8 label=compare_scores_less
 c $93B8 Return 1 (first score less than second).
+@ $93BB label=compare_scores_greater
 c $93BB Return $FF (first score greater than second).
 @ $93BE label=update_high_score
 c $93BE Update high score table from current player score.
@@ -3556,6 +3585,7 @@ R $9423 O:HL Pointer to the current player's lives counter.
   $9426 If current player is not PLAYER_2, return with player 1 address.
 @ $9429 isub=CP PLAYER_2
   $942B,4 Otherwise load player 2 lives address (#R$923C) and return.
+@ $9430 label=data_unused_9430
 u $9430
 @ $9500 label=level_terrains
 b $9500 Array [48] of level terrain data (256 bytes each).
