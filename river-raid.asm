@@ -8340,24 +8340,28 @@ L928B:
 
 ; Set screen attributes for sprite area.
 ;
-; Calculates the attribute cells covered by a sprite and fills them with the specified color.
+; Calculates the attribute cells covered by a sprite at both old and new positions and fills them with the specified
+; color. Handles screen third boundary wrapping.
 ;
-; I:A Sprite width in tiles
-; I:E Screen attributes
+; I:A Sprite width in tiles.
+; I:E Screen attributes to set (0 = skip attribute setting).
+;
+; The routine first erases attributes at the old position (previous_object_coordinates), then sets attributes at the new
+; position (object_coordinates). Width and height determine the number of attribute cells to fill.
 set_sprite_attributes:
-  PUSH HL                              ; Calculate old position attribute area and fill.
+  PUSH HL                              ; Save registers, store width. If attributes = 0, skip to handle_zero_attributes.
   PUSH BC                              ;
   LD (L928B),A                         ;
   LD A,E                               ;
   CP $00                               ;
-  JP Z,handle_zero_attributes          ;
+  JP Z,handle_zero_attributes          ; Save parameters, calculate attribute address from old position Y.
   LD (L9287),DE                        ;
   LD (L9285),BC                        ;
   LD (L9289),HL                        ;
   LD BC,(previous_object_coordinates)  ;
   LD A,B                               ;
   AND $F8                              ;
-  LD H,$00                             ;
+  LD H,$00                             ; Add X offset, get width and height for row/column loops.
   LD L,A                               ;
   ADD HL,HL                            ;
   ADD HL,HL                            ;
@@ -8368,7 +8372,7 @@ set_sprite_attributes:
   SRL E                                ;
   SRL E                                ;
   SRL E                                ;
-  ADD HL,DE                            ;
+  ADD HL,DE                            ; Set up loop counters and fill old position attributes.
   LD A,(L928B)                         ;
   LD C,A                               ;
   LD DE,(L9287)                        ;
@@ -8411,9 +8415,9 @@ set_attr_old_inner_loop:
   POP BC
   ADD HL,DE
   DJNZ set_attr_old_outer_loop
-; This entry point is used by the routine at L9367.
+; Process new position attribute area.
 set_attr_new_position_entry:
-  LD BC,(object_coordinates)           ; Calculate new position attribute area and fill.
+  LD BC,(object_coordinates)           ; Calculate attribute address from new position (object_coordinates).
   LD A,B                               ;
   AND $F8                              ;
   LD H,$00                             ;
@@ -8428,7 +8432,7 @@ set_attr_new_position_entry:
   SRL E                                ;
   SRL E                                ;
   ADD HL,DE                            ;
-  LD A,(L928B)                         ;
+  LD A,(L928B)                         ; Set up loop counters and fill new position attributes.
   LD C,A                               ;
   LD DE,(L9287)                        ;
   LD A,D                               ;

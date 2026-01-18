@@ -3450,15 +3450,21 @@ g $928B
 W $928B
 @ $928D label=set_sprite_attributes
 c $928D Set screen attributes for sprite area.
-D $928D Calculates the attribute cells covered by a sprite and fills them with the specified color.
-R $928D I:A Sprite width in tiles
-R $928D I:E Screen attributes
-  $928D,92 Calculate old position attribute area and fill.
+D $928D Calculates the attribute cells covered by a sprite at both old and new positions and fills them with the specified color. Handles screen third boundary wrapping.
+N $928D The routine first erases attributes at the old position (#R$8B0A), then sets attributes at the new position (#R$8B0C). Width and height determine the number of attribute cells to fill.
+R $928D I:A Sprite width in tiles.
+R $928D I:E Screen attributes to set (0 = skip attribute setting).
+  $928D Save registers, store width. If attributes = 0, skip to #R$935D.
+  $9295 Save parameters, calculate attribute address from old position Y.
+  $92AA Add X offset, get width and height for row/column loops.
+  $92BC,45 Set up loop counters and fill old position attributes.
 @ $92EA label=set_attr_old_outer_loop
 @ $92EB label=set_attr_old_inner_loop
 @ $92F1 nowarn
 @ $92FF label=set_attr_new_position_entry
-  $92FF,73 Calculate new position attribute area and fill.
+N $92FF Process new position attribute area.
+  $92FF Calculate attribute address from new position (#R$8B0C).
+  $9319,47 Set up loop counters and fill new position attributes.
 @ $9348 label=set_attr_new_outer_loop
 @ $9349 label=set_attr_new_inner_loop
 @ $934F nowarn
