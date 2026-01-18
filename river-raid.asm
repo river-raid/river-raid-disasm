@@ -8162,30 +8162,30 @@ carry_player_2_score_digit:
 
 ; Print player 2's score on the status line.
 ;
-; Displays player 2's score with cyan color on the status line.
+; Displays player 2's full score area including "P2" label and leading zero.
 print_score_player_2:
-  LD A,EXT_ATTR_INK                    ; INK of Player 2 color
+  LD A,EXT_ATTR_INK                    ; Set INK to player 2 color (cyan).
   RST $10                              ;
   LD A,COLOR_PLAYER_2                  ;
   RST $10                              ;
-  LD BC,L90C8 - state_score_player_2_low ; Print score.
+  LD BC,L90C8 - state_score_player_2_low ; Print 6-digit score from state_score_player_2_low via ROM PR_STRING.
   LD DE,state_score_player_2_low         ;
   CALL PR_STRING                         ;
-  LD A,$30                             ; "0"
+  LD A,$30                             ; Print trailing '0' after score.
   RST $10                              ;
-  LD A,EXT_ATTR_AT                     ; AT 1,18
+  LD A,EXT_ATTR_AT                     ; Position cursor at row 1, column 18.
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
   LD A,$12                             ;
   RST $10                              ;
-  LD A,$50                             ; "P2"
+  LD A,$50                             ; Print "P2" label.
   RST $10                              ;
   LD A,$32                             ;
   RST $10                              ;
-  LD A,$02
-  CALL CHAN_OPEN
-  RET
+  LD A,$02                             ; Switch to channel 2 (main screen) and return.
+  CALL CHAN_OPEN                       ;
+  RET                                  ;
 
 ; Print player 2 score area on status line
 ;

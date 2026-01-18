@@ -9150,34 +9150,34 @@ c$91A9 LD (HL),$30   ; Write '0' to the overflowed digit.
 
 ; Print player 2's score on the status line.
 ;
-; Displays player 2's score with cyan color on the status line.
+; Displays player 2's full score area including "P2" label and leading zero.
 @label=print_score_player_2
 @isub=LD A,EXT_ATTR_INK
-c$91C1 LD A,$10      ; {INK of Player 2 color
+c$91C1 LD A,$10      ; {Set INK to player 2 color (cyan).
  $91C3 RST $10       ;
 @isub=LD A,COLOR_PLAYER_2
  $91C4 LD A,$05      ;
  $91C6 RST $10       ; }
 @isub=LD BC,L90C8 - state_score_player_2_low
- $91C7 LD BC,$0006   ; {Print score.
+ $91C7 LD BC,$0006   ; {Print 6-digit score from #R$90C2 via ROM PR_STRING.
  $91CA LD DE,$90C2   ;
  $91CD CALL $203C    ; }
- $91D0 LD A,$30      ; {"0"
+ $91D0 LD A,$30      ; {Print trailing '0' after score.
  $91D2 RST $10       ; }
 @isub=LD A,EXT_ATTR_AT
- $91D3 LD A,$16      ; {AT 1,18
+ $91D3 LD A,$16      ; {Position cursor at row 1, column 18.
  $91D5 RST $10       ;
  $91D6 LD A,$01      ;
  $91D8 RST $10       ;
  $91D9 LD A,$12      ;
  $91DB RST $10       ; }
- $91DC LD A,$50      ; {"P2"
+ $91DC LD A,$50      ; {Print "P2" label.
  $91DE RST $10       ;
  $91DF LD A,$32      ;
  $91E1 RST $10       ; }
- $91E2 LD A,$02      ;
+ $91E2 LD A,$02      ; {Switch to channel 2 (main screen) and return.
  $91E4 CALL $1601    ;
- $91E7 RET           ;
+ $91E7 RET           ; }
 
 ; Print player 2 score area on status line
 ;

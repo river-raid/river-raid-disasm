@@ -3372,15 +3372,16 @@ R $91A9 I:HL Pointer to the overflowed digit.
 @ $91C1 label=print_score_player_2
 @ $91C1 isub=LD A,EXT_ATTR_INK
 c $91C1 Print player 2's score on the status line.
-D $91C1 Displays player 2's score with cyan color on the status line.
-  $91C1 INK of Player 2 color
+D $91C1 Displays player 2's full score area including "P2" label and leading zero.
+  $91C1 Set INK to player 2 color (cyan).
 @ $91C4 isub=LD A,COLOR_PLAYER_2
 @ $91C7 isub=LD BC,L90C8 - state_score_player_2_low
-  $91C7 Print score.
-  $91D0 "0"
+  $91C7 Print 6-digit score from #R$90C2 via ROM PR_STRING.
+  $91D0 Print trailing '0' after score.
 @ $91D3 isub=LD A,EXT_ATTR_AT
-  $91D3 AT 1,18
-  $91DC,6 "P2"
+  $91D3 Position cursor at row 1, column 18.
+  $91DC Print "P2" label.
+  $91E2,6 Switch to channel 2 (main screen) and return.
 @ $91E8 label=print_player_2_score_area
 c $91E8 Print player 2 score area on status line
 @ $91ED isub=LD A,EXT_ATTR_AT
