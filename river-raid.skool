@@ -9252,49 +9252,50 @@ g$923C DEFB $00
 @label=state_player
 b$923D DEFB $00
 
-; Print lives.
+; Print remaining lives for current player.
 ;
-; Used by the routines at #R$5DA6 and #R$9109.
+; Displays plane symbols on the status line to show remaining lives. Routes to
+; player-specific color and lives count.
 @label=print_lives
-c$923E LD A,($923D)  ;
+c$923E LD A,($923D)  ; {If current player is PLAYER_2, jump to #R$9277.
 @isub=CP PLAYER_2
- $9241 CP $02        ;
+ $9241 CP $02        ; }
  $9243 JP Z,$9277    ;
 @isub=LD A,EXT_ATTR_INK
- $9246 LD A,$10      ; {INK of Player 1 color
+ $9246 LD A,$10      ; {Set INK to player 1 color (yellow).
  $9248 RST $10       ;
 @isub=LD A,COLOR_PLAYER_1
  $9249 LD A,$06      ;
  $924B RST $10       ; }
- $924C LD A,($923B)  ;
+ $924C LD A,($923B)  ; Load player 1's lives count, fall through to print.
 
-; Continue printing lives after the value has been loaded into #REGa.
+; Continue printing lives after the value has been loaded into A.
 ;
-; Used by the routine at #R$9277.
+; Common code path for printing lives as plane symbols at row 20, column 18.
 ;
-; I:A Number of lives.
+; I:A Number of lives to display.
 @label=print_lives_continue
-c$924F LD B,A        ;
+c$924F LD B,A        ; Save lives count in B.
 @isub=LD A,EXT_ATTR_AT
- $9250 LD A,$16      ; {AT 20,18
+ $9250 LD A,$16      ; {Position cursor at row 20, column 18.
  $9252 RST $10       ;
  $9253 LD A,$14      ;
  $9255 RST $10       ;
  $9256 LD A,$12      ;
  $9258 RST $10       ; }
- $9259 LD A,B        ;
+ $9259 LD A,B        ; {If lives count is 0, skip to padding.
  $925A CP $00        ;
- $925C JP Z,$9264    ;
+ $925C JP Z,$9264    ; }
 @label=print_lives_loop
-*$925F LD A,$9C      ; {Print the ✈ UDG symbol
- $9261 RST $10       ; }
- $9262 DJNZ $925F    ;
+*$925F LD A,$9C      ; {Print ✈ UDG symbol, loop B times.
+ $9261 RST $10       ;
+ $9262 DJNZ $925F    ; }
 
-; Print six spaces
+; Print six spaces to clear any leftover plane symbols.
 ;
-; Used by the routine at #R$924F.
+; Called after printing lives to overwrite any previous extra planes.
 @label=print_lives_padding
-c$9264 LD A,$20      ;
+c$9264 LD A,$20      ; {Print 6 space characters and return.
  $9266 RST $10       ;
  $9267 LD A,$20      ;
  $9269 RST $10       ;
@@ -9306,22 +9307,23 @@ c$9264 LD A,$20      ;
  $9272 RST $10       ;
  $9273 LD A,$20      ;
  $9275 RST $10       ;
- $9276 RET           ;
+ $9276 RET           ; }
 
-; The player 2 branch of the #R$923E routine.
+; Print lives for player 2.
 ;
-; Used by the routine at #R$923E.
+; Sets player 2's color and loads player 2's lives count, then jumps to common
+; print routine.
 ;
-; O:A Number of lives.
+; O:A Number of lives (passed to #R$924F).
 @label=print_lives_player_2
 @isub=LD A,EXT_ATTR_INK
-c$9277 LD A,$10      ; {INK of Player 2 color
+c$9277 LD A,$10      ; {Set INK to player 2 color (cyan).
  $9279 RST $10       ;
 @isub=LD A,COLOR_PLAYER_2
  $927A LD A,$05      ;
  $927C RST $10       ; }
- $927D LD A,($923C)  ;
- $9280 JP $924F      ;
+ $927D LD A,($923C)  ; {Load player 2's lives count, jump to #R$924F.
+ $9280 JP $924F      ; }
 
 ; Pointer to #R$6BB0
 @label=ptr_state_controls

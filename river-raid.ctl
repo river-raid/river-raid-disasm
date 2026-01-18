@@ -3407,26 +3407,36 @@ g $923C Number of player 2 lives.
 @ $923D label=state_player
 b $923D Current player
 @ $923E label=print_lives
-c $923E Print lives.
+c $923E Print remaining lives for current player.
+D $923E Displays plane symbols on the status line to show remaining lives. Routes to player-specific color and lives count.
+  $923E,5 If current player is PLAYER_2, jump to #R$9277.
 @ $9241 isub=CP PLAYER_2
 @ $9246 isub=LD A,EXT_ATTR_INK
-  $9246,6 INK of Player 1 color
+  $9246 Set INK to player 1 color (yellow).
 @ $9249 isub=LD A,COLOR_PLAYER_1
+  $924C Load player 1's lives count, fall through to print.
 @ $924F label=print_lives_continue
-c $924F Continue printing lives after the value has been loaded into #REGa.
-R $924F I:A Number of lives.
+c $924F Continue printing lives after the value has been loaded into A.
+D $924F Common code path for printing lives as plane symbols at row 20, column 18.
+R $924F I:A Number of lives to display.
+  $924F Save lives count in B.
 @ $9250 isub=LD A,EXT_ATTR_AT
-  $9250,9 AT 20,18
+  $9250 Position cursor at row 20, column 18.
+  $9259 If lives count is 0, skip to padding.
 @ $925F label=print_lives_loop
-  $925F,3 Print the ✈ UDG symbol
+  $925F Print ✈ UDG symbol, loop B times.
 @ $9264 label=print_lives_padding
-c $9264 Print six spaces
+c $9264 Print six spaces to clear any leftover plane symbols.
+D $9264 Called after printing lives to overwrite any previous extra planes.
+  $9264 Print 6 space characters and return.
 @ $9277 label=print_lives_player_2
 @ $9277 isub=LD A,EXT_ATTR_INK
-c $9277 The player 2 branch of the #R$923E routine.
-R $9277 O:A Number of lives.
-  $9277,6 INK of Player 2 color
+c $9277 Print lives for player 2.
+D $9277 Sets player 2's color and loads player 2's lives count, then jumps to common print routine.
+R $9277 O:A Number of lives (passed to #R$924F).
+  $9277 Set INK to player 2 color (cyan).
 @ $927A isub=LD A,COLOR_PLAYER_2
+  $927D,6 Load player 2's lives count, jump to #R$924F.
 @ $9283 label=ptr_state_controls
 g $9283 Pointer to #R$6BB0
 W $9283 Pointer to #R$6BB0
