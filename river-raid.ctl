@@ -3381,17 +3381,22 @@ D $91C1 Displays player 2's full score area including "P2" label and leading zer
 @ $91D3 isub=LD A,EXT_ATTR_AT
   $91D3 Position cursor at row 1, column 18.
   $91DC Print "P2" label.
-  $91E2,6 Switch to channel 2 (main screen) and return.
+  $91E2 Switch to channel 2 (main screen) and return.
 @ $91E8 label=print_player_2_score_area
-c $91E8 Print player 2 score area on status line
+c $91E8 Print player 2 score area or high score on status line.
+D $91E8 In 2-player mode, prints player 2's score. In 1-player mode, prints the high score for the current starting bridge.
+  $91E8 Open channel 1 (upper screen).
 @ $91ED isub=LD A,EXT_ATTR_AT
-  $91ED,9 AT 1,21
+  $91ED Position cursor at row 1, column 21.
+  $91F6,5 If 2-player mode, jump to #R$91C1 to print player 2 score.
 @ $91F9 isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
 @ $91FE isub=LD A,EXT_ATTR_INK
-  $91FE,6 INK WHITE
+  $91FE Set INK to white (for high score display).
 @ $9201 isub=LD A,COLOR_WHITE
+  $9204,27 Calculate high score offset from starting bridge, print 6-digit high score.
 @ $9225 isub=LD A,EXT_ATTR_AT
-  $9225,9 AT 1,18
+  $9225 Position cursor at row 1, column 18.
+  $922E,11 Print "HI" label, switch to channel 2.
 @ $923A label=state_game_mode
 b $923A The game mode storing the number of players in the first bit and the starting bridge in the next two.
   $923A,1

@@ -8187,54 +8187,54 @@ print_score_player_2:
   CALL CHAN_OPEN                       ;
   RET                                  ;
 
-; Print player 2 score area on status line
+; Print player 2 score area or high score on status line.
 ;
-; Used by the routine at play.
+; In 2-player mode, prints player 2's score. In 1-player mode, prints the high score for the current starting bridge.
 print_player_2_score_area:
-  LD A,$01
-  CALL CHAN_OPEN
-  LD A,EXT_ATTR_AT                     ; AT 1,21
+  LD A,$01                             ; Open channel 1 (upper screen).
+  CALL CHAN_OPEN                       ;
+  LD A,EXT_ATTR_AT                     ; Position cursor at row 1, column 21.
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
   LD A,$15                             ;
   RST $10                              ;
-  LD A,(state_game_mode)
-  BIT GAME_MODE_BIT_TWO_PLAYERS,A
+  LD A,(state_game_mode)               ; If 2-player mode, jump to print_score_player_2 to print player 2 score.
+  BIT GAME_MODE_BIT_TWO_PLAYERS,A      ;
   JP NZ,print_score_player_2
-  LD A,EXT_ATTR_INK                    ; INK WHITE
+  LD A,EXT_ATTR_INK                    ; Set INK to white (for high score display).
   RST $10                              ;
   LD A,COLOR_WHITE                     ;
   RST $10                              ;
-  LD BC,$0006
-  LD HL,L90C8
-  LD A,(state_game_mode)
-  AND $FE
-  LD E,A
-  LD A,(state_game_mode)
-  AND $FE
-  SLA A
-  SLA A
-  SUB E
-  LD D,$00
-  LD E,A
-  ADD HL,DE
-  EX DE,HL
+  LD BC,$0006                          ; Calculate high score offset from starting bridge, print 6-digit high score.
+  LD HL,L90C8                          ;
+  LD A,(state_game_mode)               ;
+  AND $FE                              ;
+  LD E,A                               ;
+  LD A,(state_game_mode)               ;
+  AND $FE                              ;
+  SLA A                                ;
+  SLA A                                ;
+  SUB E                                ;
+  LD D,$00                             ;
+  LD E,A                               ;
+  ADD HL,DE                            ;
+  EX DE,HL                             ;
   CALL PR_STRING
   LD A,$30
   RST $10
-  LD A,EXT_ATTR_AT                     ; AT 1,18
+  LD A,EXT_ATTR_AT                     ; Position cursor at row 1, column 18.
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
   LD A,$12                             ;
   RST $10                              ;
-  LD A,$48
-  RST $10
-  LD A,$49
-  RST $10
-  LD A,$02
-  CALL CHAN_OPEN
+  LD A,$48                             ; Print "HI" label, switch to channel 2.
+  RST $10                              ;
+  LD A,$49                             ;
+  RST $10                              ;
+  LD A,$02                             ;
+  CALL CHAN_OPEN                       ;
   RET
 
 ; The game mode storing the number of players in the first bit and the starting bridge in the next two.

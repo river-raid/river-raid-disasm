@@ -9179,31 +9179,32 @@ c$91C1 LD A,$10      ; {Set INK to player 2 color (cyan).
  $91E4 CALL $1601    ;
  $91E7 RET           ; }
 
-; Print player 2 score area on status line
+; Print player 2 score area or high score on status line.
 ;
-; Used by the routine at #R$5DA6.
+; In 2-player mode, prints player 2's score. In 1-player mode, prints the high
+; score for the current starting bridge.
 @label=print_player_2_score_area
-c$91E8 LD A,$01      ;
- $91EA CALL $1601    ;
+c$91E8 LD A,$01      ; {Open channel 1 (upper screen).
+ $91EA CALL $1601    ; }
 @isub=LD A,EXT_ATTR_AT
- $91ED LD A,$16      ; {AT 1,21
+ $91ED LD A,$16      ; {Position cursor at row 1, column 21.
  $91EF RST $10       ;
  $91F0 LD A,$01      ;
  $91F2 RST $10       ;
  $91F3 LD A,$15      ;
  $91F5 RST $10       ; }
- $91F6 LD A,($923A)  ;
+ $91F6 LD A,($923A)  ; {If 2-player mode, jump to #R$91C1 to print player 2
 @isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
- $91F9 BIT 0,A       ;
+ $91F9 BIT 0,A       ; score.}
  $91FB JP NZ,$91C1   ;
 @isub=LD A,EXT_ATTR_INK
- $91FE LD A,$10      ; {INK WHITE
+ $91FE LD A,$10      ; {Set INK to white (for high score display).
  $9200 RST $10       ;
 @isub=LD A,COLOR_WHITE
  $9201 LD A,$07      ;
  $9203 RST $10       ; }
- $9204 LD BC,$0006   ;
- $9207 LD HL,$90C8   ;
+ $9204 LD BC,$0006   ; {Calculate high score offset from starting bridge, print
+ $9207 LD HL,$90C8   ; 6-digit high score.
  $920A LD A,($923A)  ;
  $920D AND $FE       ;
  $920F LD E,A        ;
@@ -9215,23 +9216,23 @@ c$91E8 LD A,$01      ;
  $921A LD D,$00      ;
  $921C LD E,A        ;
  $921D ADD HL,DE     ;
- $921E EX DE,HL      ;
+ $921E EX DE,HL      ; }
  $921F CALL $203C    ;
  $9222 LD A,$30      ;
  $9224 RST $10       ;
 @isub=LD A,EXT_ATTR_AT
- $9225 LD A,$16      ; {AT 1,18
+ $9225 LD A,$16      ; {Position cursor at row 1, column 18.
  $9227 RST $10       ;
  $9228 LD A,$01      ;
  $922A RST $10       ;
  $922B LD A,$12      ;
  $922D RST $10       ; }
- $922E LD A,$48      ;
+ $922E LD A,$48      ; {Print "HI" label, switch to channel 2.
  $9230 RST $10       ;
  $9231 LD A,$49      ;
  $9233 RST $10       ;
  $9234 LD A,$02      ;
- $9236 CALL $1601    ;
+ $9236 CALL $1601    ; }
  $9239 RET           ;
 
 ; The game mode storing the number of players in the first bit and the starting
