@@ -9056,22 +9056,23 @@ c$914B LD A,$10      ; {Set INK to player 1 color (yellow).
 
 ; Increase a digit in the player 2's score.
 ;
-; Used by the routine at #R$9122.
+; Increments the ASCII digit at the specified offset in player 2's score
+; buffer. If the digit overflows past '9', it jumps to the carry routine.
+; Otherwise prints the updated digit.
 ;
-; I:C Offset of the digit to increase.
-; O:D Offset of the digit to increase.
+; I:C Offset of the digit to increase (0=leftmost, 5=rightmost).
+; O:D Offset of the digit (passed to print routine).
 @label=inc_player_2_score_digit
-c$9169 LD HL,$90C2   ;
- $916C LD B,$00      ;
- $916E LD A,C        ;
+c$9169 LD HL,$90C2   ; {Load #R$90C2 (player 2 score), add offset C to get
+ $916C LD B,$00      ; digit pointer.}
+ $916E LD A,C        ; {Save offset to D, load digit, increment it.
  $916F ADD HL,BC     ;
  $9170 LD D,A        ;
- $9171 LD A,(HL)     ;
- $9172 INC A         ;
- $9173 CP $3A        ; Check for digit overflow (the value got beyond the 0-9
-                     ; ASCII range).
- $9175 JP Z,$91A9    ;
- $9178 LD (HL),A     ;
+ $9171 LD A,(HL)     ; }
+ $9172 INC A         ; {If digit > '9' ($3A), jump to #R$91A9 for carry.
+ $9173 CP $3A        ;
+ $9175 JP Z,$91A9    ; }
+ $9178 LD (HL),A     ; Store incremented digit, fall through to print.
 ; This entry point is used by the routine at #R$91A9.
 @label=print_player_2_score_digit
 @isub=LD A,EXT_ATTR_INK

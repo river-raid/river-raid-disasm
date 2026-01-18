@@ -3324,12 +3324,16 @@ R $914B I:HL Pointer to the digit character.
   $9157 Set cursor position to row 1.
   $915D Calculate column = offset + 5, print column position.
   $9161 Load digit from score buffer and print it.
-  $9163,6 Switch to channel 2 (main screen) and return.
+  $9163 Switch to channel 2 (main screen) and return.
 @ $9169 label=inc_player_2_score_digit
 c $9169 Increase a digit in the player 2's score.
-R $9169 I:C Offset of the digit to increase.
-R $9169 O:D Offset of the digit to increase.
-  $9173,2 Check for digit overflow (the value got beyond the 0-9 ASCII range).
+D $9169 Increments the ASCII digit at the specified offset in player 2's score buffer. If the digit overflows past '9', it jumps to the carry routine. Otherwise prints the updated digit.
+R $9169 I:C Offset of the digit to increase (0=leftmost, 5=rightmost).
+R $9169 O:D Offset of the digit (passed to print routine).
+  $9169 Load #R$90C2 (player 2 score), add offset C to get digit pointer.
+  $916E Save offset to D, load digit, increment it.
+  $9172 If digit > '9' ($3A), jump to #R$91A9 for carry.
+  $9178 Store incremented digit, fall through to print.
 @ $9179 label=print_player_2_score_digit
 @ $9179 isub=LD A,EXT_ATTR_INK
   $9179 INK of Player 2 color
