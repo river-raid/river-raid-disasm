@@ -3519,17 +3519,19 @@ D $93F2 For 2-player games, compares scores and copies player 2 score to player 
 @ $9404 isub=LD BC,state_score_player_2_low - state_score_player_1_low
 @ $940A label=clear_screen
 c $940A Clear the screen by setting all pixel bytes to $00 and all attributes to the value set in #REGd.
-R $940A I:D Attribute value.
-C $940D,2 Clear the $18 of 256-byte blocks (6144 bytes) of pixels
+D $940A ZX Spectrum screen memory starts at $4000 with 6144 bytes of pixel data ($18 blocks of 256 bytes), followed by 768 bytes of attribute data ($03 blocks of 256 bytes).
+R $940A I:D Attribute value to fill the attribute area.
+  $940A Point HL to start of screen memory ($4000).
+  $940D Set outer loop counter to $18 (24 blocks for pixel area).
 @ $940F label=clear_scr_block
-C $940F,2 256-byte counter
+  $940F Set inner loop counter to 256 (full block).
 @ $9411 label=clear_scr_byte
-C $9414,2 ...loop until the counter is zero
-C $9417,2 Process next block
-C $9419,2 Set the $03 of 256-byte blocks (768 bytes) of attribute
+  $9411 Write $00 to pixel byte, advance HL, loop until block cleared.
+  $9416 Decrement block counter, continue until all pixel blocks done.
+  $9419 Set outer loop counter to $03 (3 blocks for attribute area).
 @ $941B label=clear_scr_attr
-C $941D,2 ...loop until the counter is zero
-C $9420,2 Process next block
+  $941B Write attribute value D to byte, advance HL, loop until block cleared.
+  $941F,3 Decrement block counter, continue until all attribute blocks done.
 @ $9423 label=ld_lives
 c $9423 Load current player lives
 R $9423 O:HL Pointer to the current player lives

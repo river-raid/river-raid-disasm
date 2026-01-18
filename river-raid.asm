@@ -8633,27 +8633,28 @@ check_player2_high_score:
 
 ; Clear the screen by setting all pixel bytes to $00 and all attributes to the value set in D.
 ;
-; Used by the routines at play, overview, clear_and_setup, controls_input and game_mode_input.
+; ZX Spectrum screen memory starts at $4000 with 6144 bytes of pixel data ($18 blocks of 256 bytes), followed by 768
+; bytes of attribute data ($03 blocks of 256 bytes).
 ;
-; I:D Attribute value.
+; I:D Attribute value to fill the attribute area.
 clear_screen:
-  LD HL,screen_pixels
-  LD C,$18                             ; Clear the $18 of 256-byte blocks (6144 bytes) of pixels
+  LD HL,screen_pixels                  ; Point HL to start of screen memory ($4000).
+  LD C,$18                             ; Set outer loop counter to $18 (24 blocks for pixel area).
 clear_scr_block:
-  LD B,$00                             ; 256-byte counter
+  LD B,$00                             ; Set inner loop counter to 256 (full block).
 clear_scr_byte:
-  LD (HL),$00
-  INC HL
-  DJNZ clear_scr_byte                  ; ...loop until the counter is zero
-  DEC C
-  JR NZ,clear_scr_block                ; Process next block
-  LD C,$03                             ; Set the $03 of 256-byte blocks (768 bytes) of attribute
+  LD (HL),$00                          ; Write $00 to pixel byte, advance HL, loop until block cleared.
+  INC HL                               ;
+  DJNZ clear_scr_byte                  ;
+  DEC C                                ; Decrement block counter, continue until all pixel blocks done.
+  JR NZ,clear_scr_block                ;
+  LD C,$03                             ; Set outer loop counter to $03 (3 blocks for attribute area).
 clear_scr_attr:
-  LD (HL),D
-  INC HL
-  DJNZ clear_scr_attr                  ; ...loop until the counter is zero
-  DEC C
-  JR NZ,clear_scr_attr                 ; Process next block
+  LD (HL),D                            ; Write attribute value D to byte, advance HL, loop until block cleared.
+  INC HL                               ;
+  DJNZ clear_scr_attr                  ;
+  DEC C                                ; Decrement block counter, continue until all attribute blocks done.
+  JR NZ,clear_scr_attr                 ;
   RET
 
 ; Load current player lives

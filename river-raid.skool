@@ -9640,27 +9640,31 @@ c$93F2 LD HL,$90BC   ; {Compare player 1 score (#R$90BC) with player 2 score
 ; Clear the screen by setting all pixel bytes to $00 and all attributes to the
 ; value set in #REGd.
 ;
-; Used by the routines at #R$5DA6, #R$6D17, #R$7804, #R$7ACD and #R$7B07.
+; ZX Spectrum screen memory starts at $4000 with 6144 bytes of pixel data ($18
+; blocks of 256 bytes), followed by 768 bytes of attribute data ($03 blocks of
+; 256 bytes).
 ;
-; I:D Attribute value.
+; I:D Attribute value to fill the attribute area.
 @label=clear_screen
-c$940A LD HL,$4000   ;
- $940D LD C,$18      ; Clear the $18 of 256-byte blocks (6144 bytes) of pixels
+c$940A LD HL,$4000   ; Point HL to start of screen memory ($4000).
+ $940D LD C,$18      ; Set outer loop counter to $18 (24 blocks for pixel
+                     ; area).
 @label=clear_scr_block
-*$940F LD B,$00      ; 256-byte counter
+*$940F LD B,$00      ; Set inner loop counter to 256 (full block).
 @label=clear_scr_byte
-*$9411 LD (HL),$00   ;
- $9413 INC HL        ;
- $9414 DJNZ $9411    ; ...loop until the counter is zero
- $9416 DEC C         ;
- $9417 JR NZ,$940F   ; Process next block
- $9419 LD C,$03      ; Set the $03 of 256-byte blocks (768 bytes) of attribute
+*$9411 LD (HL),$00   ; {Write $00 to pixel byte, advance HL, loop until block
+ $9413 INC HL        ; cleared.
+ $9414 DJNZ $9411    ; }
+ $9416 DEC C         ; {Decrement block counter, continue until all pixel
+ $9417 JR NZ,$940F   ; blocks done.}
+ $9419 LD C,$03      ; Set outer loop counter to $03 (3 blocks for attribute
+                     ; area).
 @label=clear_scr_attr
-*$941B LD (HL),D     ;
- $941C INC HL        ;
- $941D DJNZ $941B    ; ...loop until the counter is zero
- $941F DEC C         ;
- $9420 JR NZ,$941B   ; Process next block
+*$941B LD (HL),D     ; {Write attribute value D to byte, advance HL, loop until
+ $941C INC HL        ; block cleared.
+ $941D DJNZ $941B    ; }
+ $941F DEC C         ; {Decrement block counter, continue until all attribute
+ $9420 JR NZ,$941B   ; blocks done.}
  $9422 RET           ;
 
 ; Load current player lives
