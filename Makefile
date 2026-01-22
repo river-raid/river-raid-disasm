@@ -20,7 +20,7 @@ SIZE = 47104
 PC = 23762
 SP = 65344
 
-.PHONY: clean verify
+.PHONY: clean verify test lint lint-order lint-instruction-order lint-lengths
 
 all: $(ASM_FIXED) $(Z80_FIXED) verify
 
@@ -43,9 +43,21 @@ $(SKOOL): $(Z80_PRISTINE) $(CTL)
 $(BIN_NON_FIXED): $(ASM_NON_FIXED)
 	pasmo --bin $(ASM_NON_FIXED) $@
 
-# Verify that rebuilt binary matches pristine binary
-verify: $(BIN_PRISTINE) $(BIN_NON_FIXED)
+verify: test lint
+
+test: $(BIN_PRISTINE) $(BIN_NON_FIXED)
 	cmp $(BIN_PRISTINE) $(BIN_NON_FIXED)
+
+lint: lint-address-order lint-instruction-order lint-lengths
+
+lint-address-order: $(CTL)
+	python3 scripts/validate_ctl_address_order.py $(CTL)
+
+lint-instruction-order: $(CTL)
+	python3 scripts/validate_ctl_instruction_order.py $(CTL)
+
+lint-lengths: $(CTL)
+	python3 scripts/validate_ctl_lengths.py $(CTL)
 
 # Build snapshot WITH patches applied (for manual testing)
 $(Z80_FIXED): $(SKOOL)
@@ -53,11 +65,21 @@ $(Z80_FIXED): $(SKOOL)
 
 # Generate fixed assembly source
 $(ASM_FIXED): $(SKOOL)
-	skool2asm.py --create-labels -f 1 $(SKOOL) > $@
+	@skool2asm.py --create-labels -f 1 $(SKOOL) > $@.tmp 2> $@.stderr; \
+	if grep -q WARNING $@.stderr; then \
+		cat $@.stderr >&2; rm -f $@.tmp $@.stderr; exit 1; \
+	else \
+		rm -f $@.stderr; mv $@.tmp $@; \
+	fi
 
 # Generate non-fixed assembly source
 $(ASM_NON_FIXED): $(SKOOL)
-	skool2asm.py --create-labels $(SKOOL) > $@
+	@skool2asm.py --create-labels $(SKOOL) > $@.tmp 2> $@.stderr; \
+	if grep -q WARNING $@.stderr; then \
+		cat $@.stderr >&2; rm -f $@.tmp $@.stderr; exit 1; \
+	else \
+		rm -f $@.stderr; mv $@.tmp $@; \
+	fi
 
 clean:
 	rm -f \
