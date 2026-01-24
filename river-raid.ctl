@@ -222,6 +222,12 @@ b $4000 Screen pixels.
 D $4000 #UDGTABLE { #SCR(loading) } TABLE#
 @ $5800 label=screen_attributes
 b $5800 Screen attributes.
+@ $5820 label=screen_attributes_row_1
+b $5820 Screen attributes row 1.
+@ $5A20 label=screen_attributes_row_16
+b $5A20 Screen attributes row 16 (boundary for visible sprite area).
+@ $5A40 label=screen_attributes_row_17
+b $5A40 Screen attributes row 17 (start of lower screen area).
 @ $5B00 label=screen_row_table
 b $5B00 Lookup table for screen row addresses, used in island rendering.
 @ $5C78 label=int_counter
@@ -1441,7 +1447,6 @@ D $68B7 This routine is called every 8 terrain fragments to scroll the screen at
   $68C0 Copy attributes backward (LDDR)
 @ $68C2 ignoreua=$5BDF
   $68C2 Load address $5BDF into HL (bottom attribute row)
-@ $68C5 nowarn
 @ $68C5 label=update_bottom_row
 c $68C5 Update bottom attribute row after scrolling
 D $68C5 Copies the bottom attribute row to the top of the screen, then fills the bottom row with either river (green) or bridge attributes depending on state_bridge_section.
@@ -3125,10 +3130,10 @@ D $8A1B Shifts the pixels in the bottom visible row (#R$5800-1 down) left by 1 b
 c $8A33 Initialize UDG and screen attributes.
 D $8A33 Sets border to black, fills lower screen attributes with white-on-black, and copies UDG graphics to the UDG area.
   $8A33 Set border to black via OUT to port $FE.
-@ $8A37 ignoreua=$5A40
-  $8A37 Fill $C0 (192) attribute bytes starting at $5A40 with $07 (white on black).
-@ $8A39 nowarn
+@ $8A37 isub=LD B,screen_row_table-screen_attributes_row_17
+  $8A37 Fill screen attributes starting at screen_attributes_row_17.
 @ $8A3C label=init_udg_loop
+@ $8A3C isub=LD (HL),COLOR_BLACK<<3|COLOR_WHITE
   $8A41,12 Copy $68 bytes from #R$825D to UDG area pointed by CHARS system variable.
 @ $8A4E label=calculate_pixel_address
 c $8A4E Calculate screen address from pixel coordinates.
@@ -3475,7 +3480,7 @@ g $928B Sprite width for attribute routine.
 W $928B
 @ $928D label=set_sprite_attributes
 c $928D Set screen attributes for sprite area.
-D $928D Fills rectangular regions of attribute cells for both old (erase) and new (draw) sprite positions. ZX Spectrum attribute memory is at $5800-$5AFF, organized as 24 rows × 32 columns (768 bytes). Each 8×8 pixel character cell has one attribute byte controlling ink/paper/bright/flash.
+D $928D Fills rectangular regions of attribute cells for both old (erase) and new (draw) sprite positions.
 D $928D .
 D $928D Algorithm: For each position (old then new), calculate the top-left attribute address, then fill a rectangle of B rows × C columns with attribute value A. After filling each row, advance HL by stride DE to reach the next row's starting column.
 R $928D I:A Sprite width in tiles (columns to fill).
@@ -3485,7 +3490,7 @@ R $928D I:HL New position coordinates from #R$8B0C.
   $928D Save registers, store width to #R$928B. If attribute E is 0, skip to #R$935D.
   $9295 Jump to #R$935D if attribute is 0 (nothing to draw).
   $9298 Save DE, BC, HL to memory at #R$9287, #R$9285, #R$9289 for later use.
-  $92A3 Calculate attribute address for old position: HL = $5800 + (Y AND $F8) * 4 + (X >> 3). Y coordinate is in B of stored BC at #R$8B0A, X in C.
+  $92A3 Calculate attribute address for old position: HL = #R$5800 + (Y AND $F8) * 4 + (X >> 3). Y coordinate is in B of stored BC at #R$8B0A, X in C.
   $92BD Calculate row count B = (height >> 3) + 3. This covers sprite height plus padding. Load width into C.
   $92CF Calculate row stride DE = $20 - width. After filling C columns, add DE to reach column 0 of next row. Check if Y is at screen top (row 0).
   $92E0,9 If at screen top (Y AND $F8 = 0), use wrapped fill at #R$936F to handle attribute area start.
@@ -3493,10 +3498,10 @@ R $928D I:HL New position coordinates from #R$8B0C.
   $92EA Outer loop start: push BC to preserve row count (B) and column count (C) for this row.
 @ $92EB label=set_attr_old_inner_loop
   $92EB Inner loop: write attribute byte A to address HL, increment HL, decrement column counter C, repeat until row complete.
-  $92F0 Boundary check: compare HL against $5A20 (row 16 of attributes). If HL >= $5A20, sprite has scrolled off visible area, exit early via #R$9367.
+  $92F0 Boundary check: compare HL against #R$5A20 (row 16 of attributes). If HL >= #R$5A20, sprite has scrolled off visible area, exit early via #R$9367.
   $92FB Row complete: restore BC, add stride DE to HL (moves to same column on next row), decrement row counter B, repeat outer loop.
 @ $92FF label=set_attr_new_position_entry
-  $92FF Calculate attribute address for new position: HL = $5800 + (Y AND $F8) * 4 + (X >> 3) using coordinates from #R$8B0C.
+  $92FF Calculate attribute address for new position: HL = #R$5800 + (Y AND $F8) * 4 + (X >> 3) using coordinates from #R$8B0C.
   $9318 Calculate row count B = (height >> 3) + 2 (one less row than old position). Load width into C.
   $9329 Calculate row stride DE = $20 - width. Check if Y is at screen top.
   $933B,12 If at screen top, use wrapped fill at #R$9388.
@@ -3504,7 +3509,7 @@ R $928D I:HL New position coordinates from #R$8B0C.
   $9348 Outer loop start: push BC to preserve row count (B) and column count (C) for this row.
 @ $9349 label=set_attr_new_inner_loop
   $9349 Inner loop: write attribute byte A to address HL, increment HL, decrement column counter C, repeat until row complete.
-  $934E Boundary check: compare HL against $5A20. If HL >= $5A20, exit early via #R$936B.
+  $934E Boundary check: compare HL against #R$5A20. If HL >= #R$5A20, exit early via #R$936B.
   $9359 Row complete: restore BC, add stride DE to HL, decrement row counter B, repeat outer loop.
 @ $935D label=handle_zero_attributes
 c $935D Return point when attribute color is zero.
@@ -3512,11 +3517,11 @@ D $935D Restores registers and returns without filling any attributes. Called wh
   $935D,9 Restore width from #R$928B, pop BC and HL, load new coordinates from #R$8B0C into DE, return.
 @ $9367 label=attr_old_exit_early
 c $9367 Early exit from old position attribute loop.
-D $9367 Called when old position boundary check detects HL >= $5A20 (past visible attribute area).
+D $9367 Called when old position boundary check detects HL >= #R$5A20 (past visible attribute area).
   $9367,1 Pop BC (discard saved counter) and continue to new position processing at #R$92FF.
 @ $936B label=attr_new_exit_early
 c $936B Early exit from new position attribute loop.
-D $936B Called when new position boundary check detects HL >= $5A20.
+D $936B Called when new position boundary check detects HL >= #R$5A20.
   $936B,1 Pop BC and jump to #R$935D to restore registers and return.
 @ $936F label=set_attr_wrap_old
 c $936F Handle old position attributes when sprite is at screen top (row 0).
@@ -3551,7 +3556,7 @@ c $93BE Update high score table from current player score.
 D $93BE Compares player 1's score with the appropriate high score slot (based on starting bridge) and updates if higher. In 2-player mode, first checks if player 2 beat player 1.
   $93BE If 2-player mode, call #R$93F2 to check player 2 score first.
 @ $93C1 isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
-  $93C6 Calculate high score slot address: base ($90C8) + ((game_mode AND $FE) * 3).
+  $93C6 Calculate high score slot address: base (#R$90C8) + ((game_mode AND $FE) * 3).
   $93DD Compare player 1 score with high score slot. Return if not higher.
   $93E9,8 Copy player 1 score (6 bytes) to high score slot.
 @ $93EC isub=LD BC,state_score_player_2_low - state_score_player_1_low
@@ -3564,9 +3569,9 @@ D $93F2 For 2-player games, compares scores and copies player 2 score to player 
 @ $9404 isub=LD BC,state_score_player_2_low - state_score_player_1_low
 @ $940A label=clear_screen
 c $940A Clear the screen by setting all pixel bytes to $00 and all attributes to the value set in #REGd.
-D $940A ZX Spectrum screen memory starts at $4000 with 6144 bytes of pixel data ($18 blocks of 256 bytes), followed by 768 bytes of attribute data ($03 blocks of 256 bytes).
+D $940A ZX Spectrum screen memory starts at #R$4000 with 6144 bytes of pixel data ($18 blocks of 256 bytes), followed by 768 bytes of attribute data ($03 blocks of 256 bytes).
 R $940A I:D Attribute value to fill the attribute area.
-  $940A Point HL to start of screen memory ($4000).
+  $940A Point HL to start of screen memory (#R$4000).
   $940D Set outer loop counter to $18 (24 blocks for pixel area).
 @ $940F label=clear_scr_block
   $940F Set inner loop counter to 256 (full block).

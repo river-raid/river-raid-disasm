@@ -998,7 +998,10 @@ b$5800 DEFB $38,$38,$38,$38,$38,$38,$38,$70
  $5808 DEFB $70,$38,$38,$38,$38,$38,$38,$38
  $5810 DEFB $38,$38,$38,$38,$38,$38,$38,$38
  $5818 DEFB $38,$38,$38,$38,$38,$38,$38,$38
- $5820 DEFB $72,$72,$72,$72,$72,$72,$72,$70
+
+; Screen attributes row 1.
+@label=screen_attributes_row_1
+b$5820 DEFB $72,$72,$72,$72,$72,$72,$72,$70
  $5828 DEFB $70,$70,$70,$70,$70,$70,$70,$70
  $5830 DEFB $70,$70,$70,$70,$70,$70,$70,$70
  $5838 DEFB $70,$70,$70,$70,$70,$70,$70,$78
@@ -1062,11 +1065,17 @@ b$5800 DEFB $38,$38,$38,$38,$38,$38,$38,$70
  $5A08 DEFB $38,$38,$38,$38,$38,$38,$38,$38
  $5A10 DEFB $38,$38,$38,$38,$38,$38,$38,$38
  $5A18 DEFB $38,$38,$38,$38,$38,$38,$38,$38
- $5A20 DEFB $38,$38,$38,$38,$38,$38,$38,$38
+
+; Screen attributes row 16 (boundary for visible sprite area).
+@label=screen_attributes_row_16
+b$5A20 DEFB $38,$38,$38,$38,$38,$38,$38,$38
  $5A28 DEFB $38,$38,$38,$38,$38,$38,$38,$38
  $5A30 DEFB $38,$38,$38,$38,$38,$38,$38,$38
  $5A38 DEFB $38,$38,$38,$38,$38,$38,$38,$38
- $5A40 DEFB $07,$07,$07,$07,$07,$07,$07,$07
+
+; Screen attributes row 17 (start of lower screen area).
+@label=screen_attributes_row_17
+b$5A40 DEFB $07,$07,$07,$07,$07,$07,$07,$07
  $5A48 DEFB $07,$07,$07,$07,$07,$07,$07,$07
  $5A50 DEFB $07,$07,$07,$07,$07,$07,$07,$07
  $5A58 DEFB $07,$07,$07,$07,$07,$07,$07,$07
@@ -3613,7 +3622,6 @@ c$68B7 LD HL,$5A1F   ; Load source address $5A1F into HL (attribute row)
 ; Copies the bottom attribute row to the top of the screen, then fills the
 ; bottom row with either river (green) or bridge attributes depending on
 ; state_bridge_section.
-@nowarn
 @label=update_bottom_row
 c$68C5 LD DE,$5820   ; {Copy bottom attribute row to top of screen.
  $68C8 LD BC,$0020   ;
@@ -8313,11 +8321,11 @@ c$8A1B LD HL,$57FF   ; {Start at #R$5800-1 (bottom-right of visible area), loop
 @label=init_udg
 c$8A33 LD A,$00      ; {Set border to black via OUT to port $FE.
  $8A35 OUT ($FE),A   ; }
-@ignoreua=$5A40
- $8A37 LD B,$C0      ; {Fill $C0 (192) attribute bytes starting at $5A40 with
-@nowarn
- $8A39 LD HL,$5A40   ; $07 (white on black).
+@isub=LD B,screen_row_table-screen_attributes_row_17
+ $8A37 LD B,$C0      ; {Fill screen attributes starting at
+ $8A39 LD HL,$5A40   ; screen_attributes_row_17.
 @label=init_udg_loop
+@isub=LD (HL),COLOR_BLACK<<3|COLOR_WHITE
 *$8A3C LD (HL),$07   ;
  $8A3E INC HL        ;
  $8A3F DJNZ $8A3C    ; }
@@ -9370,9 +9378,7 @@ g$928B DEFW $0000
 ; Set screen attributes for sprite area.
 ;
 ; Fills rectangular regions of attribute cells for both old (erase) and new
-; (draw) sprite positions. ZX Spectrum attribute memory is at $5800-$5AFF,
-; organized as 24 rows × 32 columns (768 bytes). Each 8×8 pixel character cell
-; has one attribute byte controlling ink/paper/bright/flash.
+; (draw) sprite positions.
 ; .
 ; .
 ; .
@@ -9396,8 +9402,8 @@ c$928D PUSH HL       ; {Save registers, store width to #R$928B. If attribute E
  $929C LD ($9285),BC ; for later use.
  $92A0 LD ($9289),HL ; }
  $92A3 LD BC,($8B0A) ; {Calculate attribute address for old position: HL =
- $92A7 LD A,B        ; $5800 + (Y AND $F8) * 4 + (X >> 3). Y coordinate is in B
- $92A8 AND $F8       ; of stored BC at #R$8B0A, X in C.
+ $92A7 LD A,B        ; #R$5800 + (Y AND $F8) * 4 + (X >> 3). Y coordinate is in
+ $92A8 AND $F8       ; B of stored BC at #R$8B0A, X in C.
  $92AA LD H,$00      ;
  $92AC LD L,A        ;
  $92AD ADD HL,HL     ;
@@ -9444,8 +9450,8 @@ c$928D PUSH HL       ; {Save registers, store width to #R$928B. If attribute E
  $92EC INC HL        ; increment HL, decrement column counter C, repeat until
  $92ED DEC C         ; row complete.
  $92EE JR NZ,$92EB   ; }
- $92F0 PUSH HL       ; {Boundary check: compare HL against $5A20 (row 16 of
- $92F1 LD BC,$5A20   ; attributes). If HL >= $5A20, sprite has scrolled off
+ $92F0 PUSH HL       ; {Boundary check: compare HL against #R$5A20 (row 16 of
+ $92F1 LD BC,$5A20   ; attributes). If HL >= #R$5A20, sprite has scrolled off
  $92F4 OR A          ; visible area, exit early via #R$9367.
  $92F5 SBC HL,BC     ;
  $92F7 POP HL        ;
@@ -9456,7 +9462,7 @@ c$928D PUSH HL       ; {Save registers, store width to #R$928B. If attribute E
 ; This entry point is used by the routine at #R$9367.
 @label=set_attr_new_position_entry
 *$92FF LD BC,($8B0C) ; {Calculate attribute address for new position: HL =
- $9303 LD A,B        ; $5800 + (Y AND $F8) * 4 + (X >> 3) using coordinates
+ $9303 LD A,B        ; #R$5800 + (Y AND $F8) * 4 + (X >> 3) using coordinates
  $9304 AND $F8       ; from #R$8B0C.
  $9306 LD H,$00      ;
  $9308 LD L,A        ;
@@ -9504,8 +9510,8 @@ c$928D PUSH HL       ; {Save registers, store width to #R$928B. If attribute E
  $934A INC HL        ; increment HL, decrement column counter C, repeat until
  $934B DEC C         ; row complete.
  $934C JR NZ,$9349   ; }
- $934E PUSH HL       ; {Boundary check: compare HL against $5A20. If HL >=
- $934F LD BC,$5A20   ; $5A20, exit early via #R$936B.
+ $934E PUSH HL       ; {Boundary check: compare HL against #R$5A20. If HL >=
+ $934F LD BC,$5A20   ; #R$5A20, exit early via #R$936B.
  $9352 OR A          ;
  $9353 SBC HL,BC     ;
  $9355 POP HL        ;
@@ -9527,7 +9533,7 @@ c$935D LD A,($928B)  ; {Restore width from #R$928B, pop BC and HL, load new
 
 ; Early exit from old position attribute loop.
 ;
-; Called when old position boundary check detects HL >= $5A20 (past visible
+; Called when old position boundary check detects HL >= #R$5A20 (past visible
 ; attribute area).
 @label=attr_old_exit_early
 c$9367 POP BC        ; Pop BC (discard saved counter) and continue to new
@@ -9536,7 +9542,7 @@ c$9367 POP BC        ; Pop BC (discard saved counter) and continue to new
 
 ; Early exit from new position attribute loop.
 ;
-; Called when new position boundary check detects HL >= $5A20.
+; Called when new position boundary check detects HL >= #R$5A20.
 @label=attr_new_exit_early
 c$936B POP BC        ; Pop BC and jump to #R$935D to restore registers and
                      ; return.
@@ -9639,7 +9645,7 @@ c$93BE LD A,($923A)  ; {If 2-player mode, call #R$93F2 to check player 2 score
 @isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
  $93C1 BIT 0,A       ; first.
  $93C3 CALL NZ,$93F2 ; }
- $93C6 LD HL,$90C8   ; {Calculate high score slot address: base ($90C8) +
+ $93C6 LD HL,$90C8   ; {Calculate high score slot address: base (#R$90C8) +
  $93C9 LD A,($923A)  ; ((game_mode AND $FE) * 3).
  $93CC AND $FE       ;
  $93CE LD E,A        ;
@@ -9685,13 +9691,13 @@ c$93F2 LD HL,$90BC   ; {Compare player 1 score (#R$90BC) with player 2 score
 ; Clear the screen by setting all pixel bytes to $00 and all attributes to the
 ; value set in #REGd.
 ;
-; ZX Spectrum screen memory starts at $4000 with 6144 bytes of pixel data ($18
-; blocks of 256 bytes), followed by 768 bytes of attribute data ($03 blocks of
-; 256 bytes).
+; ZX Spectrum screen memory starts at #R$4000 with 6144 bytes of pixel data
+; ($18 blocks of 256 bytes), followed by 768 bytes of attribute data ($03
+; blocks of 256 bytes).
 ;
 ; I:D Attribute value to fill the attribute area.
 @label=clear_screen
-c$940A LD HL,$4000   ; Point HL to start of screen memory ($4000).
+c$940A LD HL,$4000   ; Point HL to start of screen memory (#R$4000).
  $940D LD C,$18      ; Set outer loop counter to $18 (24 blocks for pixel
                      ; area).
 @label=clear_scr_block
