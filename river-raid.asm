@@ -214,6 +214,8 @@ OUT_NUM_1 EQU $1A1B
 PR_STRING EQU $203C
 LAST_K EQU $5C08
 UDG EQU $5C7B
+INT_VECTOR_TABLE_HI EQU $FC
+INT_VECTOR_ENTRY EQU $FE
 
   ORG $4000
 
@@ -1171,27 +1173,27 @@ data_unused_5C79:
 ; including setting up the custom interrupt handler (IM 2 mode) and initializing global pointers.
 init:
   LD HL,state_controls                 ; Initialize ptr_state_controls to point to state_controls.
-  LD (ptr_state_controls),HL           ; Initialize collision_dispatcher_ptr to point to collision_dispatcher (collision
-  LD HL,collision_dispatcher           ; dispatcher routine).
-  LD (collision_dispatcher_ptr),HL
-  LD A,$C3                             ; Load $C3 (JP instruction opcode) into A.
-  LD ($FEFE),A                         ; Write the JP opcode to $FEFE (interrupt vector table entry).
-  LD HL,int_handler                    ; Load the address of int_handler into HL.
-  LD ($FEFF),HL                        ; Write the interrupt handler address to $FEFF (completing the JP instruction).
-  LD HL,$FC00                          ; Point HL to $FC00 (start of interrupt vector table).
-  LD B,$00                             ; Set B to 0 (loop 256 times).
+  LD (ptr_state_controls),HL           ;
+  LD HL,collision_dispatcher           ; Initialize collision_dispatcher_ptr to point to collision_dispatcher
+  LD (collision_dispatcher_ptr),HL     ;
+  LD A,$C3                                    ; Write the JP opcode to the address that all vector table entries will
+  LD (INT_VECTOR_ENTRY<<8|INT_VECTOR_ENTRY),A ; point to.
+  LD HL,int_handler                              ; Write the interrupt handler address, completing the JP int_handler
+  LD (INT_VECTOR_ENTRY<<8|INT_VECTOR_ENTRY+1),HL ; instruction.
+  LD HL,INT_VECTOR_TABLE_HI<<8         ; Point HL to the start of interrupt vector table.
+  LD B,$00                             ; Prepare to iterate 256 times.
 int_vector_table_write_loop:
-  LD (HL),$FE                          ; Write $FE to the current vector table entry.
-  INC HL                               ; Advance HL to the next entry.
-  DJNZ int_vector_table_write_loop     ; Decrement B and loop until all 256 entries are filled.
-  LD (HL),$FE                          ; Write $FE to the final (257th) entry at $FD00.
-  LD A,$FC                             ; Load $FC into A (high byte of interrupt vector table address).
-  LD I,A                               ; Set the I register to $FC (enabling IM 2 mode with vector table at $FC00).
-  LD (saved_stack_pointer),SP          ; Save the current stack pointer to saved_stack_pointer.
+  LD (HL),INT_VECTOR_ENTRY             ; Write INT_VECTOR_ENTRY to the current vector table entry.
+  INC HL
+  DJNZ int_vector_table_write_loop
+  LD (HL),INT_VECTOR_ENTRY             ; Write INT_VECTOR_ENTRY to the final vector table entry.
+  LD A,INT_VECTOR_TABLE_HI             ; Set the I register to the high byte of the interrupt vector table address.
+  LD I,A                               ;
+  LD (saved_stack_pointer),SP
   IM 2                                 ; Set interrupt mode 2 (vectored interrupts).
-  EI                                   ; Enable interrupts.
-  LD HL,msg_credits                    ; Load the address of msg_credits into HL.
-  LD (ptr_scroller),HL                 ; Store it in ptr_scroller (initialize the scroller message).
+  EI
+  LD HL,msg_credits                    ; Store the address of msg_credits in ptr_scroller.
+  LD (ptr_scroller),HL                 ;
 
 ; Return to control selection dialog
 ;
@@ -1211,14 +1213,12 @@ return_to_control_selection:
 
 ; Start gameplay or overview mode based on user selection
 ;
-; This routine is called after the user selects controls and game mode from the control selection dialog. It switches
-; back to IM 2 (custom interrupt mode), copies the selected control type to the game state, and then either starts
-; gameplay or overview mode based on the state_overview_mode flag.
+; This routine is called after the user selects controls and game mode from the control selection dialog.
 start_gameplay_or_overview:
-  LD A,$FC                             ; Load $FC into A (high byte of interrupt vector table address).
-  LD I,A                               ; Set the I register to $FC (enabling IM 2 mode with vector table at $FC00).
+  LD A,INT_VECTOR_TABLE_HI             ; Set the I register to the high byte of the interrupt vector table address.
+  LD I,A                               ;
   IM 2                                 ; Set interrupt mode 2 (vectored interrupts).
-  EI                                   ; Enable interrupts.
+  EI
   LD A,(tmp_control_type)              ; Load the selected control type from tmp_control_type.
   LD (state_input_interface),A         ; Store it in state_input_interface (state_input_interface).
   LD A,(state_overview_mode)           ; Load the overview mode flag from state_overview_mode.

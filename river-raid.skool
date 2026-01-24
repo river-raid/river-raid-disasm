@@ -217,6 +217,8 @@ VIEWPORT_HEIGHT EQU $88
 @equ=PR_STRING=$203C
 @equ=LAST_K=$5C08
 @equ=UDG=$5C7B
+@equ=INT_VECTOR_TABLE_HI=$FC
+@equ=INT_VECTOR_ENTRY=$FE
 ; Screen pixels.
 ;
 ; #UDGTABLE
@@ -1179,34 +1181,37 @@ u$5C79 DEFB $00,$00,$58,$FF,$00,$00,$21,$00
 ; one-time initialization of the game engine, including setting up the custom
 ; interrupt handler (IM 2 mode) and initializing global pointers.
 @label=init
-c$5CD2 LD HL,$6BB0   ; Initialize #R$9283 to point to #R$6BB0.
- $5CD5 LD ($9283),HL ; {Initialize #R$8B08 to point to #R$6136 (collision
+c$5CD2 LD HL,$6BB0   ; {Initialize #R$9283 to point to #R$6BB0.
+ $5CD5 LD ($9283),HL ; }
 @nowarn
- $5CD8 LD HL,$6136   ; dispatcher routine).}
- $5CDB LD ($8B08),HL ;
- $5CDE LD A,$C3      ; Load $C3 (JP instruction opcode) into A.
- $5CE0 LD ($FEFE),A  ; Write the JP opcode to $FEFE (interrupt vector table
-                     ; entry).
+ $5CD8 LD HL,$6136   ; {Initialize #R$8B08 to point to #R$6136
+ $5CDB LD ($8B08),HL ; }
+ $5CDE LD A,$C3      ; {Write the JP opcode to the address that all vector
+@isub=LD (INT_VECTOR_ENTRY<<8|INT_VECTOR_ENTRY),A
+ $5CE0 LD ($FEFE),A  ; table entries will point to.}
 @nowarn
- $5CE3 LD HL,$6BDB   ; Load the address of #R$6BDB into HL.
- $5CE6 LD ($FEFF),HL ; Write the interrupt handler address to $FEFF (completing
-                     ; the JP instruction).
- $5CE9 LD HL,$FC00   ; Point HL to $FC00 (start of interrupt vector table).
- $5CEC LD B,$00      ; Set B to 0 (loop 256 times).
+ $5CE3 LD HL,$6BDB   ; {Write the interrupt handler address, completing the JP
+@isub=LD (INT_VECTOR_ENTRY<<8|INT_VECTOR_ENTRY+1),HL
+ $5CE6 LD ($FEFF),HL ; #R$6BDB instruction.}
+@isub=LD HL,INT_VECTOR_TABLE_HI<<8
+ $5CE9 LD HL,$FC00   ; Point HL to the start of interrupt vector table.
+ $5CEC LD B,$00      ; Prepare to iterate 256 times.
 @label=int_vector_table_write_loop
-*$5CEE LD (HL),$FE   ; Write $FE to the current vector table entry.
- $5CF0 INC HL        ; Advance HL to the next entry.
- $5CF1 DJNZ $5CEE    ; Decrement B and loop until all 256 entries are filled.
- $5CF3 LD (HL),$FE   ; Write $FE to the final (257th) entry at $FD00.
- $5CF5 LD A,$FC      ; Load $FC into A (high byte of interrupt vector table
-                     ; address).
- $5CF7 LD I,A        ; Set the I register to $FC (enabling IM 2 mode with
-                     ; vector table at $FC00).
- $5CF9 LD ($5F83),SP ; Save the current stack pointer to #R$5F83.
+@isub=LD (HL),INT_VECTOR_ENTRY
+*$5CEE LD (HL),$FE   ; Write INT_VECTOR_ENTRY to the current vector table
+                     ; entry.
+ $5CF0 INC HL        ;
+ $5CF1 DJNZ $5CEE    ;
+@isub=LD (HL),INT_VECTOR_ENTRY
+ $5CF3 LD (HL),$FE   ; Write INT_VECTOR_ENTRY to the final vector table entry.
+@isub=LD A,INT_VECTOR_TABLE_HI
+ $5CF5 LD A,$FC      ; {Set the I register to the high byte of the interrupt
+ $5CF7 LD I,A        ; vector table address.}
+ $5CF9 LD ($5F83),SP ;
  $5CFD IM 2          ; Set interrupt mode 2 (vectored interrupts).
- $5CFF EI            ; Enable interrupts.
- $5D00 LD HL,$8182   ; Load the address of #R$8182 into HL.
- $5D03 LD ($5F7E),HL ; Store it in #R$5F7E (initialize the scroller message).
+ $5CFF EI            ;
+ $5D00 LD HL,$8182   ; {Store the address of #R$8182 in #R$5F7E.
+ $5D03 LD ($5F7E),HL ; }
 
 ; Return to control selection dialog
 ;
@@ -1238,16 +1243,13 @@ c$5D06 LD A,$3F      ; Load $3F into A (high byte of ROM address for IM 1).
 ; .
 ;
 ; This routine is called after the user selects controls and game mode from the
-; control selection dialog. It switches back to IM 2 (custom interrupt mode),
-; copies the selected control type to the game state, and then either starts
-; gameplay or overview mode based on the state_overview_mode flag.
+; control selection dialog.
 @label=start_gameplay_or_overview
-c$5D10 LD A,$FC      ; Load $FC into A (high byte of interrupt vector table
-                     ; address).
- $5D12 LD I,A        ; Set the I register to $FC (enabling IM 2 mode with
-                     ; vector table at $FC00).
+@isub=LD A,INT_VECTOR_TABLE_HI
+c$5D10 LD A,$FC      ; {Set the I register to the high byte of the interrupt
+ $5D12 LD I,A        ; vector table address.}
  $5D14 IM 2          ; Set interrupt mode 2 (vectored interrupts).
- $5D16 EI            ; Enable interrupts.
+ $5D16 EI            ;
  $5D17 LD A,($7800)  ; Load the selected control type from #R$7800.
  $5D1A LD ($5F67),A  ; Store it in #R$5F67 (state_input_interface).
  $5D1D LD A,($7801)  ; Load the overview mode flag from #R$7801.
