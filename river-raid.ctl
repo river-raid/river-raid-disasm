@@ -233,7 +233,7 @@ b $5A40 Screen attributes row 17 (start of lower screen area).
 @ $5B00 label=screen_row_table
 b $5B00 Lookup table for screen row addresses, used in island rendering.
 @ $5C78 label=int_counter
-g $5C78 Interrupt counter
+g $5C78 Interrupt counter. Incremented by the interrupt handler.
 @ $5C79 label=data_unused_5C79
 u $5C79
 @ $5CD2 label=init
@@ -308,7 +308,7 @@ N $5D44 This routine sets up the initial game state used by the overview (attrac
 @ $5D52 isub=LD (HL),SET_MARKER_END_OF_SET
   $5D52 Mark the viewport objects list as empty (SET_MARKER_END_OF_SET).
   $5D54 Load $1F (31 decimal) into A.
-@ $5D56 isub=LD (state_activation_mask),A
+@ $5D56 isub=LD (state_activation_interval),A
   $5D56 Store $1F to #R$5F5F (normal activation timing).
   $5D59 Load $00 into A.
   $5D5B Set border to black and disable sound (OUT to ULA port $FE).
@@ -341,181 +341,118 @@ N $5D44 This routine sets up the initial game state used by the overview (attrac
 c $5D9F Decrease player 2 lives
 @ $5DA6 label=play
 c $5DA6 Initialize and start gameplay mode
-D $5DA6 This routine initializes the game screen and state for gameplay mode, then enters the main game loop. It is called when starting a new game or restarting after losing a life.
-  $5DA6 Initialize island line index to $10 (starting line for island rendering)
-  $5DA8 Store island line index
-  $5DAB Initialize activation mask to $1F (controls which objects are active)
-  $5DAD Store activation mask
-  $5DB0 Restore stack pointer from saved location
-  $5DB4 Set color attributes: PAPER BLUE, INK GREEN
+D $5DA6 This routine prepares the game for play and is called when starting a new game or after losing a life.
+  $5DA6 Initialize island line index (starting line for island rendering).
+  $5DAB Initialize activation interval (objects activate when int_counter AND $1F == 0, i.e., every 32 frames).
+  $5DB0
 @ $5DB4 isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
-  $5DB6 Clear screen with the specified colors
-  $5DB9 Initialize user-defined graphics (UDGs)
-  $5DBC Point to status line 1 text
-  $5DBF Calculate length of status line 1
+  $5DB4 Clear screen with PAPER BLUE, INK GREEN.
+  $5DB9
 @ $5DBF isub=LD BC,status_line_2 - status_line_1
-  $5DC2 Print status line 1
-  $5DC5 Initialize metronome counter to $01 (used for timing game events)
-  $5DC7 Store metronome value
-  $5DCA Open channel 1 (upper screen area)
-  $5DCD Point to status line 2 text
-  $5DD0 Calculate length of status line 2
+  $5DBC Print status line 1.
+  $5DC5 Initialize metronome.
+  $5DCA Open channel 1 (upper screen).
 @ $5DD0 isub=LD BC,status_line_3 - status_line_2
-  $5DD3 Print status line 2
-  $5DD6 Prepare to open channel 2
-  $5DD8 Open channel 2 (lower screen area)
-  $5DDB Print current bridge number
-  $5DDE Initialize terrain fragment counter to $04
-  $5DE0 Store terrain fragment counter
-  $5DE3 Clear accumulator for initializing multiple state variables
-  $5DE5 Clear bridge section counter (tracks position within current bridge)
-  $5DE8 Clear unused state variable
-  $5DEB Clear terrain position (will be set to $FF later)
-  $5DEE Clear plane sprite bank (selects which plane sprite to display)
-  $5DF1 Set fuel level to full ($80)
+  $5DCD Print status line 2.
+  $5DD6 Open channel 2 (lower screen).
+  $5DDB
+  $5DDE Initialize terrain fragment counter.
+  $5DE3 Clear state variables.
 @ $5DF1 isub=LD A,FUEL_LEVEL_FULL
-  $5DF3 Store fuel level
-  $5DF6 Set initial Y position to $0010 (vertical position on screen)
-  $5DF9 Store Y position
-  $5DFD Initialize current bridge data structures
-  $5E00 Set X position to $78 (horizontal center of screen)
-  $5E02 Store X position
-  $5E05 Point to viewport objects list (tracks active game objects)
-  $5E08 Store viewport objects pointer
-  $5E0B Mark viewport objects list as empty (end-of-set marker)
+  $5DF1 Initialize fuel level.
+  $5DF6 Initialize scroll offset.
+  $5DFD
+  $5E00 Initialize X position (horizontal center).
+  $5E05 Initialize viewport_objects list.
 @ $5E0B isub=LD (HL),SET_MARKER_END_OF_SET
-  $5E0D Point to exploding fragments list (tracks explosion animations)
-  $5E10 Store exploding fragments pointer
-  $5E13 Mark exploding fragments list as empty ($FF terminator)
-  $5E15 Set BC to $0000 for print_lives call
-  $5E18 Display lives remaining for current player
-  $5E1B Prepare to open channel 1
-  $5E1D Open channel 1 for score display
-  $5E20 Load AT control code (position cursor)
+  $5E0B Mark viewport objects list as empty.
+  $5E0D Initialize exploding_fragments list.
+  $5E13 Mark exploding fragments list as empty.
+  $5E15
+  $5E1B Open channel 1 for score display.
 @ $5E20 isub=LD A,EXT_ATTR_AT
-  $5E22 Print AT control code
-  $5E23 Row 1 for AT command
-  $5E25 Print row parameter
-  $5E26 Column 5 for AT command
-  $5E28 Print column parameter
-  $5E29 Load INK control code (set text color)
+  $5E20 Position cursor at row 1, column 5.
 @ $5E29 isub=LD A,EXT_ATTR_INK
-  $5E2B Print INK control code
-  $5E2C Set color to yellow
 @ $5E2C isub=LD A,COLOR_YELLOW
-  $5E2E Print color parameter
-  $5E2F Point to player 1 score data
-  $5E32 Calculate length of score data
+  $5E29 Set ink color to yellow.
 @ $5E32 isub=LD BC,state_score_player_2_low - state_score_player_1_low
-  $5E35 Print player 1 score
-  $5E38 Prepare to open channel 2
-  $5E3A Open channel 2 for status display
-  $5E3D Point to status line 4 text
-  $5E40 Calculate length of status line 4
+  $5E2F Print player 1 score.
+  $5E38 Open channel 2.
 @ $5E40 isub=LD BC,status_line_4_end - status_line_4
-  $5E43 Print status line 4
-  $5E46 Load current game mode (1 or 2 player)
-  $5E49 Convert to ASCII digit (add $31 to convert 0-9 to '0'-'9')
-  $5E4B Print game mode digit
-  $5E4C Prepare to open channel 1
-  $5E4E Open channel 1
-  $5E51 Set terrain position to $FF (forces terrain regeneration)
-  $5E53 Store terrain position
-  $5E56 Set terrain profile number to $02 (selects terrain pattern)
-  $5E58 Store terrain profile number
-  $5E5B Open channel 2
-  $5E5E Initialize level fragment number to $01 (first fragment of level)
-  $5E60 Store level fragment number
-  $5E63 Set gameplay mode to $01 (normal gameplay)
-  $5E66 Set bridge destroyed flag to $01 (bridge intact)
-  $5E69 Set last key to $68 (dummy key value)
-  $5E6B Store last key pressed
-  $5E6E Clear control state (no buttons pressed)
-  $5E70 Store control state
-  $5E73 Clear tank shell state (no tank shell active)
-  $5E76 Set speed to SPEED_FAST ($04) for level scroll-in
+  $5E3D Print status line 4.
+  $5E46 Print game mode digit (1 or 2 player).
+  $5E4C Open channel 1.
+  $5E51 Set terrain position to $FF (forces terrain regeneration).
+  $5E56 Initialize terrain profile number.
+  $5E5B Open channel 2.
+  $5E5E,8 Initialize level fragment number, gameplay mode, and bridge destroyed flag.
+  $5E69 Set last key to dummy value (ignore initial input).
+  $5E6E Clear control state and tank shell state.
 @ $5E76 isub=LD A,SPEED_FAST
-  $5E78 Store speed
+  $5E76 Set speed for scroll-in animation.
 @ $5E7B ignoreua=$4C83
-  $5E7B Initialize terrain element 23 to $4C83
-  $5E7E Store terrain element 23
-  $5E82 Print player 2 score area
-  $5E85 Initialize current bridge data
-  $5E88 Set loop counter to $28 (40 iterations for scroll-in)
+  $5E7B Initialize terrain element 23.
+  $5E82
+  $5E85
+  $5E88 Set loop counter for scroll-in (40 iterations).
 @ $5E8A label=scroll_in_loop
-  $5E8A Save loop counter
-  $5E8B Point to metronome counter
-  $5E8E Increment metronome (advances game timing)
-  $5E8F Render player plane and terrain for current frame
-  $5E92 Update and render viewport objects (enemies, fuel, etc.)
-  $5E95 Advance game state (scroll terrain, update positions)
-  $5E98 Set speed to SPEED_FAST (maintain fast scroll during intro)
+  $5E8A Save loop counter.
+  $5E8B Increment metronome.
+  $5E8F
+  $5E92
+  $5E95
 @ $5E98 isub=LD A,SPEED_FAST
-  $5E9A Store speed
-  $5E9D Restore loop counter
-  $5E9E Repeat scroll-in loop until counter reaches zero
-  $5EA0 Clear control state (reset controls after scroll-in)
-  $5EA2 Store control state
-  $5EA5 Set gameplay mode to $00 (ready for player control)
-  $5EA8 Render player plane in starting position
-  $5EAB Set last key to $0D (Enter key - wait for start)
-  $5EAD Store last key
-  $5EB0 Load current player number
-  $5EB3 Check if player 2
+  $5E98 Maintain speed during scroll-in.
+  $5E9D Restore loop counter.
+  $5E9E Loop until scroll-in complete.
+  $5EA0 Clear control state.
+  $5EA5 Set gameplay mode to normal (ready for player control).
+  $5EA8
+  $5EAB Set last key to Enter (wait for start input).
 @ $5EB3 isub=CP PLAYER_2
-  $5EB5 If player 2, jump to decrease player 2 lives
-  $5EB8 Point to player 1 lives counter
-  $5EBB Decrement lives (player lost a life)
+  $5EB0 Decrement current player's lives.
 @ $5EBC label=after_life_lost
-  $5EBC Display updated lives count
+  $5EBC
 @ $5EBF label=wait_for_start_input
-  $5EBF Scan keyboard for input
-  $5EC2 Enable interrupts
-  $5EC3 Load last key pressed
-  $5EC6 Check if Enter key ($0D)
-  $5EC8 If not Enter, start game
-  $5ECA Load input interface type (keyboard/joystick)
-  $5ECD Check if Kempston joystick
+  $5EBF
+  $5EC2 Enable interrupts.
+  $5EC3 If any key except Enter pressed, start game.
 @ $5ECD isub=CP INPUT_INTERFACE_KEMPSTON
-  $5ECF If not Kempston, wait for key press
-  $5ED2 Set port address for Kempston joystick read
-  $5ED4 Read Kempston joystick port
-  $5ED6 Check if joystick is centered (no input)
-  $5ED8 If centered, keep waiting for input
+  $5ECA If not Kempston joystick, keep waiting.
+  $5ED2 Read Kempston joystick; if centered, keep waiting.
 @ $5EDB label=start_game
-  $5EDB Clear bridge destroyed flag (bridge is intact at start)
-  $5EDD,3 Store bridge destroyed flag
+  $5EDB Clear bridge destroyed flag.
 @ $5EEE label=state_terrain_fragment_counter
-g $5EEE Counter for terrain fragment rendering (incremented each time a fragment is rendered).
+g $5EEE Terrain fragment render counter (0-7). Tracks which of the 8 terrain fragments to render next. Incremented after each fragment, wraps at 8.
 @ $5EEF label=state_metronome
-g $5EEF
+g $5EEF Frame counter (0-255). Incremented each game frame for animation timing. Bit 0 alternates every frame, bits 0-1 cycle every 4 frames, etc.
 @ $5EF0 label=state_bridge_index
-g $5EF0 Current player's current bridge modulo 48 (the total number of bridges).
+g $5EF0 Current bridge number (0-47).
 @ $5EF1 label=state_input_readings
-g $5EF1 Contains the current readings of the input port (Sinclair, Kempston, Cursor, etc.).
+g $5EF1 Raw input port value from last keyboard/joystick read. Format depends on input interface type.
 @ $5EF2 label=state_tank_shell
-g $5EF2 Tank shell state: $00 when no tank is in firing position, $01 when a tank is at screen center ($80) and can fire.
+g $5EF2 Tank shell state ($00 = inactive, $01 = can fire).
 @ $5EF3 label=state_plane_missile_coordinates
-g $5EF3
+g $5EF3 Player missile Y coordinate in pixels (0-255). $00 when no missile active.
 @ $5EF4 label=state_plane_missile_x
-g $5EF4
+g $5EF4 Player missile X coordinate in pixels (0-255).
 @ $5EF5 label=state_collision_mode
-g $5EF5
+g $5EF5 Collision detection mode for current render pass. Determines which collision handler to invoke on pixel overlap.
 @ $5EF6 label=state_collision_y
-g $5EF6
+g $5EF6 Y coordinate where collision was detected, in pixels.
 @ $5EF7 label=ptr_plane_sprite
-g $5EF7
+g $5EF7 Pointer to current plane sprite data. Points into #R$82C5 sprite bank, offset by speed for animation frame selection.
 W $5EF7
 @ $5EF9 label=state_island_render_idx
-g $5EF9
+g $5EF9 Island rendering line counter. Tracks current scanline during island terrain rendering (0-23).
 @ $5EFA label=state_island_profile_idx
-g $5EFA The value sourced from the first byte of an island definition in #R$C600 and used as a #R$8063 array index.
+g $5EFA Island terrain profile index (0-7). Selects which of 8 island shapes from #R$8063 to render.
 @ $5EFB label=state_island_byte_2
-g $5EFB
+g $5EFB Island definition byte 2. Second byte from island data at #R$C600, controls island width/shape.
 @ $5EFC label=state_island_byte_3
-g $5EFC
+g $5EFC Island definition byte 3. Third byte from island data at #R$C600, controls island rendering parameters.
 @ $5EFD label=state_island_line_idx
-g $5EFD
+g $5EFD Island starting line index. Screen line (0-23) where island rendering begins. Initialized to $10 (16).
 @ $5EFE label=data_unused_5EFE
 u $5EFE
 @ $5F00 label=viewport_objects
@@ -524,8 +461,8 @@ B $5F00,46,3
 @ $5F2E label=exploding_fragments
 g $5F2E
 B $5F2E,49,3
-@ $5F5F label=state_activation_mask
-g $5F5F Object activation mask ANDed with interrupt counter to control activation timing. Set to $1F normally, $0F after bridge destruction.
+@ $5F5F label=state_activation_interval
+g $5F5F Bitmask for object activation timing. $1F = every 32 frames, $0F = every 16 frames.
 @ $5F60 label=viewport_ptr
 g $5F60 Pointer to a slot from #R$5F00
 W $5F60
@@ -533,81 +470,80 @@ W $5F60
 g $5F62 Pointer to a slot from #R$5F2E
 W $5F62
 @ $5F64 label=state_speed
-g $5F64 Current speed
+g $5F64 Current scroll speed in pixels per frame. $01=SPEED_SLOW, $02=SPEED_NORMAL, $04=SPEED_FAST. Also determines plane sprite animation frame.
 @ $5F65 label=low_fuel_sound_period
-g $5F65 Low fuel warning sound period (decrements to create warbling effect)
+g $5F65 Low fuel warning sound period (0-127). Used as delay loop iteration count for speaker ON/OFF phases. Lower values = higher pitch. Decremented each frame, creating a rising-then-resetting warble effect.
 @ $5F66 label=state_fuel
-g $5F66 Fuel level
+g $5F66 Fuel level (0-255). $FF=full tank, $00=empty. Decremented every 2 frames. Low fuel warning triggers when <$40 (top 2 bits clear).
 @ $5F67 label=state_input_interface
-g $5F67 Control type ($00 - Keyboard, $01 - Sinclair, $02 - Kempston, Other - Cursor)
+g $5F67 Input interface type ($00=Keyboard, $01=Sinclair, $02=Kempston, $03=Cursor).
 @ $5F68 label=state_gameplay_mode
 @ $5F68 isub=DEFB GAMEPLAY_MODE_NORMAL
-g $5F68 Current gameplay mode (NORMAL, SCROLL_IN, OVERVIEW, or REFUEL)
+g $5F68 Current gameplay mode. $00=NORMAL (player control), $01=SCROLL_IN (terrain preview), $02=OVERVIEW (attract mode), $03=REFUEL (over fuel depot).
 @ $5F69 label=state_plane_sprite_bank
-g $5F69 Plane sprite bank selector: $00 = normal sprite, $04 = banked sprite.
+g $5F69 Plane sprite bank offset. $00=centered, $04=banked left/right. Added to sprite pointer for tilted plane animation.
 @ $5F6A label=state_bridge_player_1
-g $5F6A Current bridge of player 1
+g $5F6A Player 1's current bridge number (0-47). Saved when switching players in 2-player mode.
 @ $5F6B label=state_bridge_player_2
-g $5F6B Current bridge of player 2
+g $5F6B Player 2's current bridge number (0-47). Saved when switching players in 2-player mode.
 @ $5F6C label=state_bridge_section
-g $5F6C Bridge section indicator: $02 when rendering special bridge terrain fragments.
+g $5F6C Bridge section indicator. $00=normal terrain, $02=bridge terrain section. Set when plane enters bridge area.
 @ $5F6D label=state_bridge_destroyed
-g $5F6D Bridge destruction flag: $00 = no bridge destroyed, $01 = bridge destroyed.
+g $5F6D Bridge destruction flag ($00 = intact, $01 = destroyed).
 @ $5F6E label=state_bridge_y_position
-g $5F6E Y-position of the destroyed bridge section (used for rendering explosion fragments).
+g $5F6E Y-position of destroyed bridge in pixels. Updated during scroll to track bridge debris position on screen.
 @ $5F6F label=state_unused_5F6F
-g $5F6F Unused state variable (cleared during initialization).
+g $5F6F Unused.
 @ $5F70 label=state_scroll_offset
-g $5F70 Scroll offset - accumulated vertical distance traveled. Incremented by current speed each frame.
+g $5F70 Vertical scroll offset (16-bit, little-endian). Accumulated distance traveled in pixels. Used to calculate level slot index and bridge position.
 @ $5F72 label=state_x
-g $5F72 Current X coordinate
+g $5F72 Player plane X coordinate in pixels (0-255). $78 (120) is horizontal center. Changes by 2 pixels per left/right input.
 @ $5F73 label=helicopter_missile_coordinates_ptr
-g $5F73 Pointer to the helicopter missile coordinates.
+g $5F73 Pointer to helicopter missile coordinates in viewport_objects array. Updated when advanced helicopter fires.
 @ $5F75 label=helicopter_missile_state
-g $5F75 Helicopter missile state.
+g $5F75 Helicopter missile state. Bit 7 set when missile active. Lower bits track missile animation/position.
 @ $5F76 label=state_level_fragment_number
-g $5F76 Index of the current element of current level terrain array
+g $5F76 Current level terrain array index (1-255). Points to current element in level definition at #R$9500. Incremented as terrain scrolls.
 @ $5F77 label=state_terrain_profile_number
-b $5F77 The first byte of the current #R$9500 element, defines the index of the terrain sprite (see #R$8063).
+b $5F77 Current terrain profile number (0-7). Index into terrain sprite table at #R$8063. Loaded from first byte of level element at #R$9500.
 @ $5F78 label=state_terrain_element_23
-g $5F78
+g $5F78 Cached terrain element data (2 bytes). Stores bytes 2-3 of current level element for object spawning.
 @ $5F7A label=state_terrain_extras
-g $5F7A
+g $5F7A Terrain extras byte. Additional terrain rendering flags from level data.
 @ $5F7B label=screen_ptr
-g $5F7B
+g $5F7B Current screen memory pointer. Points to pixel address being rendered during terrain drawing.
 W $5F7B
 @ $5F7D label=state_terrain_position
-g $5F7D Inner array index in the terrain definition.
+g $5F7D Terrain sub-position (0-3). Index within current terrain element. Incremented every 4 scroll units, triggers new terrain load at 0.
 @ $5F7E label=ptr_scroller
 g $5F7E Pointer to the text to be displayed in the scroller.
 W $5F7E
 @ $5F80 label=data_unused_5F80
 u $5F80
 @ $5F81 label=state_overview_frame
-g $5F81
+g $5F81 Overview mode frame counter. Counts scroll iterations during attract mode. Game starts after 5 increments or key press.
 @ $5F82 label=data_unused_5F82
 u $5F82
 @ $5F83 label=saved_stack_pointer
-g $5F83 Main stack pointer saved at startup
-D $5F83 This stores the stack pointer value saved during game initialization. It is restored whenever the game needs to reset the stack, such as when starting overview mode, restarting the game, or handling game over.
+g $5F83 Saved stack pointer. Captured at init, restored when starting new life to unwind any nested calls.
 W $5F83
 @ $5F85 label=collision_saved_hl
-g $5F85 Saved HL (return address) for collision dispatcher
+g $5F85 Saved HL register during collision detection. Preserved across collision handler calls.
 W $5F85
 @ $5F87 label=collision_saved_de
-g $5F87 Saved DE for collision dispatcher
+g $5F87 Saved DE register during collision detection. Preserved across collision handler calls.
 W $5F87
 @ $5F89 label=collision_saved_bc
-g $5F89 Saved BC for collision dispatcher
+g $5F89 Saved BC register during collision detection. Preserved across collision handler calls.
 W $5F89
 @ $5F8B label=collision_result
-g $5F8B Collision detection result / hit object coordinates
+g $5F8B Collision result coordinates (Y in high byte, X in low byte). Set by collision detection when overlap found.
 W $5F8B
 @ $5F8D label=state_saved_entity_coords
-g $5F8D
+g $5F8D Saved entity coordinates during rendering. Backup of object position for multi-pass rendering.
 W $5F8D
 @ $5F8F label=state_plane_missile_coordinates_backup
-g $5F8F
+g $5F8F Backup of plane missile coordinates. Saved before movement, used for collision detection and erasure.
 W $5F8F
 @ $5F91 label=main_loop
 c $5F91 Main gameplay loop
@@ -1341,7 +1277,7 @@ N $6724 Creates a new missile if none is currently active. Positions missile at 
   $672A Create missile at (plane_X + 4, $7E).
   $6736,5 Set CONTROLS_BIT_FIRE in #R$6BB0.
 @ $673C label=missile_pass_selector
-g $673C Missile animation pass selector: $01 = first pass (adjust for scroll), $00 = second pass (no adjustment).
+g $673C Missile animation pass selector. $01=first pass (erase at old position), $00=second pass (draw at new position). Two-pass rendering prevents flicker.
 @ $673D label=animate_plane_missile
 c $673D Animate and render player missile
 N $673D Called twice per frame (via #R$5F91) to animate the player's missile. On the first pass (#R$673C = $01), adjusts missile position for screen scrolling via #R$62DA. On both passes, moves missile up by 6 pixels.
@@ -1639,7 +1575,7 @@ N $6B7B After copying the 32-byte sprite to screen, sets state_bridge_section fo
 @ $6BAA label=clear_bridge_bytes_loop
   $6BAA,6 Clear byte, advance pointer, loop 4 times.
 @ $6BB0 label=state_controls
-g $6BB0 Bitmask of the CONTROLS_BIT_* bits containing the current controls and other information.
+g $6BB0 Control state bitmask. Bit 0=FIRE, 1=SPEED_DECREASED, 2=SPEED_ALTERED, 3=LOW_FUEL, 4=BONUS_LIFE, 5=EXPLODING.
 @ $6BB1 label=pause
 c $6BB1 Keep the game paused
   $6BB7,5 Loop until anything else than H is pressed
@@ -1682,7 +1618,7 @@ D $6C24 Restores all saved registers and returns from NMI using RETN instruction
 @ $6C2B label=data_unused_6C2B
 u $6C2B
 @ $6C30 label=bonus_life_sound_counter
-g $6C30 Bonus life sound progress counter (0-64)
+g $6C30 Bonus life sound progress counter (0-64). Incremented each frame during jingle. Sound completes when reaching $40 (64).
 @ $6C31 label=do_bonus_life
 c $6C31 Play bonus life sound effect
 D $6C31 Generates a rising pitch sound effect when player earns an extra life. Called once per frame while CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 frames.
@@ -1715,7 +1651,7 @@ R $6C5D I:HL Pointer to #R$6BB0 (controls state byte)
   $6C70 Delay loop for speaker OFF phase.
   $6C73,7 Decrement cycle counter, loop if not zero. Jump to #R$6C24 when done.
 @ $6C7A label=explosion_counter
-g $6C7A Explosion sound frame counter (counts down from $18 to 0)
+g $6C7A Explosion sound frame counter. Counts down from $18 (24) to 0. Value also controls pitch - higher values = lower frequency.
 @ $6C7B label=beep_explosion
 c $6C7B Play explosion sound effect
 D $6C7B Generates an explosion sound that plays over 24 frames ($18). Called once per frame while CONTROLS_BIT_EXPLODING is set. DE points to some game state byte that affects pitch.
@@ -2152,11 +2088,11 @@ N $708E 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHT
   $70CB If so, skip to the next object without further processing.
   $70CE Check bit 7 of the object definition (activation flag).
   $70D0 If bit 7 is set, the object is already activated, skip to operation dispatch.
-@ $70D3 isub=LD A,(state_activation_mask)
-  $70D3 Load the activation mask from #R$5F5F.
-  $70D6 Copy the mask into E.
+@ $70D3 isub=LD A,(state_activation_interval)
+  $70D3 Load the activation interval from #R$5F5F.
+  $70D6 Copy the interval into E.
   $70D7 Load the interrupt counter.
-  $70DA AND the counter with the mask to check if it's time to activate.
+  $70DA AND the counter with the interval to check if it's time to activate.
   $70DB Compare with zero.
   $70DD If not zero, skip activation and jump to L7224.
   $70E0 Set bit 7 of D to mark the object as activated.
@@ -3166,33 +3102,33 @@ b $8AC8
 @ $8AD8 label=data_unused_8AD8
 u $8AD8
 @ $8B08 label=collision_dispatcher_ptr
-g $8B08 Pointer to #R$6136 (collision dispatcher)
+g $8B08 Pointer to collision handler routine at #R$6136. Called when sprite rendering detects pixel overlap.
 W $8B08
 @ $8B0A label=previous_object_coordinates
-g $8B0A
+g $8B0A Previous object coordinates (Y high, X low). Position before movement, used for sprite erasure.
 W $8B0A
 @ $8B0C label=object_coordinates
-g $8B0C Highest byte is the vertical coordinate, lowest byte is the horizontal.
+g $8B0C Current object coordinates (Y high, X low). Position after movement, used for sprite drawing.
 W $8B0C
 @ $8B0E label=render_sprite_ptr
-g $8B0E
+g $8B0E Pointer to current sprite frame data. Set before calling render routines.
 W $8B0E
 @ $8B10 label=render_old_sprite_ptr
-g $8B10
+g $8B10 Pointer to sprite data for erasure. Points to previous frame or erase pattern.
 W $8B10
 @ $8B12 label=render_new_screen_addr
-g $8B12
+g $8B12 Screen memory address for drawing new sprite position. Calculated from object_coordinates.
 W $8B12
 @ $8B14 label=render_old_screen_addr
-g $8B14
+g $8B14 Screen memory address for erasing old sprite position. Calculated from previous_object_coordinates.
 W $8B14
 @ $8B16 label=render_sprite_ptr_out
-g $8B16
+g $8B16 Output sprite pointer after rendering. Advanced by frame size during render loop.
 W $8B16
 @ $8B18 label=data_unused_8B18
 u $8B18
 @ $8B1A label=render_object_width
-g $8B1A
+g $8B1A Sprite width in tiles (1-3). Used by render loop to process correct number of bytes per row.
 @ $8B1B label=data_unused_8B1B
 s $8B1B
 @ $8B1E label=render_sprite
@@ -3429,11 +3365,11 @@ D $91E8 In 2-player mode, prints player 2's score. In 1-player mode, prints the 
 b $923A The game mode storing the number of players in the first bit and the starting bridge in the next two.
   $923A,1
 @ $923B label=state_lives_player_1
-g $923B Number of player 1 lives.
+g $923B Player 1 lives remaining (0-4). Starts at 4, decremented on death. Game over when reaching 0.
 @ $923C label=state_lives_player_2
-g $923C Number of player 2 lives.
+g $923C Player 2 lives remaining (0-4). Starts at 4, decremented on death. Game over when reaching 0.
 @ $923D label=state_player
-b $923D Current player
+b $923D Current active player. $01=PLAYER_1, $02=PLAYER_2. Determines which score/lives/bridge state to use.
 @ $923E label=print_lives
 c $923E Print lives for current player.
 D $923E Displays the remaining lives as plane UDG symbols at row 20, column 18. Uses the appropriate player color (yellow for player 1, cyan for player 2).
@@ -3466,19 +3402,19 @@ R $9277 O:A Number of lives.
 @ $927A isub=LD A,COLOR_PLAYER_2
   $927D,6 Load player 2 lives count and jump to #R$924F.
 @ $9283 label=ptr_state_controls
-g $9283 Pointer to #R$6BB0
-W $9283 Pointer to #R$6BB0
+g $9283 Pointer to state_controls at #R$6BB0. Allows indirect access to control state bitmask.
+W $9283
 @ $9285 label=attr_saved_bc
-g $9285 Saved BC register for attribute routine.
+g $9285 Saved BC register during attribute setting. Preserved across attribute routine calls.
 W $9285
 @ $9287 label=attr_saved_de
-g $9287 Saved DE register for attribute routine.
+g $9287 Saved DE register during attribute setting. Preserved across attribute routine calls.
 W $9287
 @ $9289 label=attr_saved_hl
-g $9289 Saved HL register for attribute routine.
+g $9289 Saved HL register during attribute setting. Preserved across attribute routine calls.
 W $9289
 @ $928B label=attr_sprite_width
-g $928B Sprite width for attribute routine.
+g $928B Sprite width in tiles for attribute routine. Determines how many attribute cells to update.
 W $928B
 @ $928D label=set_sprite_attributes
 c $928D Set screen attributes for sprite area.

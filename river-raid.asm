@@ -1148,7 +1148,7 @@ screen_row_table:
   DEFB $00,$00,$10,$02,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
 
-; Interrupt counter
+; Interrupt counter. Incremented by the interrupt handler.
 int_counter:
   DEFB $00
 
@@ -1273,7 +1273,7 @@ init_state:
   LD (viewport_ptr),HL                 ; Store the viewport_objects address in viewport_ptr.
   LD (HL),SET_MARKER_END_OF_SET        ; Mark the viewport objects list as empty (SET_MARKER_END_OF_SET).
   LD A,$1F                             ; Load $1F (31 decimal) into A.
-  LD (state_activation_mask),A         ; Store $1F to state_activation_mask (normal activation timing).
+  LD (state_activation_interval),A     ; Store $1F to state_activation_interval (normal activation timing).
   LD A,$00                             ; Load $00 into A.
   OUT ($FE),A                          ; Set border to black and disable sound (OUT to ULA port $FE).
   LD (state_tank_shell),A              ; Clear state_tank_shell (set to TANK_SHELL_INACTIVE).
@@ -1310,202 +1310,202 @@ decrease_lives_player_2:
 
 ; Initialize and start gameplay mode
 ;
-; This routine initializes the game screen and state for gameplay mode, then enters the main game loop. It is called
-; when starting a new game or restarting after losing a life.
+; This routine prepares the game for play and is called when starting a new game or after losing a life.
 play:
-  LD A,$10                             ; Initialize island line index to $10 (starting line for island rendering)
-  LD (state_island_line_idx),A         ; Store island line index
-  LD A,$1F                             ; Initialize activation mask to $1F (controls which objects are active)
-  LD (state_activation_mask),A         ; Store activation mask
-  LD SP,(saved_stack_pointer)          ; Restore stack pointer from saved location
-  LD D,COLOR_BLUE<<3|COLOR_GREEN       ; Set color attributes: PAPER BLUE, INK GREEN
-  CALL clear_screen                    ; Clear screen with the specified colors
-  CALL init_udg                        ; Initialize user-defined graphics (UDGs)
-  LD DE,status_line_1                  ; Point to status line 1 text
-  LD BC,status_line_2 - status_line_1  ; Calculate length of status line 1
-  CALL PR_STRING                       ; Print status line 1
-  LD A,$01                             ; Initialize metronome counter to $01 (used for timing game events)
-  LD (state_metronome),A               ; Store metronome value
-  CALL CHAN_OPEN                       ; Open channel 1 (upper screen area)
-  LD DE,status_line_2                  ; Point to status line 2 text
-  LD BC,status_line_3 - status_line_2  ; Calculate length of status line 2
-  CALL PR_STRING                       ; Print status line 2
-  LD A,$02                             ; Prepare to open channel 2
-  CALL CHAN_OPEN                       ; Open channel 2 (lower screen area)
-  CALL print_bridge                    ; Print current bridge number
-  LD A,$04                             ; Initialize terrain fragment counter to $04
-  LD (state_terrain_fragment_counter),A ; Store terrain fragment counter
-  LD A,$00                             ; Clear accumulator for initializing multiple state variables
-  LD (state_bridge_section),A          ; Clear bridge section counter (tracks position within current bridge)
-  LD (state_unused_5F6F),A             ; Clear unused state variable
-  LD (state_terrain_position),A        ; Clear terrain position (will be set to $FF later)
-  LD (state_plane_sprite_bank),A       ; Clear plane sprite bank (selects which plane sprite to display)
-  LD A,FUEL_LEVEL_FULL                 ; Set fuel level to full ($80)
-  LD (state_fuel),A                    ; Store fuel level
-  LD BC,$0010                          ; Set initial Y position to $0010 (vertical position on screen)
-  LD (state_scroll_offset),BC          ; Store Y position
-  CALL init_current_bridge             ; Initialize current bridge data structures
-  LD A,$78                             ; Set X position to $78 (horizontal center of screen)
-  LD (state_x),A                       ; Store X position
-  LD HL,viewport_objects               ; Point to viewport objects list (tracks active game objects)
-  LD (viewport_ptr),HL                 ; Store viewport objects pointer
-  LD (HL),SET_MARKER_END_OF_SET        ; Mark viewport objects list as empty (end-of-set marker)
-  LD HL,exploding_fragments            ; Point to exploding fragments list (tracks explosion animations)
-  LD (exploding_fragments_ptr),HL      ; Store exploding fragments pointer
-  LD (HL),$FF                          ; Mark exploding fragments list as empty ($FF terminator)
-  LD BC,$0000                          ; Set BC to $0000 for print_lives call
-  CALL print_lives                     ; Display lives remaining for current player
-  LD A,$01                             ; Prepare to open channel 1
-  CALL CHAN_OPEN                       ; Open channel 1 for score display
-  LD A,EXT_ATTR_AT                     ; Load AT control code (position cursor)
-  RST $10                              ; Print AT control code
-  LD A,$01                             ; Row 1 for AT command
-  RST $10                              ; Print row parameter
-  LD A,$05                             ; Column 5 for AT command
-  RST $10                              ; Print column parameter
-  LD A,EXT_ATTR_INK                    ; Load INK control code (set text color)
-  RST $10                              ; Print INK control code
-  LD A,COLOR_YELLOW                    ; Set color to yellow
-  RST $10                              ; Print color parameter
-  LD DE,state_score_player_1_low       ; Point to player 1 score data
-  LD BC,state_score_player_2_low - state_score_player_1_low ; Calculate length of score data
-  CALL PR_STRING                       ; Print player 1 score
-  LD A,$02                             ; Prepare to open channel 2
-  CALL CHAN_OPEN                       ; Open channel 2 for status display
-  LD DE,status_line_4                  ; Point to status line 4 text
-  LD BC,status_line_4_end - status_line_4 ; Calculate length of status line 4
-  CALL PR_STRING                       ; Print status line 4
-  LD A,(state_game_mode)               ; Load current game mode (1 or 2 player)
-  ADD A,$31                            ; Convert to ASCII digit (add $31 to convert 0-9 to '0'-'9')
-  RST $10                              ; Print game mode digit
-  LD A,$01                             ; Prepare to open channel 1
-  CALL CHAN_OPEN                       ; Open channel 1
-  LD A,$FF                             ; Set terrain position to $FF (forces terrain regeneration)
-  LD (state_terrain_position),A        ; Store terrain position
-  LD A,$02                             ; Set terrain profile number to $02 (selects terrain pattern)
-  LD (state_terrain_profile_number),A  ; Store terrain profile number
-  CALL CHAN_OPEN                       ; Open channel 2
-  LD A,$01                             ; Initialize level fragment number to $01 (first fragment of level)
-  LD (state_level_fragment_number),A   ; Store level fragment number
-  LD (state_gameplay_mode),A           ; Set gameplay mode to $01 (normal gameplay)
-  LD (state_bridge_destroyed),A        ; Set bridge destroyed flag to $01 (bridge intact)
-  LD A,$68                             ; Set last key to $68 (dummy key value)
-  LD (LAST_K),A                        ; Store last key pressed
-  LD A,$00                             ; Clear control state (no buttons pressed)
-  LD (state_controls),A                ; Store control state
-  LD (state_tank_shell),A              ; Clear tank shell state (no tank shell active)
-  LD A,SPEED_FAST                      ; Set speed to SPEED_FAST ($04) for level scroll-in
-  LD (state_speed),A                   ; Store speed
-  LD BC,$4C83                          ; Initialize terrain element 23 to $4C83
-  LD (state_terrain_element_23),BC     ; Store terrain element 23
-  CALL print_player_2_score_area       ; Print player 2 score area
-  CALL init_current_bridge             ; Initialize current bridge data
-  LD B,$28                             ; Set loop counter to $28 (40 iterations for scroll-in)
+  LD A,$10                             ; Initialize island line index (starting line for island rendering).
+  LD (state_island_line_idx),A         ;
+  LD A,$1F                             ; Initialize activation interval (objects activate when int_counter AND $1F == 0,
+  LD (state_activation_interval),A     ; i.e., every 32 frames).
+  LD SP,(saved_stack_pointer)
+  LD D,COLOR_BLUE<<3|COLOR_GREEN       ; Clear screen with PAPER BLUE, INK GREEN.
+  CALL clear_screen                    ;
+  CALL init_udg
+  LD DE,status_line_1                  ; Print status line 1.
+  LD BC,status_line_2 - status_line_1  ;
+  CALL PR_STRING                       ;
+  LD A,$01                             ; Initialize metronome.
+  LD (state_metronome),A               ;
+  CALL CHAN_OPEN                       ; Open channel 1 (upper screen).
+  LD DE,status_line_2                  ; Print status line 2.
+  LD BC,status_line_3 - status_line_2  ;
+  CALL PR_STRING                       ;
+  LD A,$02                             ; Open channel 2 (lower screen).
+  CALL CHAN_OPEN                       ;
+  CALL print_bridge
+  LD A,$04                              ; Initialize terrain fragment counter.
+  LD (state_terrain_fragment_counter),A ;
+  LD A,$00                             ; Clear state variables.
+  LD (state_bridge_section),A          ;
+  LD (state_unused_5F6F),A             ;
+  LD (state_terrain_position),A        ;
+  LD (state_plane_sprite_bank),A       ;
+  LD A,FUEL_LEVEL_FULL                 ; Initialize fuel level.
+  LD (state_fuel),A                    ;
+  LD BC,$0010                          ; Initialize scroll offset.
+  LD (state_scroll_offset),BC          ;
+  CALL init_current_bridge
+  LD A,$78                             ; Initialize X position (horizontal center).
+  LD (state_x),A                       ;
+  LD HL,viewport_objects               ; Initialize viewport_objects list.
+  LD (viewport_ptr),HL                 ;
+  LD (HL),SET_MARKER_END_OF_SET        ; Mark viewport objects list as empty.
+  LD HL,exploding_fragments            ; Initialize exploding_fragments list.
+  LD (exploding_fragments_ptr),HL      ;
+  LD (HL),$FF                          ; Mark exploding fragments list as empty.
+  LD BC,$0000
+  CALL print_lives
+  LD A,$01                             ; Open channel 1 for score display.
+  CALL CHAN_OPEN                       ;
+  LD A,EXT_ATTR_AT                     ; Position cursor at row 1, column 5.
+  RST $10                              ;
+  LD A,$01                             ;
+  RST $10                              ;
+  LD A,$05                             ;
+  RST $10                              ;
+  LD A,EXT_ATTR_INK                    ; Set ink color to yellow.
+  RST $10                              ;
+  LD A,COLOR_YELLOW                    ;
+  RST $10                              ;
+  LD DE,state_score_player_1_low                            ; Print player 1 score.
+  LD BC,state_score_player_2_low - state_score_player_1_low ;
+  CALL PR_STRING                                            ;
+  LD A,$02                             ; Open channel 2.
+  CALL CHAN_OPEN                       ;
+  LD DE,status_line_4                     ; Print status line 4.
+  LD BC,status_line_4_end - status_line_4 ;
+  CALL PR_STRING                          ;
+  LD A,(state_game_mode)               ; Print game mode digit (1 or 2 player).
+  ADD A,$31                            ;
+  RST $10                              ;
+  LD A,$01                             ; Open channel 1.
+  CALL CHAN_OPEN                       ;
+  LD A,$FF                             ; Set terrain position to $FF (forces terrain regeneration).
+  LD (state_terrain_position),A        ;
+  LD A,$02                             ; Initialize terrain profile number.
+  LD (state_terrain_profile_number),A  ;
+  CALL CHAN_OPEN                       ; Open channel 2.
+  LD A,$01                             ; Initialize level fragment number, gameplay mode, and bridge destroyed flag.
+  LD (state_level_fragment_number),A   ;
+  LD (state_gameplay_mode),A           ;
+  LD (state_bridge_destroyed),A
+  LD A,$68                             ; Set last key to dummy value (ignore initial input).
+  LD (LAST_K),A                        ;
+  LD A,$00                             ; Clear control state and tank shell state.
+  LD (state_controls),A                ;
+  LD (state_tank_shell),A              ;
+  LD A,SPEED_FAST                      ; Set speed for scroll-in animation.
+  LD (state_speed),A                   ;
+  LD BC,$4C83                          ; Initialize terrain element 23.
+  LD (state_terrain_element_23),BC     ;
+  CALL print_player_2_score_area
+  CALL init_current_bridge
+  LD B,$28                             ; Set loop counter for scroll-in (40 iterations).
 scroll_in_loop:
-  PUSH BC                              ; Save loop counter
-  LD HL,state_metronome                ; Point to metronome counter
-  INC (HL)                             ; Increment metronome (advances game timing)
-  CALL render_plane_and_terrain        ; Render player plane and terrain for current frame
-  CALL operate_viewport_objects        ; Update and render viewport objects (enemies, fuel, etc.)
-  CALL advance_scroll                  ; Advance game state (scroll terrain, update positions)
-  LD A,SPEED_FAST                      ; Set speed to SPEED_FAST (maintain fast scroll during intro)
-  LD (state_speed),A                   ; Store speed
-  POP BC                               ; Restore loop counter
-  DJNZ scroll_in_loop                  ; Repeat scroll-in loop until counter reaches zero
-  LD A,$00                             ; Clear control state (reset controls after scroll-in)
-  LD (state_controls),A                ; Store control state
-  LD (state_gameplay_mode),A           ; Set gameplay mode to $00 (ready for player control)
-  CALL render_plane                    ; Render player plane in starting position
-  LD A,$0D                             ; Set last key to $0D (Enter key - wait for start)
-  LD (LAST_K),A                        ; Store last key
-  LD A,(state_player)                  ; Load current player number
-  CP PLAYER_2                          ; Check if player 2
-  JP Z,decrease_lives_player_2         ; If player 2, jump to decrease player 2 lives
-  LD HL,state_lives_player_1           ; Point to player 1 lives counter
-  DEC (HL)                             ; Decrement lives (player lost a life)
+  PUSH BC                              ; Save loop counter.
+  LD HL,state_metronome                ; Increment metronome.
+  INC (HL)                             ;
+  CALL render_plane_and_terrain
+  CALL operate_viewport_objects
+  CALL advance_scroll
+  LD A,SPEED_FAST                      ; Maintain speed during scroll-in.
+  LD (state_speed),A                   ;
+  POP BC                               ; Restore loop counter.
+  DJNZ scroll_in_loop                  ; Loop until scroll-in complete.
+  LD A,$00                             ; Clear control state.
+  LD (state_controls),A                ;
+  LD (state_gameplay_mode),A           ; Set gameplay mode to normal (ready for player control).
+  CALL render_plane
+  LD A,$0D                             ; Set last key to Enter (wait for start input).
+  LD (LAST_K),A                        ;
+  LD A,(state_player)                  ; Decrement current player's lives.
+  CP PLAYER_2                          ;
+  JP Z,decrease_lives_player_2         ;
+  LD HL,state_lives_player_1           ;
+  DEC (HL)                             ;
 ; This entry point is used by the routine at decrease_lives_player_2.
 after_life_lost:
-  CALL print_lives                     ; Display updated lives count
+  CALL print_lives
 wait_for_start_input:
-  CALL KEYBOARD                        ; Scan keyboard for input
-  EI                                   ; Enable interrupts
-  LD A,(LAST_K)                        ; Load last key pressed
-  CP $0D                               ; Check if Enter key ($0D)
-  JR NZ,start_game                     ; If not Enter, start game
-  LD A,(state_input_interface)         ; Load input interface type (keyboard/joystick)
-  CP INPUT_INTERFACE_KEMPSTON          ; Check if Kempston joystick
-  JP NZ,wait_for_start_input           ; If not Kempston, wait for key press
-  LD A,$FE                             ; Set port address for Kempston joystick read
-  IN A,($1F)                           ; Read Kempston joystick port
-  CP $00                               ; Check if joystick is centered (no input)
-  JP Z,wait_for_start_input            ; If centered, keep waiting for input
+  CALL KEYBOARD
+  EI                                   ; Enable interrupts.
+  LD A,(LAST_K)                        ; If any key except Enter pressed, start game.
+  CP $0D                               ;
+  JR NZ,start_game                     ;
+  LD A,(state_input_interface)         ; If not Kempston joystick, keep waiting.
+  CP INPUT_INTERFACE_KEMPSTON          ;
+  JP NZ,wait_for_start_input           ;
+  LD A,$FE                             ; Read Kempston joystick; if centered, keep waiting.
+  IN A,($1F)                           ;
+  CP $00                               ;
+  JP Z,wait_for_start_input            ;
 start_game:
-  LD A,$00                             ; Clear bridge destroyed flag (bridge is intact at start)
-  LD (state_bridge_destroyed),A        ; Store bridge destroyed flag
-  LD (state_bridge_y_position),A
-  LD A,$02
-  LD (state_speed),A
-  LD (state_metronome),A
-  JP main_loop
+  LD A,$00                             ; Clear bridge destroyed flag.
+  LD (state_bridge_destroyed),A        ;
+  LD (state_bridge_y_position),A       ;
+  LD A,$02                             ;
+  LD (state_speed),A                   ;
+  LD (state_metronome),A               ;
+  JP main_loop                         ;
 
-; Counter for terrain fragment rendering (incremented each time a fragment is rendered).
+; Terrain fragment render counter (0-7). Tracks which of the 8 terrain fragments to render next. Incremented after each
+; fragment, wraps at 8.
 state_terrain_fragment_counter:
   DEFB $00
 
-; Game status buffer entry at 5EEF
+; Frame counter (0-255). Incremented each game frame for animation timing. Bit 0 alternates every frame, bits 0-1 cycle
+; every 4 frames, etc.
 state_metronome:
   DEFB $00
 
-; Current player's current bridge modulo 48 (the total number of bridges).
+; Current bridge number (0-47).
 state_bridge_index:
   DEFB $00
 
-; Contains the current readings of the input port (Sinclair, Kempston, Cursor, etc.).
+; Raw input port value from last keyboard/joystick read. Format depends on input interface type.
 state_input_readings:
   DEFB $00
 
-; Tank shell state: $00 when no tank is in firing position, $01 when a tank is at screen center ($80) and can fire.
+; Tank shell state ($00 = inactive, $01 = can fire).
 state_tank_shell:
   DEFB $00
 
-; Game status buffer entry at 5EF3
+; Player missile Y coordinate in pixels (0-255). $00 when no missile active.
 state_plane_missile_coordinates:
   DEFB $00
 
-; Game status buffer entry at 5EF4
+; Player missile X coordinate in pixels (0-255).
 state_plane_missile_x:
   DEFB $00
 
-; Game status buffer entry at 5EF5
+; Collision detection mode for current render pass. Determines which collision handler to invoke on pixel overlap.
 state_collision_mode:
   DEFB $00
 
-; Game status buffer entry at 5EF6
+; Y coordinate where collision was detected, in pixels.
 state_collision_y:
   DEFB $00
 
-; Game status buffer entry at 5EF7
+; Pointer to current plane sprite data. Points into all_ff sprite bank, offset by speed for animation frame selection.
 ptr_plane_sprite:
   DEFW $0000
 
-; Game status buffer entry at 5EF9
+; Island rendering line counter. Tracks current scanline during island terrain rendering (0-23).
 state_island_render_idx:
   DEFB $00
 
-; The value sourced from the first byte of an island definition in data_islands and used as a data_terrain_profiles
-; array index.
+; Island terrain profile index (0-7). Selects which of 8 island shapes from data_terrain_profiles to render.
 state_island_profile_idx:
   DEFB $00
 
-; Game status buffer entry at 5EFB
+; Island definition byte 2. Second byte from island data at data_islands, controls island width/shape.
 state_island_byte_2:
   DEFB $00
 
-; Game status buffer entry at 5EFC
+; Island definition byte 3. Third byte from island data at data_islands, controls island rendering parameters.
 state_island_byte_3:
   DEFB $00
 
-; Game status buffer entry at 5EFD
+; Island starting line index. Screen line (0-23) where island rendering begins. Initialized to $10 (16).
 state_island_line_idx:
   DEFB $10
 
@@ -1552,9 +1552,8 @@ exploding_fragments:
   DEFB $20,$20,$20
   DEFB $20
 
-; Object activation mask ANDed with interrupt counter to control activation timing. Set to $1F normally, $0F after
-; bridge destruction.
-state_activation_mask:
+; Bitmask for object activation timing. $1F = every 32 frames, $0F = every 16 frames.
+state_activation_interval:
   DEFB $04
 
 ; Pointer to a slot from viewport_objects
@@ -1565,92 +1564,99 @@ viewport_ptr:
 exploding_fragments_ptr:
   DEFW $0000
 
-; Current speed
+; Current scroll speed in pixels per frame. $01=SPEED_SLOW, $02=SPEED_NORMAL, $04=SPEED_FAST. Also determines plane
+; sprite animation frame.
 state_speed:
   DEFB $02
 
-; Low fuel warning sound period (decrements to create warbling effect)
+; Low fuel warning sound period (0-127). Used as delay loop iteration count for speaker ON/OFF phases. Lower values =
+; higher pitch. Decremented each frame, creating a rising-then-resetting warble effect.
 low_fuel_sound_period:
   DEFB $00
 
-; Fuel level
+; Fuel level (0-255). $FF=full tank, $00=empty. Decremented every 2 frames. Low fuel warning triggers when <$40 (top 2
+; bits clear).
 state_fuel:
   DEFB $00
 
-; Control type ($00 - Keyboard, $01 - Sinclair, $02 - Kempston, Other - Cursor)
+; Input interface type ($00=Keyboard, $01=Sinclair, $02=Kempston, $03=Cursor).
 state_input_interface:
   DEFB $00
 
-; Current gameplay mode (NORMAL, SCROLL_IN, OVERVIEW, or REFUEL)
+; Current gameplay mode. $00=NORMAL (player control), $01=SCROLL_IN (terrain preview), $02=OVERVIEW (attract mode),
+; $03=REFUEL (over fuel depot).
 state_gameplay_mode:
   DEFB GAMEPLAY_MODE_NORMAL
 
-; Plane sprite bank selector: $00 = normal sprite, $04 = banked sprite.
+; Plane sprite bank offset. $00=centered, $04=banked left/right. Added to sprite pointer for tilted plane animation.
 state_plane_sprite_bank:
   DEFB $00
 
-; Current bridge of player 1
+; Player 1's current bridge number (0-47). Saved when switching players in 2-player mode.
 state_bridge_player_1:
   DEFB $01
 
-; Current bridge of player 2
+; Player 2's current bridge number (0-47). Saved when switching players in 2-player mode.
 state_bridge_player_2:
   DEFB $01
 
-; Bridge section indicator: $02 when rendering special bridge terrain fragments.
+; Bridge section indicator. $00=normal terrain, $02=bridge terrain section. Set when plane enters bridge area.
 state_bridge_section:
   DEFB $00
 
-; Bridge destruction flag: $00 = no bridge destroyed, $01 = bridge destroyed.
+; Bridge destruction flag ($00 = intact, $01 = destroyed).
 state_bridge_destroyed:
   DEFB $00
 
-; Y-position of the destroyed bridge section (used for rendering explosion fragments).
+; Y-position of destroyed bridge in pixels. Updated during scroll to track bridge debris position on screen.
 state_bridge_y_position:
   DEFB $00
 
-; Unused state variable (cleared during initialization).
+; Unused.
 state_unused_5F6F:
   DEFB $00
 
-; Scroll offset - accumulated vertical distance traveled. Incremented by current speed each frame.
+; Vertical scroll offset (16-bit, little-endian). Accumulated distance traveled in pixels. Used to calculate level slot
+; index and bridge position.
 state_scroll_offset:
   DEFB $00,$00
 
-; Current X coordinate
+; Player plane X coordinate in pixels (0-255). $78 (120) is horizontal center. Changes by 2 pixels per left/right input.
 state_x:
   DEFB $00
 
-; Pointer to the helicopter missile coordinates.
+; Pointer to helicopter missile coordinates in viewport_objects array. Updated when advanced helicopter fires.
 helicopter_missile_coordinates_ptr:
   DEFB $00,$00
 
-; Helicopter missile state.
+; Helicopter missile state. Bit 7 set when missile active. Lower bits track missile animation/position.
 helicopter_missile_state:
   DEFB $00
 
-; Index of the current element of current level terrain array
+; Current level terrain array index (1-255). Points to current element in level definition at level_terrains.
+; Incremented as terrain scrolls.
 state_level_fragment_number:
   DEFB $00
 
-; The first byte of the current level_terrains element, defines the index of the terrain sprite (see
-; data_terrain_profiles).
+; Current terrain profile number (0-7). Index into terrain sprite table at data_terrain_profiles. Loaded from first byte
+; of level element at level_terrains.
 state_terrain_profile_number:
   DEFB $00
 
-; Game status buffer entry at 5F78
+; Cached terrain element data (2 bytes). Stores bytes 2-3 of current level element for object spawning.
 state_terrain_element_23:
   DEFB $00,$00
 
-; Game status buffer entry at 5F7A
+; Terrain extras byte. Additional terrain rendering flags from level data.
 state_terrain_extras:
   DEFB $00
 
-; Game status buffer entry at 5F7B
+; Current screen memory pointer. Points to pixel address being rendered during terrain drawing.
 screen_ptr:
   DEFW $0000
 
-; Inner array index in the terrain definition.
+; Terrain sub-position (0-3). Index within current terrain element. Incremented every 4 scroll units, triggers new
+; terrain load at 0.
 state_terrain_position:
   DEFB $01
 
@@ -1662,7 +1668,8 @@ ptr_scroller:
 data_unused_5F80:
   DEFB $00
 
-; Game status buffer entry at 5F81
+; Overview mode frame counter. Counts scroll iterations during attract mode. Game starts after 5 increments or key
+; press.
 state_overview_frame:
   DEFB $00
 
@@ -1670,34 +1677,31 @@ state_overview_frame:
 data_unused_5F82:
   DEFB $00
 
-; Main stack pointer saved at startup
-;
-; This stores the stack pointer value saved during game initialization. It is restored whenever the game needs to reset
-; the stack, such as when starting overview mode, restarting the game, or handling game over.
+; Saved stack pointer. Captured at init, restored when starting new life to unwind any nested calls.
 saved_stack_pointer:
   DEFW $0000
 
-; Saved HL (return address) for collision dispatcher
+; Saved HL register during collision detection. Preserved across collision handler calls.
 collision_saved_hl:
   DEFW $0000
 
-; Saved DE for collision dispatcher
+; Saved DE register during collision detection. Preserved across collision handler calls.
 collision_saved_de:
   DEFW $0000
 
-; Saved BC for collision dispatcher
+; Saved BC register during collision detection. Preserved across collision handler calls.
 collision_saved_bc:
   DEFW $0000
 
-; Collision detection result / hit object coordinates
+; Collision result coordinates (Y in high byte, X in low byte). Set by collision detection when overlap found.
 collision_result:
   DEFW $0000
 
-; Game status buffer entry at 5F8D
+; Saved entity coordinates during rendering. Backup of object position for multi-pass rendering.
 state_saved_entity_coords:
   DEFW $0000
 
-; Game status buffer entry at 5F8F
+; Backup of plane missile coordinates. Saved before movement, used for collision detection and erasure.
 state_plane_missile_coordinates_backup:
   DEFW $0000
 
@@ -2048,8 +2052,8 @@ check_collision:
 ; Bridge hit - award points and spawn explosions.
   LD A,POINTS_BRIDGE                   ; Award POINTS_BRIDGE to player.
   CALL add_points                      ;
-  LD A,$0F                             ; Store $0F to state_activation_mask (new activation mask).
-  LD (state_activation_mask),A         ;
+  LD A,$0F                             ; Store $0F to state_activation_interval (new activation mask).
+  LD (state_activation_interval),A     ;
   POP DE                               ; Clean up stack and store hit Y to state_collision_y.
   POP DE                               ;
   POP DE                               ;
@@ -3006,7 +3010,8 @@ handle_fire:
   SET 0,(HL)                           ;
   RET
 
-; Missile animation pass selector: $01 = first pass (adjust for scroll), $00 = second pass (no adjustment).
+; Missile animation pass selector. $01=first pass (erase at old position), $00=second pass (draw at new position).
+; Two-pass rendering prevents flicker.
 missile_pass_selector:
   DEFB $00
 
@@ -3820,7 +3825,7 @@ clear_bridge_bytes_loop:
   DJNZ clear_bridge_bytes_loop         ;
   RET                                  ;
 
-; Bitmask of the CONTROLS_BIT_* bits containing the current controls and other information.
+; Control state bitmask. Bit 0=FIRE, 1=SPEED_DECREASED, 2=SPEED_ALTERED, 3=LOW_FUEL, 4=BONUS_LIFE, 5=EXPLODING.
 state_controls:
   DEFB $00
 
@@ -3915,7 +3920,8 @@ int_return:
 data_unused_6C2B:
   DEFB $ED,$56,$C3,$08,$00
 
-; Bonus life sound progress counter (0-64)
+; Bonus life sound progress counter (0-64). Incremented each frame during jingle. Sound completes when reaching $40
+; (64).
 bonus_life_sound_counter:
   DEFB $00
 
@@ -3989,7 +3995,8 @@ beep_speed_decreased_delay_off:
   JP NZ,beep_speed_decreased_loop      ;
   JP int_return                        ;
 
-; Explosion sound frame counter (counts down from $18 to 0)
+; Explosion sound frame counter. Counts down from $18 (24) to 0. Value also controls pitch - higher values = lower
+; frequency.
 explosion_counter:
   DEFB $18
 
@@ -4897,10 +4904,10 @@ operate_viewport_objects:
   JP Z,operate_viewport_objects        ; If so, skip to the next object without further processing.
   BIT 7,D                              ; Check bit 7 of the object definition (activation flag).
   JP NZ,dispatch_object_type           ; If bit 7 is set, the object is already activated, skip to operation dispatch.
-  LD A,(state_activation_mask)         ; Load the activation mask from state_activation_mask.
-  LD E,A                               ; Copy the mask into E.
+  LD A,(state_activation_interval)     ; Load the activation interval from state_activation_interval.
+  LD E,A                               ; Copy the interval into E.
   LD A,(int_counter)                   ; Load the interrupt counter.
-  AND E                                ; AND the counter with the mask to check if it's time to activate.
+  AND E                                ; AND the counter with the interval to check if it's time to activate.
   CP $00                               ; Compare with zero.
   JP NZ,handle_inactive_object         ; If not zero, skip activation and jump to L7224.
   SET 7,D                              ; Set bit 7 of D to mark the object as activated.
@@ -7440,35 +7447,35 @@ data_unused_8AD8:
   DEFB $10,$38,$7C,$FE,$7C,$38,$10,$00
   DEFB $18,$3C,$7E,$FF,$FF,$7E,$3C,$18
 
-; Pointer to collision_dispatcher (collision dispatcher)
+; Pointer to collision handler routine at collision_dispatcher. Called when sprite rendering detects pixel overlap.
 collision_dispatcher_ptr:
   DEFW $0000
 
-; Game status buffer entry at 8B0A
+; Previous object coordinates (Y high, X low). Position before movement, used for sprite erasure.
 previous_object_coordinates:
   DEFW $0000
 
-; Highest byte is the vertical coordinate, lowest byte is the horizontal.
+; Current object coordinates (Y high, X low). Position after movement, used for sprite drawing.
 object_coordinates:
   DEFW $0000
 
-; Game status buffer entry at 8B0E
+; Pointer to current sprite frame data. Set before calling render routines.
 render_sprite_ptr:
   DEFW $0000
 
-; Game status buffer entry at 8B10
+; Pointer to sprite data for erasure. Points to previous frame or erase pattern.
 render_old_sprite_ptr:
   DEFW $0000
 
-; Game status buffer entry at 8B12
+; Screen memory address for drawing new sprite position. Calculated from object_coordinates.
 render_new_screen_addr:
   DEFW $2020
 
-; Game status buffer entry at 8B14
+; Screen memory address for erasing old sprite position. Calculated from previous_object_coordinates.
 render_old_screen_addr:
   DEFW $2020
 
-; Game status buffer entry at 8B16
+; Output sprite pointer after rendering. Advanced by frame size during render loop.
 render_sprite_ptr_out:
   DEFW $2020
 
@@ -7476,7 +7483,7 @@ render_sprite_ptr_out:
 data_unused_8B18:
   DEFB $20,$20
 
-; Game status buffer entry at 8B1A
+; Sprite width in tiles (1-3). Used by render loop to process correct number of bytes per row.
 render_object_width:
   DEFB $00
 
@@ -8251,15 +8258,15 @@ print_player_2_score_area:
 state_game_mode:
   DEFB $00
 
-; Number of player 1 lives.
+; Player 1 lives remaining (0-4). Starts at 4, decremented on death. Game over when reaching 0.
 state_lives_player_1:
   DEFB $00
 
-; Number of player 2 lives.
+; Player 2 lives remaining (0-4). Starts at 4, decremented on death. Game over when reaching 0.
 state_lives_player_2:
   DEFB $00
 
-; Current player
+; Current active player. $01=PLAYER_1, $02=PLAYER_2. Determines which score/lives/bridge state to use.
 state_player:
   DEFB $00
 
@@ -8329,23 +8336,23 @@ print_lives_player_2:
   LD A,(state_lives_player_2)          ; Load player 2 lives count and jump to print_lives_continue.
   JP print_lives_continue              ;
 
-; Pointer to state_controls
+; Pointer to state_controls at state_controls. Allows indirect access to control state bitmask.
 ptr_state_controls:
-  DEFW $0000                           ; Pointer to state_controls
+  DEFW $0000
 
-; Saved BC register for attribute routine.
+; Saved BC register during attribute setting. Preserved across attribute routine calls.
 attr_saved_bc:
   DEFW $0000
 
-; Saved DE register for attribute routine.
+; Saved DE register during attribute setting. Preserved across attribute routine calls.
 attr_saved_de:
   DEFW $0000
 
-; Saved HL register for attribute routine.
+; Saved HL register during attribute setting. Preserved across attribute routine calls.
 attr_saved_hl:
   DEFW $0000
 
-; Sprite width for attribute routine.
+; Sprite width in tiles for attribute routine. Determines how many attribute cells to update.
 attr_sprite_width:
   DEFW $0000
 
