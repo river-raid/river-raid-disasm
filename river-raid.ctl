@@ -557,25 +557,15 @@ g $5F8F Backup of plane missile coordinates. Saved before movement, used for col
 W $5F8F
 @ $5F91 label=main_loop
 c $5F91 Main gameplay loop
-D $5F91 This is the main gameplay loop that runs continuously during active gameplay. It handles input scanning (Enter key), updates the game state (tick, explosions, plane, objects, missiles, tank shells, helicopter missiles), advances the game (scrolling), consumes fuel, and dispatches to the appropriate input handler based on the selected control interface.
-C $5F91,9 Scan Enter
-  $5F9A Load address of #R$5EEF (tick counter) into HL.
-  $5F9D Increment tick counter.
-  $5F9E Call #R$6EC8 to render explosions
-  $5FA1 Call #R$60A5 to render player plane and terrain fragments
-  $5FA4 Call #R$708E to operate viewport objects
-  $5FA7 Load $01 into A (first missile pass)
-  $5FA9 Store $01 to #R$673C (missile pass selector)
-  $5FAC Call #R$673D to animate plane missile (first pass)
-  $5FAF Load $00 into A (second missile pass)
-  $5FB1 Store $00 to #R$673C (missile pass selector)
-  $5FB4 Call #R$673D to animate plane missile (second pass)
-  $5FB7 Call #R$7441 to operate tank shell
-  $5FBA Call #R$7393 to operate helicopter missile
-  $5FBD Call #R$66D0 to advance game state (scrolling)
-  $5FC0 Call #R$6DFF to consume fuel
-  $5FC3 Load $00 into A (reset sprite bank selector)
-  $5FC5,3 Store $00 to #R$5F69 (clear plane sprite bank)
+D $5F91 Central game loop that runs continuously during active gameplay. Orchestrates all game subsystems in a fixed sequence each frame.
+D $5F91 #LIST { Input: Scan Enter key for pause } { Timing: Increment tick counter (#R$5EEF) } { Render: Explosions, plane/terrain, viewport objects } { Missiles: Two-pass player missile (erase then draw) } { Projectiles: Tank shells, helicopter missiles } { Scroll: Advance game world (#R$66D0) } { Fuel: Consume fuel (#R$6DFF) } { Controls: Dispatch to input handler based on #R$5F67 } LIST#
+N $5F91 The loop is infinite. It terminates only via: game over (fuel empty, collision), pause (Enter key calls #R$6BBF), or player death (jumps to death handler).
+C $5F91,9 Scan Enter key for pause.
+  $5F9A,4 Increment tick counter at #R$5EEF.
+  $5FA7 Player missile pass 1: erase at old position.
+  $5FAF,8 Player missile pass 2: draw at new position.
+  $5FC3 Reset plane sprite bank.
+  $5FC8 Dispatch to input handler.
 @ $5FCB isub=CP INPUT_INTERFACE_KEMPSTON
 @ $5FD0 isub=CP INPUT_INTERFACE_SINCLAIR
 @ $5FD5 isub=CP INPUT_INTERFACE_KEYBOARD

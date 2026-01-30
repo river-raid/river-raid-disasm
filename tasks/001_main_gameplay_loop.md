@@ -1,6 +1,6 @@
 # Task 001: Document Main Gameplay Loop
 
-**Status:** Todo
+**Status:** Done
 **Phase:** 1 - System Architecture
 **Address:** $5F91
 **Priority:** Critical
@@ -23,11 +23,20 @@ The routine at $5F91 executes ~171M times per game session but lacks high-level 
 
 ## Acceptance Criteria
 
-- [ ] D block describes the routine's role as central orchestrator
-- [ ] Loop structure is explained (entry, iteration, exit conditions)
-- [ ] All major subroutine calls are cross-referenced
-- [ ] State transitions are documented
-- [ ] Build passes after changes
+- [x] D block describes the routine's role as central orchestrator
+- [x] Loop structure is explained (entry, iteration, exit conditions)
+- [x] All major subroutine calls are cross-referenced
+- [x] State transitions are documented (exit via game over, pause, death)
+- [x] Build passes after changes
+
+## Completed Work
+
+- Added D block with loop summary and phase list
+- Added N block explaining infinite loop nature and exit conditions
+- Documented 8 phases: Input, Timing, Render, Missiles, Projectiles, Scroll, Fuel, Controls
+- Cross-referenced all called routines: #R$6EC8, #R$60A5, #R$708E, #R$673D, #R$7441, #R$7393, #R$66D0, #R$6DFF
+- Cross-referenced input handlers: #R$600A, #R$6039, #R$6068, #R$5FDA
+- Improved line comments to show logical grouping
 
 ## Notes
 

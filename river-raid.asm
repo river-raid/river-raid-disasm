@@ -1716,39 +1716,49 @@ state_plane_missile_coordinates_backup:
 
 ; Main gameplay loop
 ;
-; This is the main gameplay loop that runs continuously during active gameplay. It handles input scanning (Enter key),
-; updates the game state (tick, explosions, plane, objects, missiles, tank shells, helicopter missiles), advances the
-; game (scrolling), consumes fuel, and dispatches to the appropriate input handler based on the selected control
-; interface.
+; Central game loop that runs continuously during active gameplay. Orchestrates all game subsystems in a fixed sequence
+; each frame.
+;
+; * Input: Scan Enter key for pause
+; * Timing: Increment tick counter (state_tick)
+; * Render: Explosions, plane/terrain, viewport objects
+; * Missiles: Two-pass player missile (erase then draw)
+; * Projectiles: Tank shells, helicopter missiles
+; * Scroll: Advance game world (advance_scroll)
+; * Fuel: Consume fuel (consume_fuel)
+; * Controls: Dispatch to input handler based on state_input_interface
+;
+; The loop is infinite. It terminates only via: game over (fuel empty, collision), pause (Enter key calls handle_enter),
+; or player death (jumps to death handler).
 main_loop:
-  LD A,$BF                             ; Scan Enter
+  LD A,$BF                             ; Scan Enter key for pause.
   IN A,($FE)                           ;
   BIT 0,A                              ;
   CALL Z,handle_enter                  ;
-  LD HL,state_tick                     ; Load address of state_tick (tick counter) into HL.
-  INC (HL)                             ; Increment tick counter.
-  CALL render_explosions               ; Call render_explosions to render explosions
-  CALL render_plane_and_terrain        ; Call render_plane_and_terrain to render player plane and terrain fragments
-  CALL operate_viewport_objects        ; Call operate_viewport_objects to operate viewport objects
-  LD A,$01                             ; Load $01 into A (first missile pass)
-  LD (missile_pass_selector),A         ; Store $01 to missile_pass_selector (missile pass selector)
-  CALL animate_plane_missile           ; Call animate_plane_missile to animate plane missile (first pass)
-  LD A,$00                             ; Load $00 into A (second missile pass)
-  LD (missile_pass_selector),A         ; Store $00 to missile_pass_selector (missile pass selector)
-  CALL animate_plane_missile           ; Call animate_plane_missile to animate plane missile (second pass)
-  CALL operate_tank_shell              ; Call operate_tank_shell to operate tank shell
-  CALL operate_helicopter_missile      ; Call operate_helicopter_missile to operate helicopter missile
-  CALL advance_scroll                  ; Call advance_scroll to advance game state (scrolling)
-  CALL consume_fuel                    ; Call consume_fuel to consume fuel
-  LD A,$00                             ; Load $00 into A (reset sprite bank selector)
-  LD (state_plane_sprite_bank),A       ; Store $00 to state_plane_sprite_bank (clear plane sprite bank)
-  LD A,(state_input_interface)
-  CP INPUT_INTERFACE_KEMPSTON
-  JP Z,scan_kempston
-  CP INPUT_INTERFACE_SINCLAIR
-  JP Z,scan_sinclair
-  CP INPUT_INTERFACE_KEYBOARD
-  JP Z,scan_keyboard
+  LD HL,state_tick                     ; Increment tick counter at state_tick.
+  INC (HL)                             ;
+  CALL render_explosions
+  CALL render_plane_and_terrain
+  CALL operate_viewport_objects
+  LD A,$01                             ; Player missile pass 1: erase at old position.
+  LD (missile_pass_selector),A         ;
+  CALL animate_plane_missile           ;
+  LD A,$00                             ; Player missile pass 2: draw at new position.
+  LD (missile_pass_selector),A         ;
+  CALL animate_plane_missile           ;
+  CALL operate_tank_shell
+  CALL operate_helicopter_missile
+  CALL advance_scroll
+  CALL consume_fuel
+  LD A,$00                             ; Reset plane sprite bank.
+  LD (state_plane_sprite_bank),A       ;
+  LD A,(state_input_interface)         ; Dispatch to input handler.
+  CP INPUT_INTERFACE_KEMPSTON          ;
+  JP Z,scan_kempston                   ;
+  CP INPUT_INTERFACE_SINCLAIR          ;
+  JP Z,scan_sinclair                   ;
+  CP INPUT_INTERFACE_KEYBOARD          ;
+  JP Z,scan_keyboard                   ;
 
 ; Scan cursor keys
 scan_cursor:

@@ -1814,35 +1814,48 @@ g$5F8F DEFW $0000
 
 ; Main gameplay loop
 ;
-; This is the main gameplay loop that runs continuously during active gameplay.
-; It handles input scanning (Enter key), updates the game state (tick,
-; explosions, plane, objects, missiles, tank shells, helicopter missiles),
-; advances the game (scrolling), consumes fuel, and dispatches to the
-; appropriate input handler based on the selected control interface.
+; Central game loop that runs continuously during active gameplay. Orchestrates
+; all game subsystems in a fixed sequence each frame.
+; .
+; #LIST
+; { Input: Scan Enter key for pause }
+; { Timing: Increment tick counter (#R$5EEF) }
+; { Render: Explosions, plane/terrain, viewport objects }
+; { Missiles: Two-pass player missile (erase then draw) }
+; { Projectiles: Tank shells, helicopter missiles }
+; { Scroll: Advance game world (#R$66D0) }
+; { Fuel: Consume fuel (#R$6DFF) }
+; { Controls: Dispatch to input handler based on #R$5F67 }
+; LIST#
+;
+; .
+;
+; The loop is infinite. It terminates only via: game over (fuel empty,
+; collision), pause (Enter key calls #R$6BBF), or player death (jumps to death
+; handler).
 @label=main_loop
-c$5F91 LD A,$BF      ; {Scan Enter
+c$5F91 LD A,$BF      ; {Scan Enter key for pause.
  $5F93 IN A,($FE)    ;
  $5F95 BIT 0,A       ;
  $5F97 CALL Z,$6BBF  ; }
- $5F9A LD HL,$5EEF   ; Load address of #R$5EEF (tick counter) into HL.
- $5F9D INC (HL)      ; Increment tick counter.
- $5F9E CALL $6EC8    ; Call #R$6EC8 to render explosions
- $5FA1 CALL $60A5    ; Call #R$60A5 to render player plane and terrain
-                     ; fragments
- $5FA4 CALL $708E    ; Call #R$708E to operate viewport objects
- $5FA7 LD A,$01      ; Load $01 into A (first missile pass)
- $5FA9 LD ($673C),A  ; Store $01 to #R$673C (missile pass selector)
- $5FAC CALL $673D    ; Call #R$673D to animate plane missile (first pass)
- $5FAF LD A,$00      ; Load $00 into A (second missile pass)
- $5FB1 LD ($673C),A  ; Store $00 to #R$673C (missile pass selector)
- $5FB4 CALL $673D    ; Call #R$673D to animate plane missile (second pass)
- $5FB7 CALL $7441    ; Call #R$7441 to operate tank shell
- $5FBA CALL $7393    ; Call #R$7393 to operate helicopter missile
- $5FBD CALL $66D0    ; Call #R$66D0 to advance game state (scrolling)
- $5FC0 CALL $6DFF    ; Call #R$6DFF to consume fuel
- $5FC3 LD A,$00      ; Load $00 into A (reset sprite bank selector)
- $5FC5 LD ($5F69),A  ; Store $00 to #R$5F69 (clear plane sprite bank)
- $5FC8 LD A,($5F67)  ;
+ $5F9A LD HL,$5EEF   ; {Increment tick counter at #R$5EEF.
+ $5F9D INC (HL)      ; }
+ $5F9E CALL $6EC8    ;
+ $5FA1 CALL $60A5    ;
+ $5FA4 CALL $708E    ;
+ $5FA7 LD A,$01      ; {Player missile pass 1: erase at old position.
+ $5FA9 LD ($673C),A  ;
+ $5FAC CALL $673D    ; }
+ $5FAF LD A,$00      ; {Player missile pass 2: draw at new position.
+ $5FB1 LD ($673C),A  ;
+ $5FB4 CALL $673D    ; }
+ $5FB7 CALL $7441    ;
+ $5FBA CALL $7393    ;
+ $5FBD CALL $66D0    ;
+ $5FC0 CALL $6DFF    ;
+ $5FC3 LD A,$00      ; {Reset plane sprite bank.
+ $5FC5 LD ($5F69),A  ; }
+ $5FC8 LD A,($5F67)  ; {Dispatch to input handler.
 @isub=CP INPUT_INTERFACE_KEMPSTON
  $5FCB CP $02        ;
  $5FCD JP Z,$600A    ;
@@ -1851,7 +1864,7 @@ c$5F91 LD A,$BF      ; {Scan Enter
  $5FD2 JP Z,$6039    ;
 @isub=CP INPUT_INTERFACE_KEYBOARD
  $5FD5 CP $00        ;
- $5FD7 JP Z,$6068    ;
+ $5FD7 JP Z,$6068    ; }
 
 ; Scan cursor keys
 @label=scan_cursor
