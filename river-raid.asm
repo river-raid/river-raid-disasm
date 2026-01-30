@@ -51,11 +51,13 @@ TANK_SHELL_TRAJECTORY_MAX_STEP EQU $08
 
 HELICOPTER_MISSILE_STEP EQU $08
 
-HELICOPTER_ANIMATION_TICK_MASK  EQU $01
-HELICOPTER_ANIMATION_TICK_VALUE EQU $00
-
-BALLOON_ANIMATION_TICK_MASK  EQU $01
-BALLOON_ANIMATION_TICK_VALUE EQU $01
+; Tick-based timing constants for frame parity checks.
+; state_tick bit 0 alternates every frame (even/odd).
+; state_tick bit 2 alternates every 4 frames (fuel blink).
+TICK_MASK_FRAME_PARITY EQU $01
+TICK_PARITY_EVEN       EQU $00
+TICK_PARITY_ODD        EQU $01
+TICK_MASK_FUEL_BLINK   EQU $04
 
 FIGHTER_POSITION_LEFT_INIT   EQU $E8
 FIGHTER_POSITION_LEFT_LIMIT  EQU $00
@@ -153,10 +155,6 @@ FUEL_LEVEL_EMPTY       EQU $00
 FUEL_LEVEL_LOW         EQU $C0
 FUEL_LEVEL_ALMOST_FULL EQU $FC
 FUEL_LEVEL_FULL        EQU $FF
-
-TICK_INTERVAL_CONSUME_FUEL EQU $01
-TICK_INTERVAL_ANIMATE_FUEL EQU $04
-TICK_INTERVAL_1            EQU $01
 
 ; Player is actively playing: plane is rendered, objects can be interacted with.
 GAMEPLAY_MODE_NORMAL    EQU $00
@@ -4276,17 +4274,17 @@ init_starting_bridge:
 
 ; Consume fuel and update gauge display
 ;
-; Decrements fuel level and updates the fuel gauge. Called each frame during gameplay. Fuel only decreases on even
-; frames, and the gauge only updates every 4th decrement.
+; Decrements fuel level and updates the fuel gauge. Called each tick during gameplay. Fuel only decreases on even ticks,
+; and the gauge only updates every 4th decrement.
 ;
 ; * Fuel level stored in state_fuel (0-255)
 ; * Low fuel warning when top 2 bits = 0 (fuel < $40)
 ; * Empty fuel (fuel = 0) triggers game over via handle_no_fuel
 ; * Gauge position: column = (fuel >> 2) + $40, row = $A8
 consume_fuel:
-  LD A,(state_tick)                    ; Skip if odd frame (fuel only consumed on even frames).
-  AND TICK_INTERVAL_CONSUME_FUEL       ;
-  CP $00                               ;
+  LD A,(state_tick)                    ; Skip if odd tick (fuel only consumed on even ticks).
+  AND TICK_MASK_FRAME_PARITY           ;
+  CP TICK_PARITY_EVEN                  ;
   RET NZ                               ;
   LD A,(state_fuel)                    ; Decrement fuel level in state_fuel.
   DEC A                                ;
@@ -4931,10 +4929,10 @@ dispatch_object_type:
 
 ; Ship or helicopter operation routine
 ;
-; Animates and moves ships and helicopters. On every other frame (tick bit 0), advances the object by 2 pixels toward
-; the opposite river bank. When the object gets within 16 pixels of the bank edge, it reverses direction.
+; Animates and moves ships and helicopters. On even ticks, advances the object by 2 pixels toward the opposite river
+; bank. When the object gets within 16 pixels of the bank edge, it reverses direction.
 ;
-; * Checks tick for animation timing
+; * Checks tick parity for movement timing
 ; * Determines direction from bit 6 (SLOT_BIT_ORIENTATION)
 ; * Left-facing objects advance left, right-facing advance right
 ; * Collision with terrain triggers direction reversal via handle_object_proximity
@@ -4943,9 +4941,9 @@ dispatch_object_type:
 ; I:C X position of object
 ; I:D Object definition byte
 operate_ship_or_helicopter:
-  LD A,(state_tick)                    ; Check tick: if bit 0 == 0, jump to render only at animate_object.
-  AND HELICOPTER_ANIMATION_TICK_MASK   ;
-  CP HELICOPTER_ANIMATION_TICK_VALUE   ;
+  LD A,(state_tick)                    ; Skip if odd tick (ships/helicopters move on even ticks).
+  AND TICK_MASK_FRAME_PARITY           ;
+  CP TICK_PARITY_EVEN                  ;
   JP Z,animate_object
   BIT SLOT_BIT_ORIENTATION,D            ; Check orientation: if bit 6 clear (right-facing), jump to
   JP Z,ship_or_helicopter_right_advance ; ship_or_helicopter_right_advance.
@@ -5077,7 +5075,7 @@ fighter_right_reset:
 ; Handles animation of tank shell explosions. Called when object type is 0 (special marker for shell explosions).
 ; Advances explosion frame counter and renders the current frame.
 ;
-; * Only processes on every other frame (tick check)
+; * Only processes on odd ticks
 ; * Extracts frame index from bits 3-5 of object definition
 ; * Finishes explosion when frame reaches 7 or Y position is off-screen
 ; * Uses sprite at sprite_tank_shell_explosion with varying attributes for color cycling
@@ -5086,9 +5084,9 @@ fighter_right_reset:
 ; I:C X position
 ; I:D Object definition (bits 3-5 = frame index)
 operate_tank_shell_explosion:
-  LD A,(state_tick)                    ; Check tick: if bit 0 != 1, skip to next object.
-  AND TICK_INTERVAL_1                  ;
-  CP TICK_INTERVAL_1                   ;
+  LD A,(state_tick)                    ; Skip if even tick (explosions animate on odd ticks).
+  AND TICK_MASK_FRAME_PARITY           ;
+  CP TICK_PARITY_ODD                   ;
   JP NZ,operate_viewport_objects       ; Store position to previous_object_coordinates and object_coordinates for
   LD (previous_object_coordinates),BC  ; rendering.
   LD (object_coordinates),BC           ; Check Y position: if bit 7 set (off-screen), finish explosion.
@@ -5168,9 +5166,9 @@ handle_inactive_object:
   LD A,D                               ; If object is OBJECT_BALLOON, jump to jp_operate_viewport_objects.
   CP OBJECT_BALLOON                    ;
   JP Z,jp_operate_viewport_objects     ;
-  LD A,(state_tick)                    ; Check tick: if bit 0 == 1, jump to animate_object for animation.
-  AND BALLOON_ANIMATION_TICK_MASK      ;
-  CP BALLOON_ANIMATION_TICK_VALUE      ;
+  LD A,(state_tick)                    ; Animate on odd ticks only.
+  AND TICK_MASK_FRAME_PARITY           ;
+  CP TICK_PARITY_ODD                   ;
   JP Z,animate_object
   LD A,D                               ; If helicopter (REG or ADV), store position and continue to
   AND SLOT_MASK_OBJECT_TYPE            ; operate_ship_or_helicopter_continue.
@@ -5264,9 +5262,9 @@ set_tank_shell_active:
 ; I:C X position
 ; I:D Object definition byte
 operate_tank:
-  LD A,(state_tick)                    ; Check tick: if bit 0 == 1, skip to next object.
-  AND TICK_INTERVAL_1                  ;
-  CP TICK_INTERVAL_1                   ;
+  LD A,(state_tick)                    ; Skip if odd tick (tanks move on even ticks).
+  AND TICK_MASK_FRAME_PARITY           ;
+  CP TICK_PARITY_ODD                   ;
   JP Z,operate_viewport_objects        ; Store position, check bank bit, handle terrain check.
   LD (previous_object_coordinates),BC  ;
   PUSH DE                              ;
@@ -5808,7 +5806,7 @@ operate_fuel:
   LD HL,sprite_fuel
   LD BC,SPRITE_FUEL_STATION_FRAME_SIZE ; Set frame size=0, calculate animated attributes from tick.
   LD A,(state_tick)                    ;
-  AND TICK_INTERVAL_ANIMATE_FUEL       ;
+  AND TICK_MASK_FUEL_BLINK             ;
   ADD A,SPRITE_FUEL_STATION_ATTRIBUTES ;
   LD E,A                               ;
   LD A,SPRITE_FUEL_STATION_WIDTH_TILES ; Set width=2, render via render_sprite.

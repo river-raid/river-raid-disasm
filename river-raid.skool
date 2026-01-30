@@ -53,11 +53,13 @@ TANK_SHELL_TRAJECTORY_MAX_STEP EQU $08
 
 HELICOPTER_MISSILE_STEP EQU $08
 
-HELICOPTER_ANIMATION_TICK_MASK  EQU $01
-HELICOPTER_ANIMATION_TICK_VALUE EQU $00
-
-BALLOON_ANIMATION_TICK_MASK  EQU $01
-BALLOON_ANIMATION_TICK_VALUE EQU $01
+; Tick-based timing constants for frame parity checks.
+; state_tick bit 0 alternates every frame (even/odd).
+; state_tick bit 2 alternates every 4 frames (fuel blink).
+TICK_MASK_FRAME_PARITY EQU $01
+TICK_PARITY_EVEN       EQU $00
+TICK_PARITY_ODD        EQU $01
+TICK_MASK_FUEL_BLINK   EQU $04
 
 FIGHTER_POSITION_LEFT_INIT   EQU $E8
 FIGHTER_POSITION_LEFT_LIMIT  EQU $00
@@ -156,9 +158,6 @@ FUEL_LEVEL_LOW         EQU $C0
 FUEL_LEVEL_ALMOST_FULL EQU $FC
 FUEL_LEVEL_FULL        EQU $FF
 
-TICK_INTERVAL_CONSUME_FUEL EQU $01
-TICK_INTERVAL_ANIMATE_FUEL EQU $04
-TICK_INTERVAL_1            EQU $01
 
 ; Player is actively playing: plane is rendered, objects can be interacted with.
 GAMEPLAY_MODE_NORMAL    EQU $00
@@ -4730,9 +4729,9 @@ c$6DEB LD A,($923A)  ;
 
 ; Consume fuel and update gauge display
 ;
-; Decrements fuel level and updates the fuel gauge. Called each frame during
-; gameplay. Fuel only decreases on even frames, and the gauge only updates
-; every 4th decrement.
+; Decrements fuel level and updates the fuel gauge. Called each tick during
+; gameplay. Fuel only decreases on even ticks, and the gauge only updates every
+; 4th decrement.
 ; .
 ; #LIST
 ; { Fuel level stored in #R$5F66 (0-255) }
@@ -4741,9 +4740,10 @@ c$6DEB LD A,($923A)  ;
 ; { Gauge position: column = (fuel >> 2) + $40, row = $A8 }
 ; LIST#
 @label=consume_fuel
-c$6DFF LD A,($5EEF)  ; {Skip if odd frame (fuel only consumed on even frames).
-@isub=AND TICK_INTERVAL_CONSUME_FUEL
+c$6DFF LD A,($5EEF)  ; {Skip if odd tick (fuel only consumed on even ticks).
+@isub=AND TICK_MASK_FRAME_PARITY
  $6E02 AND $01       ;
+@isub=CP TICK_PARITY_EVEN
  $6E04 CP $00        ;
  $6E06 RET NZ        ; }
  $6E07 LD A,($5F66)  ; {Decrement fuel level in #R$5F66.
@@ -5505,12 +5505,12 @@ c$708E LD A,$00      ; {Reset state_collision_mode to COLLISION_MODE_NONE.
 
 ; Ship or helicopter operation routine
 ;
-; Animates and moves ships and helicopters. On every other frame (tick bit 0),
-; advances the object by 2 pixels toward the opposite river bank. When the
-; object gets within 16 pixels of the bank edge, it reverses direction.
+; Animates and moves ships and helicopters. On even ticks, advances the object
+; by 2 pixels toward the opposite river bank. When the object gets within 16
+; pixels of the bank edge, it reverses direction.
 ; .
 ; #LIST
-; { Checks tick for animation timing }
+; { Checks tick parity for movement timing }
 ; { Determines direction from bit 6 (SLOT_BIT_ORIENTATION) }
 ; { Left-facing objects advance left, right-facing advance right }
 ; { Collision with terrain triggers direction reversal via #R$75D0 }
@@ -5520,10 +5520,10 @@ c$708E LD A,$00      ; {Reset state_collision_mode to COLLISION_MODE_NONE.
 ; I:C X position of object
 ; I:D Object definition byte
 @label=operate_ship_or_helicopter
-c$7104 LD A,($5EEF)  ; {Check tick: if bit 0 == 0, jump to render only at
-@isub=AND HELICOPTER_ANIMATION_TICK_MASK
- $7107 AND $01       ; #R$724C.
-@isub=CP HELICOPTER_ANIMATION_TICK_VALUE
+c$7104 LD A,($5EEF)  ; {Skip if odd tick (ships/helicopters move on even
+@isub=AND TICK_MASK_FRAME_PARITY
+ $7107 AND $01       ; ticks).
+@isub=CP TICK_PARITY_EVEN
  $7109 CP $00        ; }
  $710B JP Z,$724C    ;
 @isub=BIT SLOT_BIT_ORIENTATION,D
@@ -5680,7 +5680,7 @@ c$719F LD C,$04      ; Set C = $04 (initial right position).
 ; renders the current frame.
 ; .
 ; #LIST
-; { Only processes on every other frame (tick check) }
+; { Only processes on odd ticks }
 ; { Extracts frame index from bits 3-5 of object definition }
 ; { Finishes explosion when frame reaches 7 or Y position is off-screen }
 ; { Uses sprite at #R$8FFC with varying attributes for color cycling }
@@ -5690,10 +5690,10 @@ c$719F LD C,$04      ; Set C = $04 (initial right position).
 ; I:C X position
 ; I:D Object definition (bits 3-5 = frame index)
 @label=operate_tank_shell_explosion
-c$71A2 LD A,($5EEF)  ; {Check tick: if bit 0 != 1, skip to next object.
-@isub=AND TICK_INTERVAL_1
+c$71A2 LD A,($5EEF)  ; {Skip if even tick (explosions animate on odd ticks).
+@isub=AND TICK_MASK_FRAME_PARITY
  $71A5 AND $01       ;
-@isub=CP TICK_INTERVAL_1
+@isub=CP TICK_PARITY_ODD
  $71A7 CP $01        ; }
  $71A9 JP NZ,$708E   ; {Store position to #R$8B0A and #R$8B0C for rendering.
  $71AC LD ($8B0A),BC ; }
@@ -5781,10 +5781,10 @@ c$7224 LD A,D        ; {If object is OBJECT_BALLOON, jump to #R$76AC.
 @isub=CP OBJECT_BALLOON
  $7225 CP $06        ;
  $7227 JP Z,$76AC    ; }
- $722A LD A,($5EEF)  ; {Check tick: if bit 0 == 1, jump to #R$724C for
-@isub=AND BALLOON_ANIMATION_TICK_MASK
- $722D AND $01       ; animation.
-@isub=CP BALLOON_ANIMATION_TICK_VALUE
+ $722A LD A,($5EEF)  ; {Animate on odd ticks only.
+@isub=AND TICK_MASK_FRAME_PARITY
+ $722D AND $01       ;
+@isub=CP TICK_PARITY_ODD
  $722F CP $01        ; }
  $7231 JP Z,$724C    ;
  $7234 LD A,D        ; {If helicopter (REG or ADV), store position and continue
@@ -5893,10 +5893,10 @@ c$7290 LD A,$01      ; {Set tank shell state to active ($01).
 ; I:C X position
 ; I:D Object definition byte
 @label=operate_tank
-c$7296 LD A,($5EEF)  ; {Check tick: if bit 0 == 1, skip to next object.
-@isub=AND TICK_INTERVAL_1
+c$7296 LD A,($5EEF)  ; {Skip if odd tick (tanks move on even ticks).
+@isub=AND TICK_MASK_FRAME_PARITY
  $7299 AND $01       ;
-@isub=CP TICK_INTERVAL_1
+@isub=CP TICK_PARITY_ODD
  $729B CP $01        ; }
  $729D JP Z,$708E    ; {Store position, check bank bit, handle terrain check.
  $72A0 LD ($8B0A),BC ;
@@ -6503,7 +6503,7 @@ c$754C LD ($8B0A),BC ; {Store position to #R$8B0A and #R$8B0C. Set height=$19.
 @isub=LD BC,SPRITE_FUEL_STATION_FRAME_SIZE
  $7577 LD BC,$0000   ; {Set frame size=0, calculate animated attributes from
  $757A LD A,($5EEF)  ; tick.
-@isub=AND TICK_INTERVAL_ANIMATE_FUEL
+@isub=AND TICK_MASK_FUEL_BLINK
  $757D AND $04       ;
 @isub=ADD A,SPRITE_FUEL_STATION_ATTRIBUTES
  $757F ADD A,$0B     ;
