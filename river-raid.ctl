@@ -679,27 +679,20 @@ D $6124 This routine is used by fuel consumption and refueling to calculate the 
   $6133,2 Rotate B left through carry
 @ $6136 label=collision_dispatcher
 c $6136 Collision detection dispatcher
-D $6136 This routine is called during sprite rendering (via #R$8C45) to handle collision detection. It saves the current register state, checks the collision mode, and dispatches to the appropriate collision handler. This is the central dispatcher for all collision detection in the game.
-  $6136 Pop HL (get return address from stack)
-  $6137 Store return address to #R$5F85.
-  $613A Store DE to #R$5F87.
-  $613E Store BC to #R$5F89.
-  $6142 Load collision mode from #R$5EF5
+D $6136 Central collision handler called during sprite rendering (via #R$8C45) when pixel overlap is detected. Saves registers, reads collision mode from #R$5EF5, and dispatches to the appropriate handler.
+D $6136 #TABLE(default) { =h Mode | =h Handler | =h Description } { COLLISION_MODE_NONE ($00) | #R$8C3B | Rendering only } { COLLISION_MODE_FUEL_DEPOT ($01) | #R$6256 | Fuel depot refuel } { COLLISION_MODE_MISSILE ($02) | #R$61BB | Missile hit } { COLLISION_MODE_FIGHTER ($03) | #R$615E | Fighter hit } { COLLISION_MODE_HELICOPTER_MISSILE ($04) | #R$7415 | Enemy missile } TABLE#
+  $6136 Save registers: return address to #R$5F85, DE to #R$5F87, BC to #R$5F89.
+  $6142 Load collision mode from #R$5EF5.
 @ $6145 isub=CP COLLISION_MODE_NONE
-  $6145 Check if collision mode is NONE ($00)
-  $6147 If NONE, jump to #R$8C3B to handle no collision
+  $6145 Dispatch COLLISION_MODE_NONE → #R$8C3B.
 @ $614A isub=CP COLLISION_MODE_FUEL_DEPOT
-  $614A Check if collision mode is FUEL DEPOT ($01)
-  $614C If FUEL DEPOT, jump to #R$6256 to handle refueling
+  $614A Dispatch COLLISION_MODE_FUEL_DEPOT → #R$6256.
 @ $614F isub=CP COLLISION_MODE_MISSILE
-  $614F Check if collision mode is MISSILE ($02)
-  $6151 If MISSILE, jump to #R$61BB to check collision
+  $614F Dispatch COLLISION_MODE_MISSILE → #R$61BB.
 @ $6154 isub=CP COLLISION_MODE_FIGHTER
-  $6154 Check if collision mode is ENEMY ($03)
-  $6156 If ENEMY, jump to #R$615E to handle fighter collision
+  $6154 Dispatch COLLISION_MODE_FIGHTER → #R$615E.
 @ $6159 isub=CP COLLISION_MODE_HELICOPTER_MISSILE
-  $6159 Check if collision mode is HELICOPTER_MISSILE ($04)
-  $615B If HELICOPTER_MISSILE, jump to #R$7415 to handle helicopter missile collision
+  $6159 Dispatch COLLISION_MODE_HELICOPTER_MISSILE → #R$7415.
 @ $615E label=handle_collision_mode_fighter
 c $615E Handle COLLISION_MODE_FIGHTER collision detection
 N $615E Checks if the player's missile has collided with a fighter aircraft. Uses bounding box collision detection by comparing the missile coordinates (from #R$5EF3) with the fighter's coordinates (from #R$8B0C).

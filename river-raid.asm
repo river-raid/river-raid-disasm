@@ -1948,27 +1948,34 @@ calculate_fuel_gauge_offset:
 
 ; Collision detection dispatcher
 ;
-; This routine is called during sprite rendering (via jp_collision_dispatcher) to handle collision detection. It saves
-; the current register state, checks the collision mode, and dispatches to the appropriate collision handler. This is
-; the central dispatcher for all collision detection in the game.
+; Central collision handler called during sprite rendering (via jp_collision_dispatcher) when pixel overlap is detected.
+; Saves registers, reads collision mode from state_collision_mode, and dispatches to the appropriate handler.
+;
+; +-----------------------------------------+------------------------------------------+-------------------+
+; | Mode                                    | Handler                                  | Description       |
+; +-----------------------------------------+------------------------------------------+-------------------+
+; | COLLISION_MODE_NONE ($00)               | handle_collision_mode_none               | Rendering only    |
+; | COLLISION_MODE_FUEL_DEPOT ($01)         | handle_collision_mode_fuel_depot         | Fuel depot refuel |
+; | COLLISION_MODE_MISSILE ($02)            | check_collision                          | Missile hit       |
+; | COLLISION_MODE_FIGHTER ($03)            | handle_collision_mode_fighter            | Fighter hit       |
+; | COLLISION_MODE_HELICOPTER_MISSILE ($04) | handle_collision_mode_helicopter_missile | Enemy missile     |
+; +-----------------------------------------+------------------------------------------+-------------------+
 collision_dispatcher:
-  POP HL                               ; Pop HL (get return address from stack)
-  LD (collision_saved_hl),HL           ; Store return address to collision_saved_hl.
-  LD (collision_saved_de),DE           ; Store DE to collision_saved_de.
-  LD (collision_saved_bc),BC           ; Store BC to collision_saved_bc.
-  LD A,(state_collision_mode)          ; Load collision mode from state_collision_mode
-  CP COLLISION_MODE_NONE               ; Check if collision mode is NONE ($00)
-  JP Z,handle_collision_mode_none      ; If NONE, jump to handle_collision_mode_none to handle no collision
-  CP COLLISION_MODE_FUEL_DEPOT         ; Check if collision mode is FUEL DEPOT ($01)
-  JP Z,handle_collision_mode_fuel_depot ; If FUEL DEPOT, jump to handle_collision_mode_fuel_depot to handle refueling
-  CP COLLISION_MODE_MISSILE            ; Check if collision mode is MISSILE ($02)
-  JP Z,check_collision                 ; If MISSILE, jump to check_collision to check collision
-  CP COLLISION_MODE_FIGHTER            ; Check if collision mode is ENEMY ($03)
-  JP Z,handle_collision_mode_fighter   ; If ENEMY, jump to handle_collision_mode_fighter to handle fighter collision
-  CP COLLISION_MODE_HELICOPTER_MISSILE ; Check if collision mode is HELICOPTER_MISSILE ($04)
-  JP Z,handle_collision_mode_helicopter_missile ; If HELICOPTER_MISSILE, jump to
-                                                ; handle_collision_mode_helicopter_missile to handle helicopter missile
-                                                ; collision
+  POP HL                               ; Save registers: return address to collision_saved_hl, DE to collision_saved_de,
+  LD (collision_saved_hl),HL           ; BC to collision_saved_bc.
+  LD (collision_saved_de),DE           ;
+  LD (collision_saved_bc),BC           ;
+  LD A,(state_collision_mode)          ; Load collision mode from state_collision_mode.
+  CP COLLISION_MODE_NONE               ; Dispatch COLLISION_MODE_NONE → handle_collision_mode_none.
+  JP Z,handle_collision_mode_none      ;
+  CP COLLISION_MODE_FUEL_DEPOT          ; Dispatch COLLISION_MODE_FUEL_DEPOT → handle_collision_mode_fuel_depot.
+  JP Z,handle_collision_mode_fuel_depot ;
+  CP COLLISION_MODE_MISSILE            ; Dispatch COLLISION_MODE_MISSILE → check_collision.
+  JP Z,check_collision                 ;
+  CP COLLISION_MODE_FIGHTER            ; Dispatch COLLISION_MODE_FIGHTER → handle_collision_mode_fighter.
+  JP Z,handle_collision_mode_fighter   ;
+  CP COLLISION_MODE_HELICOPTER_MISSILE          ; Dispatch COLLISION_MODE_HELICOPTER_MISSILE →
+  JP Z,handle_collision_mode_helicopter_missile ; handle_collision_mode_helicopter_missile.
 
 ; Handle COLLISION_MODE_FIGHTER collision detection
 ;

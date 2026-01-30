@@ -2065,32 +2065,39 @@ c$6124 LD A,$07      ; Load $07 into A
 
 ; Collision detection dispatcher
 ;
-; This routine is called during sprite rendering (via #R$8C45) to handle
-; collision detection. It saves the current register state, checks the
-; collision mode, and dispatches to the appropriate collision handler. This is
-; the central dispatcher for all collision detection in the game.
+; Central collision handler called during sprite rendering (via #R$8C45) when
+; pixel overlap is detected. Saves registers, reads collision mode from
+; #R$5EF5, and dispatches to the appropriate handler.
+; .
+; #TABLE(default)
+; { =h Mode | =h Handler | =h Description }
+; { COLLISION_MODE_NONE ($00) | #R$8C3B | Rendering only }
+; { COLLISION_MODE_FUEL_DEPOT ($01) | #R$6256 | Fuel depot refuel }
+; { COLLISION_MODE_MISSILE ($02) | #R$61BB | Missile hit }
+; { COLLISION_MODE_FIGHTER ($03) | #R$615E | Fighter hit }
+; { COLLISION_MODE_HELICOPTER_MISSILE ($04) | #R$7415 | Enemy missile }
+; TABLE#
 @label=collision_dispatcher
-c$6136 POP HL        ; Pop HL (get return address from stack)
- $6137 LD ($5F85),HL ; Store return address to #R$5F85.
- $613A LD ($5F87),DE ; Store DE to #R$5F87.
- $613E LD ($5F89),BC ; Store BC to #R$5F89.
- $6142 LD A,($5EF5)  ; Load collision mode from #R$5EF5
+c$6136 POP HL        ; {Save registers: return address to #R$5F85, DE to
+ $6137 LD ($5F85),HL ; #R$5F87, BC to #R$5F89.
+ $613A LD ($5F87),DE ;
+ $613E LD ($5F89),BC ; }
+ $6142 LD A,($5EF5)  ; Load collision mode from #R$5EF5.
 @isub=CP COLLISION_MODE_NONE
- $6145 CP $00        ; Check if collision mode is NONE ($00)
- $6147 JP Z,$8C3B    ; If NONE, jump to #R$8C3B to handle no collision
+ $6145 CP $00        ; {Dispatch COLLISION_MODE_NONE → #R$8C3B.
+ $6147 JP Z,$8C3B    ; }
 @isub=CP COLLISION_MODE_FUEL_DEPOT
- $614A CP $01        ; Check if collision mode is FUEL DEPOT ($01)
- $614C JP Z,$6256    ; If FUEL DEPOT, jump to #R$6256 to handle refueling
+ $614A CP $01        ; {Dispatch COLLISION_MODE_FUEL_DEPOT → #R$6256.
+ $614C JP Z,$6256    ; }
 @isub=CP COLLISION_MODE_MISSILE
- $614F CP $02        ; Check if collision mode is MISSILE ($02)
- $6151 JP Z,$61BB    ; If MISSILE, jump to #R$61BB to check collision
+ $614F CP $02        ; {Dispatch COLLISION_MODE_MISSILE → #R$61BB.
+ $6151 JP Z,$61BB    ; }
 @isub=CP COLLISION_MODE_FIGHTER
- $6154 CP $03        ; Check if collision mode is ENEMY ($03)
- $6156 JP Z,$615E    ; If ENEMY, jump to #R$615E to handle fighter collision
+ $6154 CP $03        ; {Dispatch COLLISION_MODE_FIGHTER → #R$615E.
+ $6156 JP Z,$615E    ; }
 @isub=CP COLLISION_MODE_HELICOPTER_MISSILE
- $6159 CP $04        ; Check if collision mode is HELICOPTER_MISSILE ($04)
- $615B JP Z,$7415    ; If HELICOPTER_MISSILE, jump to #R$7415 to handle
-                     ; helicopter missile collision
+ $6159 CP $04        ; {Dispatch COLLISION_MODE_HELICOPTER_MISSILE → #R$7415.
+ $615B JP Z,$7415    ; }
 
 ; Handle COLLISION_MODE_FIGHTER collision detection
 ;
