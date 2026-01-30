@@ -51,11 +51,11 @@ TANK_SHELL_TRAJECTORY_MAX_STEP EQU $08
 
 HELICOPTER_MISSILE_STEP EQU $08
 
-HELICOPTER_ANIMATION_METRONOME_MASK  EQU $01
-HELICOPTER_ANIMATION_METRONOME_VALUE EQU $00
+HELICOPTER_ANIMATION_TICK_MASK  EQU $01
+HELICOPTER_ANIMATION_TICK_VALUE EQU $00
 
-BALLOON_ANIMATION_METRONOME_MASK  EQU $01
-BALLOON_ANIMATION_METRONOME_VALUE EQU $01
+BALLOON_ANIMATION_TICK_MASK  EQU $01
+BALLOON_ANIMATION_TICK_VALUE EQU $01
 
 FIGHTER_POSITION_LEFT_INIT   EQU $E8
 FIGHTER_POSITION_LEFT_LIMIT  EQU $00
@@ -154,9 +154,9 @@ FUEL_LEVEL_LOW         EQU $C0
 FUEL_LEVEL_ALMOST_FULL EQU $FC
 FUEL_LEVEL_FULL        EQU $FF
 
-METRONOME_INTERVAL_CONSUME_FUEL EQU $01
-METRONOME_INTERVAL_ANIMATE_FUEL EQU $04
-METRONOME_INTERVAL_1            EQU $01
+TICK_INTERVAL_CONSUME_FUEL EQU $01
+TICK_INTERVAL_ANIMATE_FUEL EQU $04
+TICK_INTERVAL_1            EQU $01
 
 ; Player is actively playing: plane is rendered, objects can be interacted with.
 GAMEPLAY_MODE_NORMAL    EQU $00
@@ -1323,8 +1323,8 @@ play:
   LD DE,status_line_1                  ; Print status line 1.
   LD BC,status_line_2 - status_line_1  ;
   CALL PR_STRING                       ;
-  LD A,$01                             ; Initialize metronome.
-  LD (state_metronome),A               ;
+  LD A,$01                             ; Initialize tick counter.
+  LD (state_tick),A                    ;
   CALL CHAN_OPEN                       ; Open channel 1 (upper screen).
   LD DE,status_line_2                  ; Print status line 2.
   LD BC,status_line_3 - status_line_2  ;
@@ -1402,7 +1402,7 @@ play:
   LD B,$28                             ; Set loop counter for scroll-in (40 iterations).
 scroll_in_loop:
   PUSH BC                              ; Save loop counter.
-  LD HL,state_metronome                ; Increment metronome.
+  LD HL,state_tick                     ; Increment tick counter.
   INC (HL)                             ;
   CALL render_plane_and_terrain
   CALL operate_viewport_objects
@@ -1444,7 +1444,7 @@ start_game:
   LD (state_bridge_y_position),A       ;
   LD A,$02                             ;
   LD (state_speed),A                   ;
-  LD (state_metronome),A               ;
+  LD (state_tick),A                    ;
   JP main_loop                         ;
 
 ; Terrain fragment render counter (0-7). Tracks which of the 8 terrain fragments to render next. Incremented after each
@@ -1452,9 +1452,9 @@ start_game:
 state_terrain_fragment_counter:
   DEFB $00
 
-; Frame counter (0-255). Incremented each game frame for animation timing. Bit 0 alternates every frame, bits 0-1 cycle
+; Frame tick (0-255). Incremented each game frame for animation timing. Bit 0 alternates every frame, bits 0-1 cycle
 ; every 4 frames, etc.
-state_metronome:
+state_tick:
   DEFB $00
 
 ; Current bridge number (0-47).
@@ -1708,16 +1708,16 @@ state_plane_missile_coordinates_backup:
 ; Main gameplay loop
 ;
 ; This is the main gameplay loop that runs continuously during active gameplay. It handles input scanning (Enter key),
-; updates the game state (metronome, explosions, plane, objects, missiles, tank shells, helicopter missiles), advances
-; the game (scrolling), consumes fuel, and dispatches to the appropriate input handler based on the selected control
+; updates the game state (tick, explosions, plane, objects, missiles, tank shells, helicopter missiles), advances the
+; game (scrolling), consumes fuel, and dispatches to the appropriate input handler based on the selected control
 ; interface.
 main_loop:
   LD A,$BF                             ; Scan Enter
   IN A,($FE)                           ;
   BIT 0,A                              ;
   CALL Z,handle_enter                  ;
-  LD HL,state_metronome                ; Load address of state_metronome (metronome counter) into HL
-  INC (HL)                             ; Increment metronome counter
+  LD HL,state_tick                     ; Load address of state_tick (tick counter) into HL.
+  INC (HL)                             ; Increment tick counter.
   CALL render_explosions               ; Call render_explosions to render explosions
   CALL render_plane_and_terrain        ; Call render_plane_and_terrain to render player plane and terrain fragments
   CALL operate_viewport_objects        ; Call operate_viewport_objects to operate viewport objects
@@ -4203,7 +4203,7 @@ overview_loop:
   JP Z,return_to_control_selection     ;
   CALL scroll_attribute_row            ; Render frame: call delay, scroll, increment counter, render terrain/objects.
   CALL render_plane_and_terrain        ;
-  LD HL,state_metronome                ;
+  LD HL,state_tick                     ;
   INC (HL)                             ;
   CALL operate_viewport_objects        ;
   CALL operate_tank_shell              ;
@@ -4284,8 +4284,8 @@ init_starting_bridge:
 ; * Empty fuel (fuel = 0) triggers game over via handle_no_fuel
 ; * Gauge position: column = (fuel >> 2) + $40, row = $A8
 consume_fuel:
-  LD A,(state_metronome)               ; Skip if odd frame (fuel only consumed on even frames).
-  AND METRONOME_INTERVAL_CONSUME_FUEL  ;
+  LD A,(state_tick)                    ; Skip if odd frame (fuel only consumed on even frames).
+  AND TICK_INTERVAL_CONSUME_FUEL       ;
   CP $00                               ;
   RET NZ                               ;
   LD A,(state_fuel)                    ; Decrement fuel level in state_fuel.
@@ -4931,10 +4931,10 @@ dispatch_object_type:
 
 ; Ship or helicopter operation routine
 ;
-; Animates and moves ships and helicopters. On every other frame (metronome tick), advances the object by 2 pixels
-; toward the opposite river bank. When the object gets within 16 pixels of the bank edge, it reverses direction.
+; Animates and moves ships and helicopters. On every other frame (tick bit 0), advances the object by 2 pixels toward
+; the opposite river bank. When the object gets within 16 pixels of the bank edge, it reverses direction.
 ;
-; * Checks metronome for animation timing
+; * Checks tick for animation timing
 ; * Determines direction from bit 6 (SLOT_BIT_ORIENTATION)
 ; * Left-facing objects advance left, right-facing advance right
 ; * Collision with terrain triggers direction reversal via handle_object_proximity
@@ -4943,9 +4943,9 @@ dispatch_object_type:
 ; I:C X position of object
 ; I:D Object definition byte
 operate_ship_or_helicopter:
-  LD A,(state_metronome)                  ; Check metronome: if frame counter bit 0 == 0, jump to render only at
-  AND HELICOPTER_ANIMATION_METRONOME_MASK ; animate_object.
-  CP HELICOPTER_ANIMATION_METRONOME_VALUE ;
+  LD A,(state_tick)                    ; Check tick: if bit 0 == 0, jump to render only at animate_object.
+  AND HELICOPTER_ANIMATION_TICK_MASK   ;
+  CP HELICOPTER_ANIMATION_TICK_VALUE   ;
   JP Z,animate_object
   BIT SLOT_BIT_ORIENTATION,D            ; Check orientation: if bit 6 clear (right-facing), jump to
   JP Z,ship_or_helicopter_right_advance ; ship_or_helicopter_right_advance.
@@ -5077,7 +5077,7 @@ fighter_right_reset:
 ; Handles animation of tank shell explosions. Called when object type is 0 (special marker for shell explosions).
 ; Advances explosion frame counter and renders the current frame.
 ;
-; * Only processes on every other frame (metronome check)
+; * Only processes on every other frame (tick check)
 ; * Extracts frame index from bits 3-5 of object definition
 ; * Finishes explosion when frame reaches 7 or Y position is off-screen
 ; * Uses sprite at sprite_tank_shell_explosion with varying attributes for color cycling
@@ -5086,9 +5086,9 @@ fighter_right_reset:
 ; I:C X position
 ; I:D Object definition (bits 3-5 = frame index)
 operate_tank_shell_explosion:
-  LD A,(state_metronome)               ; Check metronome: if frame counter bit 0 != 1, skip to next object.
-  AND METRONOME_INTERVAL_1             ;
-  CP METRONOME_INTERVAL_1              ;
+  LD A,(state_tick)                    ; Check tick: if bit 0 != 1, skip to next object.
+  AND TICK_INTERVAL_1                  ;
+  CP TICK_INTERVAL_1                   ;
   JP NZ,operate_viewport_objects       ; Store position to previous_object_coordinates and object_coordinates for
   LD (previous_object_coordinates),BC  ; rendering.
   LD (object_coordinates),BC           ; Check Y position: if bit 7 set (off-screen), finish explosion.
@@ -5130,7 +5130,7 @@ tank_shell_frame_calc_loop:
 tank_shell_render_entry:
   LD BC,all_ff                         ; Store erase sprite all_ff to render_sprite_ptr, get frame-based attributes.
   LD (render_sprite_ptr),BC            ;
-  LD A,(state_metronome)                        ; Calculate attributes with color cycling, set sprite params: width=2,
+  LD A,(state_tick)                             ; Calculate attributes with color cycling, set sprite params: width=2,
   AND $06                                       ; height=16.
   SRL A                                         ;
   ADD A,SPRITE_SHELL_EXPLOSION_ATTRIBUTES       ;
@@ -5168,9 +5168,9 @@ handle_inactive_object:
   LD A,D                               ; If object is OBJECT_BALLOON, jump to jp_operate_viewport_objects.
   CP OBJECT_BALLOON                    ;
   JP Z,jp_operate_viewport_objects     ;
-  LD A,(state_metronome)               ; Check metronome: if bit 0 == 1, jump to animate_object for animation.
-  AND BALLOON_ANIMATION_METRONOME_MASK ;
-  CP BALLOON_ANIMATION_METRONOME_VALUE ;
+  LD A,(state_tick)                    ; Check tick: if bit 0 == 1, jump to animate_object for animation.
+  AND BALLOON_ANIMATION_TICK_MASK      ;
+  CP BALLOON_ANIMATION_TICK_VALUE      ;
   JP Z,animate_object
   LD A,D                               ; If helicopter (REG or ADV), store position and continue to
   AND SLOT_MASK_OBJECT_TYPE            ; operate_ship_or_helicopter_continue.
@@ -5255,7 +5255,7 @@ set_tank_shell_active:
 ; Operates tanks on the river. Tanks move 2 pixels per frame and fire shells when reaching the center position ($80).
 ; Tanks on the river bank are handled separately via operate_tank_on_bank.
 ;
-; * Skips processing every other frame (metronome check)
+; * Skips processing every other frame (tick check)
 ; * Tanks on bank (bit 5 set) handled via operate_tank_on_bank
 ; * River tanks move left/right, fire at X=$80
 ; * Uses XOR blending mode for rendering
@@ -5264,9 +5264,9 @@ set_tank_shell_active:
 ; I:C X position
 ; I:D Object definition byte
 operate_tank:
-  LD A,(state_metronome)               ; Check metronome: if bit 0 == 1, skip to next object.
-  AND METRONOME_INTERVAL_1             ;
-  CP METRONOME_INTERVAL_1              ;
+  LD A,(state_tick)                    ; Check tick: if bit 0 == 1, skip to next object.
+  AND TICK_INTERVAL_1                  ;
+  CP TICK_INTERVAL_1                   ;
   JP Z,operate_viewport_objects        ; Store position, check bank bit, handle terrain check.
   LD (previous_object_coordinates),BC  ;
   PUSH DE                              ;
@@ -5781,11 +5781,11 @@ get_tank_speed_level_1:
 ; Operate fuel station
 ;
 ; Processes fuel station rendering with animated lights. Checks viewport boundary and renders with alternating
-; attributes based on metronome.
+; attributes based on tick.
 ;
 ; * Stores position for rendering
 ; * Checks if fuel station is within viewport
-; * Animates fuel lights based on metronome counter
+; * Animates fuel lights based on tick counter
 ; * Renders 2-tile wide, 25-pixel tall sprite
 operate_fuel:
   LD (previous_object_coordinates),BC  ; Store position to previous_object_coordinates and object_coordinates. Set
@@ -5806,9 +5806,9 @@ operate_fuel:
   CP $87                               ;
   JP Z,operate_viewport_objects        ;
   LD HL,sprite_fuel
-  LD BC,SPRITE_FUEL_STATION_FRAME_SIZE ; Set frame size=0, calculate animated attributes from metronome.
-  LD A,(state_metronome)               ;
-  AND METRONOME_INTERVAL_ANIMATE_FUEL  ;
+  LD BC,SPRITE_FUEL_STATION_FRAME_SIZE ; Set frame size=0, calculate animated attributes from tick.
+  LD A,(state_tick)                    ;
+  AND TICK_INTERVAL_ANIMATE_FUEL       ;
   ADD A,SPRITE_FUEL_STATION_ATTRIBUTES ;
   LD E,A                               ;
   LD A,SPRITE_FUEL_STATION_WIDTH_TILES ; Set width=2, render via render_sprite.
@@ -5976,7 +5976,7 @@ remove_object_from_viewport:
 operate_baloon:
   BIT 7,B                              ; If balloon is off-screen (Y bit 7 set), skip to main loop.
   JP NZ,jp_operate_viewport_objects    ;
-  LD A,(state_metronome)               ; Only operate every 4th frame (frame counter AND 3 == 1). Check orientation.
+  LD A,(state_tick)                    ; Only operate every 4th frame (frame counter AND 3 == 1). Check orientation.
   AND $03                              ;
   CP $01                               ;
   JP NZ,jp_operate_viewport_objects    ;
@@ -6017,7 +6017,7 @@ operate_balloon_shared:
   LD (HL),C                            ;
   LD (object_coordinates),BC           ; Store render position and load balloon sprite pointer.
   LD HL,sprite_balloon                 ;
-  LD A,(state_metronome)               ; Calculate frame offset from frame counter (unused - overwritten below).
+  LD A,(state_tick)                    ; Calculate frame offset from frame counter (unused - overwritten below).
   AND $03                              ;
   ADD A,$0C                            ;
   LD E,A                               ;

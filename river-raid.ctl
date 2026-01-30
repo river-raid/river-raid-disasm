@@ -53,11 +53,11 @@
 > $4000
 > $4000 HELICOPTER_MISSILE_STEP EQU $08
 > $4000
-> $4000 HELICOPTER_ANIMATION_METRONOME_MASK  EQU $01
-> $4000 HELICOPTER_ANIMATION_METRONOME_VALUE EQU $00
+> $4000 HELICOPTER_ANIMATION_TICK_MASK  EQU $01
+> $4000 HELICOPTER_ANIMATION_TICK_VALUE EQU $00
 > $4000
-> $4000 BALLOON_ANIMATION_METRONOME_MASK  EQU $01
-> $4000 BALLOON_ANIMATION_METRONOME_VALUE EQU $01
+> $4000 BALLOON_ANIMATION_TICK_MASK  EQU $01
+> $4000 BALLOON_ANIMATION_TICK_VALUE EQU $01
 > $4000
 > $4000 FIGHTER_POSITION_LEFT_INIT   EQU $E8
 > $4000 FIGHTER_POSITION_LEFT_LIMIT  EQU $00
@@ -156,9 +156,9 @@
 > $4000 FUEL_LEVEL_ALMOST_FULL EQU $FC
 > $4000 FUEL_LEVEL_FULL        EQU $FF
 > $4000
-> $4000 METRONOME_INTERVAL_CONSUME_FUEL EQU $01
-> $4000 METRONOME_INTERVAL_ANIMATE_FUEL EQU $04
-> $4000 METRONOME_INTERVAL_1            EQU $01
+> $4000 TICK_INTERVAL_CONSUME_FUEL EQU $01
+> $4000 TICK_INTERVAL_ANIMATE_FUEL EQU $04
+> $4000 TICK_INTERVAL_1            EQU $01
 > $4000
 > $4000 ; Player is actively playing: plane is rendered, objects can be interacted with.
 > $4000 GAMEPLAY_MODE_NORMAL    EQU $00
@@ -350,7 +350,7 @@ D $5DA6 This routine prepares the game for play and is called when starting a ne
   $5DB9
 @ $5DBF isub=LD BC,status_line_2 - status_line_1
   $5DBC Print status line 1.
-  $5DC5 Initialize metronome.
+  $5DC5 Initialize tick counter.
   $5DCA Open channel 1 (upper screen).
 @ $5DD0 isub=LD BC,status_line_3 - status_line_2
   $5DCD Print status line 2.
@@ -397,7 +397,7 @@ D $5DA6 This routine prepares the game for play and is called when starting a ne
   $5E88 Set loop counter for scroll-in (40 iterations).
 @ $5E8A label=scroll_in_loop
   $5E8A Save loop counter.
-  $5E8B Increment metronome.
+  $5E8B Increment tick counter.
   $5E8F
   $5E92
   $5E95
@@ -424,8 +424,8 @@ D $5DA6 This routine prepares the game for play and is called when starting a ne
   $5EDB Clear bridge destroyed flag.
 @ $5EEE label=state_terrain_fragment_counter
 g $5EEE Terrain fragment render counter (0-7). Tracks which of the 8 terrain fragments to render next. Incremented after each fragment, wraps at 8.
-@ $5EEF label=state_metronome
-g $5EEF Frame counter (0-255). Incremented each game frame for animation timing. Bit 0 alternates every frame, bits 0-1 cycle every 4 frames, etc.
+@ $5EEF label=state_tick
+g $5EEF Frame tick (0-255). Incremented each game frame for animation timing. Bit 0 alternates every frame, bits 0-1 cycle every 4 frames, etc.
 @ $5EF0 label=state_bridge_index
 g $5EF0 Current bridge number (0-47).
 @ $5EF1 label=state_input_readings
@@ -547,10 +547,10 @@ g $5F8F Backup of plane missile coordinates. Saved before movement, used for col
 W $5F8F
 @ $5F91 label=main_loop
 c $5F91 Main gameplay loop
-D $5F91 This is the main gameplay loop that runs continuously during active gameplay. It handles input scanning (Enter key), updates the game state (metronome, explosions, plane, objects, missiles, tank shells, helicopter missiles), advances the game (scrolling), consumes fuel, and dispatches to the appropriate input handler based on the selected control interface.
+D $5F91 This is the main gameplay loop that runs continuously during active gameplay. It handles input scanning (Enter key), updates the game state (tick, explosions, plane, objects, missiles, tank shells, helicopter missiles), advances the game (scrolling), consumes fuel, and dispatches to the appropriate input handler based on the selected control interface.
 C $5F91,9 Scan Enter
-  $5F9A Load address of #R$5EEF (metronome counter) into HL
-  $5F9D Increment metronome counter
+  $5F9A Load address of #R$5EEF (tick counter) into HL.
+  $5F9D Increment tick counter.
   $5F9E Call #R$6EC8 to render explosions
   $5FA1 Call #R$60A5 to render player plane and terrain fragments
   $5FA4 Call #R$708E to operate viewport objects
@@ -1778,7 +1778,7 @@ c $6DFF Consume fuel and update gauge display
 D $6DFF Decrements fuel level and updates the fuel gauge. Called each frame during gameplay. Fuel only decreases on even frames, and the gauge only updates every 4th decrement.
 D $6DFF #LIST { Fuel level stored in #R$5F66 (0-255) } { Low fuel warning when top 2 bits = 0 (fuel < $40) } { Empty fuel (fuel = 0) triggers game over via #R$650A } { Gauge position: column = (fuel >> 2) + $40, row = $A8 } LIST#
   $6DFF Skip if odd frame (fuel only consumed on even frames).
-@ $6E02 isub=AND METRONOME_INTERVAL_CONSUME_FUEL
+@ $6E02 isub=AND TICK_INTERVAL_CONSUME_FUEL
   $6E07 Decrement fuel level in #R$5F66.
 @ $6E0E isub=AND FUEL_CHECK_INTERVAL
   $6E0E Skip gauge update unless (fuel AND 3) == 0 (every 4th decrement).
@@ -2120,14 +2120,14 @@ N $708E 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHT
   $7101 If type is 0, jump to L71A2.
 @ $7104 label=operate_ship_or_helicopter
 c $7104 Ship or helicopter operation routine
-D $7104 Animates and moves ships and helicopters. On every other frame (metronome tick), advances the object by 2 pixels toward the opposite river bank. When the object gets within 16 pixels of the bank edge, it reverses direction.
-D $7104 #LIST { Checks metronome for animation timing } { Determines direction from bit 6 (SLOT_BIT_ORIENTATION) } { Left-facing objects advance left, right-facing advance right } { Collision with terrain triggers direction reversal via #R$75D0 } LIST#
+D $7104 Animates and moves ships and helicopters. On every other frame (tick bit 0), advances the object by 2 pixels toward the opposite river bank. When the object gets within 16 pixels of the bank edge, it reverses direction.
+D $7104 #LIST { Checks tick for animation timing } { Determines direction from bit 6 (SLOT_BIT_ORIENTATION) } { Left-facing objects advance left, right-facing advance right } { Collision with terrain triggers direction reversal via #R$75D0 } LIST#
 R $7104 I:B Y position of object
 R $7104 I:C X position of object
 R $7104 I:D Object definition byte
-  $7104,7 Check metronome: if frame counter bit 0 == 0, jump to render only at #R$724C.
-@ $7107 isub=AND HELICOPTER_ANIMATION_METRONOME_MASK
-@ $7109 isub=CP HELICOPTER_ANIMATION_METRONOME_VALUE
+  $7104,7 Check tick: if bit 0 == 0, jump to render only at #R$724C.
+@ $7107 isub=AND HELICOPTER_ANIMATION_TICK_MASK
+@ $7109 isub=CP HELICOPTER_ANIMATION_TICK_VALUE
 @ $710E isub=BIT SLOT_BIT_ORIENTATION,D
   $710E Check orientation: if bit 6 clear (right-facing), jump to #R$75A2.
 @ $7113 label=ship_or_helicopter_left_advance
@@ -2198,13 +2198,13 @@ D $719F Resets X position to FIGHTER_POSITION_RIGHT_INIT ($04) when fighter reac
 @ $71A2 label=operate_tank_shell_explosion
 c $71A2 Animate tank shell explosion
 D $71A2 Handles animation of tank shell explosions. Called when object type is 0 (special marker for shell explosions). Advances explosion frame counter and renders the current frame.
-D $71A2 #LIST { Only processes on every other frame (metronome check) } { Extracts frame index from bits 3-5 of object definition } { Finishes explosion when frame reaches 7 or Y position is off-screen } { Uses sprite at #R$8FFC with varying attributes for color cycling } LIST#
+D $71A2 #LIST { Only processes on every other frame (tick check) } { Extracts frame index from bits 3-5 of object definition } { Finishes explosion when frame reaches 7 or Y position is off-screen } { Uses sprite at #R$8FFC with varying attributes for color cycling } LIST#
 R $71A2 I:B Y position
 R $71A2 I:C X position
 R $71A2 I:D Object definition (bits 3-5 = frame index)
-  $71A2 Check metronome: if frame counter bit 0 != 1, skip to next object.
-@ $71A5 isub=AND METRONOME_INTERVAL_1
-@ $71A7 isub=CP METRONOME_INTERVAL_1
+  $71A2 Check tick: if bit 0 != 1, skip to next object.
+@ $71A5 isub=AND TICK_INTERVAL_1
+@ $71A7 isub=CP TICK_INTERVAL_1
   $71A9 Store position to #R$8B0A and #R$8B0C for rendering.
   $71B0 Check Y position: if bit 7 set (off-screen), finish explosion.
   $71B9 Extract frame index from D bits 3-5, increment. If frame == 7, finish.
@@ -2235,9 +2235,9 @@ R $7224 I:C X position
 R $7224 I:D Object definition byte
   $7224 If object is OBJECT_BALLOON, jump to #R$76AC.
 @ $7225 isub=CP OBJECT_BALLOON
-  $722A,7 Check metronome: if bit 0 == 1, jump to #R$724C for animation.
-@ $722D isub=AND BALLOON_ANIMATION_METRONOME_MASK
-@ $722F isub=CP BALLOON_ANIMATION_METRONOME_VALUE
+  $722A,7 Check tick: if bit 0 == 1, jump to #R$724C for animation.
+@ $722D isub=AND BALLOON_ANIMATION_TICK_MASK
+@ $722F isub=CP BALLOON_ANIMATION_TICK_VALUE
   $7234 If helicopter (REG or ADV), store position and continue to #R$7128.
 @ $7235 isub=AND SLOT_MASK_OBJECT_TYPE
 @ $7237 isub=CP OBJECT_HELICOPTER_REG
@@ -2282,13 +2282,13 @@ D $7290 Sets #R$5EF2 to TANK_SHELL_ACTIVE, indicating tank is at firing position
 @ $7296 label=operate_tank
 c $7296 Tank operation routine
 D $7296 Operates tanks on the river. Tanks move 2 pixels per frame and fire shells when reaching the center position ($80). Tanks on the river bank are handled separately via #R$7302.
-D $7296 #LIST { Skips processing every other frame (metronome check) } { Tanks on bank (bit 5 set) handled via #R$7302 } { River tanks move left/right, fire at X=$80 } { Uses XOR blending mode for rendering } LIST#
+D $7296 #LIST { Skips processing every other frame (tick check) } { Tanks on bank (bit 5 set) handled via #R$7302 } { River tanks move left/right, fire at X=$80 } { Uses XOR blending mode for rendering } LIST#
 R $7296 I:B Y position
 R $7296 I:C X position
 R $7296 I:D Object definition byte
-  $7296 Check metronome: if bit 0 == 1, skip to next object.
-@ $7299 isub=AND METRONOME_INTERVAL_1
-@ $729B isub=CP METRONOME_INTERVAL_1
+  $7296 Check tick: if bit 0 == 1, skip to next object.
+@ $7299 isub=AND TICK_INTERVAL_1
+@ $729B isub=CP TICK_INTERVAL_1
   $729D,8 Store position, check bank bit, handle terrain check.
 @ $72A6 isub=BIT SLOT_BIT_TANK_ON_BANK,D
   $72A6 If SLOT_BIT_TANK_ON_BANK set, handle via #R$7302.
@@ -2520,8 +2520,8 @@ D $7546 Returns tank speed from #R$5F6A instead of #R$5F6B for difficulty level 
   $7546,3 Load speed from #R$5F6A, continue at #R$753A.
 @ $754C label=operate_fuel
 c $754C Operate fuel station
-D $754C Processes fuel station rendering with animated lights. Checks viewport boundary and renders with alternating attributes based on metronome.
-D $754C #LIST { Stores position for rendering } { Checks if fuel station is within viewport } { Animates fuel lights based on metronome counter } { Renders 2-tile wide, 25-pixel tall sprite } LIST#
+D $754C Processes fuel station rendering with animated lights. Checks viewport boundary and renders with alternating attributes based on tick.
+D $754C #LIST { Stores position for rendering } { Checks if fuel station is within viewport } { Animates fuel lights based on tick counter } { Renders 2-tile wide, 25-pixel tall sprite } LIST#
   $754C,8 Store position to #R$8B0A and #R$8B0C. Set height=$19.
   $7556 Check if Y+$19 is off-screen (boundary check).
   $755D If off-screen, return to main loop.
@@ -2529,8 +2529,8 @@ D $754C #LIST { Stores position for rendering } { Checks if fuel station is with
 @ $7567 isub=CP VIEWPORT_HEIGHT
   $7569,11 Load fuel sprite #R$8A86, get sprite pointer via #R$75BA.
 @ $7577 isub=LD BC,SPRITE_FUEL_STATION_FRAME_SIZE
-  $7577 Set frame size=0, calculate animated attributes from metronome.
-@ $757D isub=AND METRONOME_INTERVAL_ANIMATE_FUEL
+  $7577 Set frame size=0, calculate animated attributes from tick.
+@ $757D isub=AND TICK_INTERVAL_ANIMATE_FUEL
 @ $757F isub=ADD A,SPRITE_FUEL_STATION_ATTRIBUTES
 @ $7582 isub=LD A,SPRITE_FUEL_STATION_WIDTH_TILES
   $7582 Set width=2, render via #R$8B1E.
