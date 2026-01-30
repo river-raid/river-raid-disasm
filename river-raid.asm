@@ -3887,22 +3887,31 @@ select_controls:
   LD (ptr_scroller),HL                 ;
   JP return_to_control_selection       ; Jump to title screen initialization.
 
-; Non-maskable interrupt handler
+; Maskable interrupt handler (IM 2)
 ;
-; Called 50 times per second by the Z80 NMI. Saves registers, increments frame counter, checks for pause key, and
-; processes game control flags for sound effects.
+; Frame interrupt handler triggered ~50 times/second by the ZX Spectrum ULA. Installed via IM 2 at game startup (see
+; init). Uses RETN instead of RETI (functionally equivalent on ZX Spectrum).
+;
+; The handler performs three functions each frame:
+;
+; * Increment system frame counter (FRAMES at int_counter)
+; * Check H key for pause (jumps to pause)
+; * Process control flags for sound effects (falls through to handle_controls)
+;
+; Note: The game tick counter (state_tick) is incremented in the main loop (main_loop), not here. FRAMES is used for
+; system timing, state_tick for game logic.
 int_handler:
-  DI                                   ; Disable interrupts and save all registers (HL, DE, BC, AF).
+  DI                                   ; Disable interrupts and save registers.
   PUSH HL                              ;
   PUSH DE                              ;
   PUSH BC                              ;
   PUSH AF                              ;
-  LD HL,int_counter                    ; Increment frame counter at FRAMES (int_counter).
+  LD HL,int_counter                    ; Increment FRAMES counter.
   INC (HL)                             ;
-  LD A,$BF                             ; Read keyboard row (H-B-N-M-SS). If H pressed, jump to pause (pause handler).
+  LD A,$BF                             ; Check H key for pause.
   IN A,($FE)                           ;
   BIT 4,A                              ;
-  JP Z,pause
+  JP Z,pause                           ;
 
 ; Process control state flags and trigger sound effects.
 ;
@@ -3931,15 +3940,16 @@ handle_controls:
   CP $06                               ; If both speed bits set, jump to beep_speed_combined (combined speed sound).
   JP Z,beep_speed_combined             ;
 
-; Return from the non-maskable interrupt handler.
+; Return from interrupt handler
 ;
-; Restores all saved registers and returns from NMI using RETN instruction.
+; Restores registers and returns. Uses RETN instead of RETI (both work identically on ZX Spectrum since ULA doesn't
+; respond to RETI).
 int_return:
-  POP AF                               ; Restore registers (AF, BC, DE, HL).
+  POP AF                               ; Restore registers.
   POP BC                               ;
   POP DE                               ;
   POP HL                               ;
-  EI                                   ; Enable interrupts and return from NMI.
+  EI                                   ; Enable interrupts and return.
   RETN                                 ;
 
 ; Unused

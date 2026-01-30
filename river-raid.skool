@@ -4304,23 +4304,41 @@ c$6BD2 LD HL,$8182   ; {Reset text pointer to #R$8182 (credits text start).
  $6BD5 LD ($5F7E),HL ; }
  $6BD8 JP $5D06      ; Jump to title screen initialization.
 
-; Non-maskable interrupt handler
+; Maskable interrupt handler (IM 2)
 ;
-; Called 50 times per second by the Z80 NMI. Saves registers, increments frame
-; counter, checks for pause key, and processes game control flags for sound
-; effects.
+; Frame interrupt handler triggered ~50 times/second by the ZX Spectrum ULA.
+; Installed via IM 2 at game startup (see #R$5CD2). Uses RETN instead of RETI
+; (functionally equivalent on ZX Spectrum).
+;
+; .
+;
+; The handler performs three functions each frame:
+; .
+; .
+; .
+; #LIST
+; { Increment system frame counter (FRAMES at #R$5C78) }
+; { Check H key for pause (jumps to #R$6BB1) }
+; { Process control flags for sound effects (falls through to #R$6BED) }
+; LIST#
+; .
+; .
+; .
+; Note: The game tick counter (#R$5EEF) is incremented in the main loop
+; (#R$5F91), not here. FRAMES is used for system timing, state_tick for game
+; logic.
 @label=int_handler
-c$6BDB DI            ; {Disable interrupts and save all registers (HL, DE, BC,
- $6BDC PUSH HL       ; AF).
+c$6BDB DI            ; {Disable interrupts and save registers.
+ $6BDC PUSH HL       ;
  $6BDD PUSH DE       ;
  $6BDE PUSH BC       ;
  $6BDF PUSH AF       ; }
- $6BE0 LD HL,$5C78   ; {Increment frame counter at FRAMES (#R$5C78).
+ $6BE0 LD HL,$5C78   ; {Increment FRAMES counter.
  $6BE3 INC (HL)      ; }
- $6BE4 LD A,$BF      ; {Read keyboard row (H-B-N-M-SS). If H pressed, jump to
- $6BE6 IN A,($FE)    ; #R$6BB1 (pause handler).
- $6BE8 BIT 4,A       ; }
- $6BEA JP Z,$6BB1    ;
+ $6BE4 LD A,$BF      ; {Check H key for pause.
+ $6BE6 IN A,($FE)    ;
+ $6BE8 BIT 4,A       ;
+ $6BEA JP Z,$6BB1    ; }
 
 ; Process control state flags and trigger sound effects.
 ;
@@ -4355,15 +4373,16 @@ c$6BED LD A,($5C08)  ; {If last key was 'h' (pause), skip sound processing.
  $6C1F CP $06        ; {If both speed bits set, jump to #R$6CD6 (combined speed
  $6C21 JP Z,$6CD6    ; sound).}
 
-; Return from the non-maskable interrupt handler.
+; Return from interrupt handler
 ;
-; Restores all saved registers and returns from NMI using RETN instruction.
+; Restores registers and returns. Uses RETN instead of RETI (both work
+; identically on ZX Spectrum since ULA doesn't respond to RETI).
 @label=int_return
-c$6C24 POP AF        ; {Restore registers (AF, BC, DE, HL).
+c$6C24 POP AF        ; {Restore registers.
  $6C25 POP BC        ;
  $6C26 POP DE        ;
  $6C27 POP HL        ; }
- $6C28 EI            ; {Enable interrupts and return from NMI.
+ $6C28 EI            ; {Enable interrupts and return.
  $6C29 RETN          ; }
 
 ; Unused

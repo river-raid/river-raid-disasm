@@ -1582,11 +1582,16 @@ D $6BD2 Resets the scrolling text pointer and jumps back to the title screen.
   $6BD2 Reset text pointer to #R$8182 (credits text start).
   $6BD8 Jump to title screen initialization.
 @ $6BDB label=int_handler
-c $6BDB Non-maskable interrupt handler
-D $6BDB Called 50 times per second by the Z80 NMI. Saves registers, increments frame counter, checks for pause key, and processes game control flags for sound effects.
-  $6BDB Disable interrupts and save all registers (HL, DE, BC, AF).
-  $6BE0 Increment frame counter at FRAMES (#R$5C78).
-  $6BE4,6 Read keyboard row (H-B-N-M-SS). If H pressed, jump to #R$6BB1 (pause handler).
+c $6BDB Maskable interrupt handler (IM 2)
+D $6BDB Frame interrupt handler triggered ~50 times/second by the ZX Spectrum ULA. Installed via IM 2 at game startup (see #R$5CD2). Uses RETN instead of RETI (functionally equivalent on ZX Spectrum).
+N $6BDB The handler performs three functions each frame:
+N $6BDB .
+N $6BDB #LIST { Increment system frame counter (FRAMES at #R$5C78) } { Check H key for pause (jumps to #R$6BB1) } { Process control flags for sound effects (falls through to #R$6BED) } LIST#
+N $6BDB .
+N $6BDB Note: The game tick counter (#R$5EEF) is incremented in the main loop (#R$5F91), not here. FRAMES is used for system timing, state_tick for game logic.
+  $6BDB Disable interrupts and save registers.
+  $6BE0 Increment FRAMES counter.
+  $6BE4 Check H key for pause.
 @ $6BED label=handle_controls
 c $6BED Process control state flags and trigger sound effects.
 D $6BED Called from interrupt handler to process various control flags like fire, bonus life, explosion, and low fuel sounds.
@@ -1604,10 +1609,10 @@ D $6BED Called from interrupt handler to process various control flags like fire
   $6C1A If only SPEED_ALTERED set, jump to #R$6CB8 (acceleration sound).
   $6C1F If both speed bits set, jump to #R$6CD6 (combined speed sound).
 @ $6C24 label=int_return
-c $6C24 Return from the non-maskable interrupt handler.
-D $6C24 Restores all saved registers and returns from NMI using RETN instruction.
-  $6C24 Restore registers (AF, BC, DE, HL).
-  $6C28,3 Enable interrupts and return from NMI.
+c $6C24 Return from interrupt handler
+D $6C24 Restores registers and returns. Uses RETN instead of RETI (both work identically on ZX Spectrum since ULA doesn't respond to RETI).
+  $6C24 Restore registers.
+  $6C28 Enable interrupts and return.
 @ $6C2B label=data_unused_6C2B
 u $6C2B
 @ $6C30 label=bonus_life_sound_counter
