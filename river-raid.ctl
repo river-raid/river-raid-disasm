@@ -1593,21 +1593,23 @@ N $6BDB Note: The game tick counter (#R$5EEF) is incremented in the main loop (#
   $6BE0 Increment FRAMES counter.
   $6BE4 Check H key for pause.
 @ $6BED label=handle_controls
-c $6BED Process control state flags and trigger sound effects.
-D $6BED Called from interrupt handler to process various control flags like fire, bonus life, explosion, and low fuel sounds.
-  $6BED If last key was 'h' (pause), skip sound processing.
-  $6BF5 Load #R$6BB0 (controls). If FIRE bit set, call #R$8A02 (fire sound).
+c $6BED Process control state flags and trigger sound effects
+D $6BED Sound processing dispatcher called from interrupt handler. Reads #R$6BB0 control flags and calls appropriate sound routines. Multiple sounds can trigger simultaneously (e.g., fire + low fuel).
+D $6BED #TABLE(default) { =h Bit | =h Flag | =h Sound Handler } { 0 | FIRE | #R$8A02 (fire) } { 1 | SPEED_DECREASED | #R$6C5D (deceleration) } { 2 | SPEED_ALTERED | #R$6CB8 (acceleration) } { 1+2 | Both speed bits | #R$6CD6 (combined) } { 3 | LOW_FUEL | #R$6CF4 (warning) } { 4 | BONUS_LIFE | #R$6C31 (jingle) } { 5 | EXPLODING | #R$6C7B (explosion) } TABLE#
+N $6BED Flags are set by game logic (input handlers, collision, fuel system) and cleared by sound routines when complete.
+  $6BED Skip if paused (H key).
+  $6BF5 Check FIRE → #R$8A02.
 @ $6BF8 isub=BIT CONTROLS_BIT_FIRE,(HL)
 @ $6BFD isub=BIT CONTROLS_BIT_BONUS_LIFE,(HL)
-  $6BFD If BONUS_LIFE bit set, call #R$6C31 (bonus life sound).
+  $6BFD Check BONUS_LIFE → #R$6C31.
 @ $6C05 isub=BIT CONTROLS_BIT_EXPLODING,(HL)
-  $6C05 Reload controls. If EXPLODING bit set, call #R$6C7B (explosion sound).
+  $6C05 Check EXPLODING → #R$6C7B.
 @ $6C0D isub=BIT CONTROLS_BIT_LOW_FUEL,(HL)
-  $6C0D Reload controls. If LOW_FUEL bit set, jump to #R$6CF4 (low fuel warning).
-  $6C13 Mask control byte to isolate SPEED_DECREASED and SPEED_ALTERED bits.
-  $6C15 If only SPEED_DECREASED set, jump to #R$6C5D (deceleration sound).
-  $6C1A If only SPEED_ALTERED set, jump to #R$6CB8 (acceleration sound).
-  $6C1F If both speed bits set, jump to #R$6CD6 (combined speed sound).
+  $6C0D Check LOW_FUEL → #R$6CF4.
+  $6C13 Mask speed bits (1+2).
+  $6C15 SPEED_DECREASED only → #R$6C5D.
+  $6C1A SPEED_ALTERED only → #R$6CB8.
+  $6C1F Both speed bits → #R$6CD6.
 @ $6C24 label=int_return
 c $6C24 Return from interrupt handler
 D $6C24 Restores registers and returns. Uses RETN instead of RETI (both work identically on ZX Spectrum since ULA doesn't respond to RETI).

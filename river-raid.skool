@@ -4340,38 +4340,54 @@ c$6BDB DI            ; {Disable interrupts and save registers.
  $6BE8 BIT 4,A       ;
  $6BEA JP Z,$6BB1    ; }
 
-; Process control state flags and trigger sound effects.
+; Process control state flags and trigger sound effects
 ;
-; Called from interrupt handler to process various control flags like fire,
-; bonus life, explosion, and low fuel sounds.
+; Sound processing dispatcher called from interrupt handler. Reads #R$6BB0
+; control flags and calls appropriate sound routines. Multiple sounds can
+; trigger simultaneously (e.g., fire + low fuel).
+; .
+; #TABLE(default)
+; { =h Bit | =h Flag | =h Sound Handler }
+; { 0 | FIRE | #R$8A02 (fire) }
+; { 1 | SPEED_DECREASED | #R$6C5D (deceleration) }
+; { 2 | SPEED_ALTERED | #R$6CB8 (acceleration) }
+; { 1+2 | Both speed bits | #R$6CD6 (combined) }
+; { 3 | LOW_FUEL | #R$6CF4 (warning) }
+; { 4 | BONUS_LIFE | #R$6C31 (jingle) }
+; { 5 | EXPLODING | #R$6C7B (explosion) }
+; TABLE#
+;
+; .
+;
+; Flags are set by game logic (input handlers, collision, fuel system) and
+; cleared by sound routines when complete.
 @label=handle_controls
-c$6BED LD A,($5C08)  ; {If last key was 'h' (pause), skip sound processing.
+c$6BED LD A,($5C08)  ; {Skip if paused (H key).
  $6BF0 CP $68        ;
  $6BF2 JP Z,$6C24    ; }
- $6BF5 LD HL,$6BB0   ; {Load #R$6BB0 (controls). If FIRE bit set, call #R$8A02
+ $6BF5 LD HL,$6BB0   ; {Check FIRE → #R$8A02.
 @isub=BIT CONTROLS_BIT_FIRE,(HL)
- $6BF8 BIT 0,(HL)    ; (fire sound).
+ $6BF8 BIT 0,(HL)    ;
  $6BFA CALL NZ,$8A02 ; }
 @isub=BIT CONTROLS_BIT_BONUS_LIFE,(HL)
- $6BFD BIT 4,(HL)    ; {If BONUS_LIFE bit set, call #R$6C31 (bonus life sound).
+ $6BFD BIT 4,(HL)    ; {Check BONUS_LIFE → #R$6C31.
  $6BFF CALL NZ,$6C31 ;
  $6C02 LD HL,$6BB0   ; }
 @isub=BIT CONTROLS_BIT_EXPLODING,(HL)
- $6C05 BIT 5,(HL)    ; {Reload controls. If EXPLODING bit set, call #R$6C7B
- $6C07 CALL NZ,$6C7B ; (explosion sound).
+ $6C05 BIT 5,(HL)    ; {Check EXPLODING → #R$6C7B.
+ $6C07 CALL NZ,$6C7B ;
  $6C0A LD HL,$6BB0   ; }
 @isub=BIT CONTROLS_BIT_LOW_FUEL,(HL)
- $6C0D BIT 3,(HL)    ; {Reload controls. If LOW_FUEL bit set, jump to #R$6CF4
- $6C0F JP NZ,$6CF4   ; (low fuel warning).
+ $6C0D BIT 3,(HL)    ; {Check LOW_FUEL → #R$6CF4.
+ $6C0F JP NZ,$6CF4   ;
  $6C12 LD A,(HL)     ; }
- $6C13 AND $06       ; Mask control byte to isolate SPEED_DECREASED and
-                     ; SPEED_ALTERED bits.
- $6C15 CP $02        ; {If only SPEED_DECREASED set, jump to #R$6C5D
- $6C17 JP Z,$6C5D    ; (deceleration sound).}
- $6C1A CP $04        ; {If only SPEED_ALTERED set, jump to #R$6CB8
- $6C1C JP Z,$6CB8    ; (acceleration sound).}
- $6C1F CP $06        ; {If both speed bits set, jump to #R$6CD6 (combined speed
- $6C21 JP Z,$6CD6    ; sound).}
+ $6C13 AND $06       ; Mask speed bits (1+2).
+ $6C15 CP $02        ; {SPEED_DECREASED only → #R$6C5D.
+ $6C17 JP Z,$6C5D    ; }
+ $6C1A CP $04        ; {SPEED_ALTERED only → #R$6CB8.
+ $6C1C JP Z,$6CB8    ; }
+ $6C1F CP $06        ; {Both speed bits → #R$6CD6.
+ $6C21 JP Z,$6CD6    ; }
 
 ; Return from interrupt handler
 ;

@@ -1,6 +1,6 @@
 # Task 004: Document Process Controls
 
-**Status:** Todo
+**Status:** Done
 **Phase:** 1 - System Architecture
 **Address:** $6BED
 **Priority:** Critical
@@ -23,11 +23,25 @@ The routine at $6BED executes ~43M times per game session. It processes control 
 
 ## Acceptance Criteria
 
-- [ ] D block describes the input→action→sound pipeline
-- [ ] Control state bits are explained in context
-- [ ] Sound effect triggers are identified
-- [ ] Input and sound routines are cross-referenced
-- [ ] Build passes after changes
+- [x] D block describes the input→action→sound pipeline
+- [x] Control state bits are explained in context
+- [x] Sound effect triggers are identified
+- [x] Input and sound routines are cross-referenced
+- [x] Build passes after changes
+
+## Completed Work
+
+- Added D block explaining the sound processing dispatcher role
+- Added table showing all control bits and their sound handlers:
+  - Bit 0 (FIRE) → #R$8A02 (fire sound)
+  - Bit 1 (SPEED_DECREASED) → #R$6C5D (deceleration)
+  - Bit 2 (SPEED_ALTERED) → #R$6CB8 (acceleration)
+  - Bits 1+2 combined → #R$6CD6 (combined speed)
+  - Bit 3 (LOW_FUEL) → #R$6CF4 (warning warble)
+  - Bit 4 (BONUS_LIFE) → #R$6C31 (jingle)
+  - Bit 5 (EXPLODING) → #R$6C7B (explosion)
+- Added N block explaining flag lifecycle (set by game logic, cleared by sound routines)
+- Simplified line comments for clarity
 
 ## Notes
 

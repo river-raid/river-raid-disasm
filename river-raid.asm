@@ -3913,31 +3913,46 @@ int_handler:
   BIT 4,A                              ;
   JP Z,pause                           ;
 
-; Process control state flags and trigger sound effects.
+; Process control state flags and trigger sound effects
 ;
-; Called from interrupt handler to process various control flags like fire, bonus life, explosion, and low fuel sounds.
+; Sound processing dispatcher called from interrupt handler. Reads state_controls control flags and calls appropriate
+; sound routines. Multiple sounds can trigger simultaneously (e.g., fire + low fuel).
+;
+; +-----+-----------------+-------------------------------------+
+; | Bit | Flag            | Sound Handler                       |
+; +-----+-----------------+-------------------------------------+
+; | 0   | FIRE            | do_fire (fire)                      |
+; | 1   | SPEED_DECREASED | beep_speed_decreased (deceleration) |
+; | 2   | SPEED_ALTERED   | beep_speed_increased (acceleration) |
+; | 1+2 | Both speed bits | beep_speed_combined (combined)      |
+; | 3   | LOW_FUEL        | do_low_fuel (warning)               |
+; | 4   | BONUS_LIFE      | do_bonus_life (jingle)              |
+; | 5   | EXPLODING       | beep_explosion (explosion)          |
+; +-----+-----------------+-------------------------------------+
+;
+; Flags are set by game logic (input handlers, collision, fuel system) and cleared by sound routines when complete.
 handle_controls:
-  LD A,(LAST_K)                        ; If last key was 'h' (pause), skip sound processing.
+  LD A,(LAST_K)                        ; Skip if paused (H key).
   CP $68                               ;
   JP Z,int_return                      ;
-  LD HL,state_controls                 ; Load state_controls (controls). If FIRE bit set, call do_fire (fire sound).
+  LD HL,state_controls                 ; Check FIRE → do_fire.
   BIT CONTROLS_BIT_FIRE,(HL)           ;
   CALL NZ,do_fire                      ;
-  BIT CONTROLS_BIT_BONUS_LIFE,(HL)     ; If BONUS_LIFE bit set, call do_bonus_life (bonus life sound).
+  BIT CONTROLS_BIT_BONUS_LIFE,(HL)     ; Check BONUS_LIFE → do_bonus_life.
   CALL NZ,do_bonus_life                ;
   LD HL,state_controls                 ;
-  BIT CONTROLS_BIT_EXPLODING,(HL)      ; Reload controls. If EXPLODING bit set, call beep_explosion (explosion sound).
+  BIT CONTROLS_BIT_EXPLODING,(HL)      ; Check EXPLODING → beep_explosion.
   CALL NZ,beep_explosion               ;
   LD HL,state_controls                 ;
-  BIT CONTROLS_BIT_LOW_FUEL,(HL)       ; Reload controls. If LOW_FUEL bit set, jump to do_low_fuel (low fuel warning).
+  BIT CONTROLS_BIT_LOW_FUEL,(HL)       ; Check LOW_FUEL → do_low_fuel.
   JP NZ,do_low_fuel                    ;
   LD A,(HL)                            ;
-  AND $06                              ; Mask control byte to isolate SPEED_DECREASED and SPEED_ALTERED bits.
-  CP $02                               ; If only SPEED_DECREASED set, jump to beep_speed_decreased (deceleration sound).
+  AND $06                              ; Mask speed bits (1+2).
+  CP $02                               ; SPEED_DECREASED only → beep_speed_decreased.
   JP Z,beep_speed_decreased            ;
-  CP $04                               ; If only SPEED_ALTERED set, jump to beep_speed_increased (acceleration sound).
+  CP $04                               ; SPEED_ALTERED only → beep_speed_increased.
   JP Z,beep_speed_increased            ;
-  CP $06                               ; If both speed bits set, jump to beep_speed_combined (combined speed sound).
+  CP $06                               ; Both speed bits → beep_speed_combined.
   JP Z,beep_speed_combined             ;
 
 ; Return from interrupt handler
