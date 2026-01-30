@@ -344,8 +344,8 @@ D $5DA6 This routine prepares the game for play and is called when starting a ne
   $5DA6 Initialize island line index (starting line for island rendering).
   $5DAB Initialize activation interval (objects activate when int_counter AND $1F == 0, i.e., every 32 frames).
   $5DB0
-@ $5DB4 isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
-  $5DB4 Clear screen with PAPER BLUE, INK GREEN.
+@ $5DB4 isub=LD D,COLOR_RIVER<<3|COLOR_BANK
+  $5DB4 Clear screen with PAPER RIVER, INK BANK.
   $5DB9
 @ $5DBF isub=LD BC,status_line_2 - status_line_1
   $5DBC Print status line 1.
@@ -370,10 +370,10 @@ D $5DA6 This routine prepares the game for play and is called when starting a ne
   $5E15
   $5E1B Open channel 1 for score display.
 @ $5E20 isub=LD A,EXT_ATTR_AT
-  $5E20 Position cursor at row 1, column 5.
+  $5E20 AT 1,5
 @ $5E29 isub=LD A,EXT_ATTR_INK
-@ $5E2C isub=LD A,COLOR_YELLOW
-  $5E29 Set ink color to yellow.
+@ $5E2C isub=LD A,COLOR_PLAYER_1
+  $5E29 INK PLAYER_1
 @ $5E32 isub=LD BC,state_score_player_2_low - state_score_player_1_low
   $5E2F Print player 1 score.
   $5E38 Open channel 2.
@@ -981,7 +981,7 @@ N $64BC Uses ROM routine at $203C to print status line text and $1A1B (OUT_NUM_1
   $64BC,5 If Player 2, jump to #R$64E5.
 @ $64BF isub=CP PLAYER_2
 @ $64C4 isub=LD A,EXT_ATTR_INK
-  $64C4 Set ink to COLOR_PLAYER_1.
+  $64C4 INK PLAYER_1
 @ $64C7 isub=LD A,COLOR_PLAYER_1
   $64CA Print #R$804F (11 bytes) to position cursor.
 @ $64CD isub=LD BC,status_line_4 - status_line_3
@@ -992,7 +992,7 @@ N $64BC Uses ROM routine at $203C to print status line text and $1A1B (OUT_NUM_1
 @ $64E5 isub=LD A,EXT_ATTR_INK
 c $64E5 Print bridge number for Player 2
 N $64E5 Entry point when current player is Player 2. Sets ink color and falls through to common printing logic.
-  $64E5 Set ink to COLOR_PLAYER_2.
+  $64E5 INK PLAYER_2
 @ $64E8 isub=LD A,COLOR_PLAYER_2
   $64EB Set up DE=$804F, BC=11 for status text.
 @ $64EE isub=LD BC,status_line_4 - status_line_3
@@ -1076,7 +1076,7 @@ D $6587 This routine is called during overview mode to set up the Player 2 statu
   $658D Set current player to Player 2 ($01)
   $6592 Print current bridge number for Player 2
 @ $6595 isub=LD A,EXT_ATTR_INK
-  $6595 INK of Player 2 color
+  $6595 INK PLAYER_2
 @ $6598 isub=LD A,COLOR_PLAYER_2
 @ $659B isub=LD A,EXT_ATTR_AT
   $659B,6 AT 20,...
@@ -1729,10 +1729,10 @@ D $6CF4 #LIST { Decrements #R$5F65 each frame, wrapping at $7F (0-127 range) } {
 @ $6D17 label=overview
 c $6D17 Level overview screen
 D $6D17 Displays a preview fly-over of the upcoming terrain before the game starts. Shows scrolling terrain with game number and scrolling title text. Player can press Enter to start the game early, or wait for 5 scroll units to auto-start.
-D $6D17 #LIST { Initializes screen with PAPER BLUE, INK GREEN } { Prints status line and "GAME n" where n is the game mode (1-4) } { Runs a main loop that scrolls terrain and displays title text } { Exits to game start after 5 scroll increments or Enter key } LIST#
+D $6D17 #LIST { Initializes screen with PAPER RIVER, INK BANK } { Prints status line and "GAME n" where n is the game mode (1-4) } { Runs a main loop that scrolls terrain and displays title text } { Exits to game start after 5 scroll increments or Enter key } LIST#
   $6D17,9 Initialize scroll position (#R$5F70 = $0010) and scroll speed (#R$5EFD = $10).
-@ $6D23 isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
-  $6D23 Set screen colors (PAPER BLUE, INK GREEN) via #R$940A.
+@ $6D23 isub=LD D,COLOR_RIVER<<3|COLOR_BANK
+  $6D23 Set screen colors (PAPER RIVER, INK BANK) via #R$940A.
   $6D28 Clear/initialize screen via #R$8A33.
   $6D2B Print status line 1 (#R$8000, length $31 bytes) using ROM PR_STRING ($203C).
 @ $6D2E isub=LD BC,status_line_2 - status_line_1
@@ -1752,13 +1752,13 @@ D $6D17 #LIST { Initializes screen with PAPER BLUE, INK GREEN } { Prints status 
   $6DA3,7 Check frame counter AND 3: if not zero, loop back to overview_loop.
   $6DAD Select upper screen channel via ROM CHAN_OPEN ($1601).
 @ $6DB2 isub=LD A,EXT_ATTR_INK
-  $6DB2 Set INK BLACK for title text area.
+  $6DB2 INK BLACK
 @ $6DB5 isub=LD A,COLOR_BLACK
 @ $6DB8 isub=LD A,EXT_ATTR_PAPER
-  $6DB8 Set PAPER BLACK for title text area.
+  $6DB8 PAPER BLACK
 @ $6DBB isub=LD A,COLOR_BLACK
 @ $6DBE isub=LD A,EXT_ATTR_AT
-  $6DBE Position cursor AT row 1, column 31.
+  $6DBE AT 1,31
   $6DC7 Advance text pointer (#R$5F7E), get next character.
   $6DD1,9 If character is $FF (end of text), jump to #R$6DDD to reset. Otherwise print character and continue loop.
 @ $6DDD label=reset_scroll_text
@@ -2823,14 +2823,14 @@ T $8022 AT 21,8
 @ $8025 isub=DEFM EXT_ATTR_INK,COLOR_MAGENTA
 T $8025 INK MAGENTA
 B $8027 Fuel gauge reading UDG
-@ $802F isub=DEFM EXT_ATTR_INK,COLOR_YELLOW
-T $802F INK YELLOW
+@ $802F isub=DEFM EXT_ATTR_INK,COLOR_PLAYER_1
+T $802F INK PLAYER_1
 @ $8031 label=status_line_2
 @ $8031 isub=DEFM EXT_ATTR_AT,$01,$02
 t $8031
 T $8031 AT 1,2
-@ $8034 isub=DEFM EXT_ATTR_INK,COLOR_YELLOW
-T $8034 INK YELLOW
+@ $8034 isub=DEFM EXT_ATTR_INK,COLOR_PLAYER_1
+T $8034 INK PLAYER_1
 T $8036
 @ $8040 isub=DEFM EXT_ATTR_INK,COLOR_WHITE
 T $8040 INK WHITE
@@ -3279,13 +3279,13 @@ c $914B Print a digit from player 1's score.
 D $914B Prints a single score digit at the correct screen position using ROM RST $10 character output.
 R $914B I:D Digit offset (0-5, used to calculate column).
 R $914B I:HL Pointer to the digit character.
-  $914B Set INK to player 1 color (yellow).
+  $914B INK PLAYER_1
 @ $914E isub=LD A,COLOR_PLAYER_1
 @ $9151 isub=LD A,EXT_ATTR_PAPER
-  $9151 Set PAPER to black.
+  $9151 PAPER BLACK
 @ $9154 isub=LD A,COLOR_BLACK
 @ $9157 isub=LD A,EXT_ATTR_AT
-  $9157 Set cursor position to row 1.
+  $9157 AT 1,...
   $915D Calculate column = offset + 5, print column position.
   $9161 Load digit from score buffer and print it.
   $9163 Switch to channel 2 (main screen) and return.
@@ -3304,10 +3304,10 @@ c $9179 Print a digit from player 2's score.
 D $9179 Prints a single score digit at the correct screen position using ROM RST $10 character output.
 R $9179 I:D Digit offset (0-5, used to calculate column).
 R $9179 I:HL Pointer to the digit character.
-  $9179 Set INK to player 2 color (cyan).
+  $9179 INK PLAYER_2
 @ $917C isub=LD A,COLOR_PLAYER_2
 @ $917F isub=LD A,EXT_ATTR_AT
-  $917F Set cursor position to row 1.
+  $917F AT 1,...
   $9185 Calculate column = offset + 21, print column position.
   $9189 Load digit from score buffer and print it.
   $918B Switch to channel 2 (main screen) and return.
@@ -3337,13 +3337,13 @@ R $91A9 I:HL Pointer to the overflowed digit.
 @ $91C1 isub=LD A,EXT_ATTR_INK
 c $91C1 Print player 2's score on the status line.
 D $91C1 Displays player 2's full score area including "P2" label and leading zero.
-  $91C1 Set INK to player 2 color (cyan).
+  $91C1 INK PLAYER_2
 @ $91C4 isub=LD A,COLOR_PLAYER_2
 @ $91C7 isub=LD BC,high_score_bridge_1 - state_score_player_2_low
   $91C7 Print 6-digit score from #R$90C2 via ROM PR_STRING.
   $91D0 Print trailing '0' after score.
 @ $91D3 isub=LD A,EXT_ATTR_AT
-  $91D3 Position cursor at row 1, column 18.
+  $91D3 AT 1,18
   $91DC Print "P2" label.
   $91E2 Switch to channel 2 (main screen) and return.
 @ $91E8 label=print_player_2_score_area
@@ -3351,15 +3351,15 @@ c $91E8 Print player 2 score area or high score on status line.
 D $91E8 In 2-player mode, prints player 2's score. In 1-player mode, prints the high score for the current starting bridge.
   $91E8 Open channel 1 (upper screen).
 @ $91ED isub=LD A,EXT_ATTR_AT
-  $91ED Position cursor at row 1, column 21.
+  $91ED AT 1,21
   $91F6 If 2-player mode, jump to #R$91C1 to print player 2 score.
 @ $91F9 isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
 @ $91FE isub=LD A,EXT_ATTR_INK
-  $91FE Set INK to white (for high score display).
+  $91FE INK WHITE
 @ $9201 isub=LD A,COLOR_WHITE
   $9204 Calculate high score address: base (#R$90C8) + ((game_mode AND $FE) * 3). Print 6-digit high score with leading '0'.
 @ $9225 isub=LD A,EXT_ATTR_AT
-  $9225 Position cursor at row 1, column 18.
+  $9225 AT 1,18
   $922E,11 Print "HI" label, switch to channel 2 (main screen).
 @ $923A label=state_game_mode
 b $923A The game mode storing the number of players in the first bit and the starting bridge in the next two.
@@ -3376,7 +3376,7 @@ D $923E Displays the remaining lives as plane UDG symbols at row 20, column 18. 
   $923E,5 If current player is player 2, jump to #R$9277.
 @ $9241 isub=CP PLAYER_2
 @ $9246 isub=LD A,EXT_ATTR_INK
-  $9246 Set INK to player 1 color (yellow).
+  $9246 INK PLAYER_1
 @ $9249 isub=LD A,COLOR_PLAYER_1
   $924C Load player 1 lives count and fall through.
 @ $924F label=print_lives_continue
@@ -3385,7 +3385,7 @@ D $924F Positions cursor and prints plane symbols for each life. Pads with space
 R $924F I:A Number of lives.
   $924F Store lives count in B for loop counter.
 @ $9250 isub=LD A,EXT_ATTR_AT
-  $9250 Position cursor at row 20, column 18.
+  $9250 AT 20,18
   $9259 If lives count is 0, skip to padding.
 @ $925F label=print_lives_loop
   $925F Print ✈ UDG symbol, loop B times.
@@ -3398,7 +3398,7 @@ D $9264 Ensures any previously displayed lives that no longer exist are erased.
 c $9277 Player 2 branch of #R$923E.
 D $9277 Sets player 2 color and loads player 2 lives count before jumping to common display code.
 R $9277 O:A Number of lives.
-  $9277 Set INK to player 2 color (cyan).
+  $9277 INK PLAYER_2
 @ $927A isub=LD A,COLOR_PLAYER_2
   $927D,6 Load player 2 lives count and jump to #R$924F.
 @ $9283 label=ptr_state_controls

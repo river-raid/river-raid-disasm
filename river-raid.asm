@@ -1315,7 +1315,7 @@ play:
   LD A,$1F                             ; Initialize activation interval (objects activate when int_counter AND $1F == 0,
   LD (state_activation_interval),A     ; i.e., every 32 frames).
   LD SP,(saved_stack_pointer)
-  LD D,COLOR_BLUE<<3|COLOR_GREEN       ; Clear screen with PAPER BLUE, INK GREEN.
+  LD D,COLOR_RIVER<<3|COLOR_BANK       ; Clear screen with PAPER RIVER, INK BANK.
   CALL clear_screen                    ;
   CALL init_udg
   LD DE,status_line_1                  ; Print status line 1.
@@ -1354,15 +1354,15 @@ play:
   CALL print_lives
   LD A,$01                             ; Open channel 1 for score display.
   CALL CHAN_OPEN                       ;
-  LD A,EXT_ATTR_AT                     ; Position cursor at row 1, column 5.
+  LD A,EXT_ATTR_AT                     ; AT 1,5
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
   LD A,$05                             ;
   RST $10                              ;
-  LD A,EXT_ATTR_INK                    ; Set ink color to yellow.
+  LD A,EXT_ATTR_INK                    ; INK PLAYER_1
   RST $10                              ;
-  LD A,COLOR_YELLOW                    ;
+  LD A,COLOR_PLAYER_1                  ;
   RST $10                              ;
   LD DE,state_score_player_1_low                            ; Print player 1 score.
   LD BC,state_score_player_2_low - state_score_player_1_low ;
@@ -2557,7 +2557,7 @@ print_bridge:
   LD A,(state_player)                  ; If Player 2, jump to print_bridge_player_2.
   CP PLAYER_2                          ;
   JP Z,print_bridge_player_2
-  LD A,EXT_ATTR_INK                    ; Set ink to COLOR_PLAYER_1.
+  LD A,EXT_ATTR_INK                    ; INK PLAYER_1
   RST $10                              ;
   LD A,COLOR_PLAYER_1                  ;
   RST $10                              ;
@@ -2579,7 +2579,7 @@ print_bridge:
 ;
 ; Entry point when current player is Player 2. Sets ink color and falls through to common printing logic.
 print_bridge_player_2:
-  LD A,EXT_ATTR_INK                    ; Set ink to COLOR_PLAYER_2.
+  LD A,EXT_ATTR_INK                    ; INK PLAYER_2
   RST $10                              ;
   LD A,COLOR_PLAYER_2                  ;
   RST $10                              ;
@@ -2704,7 +2704,7 @@ setup_player_2_display:
   LD A,$01                             ; Set current player to Player 2 ($01)
   LD (state_player),A                  ;
   CALL print_bridge                    ; Print current bridge number for Player 2
-  LD A,EXT_ATTR_INK                    ; INK of Player 2 color
+  LD A,EXT_ATTR_INK                    ; INK PLAYER_2
   RST $10                              ;
   LD A,COLOR_PLAYER_2                  ;
   RST $10                              ;
@@ -4154,7 +4154,7 @@ do_low_fuel_delay_off:
 ; Displays a preview fly-over of the upcoming terrain before the game starts. Shows scrolling terrain with game number
 ; and scrolling title text. Player can press Enter to start the game early, or wait for 5 scroll units to auto-start.
 ;
-; * Initializes screen with PAPER BLUE, INK GREEN
+; * Initializes screen with PAPER RIVER, INK BANK
 ; * Prints status line and "GAME n" where n is the game mode (1-4)
 ; * Runs a main loop that scrolls terrain and displays title text
 ; * Exits to game start after 5 scroll increments or Enter key
@@ -4163,7 +4163,7 @@ overview:
   LD (state_scroll_offset),BC          ; (state_island_line_idx = $10).
   LD A,$10                             ;
   LD (state_island_line_idx),A
-  LD D,COLOR_BLUE<<3|COLOR_GREEN       ; Set screen colors (PAPER BLUE, INK GREEN) via clear_screen.
+  LD D,COLOR_RIVER<<3|COLOR_BANK       ; Set screen colors (PAPER RIVER, INK BANK) via clear_screen.
   CALL clear_screen                    ;
   CALL init_udg                        ; Clear/initialize screen via init_udg.
   LD DE,status_line_1                  ; Print status line 1 (status_line_1, length $31 bytes) using ROM PR_STRING
@@ -4221,15 +4221,15 @@ overview_loop:
   JP NZ,overview_loop
   LD A,$01                             ; Select upper screen channel via ROM CHAN_OPEN ($1601).
   CALL CHAN_OPEN                       ;
-  LD A,EXT_ATTR_INK                    ; Set INK BLACK for title text area.
+  LD A,EXT_ATTR_INK                    ; INK BLACK
   RST $10                              ;
   LD A,COLOR_BLACK                     ;
   RST $10                              ;
-  LD A,EXT_ATTR_PAPER                  ; Set PAPER BLACK for title text area.
+  LD A,EXT_ATTR_PAPER                  ; PAPER BLACK
   RST $10                              ;
   LD A,COLOR_BLACK                     ;
   RST $10                              ;
-  LD A,EXT_ATTR_AT                     ; Position cursor AT row 1, column 31.
+  LD A,EXT_ATTR_AT                     ; AT 1,31
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
@@ -6505,12 +6505,12 @@ status_line_1:
   DEFM EXT_ATTR_AT,$15,$08             ; AT 21,8
   DEFM EXT_ATTR_INK,COLOR_MAGENTA      ; INK MAGENTA
   DEFB $8F,$8F,$8F,$8F,$8F,$8F,$8F,$8F ; Fuel gauge reading UDG
-  DEFM EXT_ATTR_INK,COLOR_YELLOW       ; INK YELLOW
+  DEFM EXT_ATTR_INK,COLOR_PLAYER_1     ; INK PLAYER_1
 
 ; Message at 8031
 status_line_2:
   DEFM EXT_ATTR_AT,$01,$02             ; AT 1,2
-  DEFM EXT_ATTR_INK,COLOR_YELLOW       ; INK YELLOW
+  DEFM EXT_ATTR_INK,COLOR_PLAYER_1     ; INK PLAYER_1
   DEFM "P1 0000000"
   DEFM EXT_ATTR_INK,COLOR_WHITE        ; INK WHITE
   DEFM EXT_ATTR_AT,$01,$12             ; AT 1,18
@@ -8065,15 +8065,15 @@ inc_player_1_score_digit:
 ; I:D Digit offset (0-5, used to calculate column).
 ; I:HL Pointer to the digit character.
 print_player_1_score_digit:
-  LD A,EXT_ATTR_INK                    ; Set INK to player 1 color (yellow).
+  LD A,EXT_ATTR_INK                    ; INK PLAYER_1
   RST $10                              ;
   LD A,COLOR_PLAYER_1                  ;
   RST $10                              ;
-  LD A,EXT_ATTR_PAPER                  ; Set PAPER to black.
+  LD A,EXT_ATTR_PAPER                  ; PAPER BLACK
   RST $10                              ;
   LD A,COLOR_BLACK                     ;
   RST $10                              ;
-  LD A,EXT_ATTR_AT                     ; Set cursor position to row 1.
+  LD A,EXT_ATTR_AT                     ; AT 1,...
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
@@ -8112,11 +8112,11 @@ inc_player_2_score_digit:
 ; I:D Digit offset (0-5, used to calculate column).
 ; I:HL Pointer to the digit character.
 print_player_2_score_digit:
-  LD A,EXT_ATTR_INK                    ; Set INK to player 2 color (cyan).
+  LD A,EXT_ATTR_INK                    ; INK PLAYER_2
   RST $10                              ;
   LD A,COLOR_PLAYER_2                  ;
   RST $10                              ;
-  LD A,EXT_ATTR_AT                     ; Set cursor position to row 1.
+  LD A,EXT_ATTR_AT                     ; AT 1,...
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
@@ -8179,7 +8179,7 @@ carry_player_2_score_digit:
 ;
 ; Displays player 2's full score area including "P2" label and leading zero.
 print_score_player_2:
-  LD A,EXT_ATTR_INK                    ; Set INK to player 2 color (cyan).
+  LD A,EXT_ATTR_INK                    ; INK PLAYER_2
   RST $10                              ;
   LD A,COLOR_PLAYER_2                  ;
   RST $10                              ;
@@ -8188,7 +8188,7 @@ print_score_player_2:
   CALL PR_STRING                                       ;
   LD A,$30                             ; Print trailing '0' after score.
   RST $10                              ;
-  LD A,EXT_ATTR_AT                     ; Position cursor at row 1, column 18.
+  LD A,EXT_ATTR_AT                     ; AT 1,18
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
@@ -8208,7 +8208,7 @@ print_score_player_2:
 print_player_2_score_area:
   LD A,$01                             ; Open channel 1 (upper screen).
   CALL CHAN_OPEN                       ;
-  LD A,EXT_ATTR_AT                     ; Position cursor at row 1, column 21.
+  LD A,EXT_ATTR_AT                     ; AT 1,21
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
@@ -8217,7 +8217,7 @@ print_player_2_score_area:
   LD A,(state_game_mode)               ; If 2-player mode, jump to print_score_player_2 to print player 2 score.
   BIT GAME_MODE_BIT_TWO_PLAYERS,A      ;
   JP NZ,print_score_player_2           ;
-  LD A,EXT_ATTR_INK                    ; Set INK to white (for high score display).
+  LD A,EXT_ATTR_INK                    ; INK WHITE
   RST $10                              ;
   LD A,COLOR_WHITE                     ;
   RST $10                              ;
@@ -8238,7 +8238,7 @@ print_player_2_score_area:
   CALL PR_STRING                       ;
   LD A,$30                             ;
   RST $10                              ;
-  LD A,EXT_ATTR_AT                     ; Position cursor at row 1, column 18.
+  LD A,EXT_ATTR_AT                     ; AT 1,18
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
@@ -8276,7 +8276,7 @@ print_lives:
   LD A,(state_player)                  ; If current player is player 2, jump to print_lives_player_2.
   CP PLAYER_2                          ;
   JP Z,print_lives_player_2
-  LD A,EXT_ATTR_INK                    ; Set INK to player 1 color (yellow).
+  LD A,EXT_ATTR_INK                    ; INK PLAYER_1
   RST $10                              ;
   LD A,COLOR_PLAYER_1                  ;
   RST $10                              ;
@@ -8289,7 +8289,7 @@ print_lives:
 ; I:A Number of lives.
 print_lives_continue:
   LD B,A                               ; Store lives count in B for loop counter.
-  LD A,EXT_ATTR_AT                     ; Position cursor at row 20, column 18.
+  LD A,EXT_ATTR_AT                     ; AT 20,18
   RST $10                              ;
   LD A,$14                             ;
   RST $10                              ;
@@ -8327,7 +8327,7 @@ print_lives_padding:
 ;
 ; O:A Number of lives.
 print_lives_player_2:
-  LD A,EXT_ATTR_INK                    ; Set INK to player 2 color (cyan).
+  LD A,EXT_ATTR_INK                    ; INK PLAYER_2
   RST $10                              ;
   LD A,COLOR_PLAYER_2                  ;
   RST $10                              ;

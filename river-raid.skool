@@ -1370,8 +1370,8 @@ c$5DA6 LD A,$10      ; {Initialize island line index (starting line for island
  $5DAB LD A,$1F      ; {Initialize activation interval (objects activate when
  $5DAD LD ($5F5F),A  ; int_counter AND $1F == 0, i.e., every 32 frames).}
  $5DB0 LD SP,($5F83) ;
-@isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
- $5DB4 LD D,$0C      ; {Clear screen with PAPER BLUE, INK GREEN.
+@isub=LD D,COLOR_RIVER<<3|COLOR_BANK
+ $5DB4 LD D,$0C      ; {Clear screen with PAPER RIVER, INK BANK.
  $5DB6 CALL $940A    ; }
  $5DB9 CALL $8A33    ;
  $5DBC LD DE,$8000   ; {Print status line 1.
@@ -1415,16 +1415,16 @@ c$5DA6 LD A,$10      ; {Initialize island line index (starting line for island
  $5E1B LD A,$01      ; {Open channel 1 for score display.
  $5E1D CALL $1601    ; }
 @isub=LD A,EXT_ATTR_AT
- $5E20 LD A,$16      ; {Position cursor at row 1, column 5.
+ $5E20 LD A,$16      ; {AT 1,5
  $5E22 RST $10       ;
  $5E23 LD A,$01      ;
  $5E25 RST $10       ;
  $5E26 LD A,$05      ;
  $5E28 RST $10       ; }
 @isub=LD A,EXT_ATTR_INK
- $5E29 LD A,$10      ; {Set ink color to yellow.
+ $5E29 LD A,$10      ; {INK PLAYER_1
  $5E2B RST $10       ;
-@isub=LD A,COLOR_YELLOW
+@isub=LD A,COLOR_PLAYER_1
  $5E2C LD A,$06      ;
  $5E2E RST $10       ; }
  $5E2F LD DE,$90BC   ; {Print player 1 score.
@@ -2786,7 +2786,7 @@ c$64BC LD A,($923D)  ; {If Player 2, jump to #R$64E5.
  $64BF CP $02        ; }
  $64C1 JP Z,$64E5    ;
 @isub=LD A,EXT_ATTR_INK
- $64C4 LD A,$10      ; {Set ink to COLOR_PLAYER_1.
+ $64C4 LD A,$10      ; {INK PLAYER_1
  $64C6 RST $10       ;
 @isub=LD A,COLOR_PLAYER_1
  $64C7 LD A,$06      ;
@@ -2814,7 +2814,7 @@ c$64BC LD A,($923D)  ; {If Player 2, jump to #R$64E5.
 ; to common printing logic.
 @label=print_bridge_player_2
 @isub=LD A,EXT_ATTR_INK
-c$64E5 LD A,$10      ; {Set ink to COLOR_PLAYER_2.
+c$64E5 LD A,$10      ; {INK PLAYER_2
  $64E7 RST $10       ;
 @isub=LD A,COLOR_PLAYER_2
  $64E8 LD A,$05      ;
@@ -2955,7 +2955,7 @@ c$6587 LD A,($923A)  ; Load game mode (1 or 2 player)
  $658F LD ($923D),A  ; }
  $6592 CALL $64BC    ; Print current bridge number for Player 2
 @isub=LD A,EXT_ATTR_INK
- $6595 LD A,$10      ; {INK of Player 2 color
+ $6595 LD A,$10      ; {INK PLAYER_2
  $6597 RST $10       ;
 @isub=LD A,COLOR_PLAYER_2
  $6598 LD A,$05      ;
@@ -4597,7 +4597,7 @@ c$6CF4 LD C,$03      ; Loop counter: 3 cycles of waveform.
 ; auto-start.
 ; .
 ; #LIST
-; { Initializes screen with PAPER BLUE, INK GREEN }
+; { Initializes screen with PAPER RIVER, INK BANK }
 ; { Prints status line and "GAME n" where n is the game mode (1-4) }
 ; { Runs a main loop that scrolls terrain and displays title text }
 ; { Exits to game start after 5 scroll increments or Enter key }
@@ -4607,8 +4607,8 @@ c$6D17 LD BC,$0010   ; {Initialize scroll position (#R$5F70 = $0010) and scroll
  $6D1A LD ($5F70),BC ; speed (#R$5EFD = $10).
  $6D1E LD A,$10      ; }
  $6D20 LD ($5EFD),A  ;
-@isub=LD D,COLOR_BLUE<<3|COLOR_GREEN
- $6D23 LD D,$0C      ; {Set screen colors (PAPER BLUE, INK GREEN) via #R$940A.
+@isub=LD D,COLOR_RIVER<<3|COLOR_BANK
+ $6D23 LD D,$0C      ; {Set screen colors (PAPER RIVER, INK BANK) via #R$940A.
  $6D25 CALL $940A    ; }
  $6D28 CALL $8A33    ; Clear/initialize screen via #R$8A33.
  $6D2B LD DE,$8000   ; {Print status line 1 (#R$8000, length $31 bytes) using
@@ -4669,19 +4669,19 @@ c$6D17 LD BC,$0010   ; {Initialize scroll position (#R$5F70 = $0010) and scroll
  $6DAD LD A,$01      ; {Select upper screen channel via ROM CHAN_OPEN ($1601).
  $6DAF CALL $1601    ; }
 @isub=LD A,EXT_ATTR_INK
- $6DB2 LD A,$10      ; {Set INK BLACK for title text area.
+ $6DB2 LD A,$10      ; {INK BLACK
  $6DB4 RST $10       ;
 @isub=LD A,COLOR_BLACK
  $6DB5 LD A,$00      ;
  $6DB7 RST $10       ; }
 @isub=LD A,EXT_ATTR_PAPER
- $6DB8 LD A,$11      ; {Set PAPER BLACK for title text area.
+ $6DB8 LD A,$11      ; {PAPER BLACK
  $6DBA RST $10       ;
 @isub=LD A,COLOR_BLACK
  $6DBB LD A,$00      ;
  $6DBD RST $10       ; }
 @isub=LD A,EXT_ATTR_AT
- $6DBE LD A,$16      ; {Position cursor AT row 1, column 31.
+ $6DBE LD A,$16      ; {AT 1,31
  $6DC0 RST $10       ;
  $6DC1 LD A,$01      ;
  $6DC3 RST $10       ;
@@ -7283,15 +7283,15 @@ t$8000 DEFM $11,$00                         ; PAPER BLACK
 @isub=DEFM EXT_ATTR_INK,COLOR_MAGENTA
  $8025 DEFM $10,$03                         ; INK MAGENTA
  $8027 DEFB $8F,$8F,$8F,$8F,$8F,$8F,$8F,$8F ; Fuel gauge reading UDG
-@isub=DEFM EXT_ATTR_INK,COLOR_YELLOW
- $802F DEFM $10,$06                         ; INK YELLOW
+@isub=DEFM EXT_ATTR_INK,COLOR_PLAYER_1
+ $802F DEFM $10,$06                         ; INK PLAYER_1
 
 ; Message at 8031
 @label=status_line_2
 @isub=DEFM EXT_ATTR_AT,$01,$02
 t$8031 DEFM $16,$01,$02  ; AT 1,2
-@isub=DEFM EXT_ATTR_INK,COLOR_YELLOW
- $8034 DEFM $10,$06      ; INK YELLOW
+@isub=DEFM EXT_ATTR_INK,COLOR_PLAYER_1
+ $8034 DEFM $10,$06      ; INK PLAYER_1
  $8036 DEFM "P1 0000000"
 @isub=DEFM EXT_ATTR_INK,COLOR_WHITE
  $8040 DEFM $10,$07      ; INK WHITE
@@ -9080,19 +9080,19 @@ c$913B LD HL,$90BC   ; {Load #R$90BC (player 1 score), add offset C to get
 ; I:HL Pointer to the digit character.
 @label=print_player_1_score_digit
 @isub=LD A,EXT_ATTR_INK
-c$914B LD A,$10      ; {Set INK to player 1 color (yellow).
+c$914B LD A,$10      ; {INK PLAYER_1
  $914D RST $10       ;
 @isub=LD A,COLOR_PLAYER_1
  $914E LD A,$06      ;
  $9150 RST $10       ; }
 @isub=LD A,EXT_ATTR_PAPER
- $9151 LD A,$11      ; {Set PAPER to black.
+ $9151 LD A,$11      ; {PAPER BLACK
  $9153 RST $10       ;
 @isub=LD A,COLOR_BLACK
  $9154 LD A,$00      ;
  $9156 RST $10       ; }
 @isub=LD A,EXT_ATTR_AT
- $9157 LD A,$16      ; {Set cursor position to row 1.
+ $9157 LD A,$16      ; {AT 1,...
  $9159 RST $10       ;
  $915A LD A,$01      ;
  $915C RST $10       ; }
@@ -9134,13 +9134,13 @@ c$9169 LD HL,$90C2   ; {Load #R$90C2 (player 2 score), add offset C to get
 ; I:HL Pointer to the digit character.
 @label=print_player_2_score_digit
 @isub=LD A,EXT_ATTR_INK
-c$9179 LD A,$10      ; {Set INK to player 2 color (cyan).
+c$9179 LD A,$10      ; {INK PLAYER_2
  $917B RST $10       ;
 @isub=LD A,COLOR_PLAYER_2
  $917C LD A,$05      ;
  $917E RST $10       ; }
 @isub=LD A,EXT_ATTR_AT
- $917F LD A,$16      ; {Set cursor position to row 1.
+ $917F LD A,$16      ; {AT 1,...
  $9181 RST $10       ;
  $9182 LD A,$01      ;
  $9184 RST $10       ; }
@@ -9204,7 +9204,7 @@ c$91A9 LD (HL),$30   ; Write '0' to the overflowed digit.
 ; Displays player 2's full score area including "P2" label and leading zero.
 @label=print_score_player_2
 @isub=LD A,EXT_ATTR_INK
-c$91C1 LD A,$10      ; {Set INK to player 2 color (cyan).
+c$91C1 LD A,$10      ; {INK PLAYER_2
  $91C3 RST $10       ;
 @isub=LD A,COLOR_PLAYER_2
  $91C4 LD A,$05      ;
@@ -9216,7 +9216,7 @@ c$91C1 LD A,$10      ; {Set INK to player 2 color (cyan).
  $91D0 LD A,$30      ; {Print trailing '0' after score.
  $91D2 RST $10       ; }
 @isub=LD A,EXT_ATTR_AT
- $91D3 LD A,$16      ; {Position cursor at row 1, column 18.
+ $91D3 LD A,$16      ; {AT 1,18
  $91D5 RST $10       ;
  $91D6 LD A,$01      ;
  $91D8 RST $10       ;
@@ -9238,7 +9238,7 @@ c$91C1 LD A,$10      ; {Set INK to player 2 color (cyan).
 c$91E8 LD A,$01      ; {Open channel 1 (upper screen).
  $91EA CALL $1601    ; }
 @isub=LD A,EXT_ATTR_AT
- $91ED LD A,$16      ; {Position cursor at row 1, column 21.
+ $91ED LD A,$16      ; {AT 1,21
  $91EF RST $10       ;
  $91F0 LD A,$01      ;
  $91F2 RST $10       ;
@@ -9249,7 +9249,7 @@ c$91E8 LD A,$01      ; {Open channel 1 (upper screen).
  $91F9 BIT 0,A       ; score.
  $91FB JP NZ,$91C1   ; }
 @isub=LD A,EXT_ATTR_INK
- $91FE LD A,$10      ; {Set INK to white (for high score display).
+ $91FE LD A,$10      ; {INK WHITE
  $9200 RST $10       ;
 @isub=LD A,COLOR_WHITE
  $9201 LD A,$07      ;
@@ -9272,7 +9272,7 @@ c$91E8 LD A,$01      ; {Open channel 1 (upper screen).
  $9222 LD A,$30      ;
  $9224 RST $10       ; }
 @isub=LD A,EXT_ATTR_AT
- $9225 LD A,$16      ; {Position cursor at row 1, column 18.
+ $9225 LD A,$16      ; {AT 1,18
  $9227 RST $10       ;
  $9228 LD A,$01      ;
  $922A RST $10       ;
@@ -9316,7 +9316,7 @@ c$923E LD A,($923D)  ; {If current player is player 2, jump to #R$9277.
  $9241 CP $02        ; }
  $9243 JP Z,$9277    ;
 @isub=LD A,EXT_ATTR_INK
- $9246 LD A,$10      ; {Set INK to player 1 color (yellow).
+ $9246 LD A,$10      ; {INK PLAYER_1
  $9248 RST $10       ;
 @isub=LD A,COLOR_PLAYER_1
  $9249 LD A,$06      ;
@@ -9332,7 +9332,7 @@ c$923E LD A,($923D)  ; {If current player is player 2, jump to #R$9277.
 @label=print_lives_continue
 c$924F LD B,A        ; Store lives count in B for loop counter.
 @isub=LD A,EXT_ATTR_AT
- $9250 LD A,$16      ; {Position cursor at row 20, column 18.
+ $9250 LD A,$16      ; {AT 20,18
  $9252 RST $10       ;
  $9253 LD A,$14      ;
  $9255 RST $10       ;
@@ -9372,7 +9372,7 @@ c$9264 LD A,$20      ; {Print 6 space characters.
 ; O:A Number of lives.
 @label=print_lives_player_2
 @isub=LD A,EXT_ATTR_INK
-c$9277 LD A,$10      ; {Set INK to player 2 color (cyan).
+c$9277 LD A,$10      ; {INK PLAYER_2
  $9279 RST $10       ;
 @isub=LD A,COLOR_PLAYER_2
  $927A LD A,$05      ;
