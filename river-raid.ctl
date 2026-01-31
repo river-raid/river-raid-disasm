@@ -1603,11 +1603,11 @@ c $6BDB Maskable interrupt handler (IM 2)
 D $6BDB Frame interrupt handler triggered ~50 times/second by the ZX Spectrum ULA. Installed via IM 2 at game startup (see #R$5CD2). Uses RETN instead of RETI (functionally equivalent on ZX Spectrum).
 N $6BDB The handler performs three functions each frame:
 N $6BDB .
-N $6BDB #LIST { Increment system frame counter (FRAMES at #R$5C78) } { Check H key for pause (jumps to #R$6BB1) } { Process control flags for sound effects (falls through to #R$6BED) } LIST#
+N $6BDB #LIST { Increment interrupt counter (#R$5C78) } { Check H key for pause (jumps to #R$6BB1) } { Process control flags for sound effects (falls through to #R$6BED) } LIST#
 N $6BDB .
-N $6BDB Note: The game tick counter (#R$5EEF) is incremented in the main loop (#R$5F91), not here. FRAMES is used for system timing, state_tick for game logic.
+N $6BDB Note: The game tick counter (#R$5EEF) is incremented in the main loop (#R$5F91), not here. int_counter is used for system timing, state_tick for game logic.
   $6BDB Disable interrupts and save registers.
-  $6BE0 Increment FRAMES counter.
+  $6BE0 Increment interrupt counter.
   $6BE4 Check H key for pause.
 @ $6BED label=handle_controls
 c $6BED Process control state flags and trigger sound effects

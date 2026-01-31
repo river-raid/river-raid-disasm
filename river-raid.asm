@@ -4092,19 +4092,19 @@ select_controls:
 ;
 ; The handler performs three functions each frame:
 ;
-; * Increment system frame counter (FRAMES at int_counter)
+; * Increment interrupt counter (int_counter)
 ; * Check H key for pause (jumps to pause)
 ; * Process control flags for sound effects (falls through to handle_controls)
 ;
-; Note: The game tick counter (state_tick) is incremented in the main loop (main_loop), not here. FRAMES is used for
-; system timing, state_tick for game logic.
+; Note: The game tick counter (state_tick) is incremented in the main loop (main_loop), not here. int_counter is used
+; for system timing, state_tick for game logic.
 int_handler:
   DI                                   ; Disable interrupts and save registers.
   PUSH HL                              ;
   PUSH DE                              ;
   PUSH BC                              ;
   PUSH AF                              ;
-  LD HL,int_counter                    ; Increment FRAMES counter.
+  LD HL,int_counter                    ; Increment interrupt counter.
   INC (HL)                             ;
   LD A,$BF                             ; Check H key for pause.
   IN A,($FE)                           ;
