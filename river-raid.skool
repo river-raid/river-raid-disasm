@@ -1143,8 +1143,8 @@ b$5A40 DEFB $07,$07,$07,$07,$07,$07,$07,$07
 ; Screen row address lookup table (64 entries × 2 bytes = 128 bytes).
 ;
 ; Pre-computed table mapping row indices (0-63) to screen memory addresses.
-; Used by #R$683B for fast island/terrain scrolling. Avoids calculating
-; addresses from the ZX Spectrum's non-linear screen layout.
+; Used by #R$683B for fast vertical scrolling. Avoids calculating addresses
+; from the ZX Spectrum's non-linear screen layout.
 ; .
 ; ZX Spectrum screen memory is organized in thirds with interleaved rows,
 ; making address calculation complex. This table provides O(1) lookup:
@@ -1874,7 +1874,7 @@ g$5F70 DEFB $00,$00
 
 ; Player plane X coordinate in pixels (0-255). $78 (120) is horizontal center.
 ; Changes by 2 pixels per left/right input.
-@label=state_x
+@label=state_plane_x
 g$5F72 DEFB $00
 
 ; Pointer to helicopter missile coordinates in viewport_objects array. Updated
@@ -1958,9 +1958,9 @@ g$5F89 DEFW $0000
 @label=collision_result
 g$5F8B DEFW $0000
 
-; Saved entity coordinates during rendering. Backup of object position for
+; Saved object coordinates during rendering. Backup of object position for
 ; multi-pass rendering.
-@label=state_saved_entity_coords
+@label=state_saved_object_coords
 g$5F8D DEFW $0000
 
 ; Backup of plane missile coordinates. Saved before movement, used for
@@ -2135,7 +2135,7 @@ c$6068 LD A,$DF      ; {Scan "O" (LEFT)
 ; .
 ; #LIST
 ; { Player plane sprite (GAMEPLAY_MODE_NORMAL only) }
-; { Island/terrain system }
+; { Screen scroll system }
 ; { Terrain fragments (count = current speed) }
 ; { Attribute scroll (every 8 fragments) }
 ; LIST#
@@ -3157,19 +3157,20 @@ c$6577 LD HL,$8153   ; {Set scroller pointer to "GAME OVER" message
  $6580 LD SP,($5F83) ; Restore stack pointer to main loop
  $6584 JP $5D2B      ; Return to overview/demo mode
 
-; Setup Player 2 display during overview mode
+; Setup Player 2 status line during overview mode
 ;
-; This routine is called during overview mode to set up the Player 2 status
-; display. It only executes in two-player mode, setting the player to Player 2,
-; printing the bridge number, and configuring the Player 2 color scheme.
-@label=setup_player_2_display
+; Called during overview mode in two-player games to add the Player 2 status
+; line to the display. Resets state_player to PLAYER_1 so the game starts with
+; Player 1, then manually renders Player 2's bridge and status with cyan color
+; scheme.
+@label=setup_overview_status_player_2
 c$6587 LD A,($923A)  ; Load game mode (1 or 2 player)
 @isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
  $658A BIT 0,A       ; Check if two-player mode is active
  $658C RET Z         ; Return if single-player mode
- $658D LD A,$01      ; {Set current player to Player 2 ($01)
+ $658D LD A,$01      ; {Reset current player to Player 1 ($01) for game start.
  $658F LD ($923D),A  ; }
- $6592 CALL $64BC    ; Print current bridge number for Player 2
+ $6592 CALL $64BC    ; Print bridge number (uses state_player, so prints P1's).
 @isub=LD A,EXT_ATTR_INK
  $6595 LD A,$10      ; {INK PLAYER_2
  $6597 RST $10       ;
@@ -3731,48 +3732,48 @@ c$6794 LD BC,($5EF3) ; {Load missile coordinates from #R$5EF3 and call #R$72EF
  $682D CALL $8B3C    ; }
  $6830 RET           ;
 
-; Add $0800 offset to island data pointer
+; Add $0800 offset to screen pointer
 ;
 ; Used by the routine at #R$683B.
-@label=add_island_offset_800
+@label=add_screen_bank_800
 c$6831 LD DE,$0800   ; Set DE to $0800
- $6834 ADD HL,DE     ; Add DE to HL (adjust island pointer)
+ $6834 ADD HL,DE     ; Add DE to HL (adjust screen pointer)
  $6835 RET           ;
 
-; Add $1000 offset to island data pointer
+; Add $1000 offset to screen pointer
 ;
 ; Used by the routine at #R$683B.
-@label=add_island_offset_1000
+@label=add_screen_bank_1000
 c$6836 LD DE,$1000   ; Set DE to $1000
- $6839 ADD HL,DE     ; Add DE to HL (adjust island pointer)
+ $6839 ADD HL,DE     ; Add DE to HL (adjust screen pointer)
  $683A RET           ;
 
-; Handle island rendering and scrolling
+; Scroll screen pixels vertically
 ;
-; Core vertical scroll engine. Scrolls terrain by copying island data between
-; screen lines. Called every frame from #R$60A5.
+; Core vertical scroll engine. Scrolls all screen content by copying pixel data
+; between screen lines. Called every frame from #R$60A5.
 ;
 ; .
 ;
 ; The algorithm processes 144 screen lines ($8F to $00), each copying 32 bytes
-; via LDDR. This creates the vertical scroll effect by shifting island data
-; from source to destination addresses, where the offset between
-; source/destination is determined by current speed.
+; via LDDR. This creates the vertical scroll effect by shifting pixel data from
+; source to destination addresses, where the offset between source/destination
+; is determined by current speed.
 ; .
 ; .
 ; .
-; Counter bits 7-6 select island data banks: bit 7 adds $1000, bit 6 adds $0800
-; to the base address. This allows 4 banks of terrain patterns (64 lines each ×
-; 4 = 256 total pattern lines).
+; Counter bits 7-6 select screen memory banks: bit 7 adds $1000, bit 6 adds
+; $0800 to the base address. This allows 4 banks of screen patterns (64 lines
+; each × 4 = 256 total pattern lines).
 ; .
 ; .
 ; .
 ; Performance note: This is the game's hottest code path, executing 144
 ; iterations × ~50 frames/sec. The inner loop accounts for ~300M+ executions
 ; per session.
-@label=handle_island_rendering
+@label=scroll_screen
 c$683B LD A,$8F      ; {Initialize line counter to $8F (143 lines to process).
-@label=process_island_line
+@label=scroll_screen_line
 *$683D LD ($5EF9),A  ; }
  $6840 AND $3F       ; Mask lower 6 bits for table index (0-63).
  $6842 LD HL,$5B00   ; {Look up destination address in table at #R$5B00.
@@ -3827,7 +3828,7 @@ c$683B LD A,$8F      ; {Initialize line counter to $8F (143 lines to process).
 
 ; Clear top screen rows after scrolling
 ;
-; Clears the top rows of the screen based on scroll speed. After island data
+; Clears the top rows of the screen based on scroll speed. After screen content
 ; scrolls upward, the topmost rows contain old data that needs to be zeroed.
 @label=clear_top_rows
 c$68A1 LD HL,$4000   ; {Initialize screen pointer, row offset, and row count
@@ -5769,7 +5770,7 @@ c$708E LD A,$00      ; {Reset state_collision_mode to COLLISION_MODE_NONE.
  $70ED JP Z,$7158    ; If fighter, jump to operate_fighter.
 @isub=CP OBJECT_BALLOON
  $70F0 CP $06        ; Check if this is a balloon.
- $70F2 JP Z,$7649    ; If balloon, jump to operate_baloon.
+ $70F2 JP Z,$7649    ; If balloon, jump to operate_balloon.
 @isub=CP OBJECT_FUEL
  $70F5 CP $07        ; Check if this is a fuel station.
  $70F7 JP Z,$754C    ; If fuel, jump to operate_fuel.
@@ -6889,13 +6890,14 @@ c$75BA LD HL,$85B3   ; {Load left-facing sprite base #R$85B3, frame size $60.
  $75CD JR NZ,$75CB   ;
  $75CF RET           ; }
 
-; Handle ship/helicopter proximity to obstacle
+; Reverse enemy direction at river bank
 ;
-; When a ship or helicopter approaches a river bank or fuel station, inverts
-; its orientation. Ignores the player (objects in top half of screen).
+; Reverses the direction of a ship or helicopter when it approaches a river
+; bank. Inverts the orientation bit and re-renders with new facing. Ignores
+; objects in top half of screen (Y >= $80).
 ;
 ; I:BC Object coordinates
-@label=handle_object_proximity
+@label=reverse_enemy_direction
 c$75D0 LD ($8B0A),BC ;
  $75D4 LD A,B        ; {Return if Y >= $80 (object in top half, might be
  $75D5 SUB $80       ; player).
@@ -6915,7 +6917,7 @@ c$75D0 LD ($8B0A),BC ;
  $75F1 OR A          ;
  $75F2 INC A         ; }
  $75F3 SBC HL,BC     ; Subtract frame size for pre-decrement.
-@label=handle_object_proximity_frame_loop
+@label=reverse_enemy_direction_frame_loop
 *$75F5 ADD HL,BC     ; {Loop to add frame offset to sprite pointer, store to
  $75F6 DEC A         ; #R$8B0E.
  $75F7 JR NZ,$75F5   ;
@@ -6988,7 +6990,7 @@ c$762E DEC HL        ; {Decrement to definition byte and mark slot as empty.
 ; I:B Y position
 ; I:C X position
 ; I:D Object definition (bit 6 = orientation: 0=right, 1=left)
-@label=operate_baloon
+@label=operate_balloon
 c$7649 BIT 7,B       ; {If balloon is off-screen (Y bit 7 set), skip to main
  $764B JP NZ,$76AC   ; loop.}
  $764E LD A,($5EEF)  ; {Only operate every 4th frame (frame counter AND 3 ==

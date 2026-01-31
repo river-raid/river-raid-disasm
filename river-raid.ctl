@@ -270,7 +270,7 @@ b $5A20 Screen attributes row 16 (boundary for visible sprite area).
 b $5A40 Screen attributes row 17 (start of lower screen area).
 @ $5B00 label=screen_row_table
 b $5B00 Screen row address lookup table (64 entries × 2 bytes = 128 bytes).
-D $5B00 Pre-computed table mapping row indices (0-63) to screen memory addresses. Used by #R$683B for fast island/terrain scrolling. Avoids calculating addresses from the ZX Spectrum's non-linear screen layout.
+D $5B00 Pre-computed table mapping row indices (0-63) to screen memory addresses. Used by #R$683B for fast vertical scrolling. Avoids calculating addresses from the ZX Spectrum's non-linear screen layout.
 D $5B00 ZX Spectrum screen memory is organized in thirds with interleaved rows, making address calculation complex. This table provides O(1) lookup: screen_addr = screen_row_table[row_index × 2].
 W $5B00,128,2
 @ $5C78 label=int_counter
@@ -552,7 +552,7 @@ g $5F6E Y-position of destroyed bridge in pixels. Updated during scroll to track
 g $5F6F Unused.
 @ $5F70 label=state_scroll_offset
 g $5F70 Vertical scroll offset (16-bit, little-endian). Accumulated distance traveled in pixels. Used to calculate level slot index and bridge position.
-@ $5F72 label=state_x
+@ $5F72 label=state_plane_x
 g $5F72 Player plane X coordinate in pixels (0-255). $78 (120) is horizontal center. Changes by 2 pixels per left/right input.
 @ $5F73 label=helicopter_missile_coordinates_ptr
 g $5F73 Pointer to helicopter missile coordinates in viewport_objects array. Updated when advanced helicopter fires.
@@ -595,8 +595,8 @@ W $5F89
 @ $5F8B label=collision_result
 g $5F8B Collision result coordinates (Y in high byte, X in low byte). Set by collision detection when overlap found.
 W $5F8B
-@ $5F8D label=state_saved_entity_coords
-g $5F8D Saved entity coordinates during rendering. Backup of object position for multi-pass rendering.
+@ $5F8D label=state_saved_object_coords
+g $5F8D Saved object coordinates during rendering. Backup of object position for multi-pass rendering.
 W $5F8D
 @ $5F8F label=state_plane_missile_coordinates_backup
 g $5F8F Backup of plane missile coordinates. Saved before movement, used for collision detection and erasure.
@@ -649,7 +649,7 @@ c $60A5 Render player plane and terrain fragments
 D $60A5 Top-level render routine called from main loop (#R$5F91). Orchestrates visual updates in a specific order to prevent flicker.
 N $60A5 Render sequence:
 N $60A5 .
-N $60A5 #LIST { Player plane sprite (GAMEPLAY_MODE_NORMAL only) } { Island/terrain system } { Terrain fragments (count = current speed) } { Attribute scroll (every 8 fragments) } LIST#
+N $60A5 #LIST { Player plane sprite (GAMEPLAY_MODE_NORMAL only) } { Screen scroll system } { Terrain fragments (count = current speed) } { Attribute scroll (every 8 fragments) } LIST#
 N $60A5 .
 N $60A5 Speed affects both plane Y position (Y = $80 + speed) and number of terrain fragments rendered. Higher speed = lower plane position and more fragments.
   $60A5 Skip plane rendering if not GAMEPLAY_MODE_NORMAL.
@@ -1074,15 +1074,15 @@ D $6577 This routine displays the "GAME OVER" message, plays the game over seque
   $657D Display game over sequence
   $6580 Restore stack pointer to main loop
   $6584 Return to overview/demo mode
-@ $6587 label=setup_player_2_display
-c $6587 Setup Player 2 display during overview mode
-D $6587 This routine is called during overview mode to set up the Player 2 status display. It only executes in two-player mode, setting the player to Player 2, printing the bridge number, and configuring the Player 2 color scheme.
+@ $6587 label=setup_overview_status_player_2
+c $6587 Setup Player 2 status line during overview mode
+D $6587 Called during overview mode in two-player games to add the Player 2 status line to the display. Resets state_player to PLAYER_1 so the game starts with Player 1, then manually renders Player 2's bridge and status with cyan color scheme.
   $6587 Load game mode (1 or 2 player)
 @ $658A isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
   $658A Check if two-player mode is active
   $658C Return if single-player mode
-  $658D Set current player to Player 2 ($01)
-  $6592 Print current bridge number for Player 2
+  $658D Reset current player to Player 1 ($01) for game start.
+  $6592 Print bridge number (uses state_player, so prints P1's).
 @ $6595 isub=LD A,EXT_ATTR_INK
   $6595 INK PLAYER_2
 @ $6598 isub=LD A,COLOR_PLAYER_2
@@ -1344,24 +1344,24 @@ N $6794 The sprite frame selection uses the X coordinate's lower 3 bits to choos
   $680D Calculate remaining height from #R$5EF6; return if zero.
   $6817 Set height and attributes (height in D, attrs=$0C in E).
   $681A,22 Store sprite params and call #R$8B3C to erase residue.
-@ $6831 label=add_island_offset_800
-c $6831 Add $0800 offset to island data pointer
+@ $6831 label=add_screen_bank_800
+c $6831 Add $0800 offset to screen pointer
   $6831 Set DE to $0800
-  $6834,1 Add DE to HL (adjust island pointer)
-@ $6836 label=add_island_offset_1000
-c $6836 Add $1000 offset to island data pointer
+  $6834,1 Add DE to HL (adjust screen pointer)
+@ $6836 label=add_screen_bank_1000
+c $6836 Add $1000 offset to screen pointer
   $6836 Set DE to $1000
-  $6839,1 Add DE to HL (adjust island pointer)
-@ $683B label=handle_island_rendering
-c $683B Handle island rendering and scrolling
-D $683B Core vertical scroll engine. Scrolls terrain by copying island data between screen lines. Called every frame from #R$60A5.
-N $683B The algorithm processes 144 screen lines ($8F to $00), each copying 32 bytes via LDDR. This creates the vertical scroll effect by shifting island data from source to destination addresses, where the offset between source/destination is determined by current speed.
+  $6839,1 Add DE to HL (adjust screen pointer)
+@ $683B label=scroll_screen
+c $683B Scroll screen pixels vertically
+D $683B Core vertical scroll engine. Scrolls all screen content by copying pixel data between screen lines. Called every frame from #R$60A5.
+N $683B The algorithm processes 144 screen lines ($8F to $00), each copying 32 bytes via LDDR. This creates the vertical scroll effect by shifting pixel data from source to destination addresses, where the offset between source/destination is determined by current speed.
 N $683B .
-N $683B Counter bits 7-6 select island data banks: bit 7 adds $1000, bit 6 adds $0800 to the base address. This allows 4 banks of terrain patterns (64 lines each × 4 = 256 total pattern lines).
+N $683B Counter bits 7-6 select screen memory banks: bit 7 adds $1000, bit 6 adds $0800 to the base address. This allows 4 banks of screen patterns (64 lines each × 4 = 256 total pattern lines).
 N $683B .
 N $683B Performance note: This is the game's hottest code path, executing 144 iterations × ~50 frames/sec. The inner loop accounts for ~300M+ executions per session.
   $683B Initialize line counter to $8F (143 lines to process).
-@ $683D label=process_island_line
+@ $683D label=scroll_screen_line
   $6840 Mask lower 6 bits for table index (0-63).
   $6842 Look up destination address in table at #R$5B00.
   $684F Apply bank offset based on bits 7-6.
@@ -1374,7 +1374,7 @@ N $683B Performance note: This is the game's hottest code path, executing 144 it
   $689A Decrement and continue loop.
 @ $68A1 label=clear_top_rows
 c $68A1 Clear top screen rows after scrolling
-D $68A1 Clears the top rows of the screen based on scroll speed. After island data scrolls upward, the topmost rows contain old data that needs to be zeroed.
+D $68A1 Clears the top rows of the screen based on scroll speed. After screen content scrolls upward, the topmost rows contain old data that needs to be zeroed.
   $68A1 Initialize screen pointer, row offset, and row count from speed.
 @ $68AA label=clear_row_loop
   $68AA Set bytes per row (32).
@@ -2127,7 +2127,7 @@ N $708E 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHT
   $70ED If fighter, jump to operate_fighter.
 @ $70F0 isub=CP OBJECT_BALLOON
   $70F0 Check if this is a balloon.
-  $70F2 If balloon, jump to operate_baloon.
+  $70F2 If balloon, jump to operate_balloon.
 @ $70F5 isub=CP OBJECT_FUEL
   $70F5 Check if this is a fuel station.
   $70F7 If fuel, jump to operate_fuel.
@@ -2590,9 +2590,9 @@ R $75BA O:HL Pointer to sprite data
   $75C5 Extract object type (bits 0-2), prepare for loop.
   $75C9,7 Loop: HL += $60 for each type. Result: HL = base + (type * $60).
 @ $75CB label=ld_enemy_sprites_loop
-@ $75D0 label=handle_object_proximity
-c $75D0 Handle ship/helicopter proximity to obstacle
-D $75D0 When a ship or helicopter approaches a river bank or fuel station, inverts its orientation. Ignores the player (objects in top half of screen).
+@ $75D0 label=reverse_enemy_direction
+c $75D0 Reverse enemy direction at river bank
+D $75D0 Reverses the direction of a ship or helicopter when it approaches a river bank. Inverts the orientation bit and re-renders with new facing. Ignores objects in top half of screen (Y >= $80).
 R $75D0 I:BC Object coordinates
   $75D4 Return if Y >= $80 (object in top half, might be player).
   $75D8 Reload position, pop return address, load viewport_ptr, get object definition.
@@ -2601,7 +2601,7 @@ R $75D0 I:BC Object coordinates
 @ $75EC isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
   $75EC Set frame size, shift and increment offset.
   $75F3 Subtract frame size for pre-decrement.
-@ $75F5 label=handle_object_proximity_frame_loop
+@ $75F5 label=reverse_enemy_direction_frame_loop
   $75F5 Loop to add frame offset to sprite pointer, store to #R$8B0E.
   $75FC Reload position, store to #R$8B0C.
   $7604 Invert object orientation (XOR bit 6).
@@ -2631,7 +2631,7 @@ R $762E I:D Object definition byte
   $763E Check if tank was on right bank.
 @ $763E isub=BIT SLOT_BIT_TANK_ON_BANK,D
   $7643 If so, call #R$74E4 for right-bank tank shell removal.
-@ $7649 label=operate_baloon
+@ $7649 label=operate_balloon
 c $7649 Operate balloon movement and rendering.
 D $7649 Moves a balloon horizontally, checking for terrain collisions. Balloons bounce off riverbanks by reversing direction.
 R $7649 I:B Y position

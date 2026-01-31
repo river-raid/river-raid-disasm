@@ -1137,8 +1137,8 @@ screen_attributes_row_17:
 
 ; Screen row address lookup table (64 entries × 2 bytes = 128 bytes).
 ;
-; Pre-computed table mapping row indices (0-63) to screen memory addresses. Used by handle_island_rendering for fast
-; island/terrain scrolling. Avoids calculating addresses from the ZX Spectrum's non-linear screen layout.
+; Pre-computed table mapping row indices (0-63) to screen memory addresses. Used by scroll_screen for fast vertical
+; scrolling. Avoids calculating addresses from the ZX Spectrum's non-linear screen layout.
 ;
 ; ZX Spectrum screen memory is organized in thirds with interleaved rows, making address calculation complex. This table
 ; provides O(1) lookup: screen_addr = screen_row_table[row_index × 2].
@@ -1356,8 +1356,8 @@ state_overview_start_scroll:
 ; This routine sets up the initial game state used by the overview (attract mode) routine. It initializes player
 ; positions, scores, lives, terrain state, and sets the gameplay mode to GAMEPLAY_MODE_OVERVIEW.
 init_state:
-  LD A,$78                             ; Initialize state_x. Why isn't it $80?
-  LD (state_x),A                       ;
+  LD A,$78                             ; Initialize state_plane_x. Why isn't it $80?
+  LD (state_plane_x),A                 ;
   CALL init_starting_bridge            ; Call init_starting_bridge to set starting bridge for both players based on game
                                        ; mode.
   LD HL,viewport_objects               ; Load the address of viewport_objects into HL.
@@ -1436,7 +1436,7 @@ play:
   LD (state_scroll_offset),BC          ;
   CALL init_current_bridge
   LD A,$78                             ; Initialize X position (horizontal center).
-  LD (state_x),A                       ;
+  LD (state_plane_x),A                 ;
   LD HL,viewport_objects               ; Initialize viewport_objects list.
   LD (viewport_ptr),HL                 ;
   LD (HL),SET_MARKER_END_OF_SET        ; Mark viewport objects list as empty.
@@ -1789,7 +1789,7 @@ state_scroll_offset:
   DEFB $00,$00
 
 ; Player plane X coordinate in pixels (0-255). $78 (120) is horizontal center. Changes by 2 pixels per left/right input.
-state_x:
+state_plane_x:
   DEFB $00
 
 ; Pointer to helicopter missile coordinates in viewport_objects array. Updated when advanced helicopter fires.
@@ -1864,8 +1864,8 @@ collision_saved_bc:
 collision_result:
   DEFW $0000
 
-; Saved entity coordinates during rendering. Backup of object position for multi-pass rendering.
-state_saved_entity_coords:
+; Saved object coordinates during rendering. Backup of object position for multi-pass rendering.
+state_saved_object_coords:
   DEFW $0000
 
 ; Backup of plane missile coordinates. Saved before movement, used for collision detection and erasure.
@@ -2026,7 +2026,7 @@ scan_keyboard:
 ; Render sequence:
 ;
 ; * Player plane sprite (GAMEPLAY_MODE_NORMAL only)
-; * Island/terrain system
+; * Screen scroll system
 ; * Terrain fragments (count = current speed)
 ; * Attribute scroll (every 8 fragments)
 ;
@@ -2038,7 +2038,7 @@ render_plane_and_terrain:
   JP NZ,render_terrain_fragments       ;
   LD A,COLLISION_MODE_NONE             ; Set collision mode to NONE for plane (no collision during render).
   LD (state_collision_mode),A          ;
-  LD A,(state_x)                       ; Calculate plane sprite frame: offset = (8 - speed) * 2.
+  LD A,(state_plane_x)                 ; Calculate plane sprite frame: offset = (8 - speed) * 2.
   LD C,A                               ;
   LD A,(state_speed)                   ;
   LD E,A                               ;
@@ -2062,7 +2062,7 @@ render_plane_and_terrain:
   LD HL,sprite_erasure                 ;
   CALL render_object                   ;
 render_terrain_fragments:
-  CALL handle_island_rendering         ; Render islands.
+  CALL scroll_screen                   ; Render islands.
   LD A,(state_speed)                   ; Calculate starting screen row based on speed.
   LD DE,$0100                          ;
   LD HL,screen_pixels                  ;
@@ -2285,7 +2285,7 @@ check_collision:
   LD (state_bridge_y_position),A       ;
   LD A,$01                             ; Set bridge destroyed flag (state_bridge_destroyed).
   LD (state_bridge_destroyed),A        ;
-  LD BC,(state_saved_entity_coords)       ; Restore entity coordinates from state_saved_entity_coords to
+  LD BC,(state_saved_object_coords)       ; Restore entity coordinates from state_saved_object_coords to
   LD (state_plane_missile_coordinates),BC ; state_plane_missile_coordinates.
   LD A,(state_player)                  ; Check if player 2; if so, jump to next_bridge_player_2.
   CP PLAYER_2                          ;
@@ -2320,8 +2320,8 @@ data_unused_6253:
 handle_collision_mode_fuel_depot:
   LD A,GAMEPLAY_MODE_REFUEL            ; Set gameplay mode to GAMEPLAY_MODE_REFUEL in state_gameplay_mode.
   LD (state_gameplay_mode),A           ;
-  LD B,$80                                ; Load plane coordinates (Y=$80, X from state_x) into
-  LD A,(state_x)                          ; state_plane_missile_coordinates.
+  LD B,$80                                ; Load plane coordinates (Y=$80, X from state_plane_x) into
+  LD A,(state_plane_x)                    ; state_plane_missile_coordinates.
   LD C,A                                  ;
   LD (state_plane_missile_coordinates),BC ;
   JP check_collision                   ; Check for collision with fuel depot.
@@ -2594,7 +2594,7 @@ process_collision_hit:
   LD (exploding_fragments_ptr),HL      ;
   LD HL,viewport_objects               ;
   LD (viewport_ptr),HL                 ;
-  LD BC,(state_saved_entity_coords)    ; Load saved coordinates from state_saved_entity_coords.
+  LD BC,(state_saved_object_coords)    ; Load saved coordinates from state_saved_object_coords.
   LD (state_plane_missile_coordinates),BC ; Store to state_plane_missile_coordinates.
   JP finalize_collision                ; Finalize collision.
 
@@ -2742,7 +2742,7 @@ data_unused_64B4:
 
 ; Print current bridge number on status line
 ;
-; Used by the routines at play, check_collision, next_bridge_player_2, setup_player_2_display and overview.
+; Used by the routines at play, check_collision, next_bridge_player_2, setup_overview_status_player_2 and overview.
 ;
 ; Displays the current bridge number for the active player on the status line. Sets the appropriate ink color (yellow
 ; for Player 1, cyan for Player 2) and prints the bridge counter with leading space padding for single-digit numbers.
@@ -2783,7 +2783,7 @@ print_bridge_player_2:
 
 ; Common bridge printing for Player 2
 ;
-; Used by the routine at setup_player_2_display.
+; Used by the routine at setup_overview_status_player_2.
 ;
 ; Shared code for printing Player 2's bridge number. Called directly when printing Player 2's status line in two-player
 ; mode.
@@ -2829,7 +2829,7 @@ print_space:
 ;
 ; In single-player mode, the game simply restarts P1 if lives remain, otherwise Game Over.
 handle_no_fuel:
-  LD A,(state_x)                       ; Load plane X-coordinate
+  LD A,(state_plane_x)                 ; Load plane X-coordinate
   AND $F8                              ; Align to 8-pixel boundary (clear lower 3 bits)
   LD C,A                               ; Store aligned X-coordinate in C register
   LD B,$7F                             ; Set Y-coordinate to $7F (just below visible area)
@@ -2905,17 +2905,17 @@ game_over:
   LD SP,(saved_stack_pointer)          ; Restore stack pointer to main loop
   JP start_overview                    ; Return to overview/demo mode
 
-; Setup Player 2 display during overview mode
+; Setup Player 2 status line during overview mode
 ;
-; This routine is called during overview mode to set up the Player 2 status display. It only executes in two-player
-; mode, setting the player to Player 2, printing the bridge number, and configuring the Player 2 color scheme.
-setup_player_2_display:
+; Called during overview mode in two-player games to add the Player 2 status line to the display. Resets state_player to
+; PLAYER_1 so the game starts with Player 1, then manually renders Player 2's bridge and status with cyan color scheme.
+setup_overview_status_player_2:
   LD A,(state_game_mode)               ; Load game mode (1 or 2 player)
   BIT GAME_MODE_BIT_TWO_PLAYERS,A      ; Check if two-player mode is active
   RET Z                                ; Return if single-player mode
-  LD A,$01                             ; Set current player to Player 2 ($01)
+  LD A,$01                             ; Reset current player to Player 1 ($01) for game start.
   LD (state_player),A                  ;
-  CALL print_bridge                    ; Print current bridge number for Player 2
+  CALL print_bridge                    ; Print bridge number (uses state_player, so prints P1's).
   LD A,EXT_ATTR_INK                    ; INK PLAYER_2
   RST $10                              ;
   LD A,COLOR_PLAYER_2                  ;
@@ -2988,13 +2988,13 @@ check_player_1_lives:
 ; right (INC A twice), backs up the missile coordinates, renders the plane at the new position, then restores the
 ; missile coordinates and sets the sprite bank selector.
 handle_right:
-  LD A,(state_x)                       ; Load current plane X-coordinate from state_x
+  LD A,(state_plane_x)                 ; Load current plane X-coordinate from state_plane_x
   LD HL,(state_plane_missile_coordinates) ; Load missile coordinates into HL
   LD (state_plane_missile_coordinates_backup),HL ; Back up missile coordinates to state_plane_missile_coordinates_backup
                                                  ; for later restoration
   INC A                                ; Increment X-coordinate by 1 pixel (first pixel)
   INC A                                ; Increment X-coordinate by 1 pixel (second pixel, total 2 pixels right)
-  LD (state_x),A                       ; Store new X-coordinate back to state_x
+  LD (state_plane_x),A                 ; Store new X-coordinate back to state_plane_x
   LD C,A                               ; Copy new X-coordinate to C register for rendering
   LD B,PLANE_COORDINATE_Y              ; Set Y-coordinate to $80 (fixed vertical position)
   LD A,COLLISION_MODE_FUEL_DEPOT       ; Set collision mode to FUEL (check plane vs fuel depot collision)
@@ -3038,13 +3038,13 @@ restore_plane_state_after_render:
 ; left (DEC A twice), backs up the missile coordinates, renders the plane at the new position, then restores the missile
 ; coordinates and sets the sprite bank selector.
 handle_left:
-  LD A,(state_x)                       ; Load current plane X-coordinate from state_x
+  LD A,(state_plane_x)                 ; Load current plane X-coordinate from state_plane_x
   LD HL,(state_plane_missile_coordinates) ; Load missile coordinates into HL
   LD (state_plane_missile_coordinates_backup),HL ; Back up missile coordinates to state_plane_missile_coordinates_backup
                                                  ; for later restoration
   DEC A                                ; Decrement X-coordinate by 1 pixel (first pixel)
   DEC A                                ; Decrement X-coordinate by 1 pixel (second pixel, total 2 pixels left)
-  LD (state_x),A                       ; Store new X-coordinate back to state_x
+  LD (state_plane_x),A                 ; Store new X-coordinate back to state_plane_x
   LD C,A                               ; Copy new X-coordinate to C register for rendering
   LD B,PLANE_COORDINATE_Y              ; Set Y-coordinate to $80 (fixed vertical position)
   LD A,COLLISION_MODE_FUEL_DEPOT       ; Set collision mode to FUEL DEPOT (check plane vs fuel depot collision)
@@ -3070,7 +3070,7 @@ handle_left:
 
 ; Render player plane sprite
 ;
-; Used by the routines at play and handle_island_rendering.
+; Used by the routines at play and scroll_screen.
 ;
 ; Renders the player's plane at its current position. Only executes in GAMEPLAY_MODE_NORMAL; returns immediately in
 ; other modes (scroll-in, overview, refuel).
@@ -3084,8 +3084,8 @@ render_plane:
   LD A,(state_gameplay_mode)           ; Return if not in GAMEPLAY_MODE_NORMAL.
   CP GAMEPLAY_MODE_NORMAL              ;
   RET NZ                               ;
-  LD A,(state_x)                                 ; Backup missile coords to state_plane_missile_coordinates_backup; set
-  LD HL,(state_plane_missile_coordinates)        ; up plane position (Y=$80, X from state_x).
+  LD A,(state_plane_x)                           ; Backup missile coords to state_plane_missile_coordinates_backup; set
+  LD HL,(state_plane_missile_coordinates)        ; up plane position (Y=$80, X from state_plane_x).
   LD (state_plane_missile_coordinates_backup),HL ;
   LD C,A                               ; Set COLLISION_MODE_FUEL_DEPOT and store plane coords to object_coordinates.
   LD B,$80                             ;
@@ -3209,7 +3209,7 @@ handle_fire:
   LD A,(state_plane_missile_coordinates) ; Return if missile already active (Y != 0).
   CP $00                                 ;
   RET NZ                                 ;
-  LD A,(state_x)                          ; Create missile at (plane_X + 4, $7E).
+  LD A,(state_plane_x)                    ; Create missile at (plane_X + 4, $7E).
   ADD A,$04                               ;
   LD B,$7E                                ;
   LD C,A                                  ;
@@ -3238,14 +3238,14 @@ animate_plane_missile:
   LD A,(state_plane_missile_coordinates) ; Return if no missile active (Y == 0).
   CP $00                                 ;
   RET Z                                  ;
-  LD BC,(state_plane_missile_coordinates) ; Backup coords to state_saved_entity_coords; if first pass, adjust for
-  LD (state_saved_entity_coords),BC       ; scroll.
+  LD BC,(state_plane_missile_coordinates) ; Backup coords to state_saved_object_coords; if first pass, adjust for
+  LD (state_saved_object_coords),BC       ; scroll.
   LD A,(missile_pass_selector)            ;
   CP $01                                  ;
   CALL Z,advance_object                   ;
   LD (previous_object_coordinates),BC  ; Store previous position to previous_object_coordinates.
   LD BC,(state_plane_missile_coordinates) ; Calculate new position: X = plane_X + 4, Y = missile_Y - 6.
-  LD A,(state_x)                          ;
+  LD A,(state_plane_x)                    ;
   ADD A,$04                               ;
   LD C,A                                  ;
   LD A,B                                  ;
@@ -3332,7 +3332,7 @@ finalize_collision_erase_missile_loop:
   LD B,A                               ;
   CP $06                               ;
   RET Z                                ;
-  LD A,(state_x)                       ; Set X = plane_X + 4 for centered erasure.
+  LD A,(state_plane_x)                 ; Set X = plane_X + 4 for centered erasure.
   ADD A,$04                            ;
   LD C,A                               ;
   LD HL,sprite_missile_trail           ; Set up sprite parameters for residue erasure.
@@ -3364,39 +3364,39 @@ finalize_collision_erase_residue_loop:
   CALL render_object                   ;
   RET
 
-; Add $0800 offset to island data pointer
+; Add $0800 offset to screen pointer
 ;
-; Used by the routine at handle_island_rendering.
-add_island_offset_800:
+; Used by the routine at scroll_screen.
+add_screen_bank_800:
   LD DE,$0800                          ; Set DE to $0800
-  ADD HL,DE                            ; Add DE to HL (adjust island pointer)
+  ADD HL,DE                            ; Add DE to HL (adjust screen pointer)
   RET
 
-; Add $1000 offset to island data pointer
+; Add $1000 offset to screen pointer
 ;
-; Used by the routine at handle_island_rendering.
-add_island_offset_1000:
+; Used by the routine at scroll_screen.
+add_screen_bank_1000:
   LD DE,$1000                          ; Set DE to $1000
-  ADD HL,DE                            ; Add DE to HL (adjust island pointer)
+  ADD HL,DE                            ; Add DE to HL (adjust screen pointer)
   RET
 
-; Handle island rendering and scrolling
+; Scroll screen pixels vertically
 ;
-; Core vertical scroll engine. Scrolls terrain by copying island data between screen lines. Called every frame from
-; render_plane_and_terrain.
+; Core vertical scroll engine. Scrolls all screen content by copying pixel data between screen lines. Called every frame
+; from render_plane_and_terrain.
 ;
 ; The algorithm processes 144 screen lines ($8F to $00), each copying 32 bytes via LDDR. This creates the vertical
-; scroll effect by shifting island data from source to destination addresses, where the offset between
-; source/destination is determined by current speed.
+; scroll effect by shifting pixel data from source to destination addresses, where the offset between source/destination
+; is determined by current speed.
 ;
-; Counter bits 7-6 select island data banks: bit 7 adds $1000, bit 6 adds $0800 to the base address. This allows 4 banks
-; of terrain patterns (64 lines each × 4 = 256 total pattern lines).
+; Counter bits 7-6 select screen memory banks: bit 7 adds $1000, bit 6 adds $0800 to the base address. This allows 4
+; banks of screen patterns (64 lines each × 4 = 256 total pattern lines).
 ;
 ; Performance note: This is the game's hottest code path, executing 144 iterations × ~50 frames/sec. The inner loop
 ; accounts for ~300M+ executions per session.
-handle_island_rendering:
+scroll_screen:
   LD A,$8F                             ; Initialize line counter to $8F (143 lines to process).
-process_island_line:
+scroll_screen_line:
   LD (state_island_render_idx),A       ;
   AND $3F                              ; Mask lower 6 bits for table index (0-63).
   LD HL,screen_row_table               ; Look up destination address in table at screen_row_table.
@@ -3410,9 +3410,9 @@ process_island_line:
   EX DE,HL                             ;
   LD A,(state_island_render_idx)       ; Apply bank offset based on bits 7-6.
   BIT 7,A                              ;
-  CALL NZ,add_island_offset_1000       ;
+  CALL NZ,add_screen_bank_1000         ;
   BIT 6,A                              ;
-  CALL NZ,add_island_offset_800        ;
+  CALL NZ,add_screen_bank_800          ;
   PUSH HL                              ; Save destination pointer.
   LD HL,screen_row_table               ; Look up source address (counter - speed).
   LD A,(state_speed)                   ;
@@ -3433,9 +3433,9 @@ process_island_line:
   LD A,(state_island_render_idx)       ;
   SUB D                                ;
   BIT 7,A                              ;
-  CALL NZ,add_island_offset_1000       ;
+  CALL NZ,add_screen_bank_1000         ;
   BIT 6,A                              ;
-  CALL NZ,add_island_offset_800        ;
+  CALL NZ,add_screen_bank_800          ;
   POP DE                               ; Copy 32 bytes from source to destination (LDDR).
   LD BC,$0020                          ;
   LDDR                                 ;
@@ -3447,11 +3447,11 @@ process_island_line:
   CALL Z,render_plane                  ;
   LD A,(state_island_render_idx)       ; Decrement and continue loop.
   DEC A                                ;
-  JP process_island_line               ;
+  JP scroll_screen_line                ;
 
 ; Clear top screen rows after scrolling
 ;
-; Clears the top rows of the screen based on scroll speed. After island data scrolls upward, the topmost rows contain
+; Clears the top rows of the screen based on scroll speed. After screen content scrolls upward, the topmost rows contain
 ; old data that needs to be zeroed.
 clear_top_rows:
   LD HL,screen_pixels                  ; Initialize screen pointer, row offset, and row count from speed.
@@ -4420,8 +4420,8 @@ overview:
   LD DE,status_line_1                  ; Print status line 1 (status_line_1, length $31 bytes) using ROM PR_STRING
   LD BC,status_line_2 - status_line_1  ; ($203C).
   CALL PR_STRING                       ;
-  CALL print_bridge                    ; Initialize gameplay: call print_bridge, setup_player_2_display,
-  CALL setup_player_2_display          ; init_starting_bridge (init_starting_bridge).
+  CALL print_bridge                    ; Initialize gameplay: call print_bridge, setup_overview_status_player_2,
+  CALL setup_overview_status_player_2  ; init_starting_bridge (init_starting_bridge).
   CALL init_starting_bridge            ;
   CALL init_current_bridge             ; Initialize terrain rendering.
   LD A,$04                                ; Print "GAME" text (status_line_4, length 5) using ROM PR_STRING.
@@ -5090,8 +5090,8 @@ render_balloon:
 ;
 ; Used by the routines at play, main_loop, overview, operate_ship_or_helicopter_continue, operate_fighter_continue,
 ; operate_tank_shell_explosion, handle_inactive_object, animate_object, animate_helicopter, operate_tank,
-; operate_tank_on_bank, cancel_and_remove_shell, handle_tank_at_boundary, operate_fuel, handle_object_proximity,
-; remove_object_from_viewport, operate_baloon, jp_operate_viewport_objects and reverse_balloon_direction.
+; operate_tank_on_bank, cancel_and_remove_shell, handle_tank_at_boundary, operate_fuel, reverse_enemy_direction,
+; remove_object_from_viewport, operate_balloon, jp_operate_viewport_objects and reverse_balloon_direction.
 ;
 ; Iterates through the viewport_objects array, processing each active object. Each object slot is a 3-byte structure: [X
 ; position, Y position, OBJECT_DEFINITION byte].
@@ -5170,7 +5170,7 @@ dispatch_object_type:
   CP OBJECT_FIGHTER                    ; Check if this is a fighter.
   JP Z,operate_fighter                 ; If fighter, jump to operate_fighter.
   CP OBJECT_BALLOON                    ; Check if this is a balloon.
-  JP Z,operate_baloon                  ; If balloon, jump to operate_baloon.
+  JP Z,operate_balloon                 ; If balloon, jump to operate_balloon.
   CP OBJECT_FUEL                       ; Check if this is a fuel station.
   JP Z,operate_fuel                    ; If fuel, jump to operate_fuel.
   CP OBJECT_TANK                       ; Check if this is a tank.
@@ -5215,7 +5215,7 @@ ship_or_helicopter_left_advance:
   LD A,(HL)                            ;
   POP BC                               ; Restore BC. If terrain != 0, reverse direction.
   CP $00                               ;
-  CALL NZ,handle_object_proximity      ;
+  CALL NZ,reverse_enemy_direction      ;
   LD (previous_object_coordinates),BC  ; Store position to previous_object_coordinates. Advance X position left by 2
   DEC C                                ; pixels (DEC C twice).
   DEC C                                ;
@@ -5867,8 +5867,8 @@ handle_collision_mode_helicopter_missile:
   RES 7,B                                 ;
   LD A,B                                  ;
   SUB $08                                 ;
-  JP P,handle_collision_mode_missile_miss ; Compare missile X with player X (from state_x). If match, player hit.
-  LD A,(state_x)                          ;
+  JP P,handle_collision_mode_missile_miss ; Compare missile X with player X (from state_plane_x). If match, player hit.
+  LD A,(state_plane_x)                    ;
   AND $F8                                 ;
   CP C                                    ;
   JP Z,handle_no_fuel                     ;
@@ -6130,7 +6130,7 @@ ship_or_helicopter_right_advance:
   LD A,(HL)                            ;
   POP BC                               ; Restore BC. If terrain != 0, reverse direction.
   CP $00                               ;
-  CALL NZ,handle_object_proximity      ;
+  CALL NZ,reverse_enemy_direction      ;
   LD (previous_object_coordinates),BC  ; Store position to previous_object_coordinates. Advance X position right by 2
   INC C                                ; pixels (INC C twice).
   INC C                                ;
@@ -6158,13 +6158,13 @@ ld_enemy_sprites_loop:
   JR NZ,ld_enemy_sprites_loop          ;
   RET                                  ;
 
-; Handle ship/helicopter proximity to obstacle
+; Reverse enemy direction at river bank
 ;
-; When a ship or helicopter approaches a river bank or fuel station, inverts its orientation. Ignores the player
-; (objects in top half of screen).
+; Reverses the direction of a ship or helicopter when it approaches a river bank. Inverts the orientation bit and
+; re-renders with new facing. Ignores objects in top half of screen (Y >= $80).
 ;
 ; I:BC Object coordinates
-handle_object_proximity:
+reverse_enemy_direction:
   LD (previous_object_coordinates),BC
   LD A,B                               ; Return if Y >= $80 (object in top half, might be player).
   SUB $80                              ;
@@ -6183,10 +6183,10 @@ handle_object_proximity:
   OR A                                 ;
   INC A                                ;
   SBC HL,BC                            ; Subtract frame size for pre-decrement.
-handle_object_proximity_frame_loop:
+reverse_enemy_direction_frame_loop:
   ADD HL,BC                                ; Loop to add frame offset to sprite pointer, store to render_sprite_ptr.
   DEC A                                    ;
-  JR NZ,handle_object_proximity_frame_loop ;
+  JR NZ,reverse_enemy_direction_frame_loop ;
   LD (render_sprite_ptr),HL                ;
   LD BC,(previous_object_coordinates)  ; Reload position, store to object_coordinates.
   LD (object_coordinates),BC           ;
@@ -6243,7 +6243,7 @@ remove_object_from_viewport:
 ; I:B Y position
 ; I:C X position
 ; I:D Object definition (bit 6 = orientation: 0=right, 1=left)
-operate_baloon:
+operate_balloon:
   BIT 7,B                              ; If balloon is off-screen (Y bit 7 set), skip to main loop.
   JP NZ,jp_operate_viewport_objects    ;
   LD A,(state_tick)                    ; Only operate every 4th frame (frame counter AND 3 == 1). Check orientation.
@@ -6300,7 +6300,7 @@ operate_balloon_shared:
 
 ; A useless procedure that unconcditionally jumps to operate_viewport_objects.
 ;
-; Used by the routines at handle_inactive_object and operate_baloon.
+; Used by the routines at handle_inactive_object and operate_balloon.
 jp_operate_viewport_objects:
   JP operate_viewport_objects
 
