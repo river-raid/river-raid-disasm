@@ -7758,7 +7758,11 @@ b$8371 DEFB $3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C
  $8381 DEFB $0E,$0E,$3C,$3C,$3C,$3C,$3C,$3C
  $8389 DEFB $3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C
 
-; Unused
+; Unused alternate road attributes.
+;
+; 32 bytes with the same structure as #R$8371 but different values: $3F
+; (white-on-white, invisible) and $C0 (flash, black). Possibly an early version
+; or debug variant of road attributes.
 @label=data_unused_8391
 u$8391 DEFB $3F,$3F,$3F,$3F,$3F,$3F,$3F,$3F
  $8399 DEFB $3F,$3F,$3F,$3F,$3F,$3F,$C0,$C0
@@ -8748,8 +8752,21 @@ b$8AB8 DEFB $1E,$00,$F0,$00,$07,$80,$3C,$00
 b$8AC8 DEFB $1E,$00,$03,$C0,$07,$80,$00,$F0
  $8AD0 DEFB $01,$E0,$00,$3C,$00,$78,$00,$0F
 
-; Unused
-@label=data_unused_8AD8
+; Unused explosion animation sprite (6 frames × 8 bytes).
+;
+; A 6-frame animation showing a diamond shape expanding from a single pixel to
+; a full diamond. Each frame is 8×8 pixels (1 tile). This appears to be an
+; unused or early explosion effect that was not included in the final game.
+; .
+; #UDGTABLE
+; { #UDGARRAY1,4,1,1;$8AD8-$8ADF-1-8(*explosion-f1) |
+; #UDGARRAY1,4,1,1;$8AE0-$8AE7-1-8(*explosion-f2) |
+; #UDGARRAY1,4,1,1;$8AE8-$8AEF-1-8(*explosion-f3) |
+; #UDGARRAY1,4,1,1;$8AF0-$8AF7-1-8(*explosion-f4) |
+; #UDGARRAY1,4,1,1;$8AF8-$8AFF-1-8(*explosion-f5) |
+; #UDGARRAY1,4,1,1;$8B00-$8B07-1-8(*explosion-f6) }
+; TABLE#
+@label=sprite_unused_explosion
 u$8AD8 DEFB $00,$00,$00,$10,$00,$00,$00,$00
  $8AE0 DEFB $00,$00,$00,$18,$18,$00,$00,$00
  $8AE8 DEFB $00,$00,$38,$38,$38,$00,$00,$00

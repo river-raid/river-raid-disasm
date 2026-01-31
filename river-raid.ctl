@@ -2922,7 +2922,8 @@ b $8351
 @ $8371 label=sprite_road_attributes
 b $8371
 @ $8391 label=data_unused_8391
-u $8391
+u $8391 Unused alternate road attributes.
+D $8391 32 bytes with the same structure as #R$8371 but different values: $3F (white-on-white, invisible) and $C0 (flash, black). Possibly an early version or debug variant of road attributes.
 @ $83B1 label=sprite_plane
 b $83B1
 N $83B1 #UDGTABLE { #UDGARRAY2,14,4,2;$83B1-$83B2-1-16(*plane-f1) | #UDGARRAY2,14,4,2;$83C1-$83C2-1-16(*plane-f2) | #UDGARRAY2,14,4,2;$83D1-$83D2-1-16(*plane-f3) | #UDGARRAY2,14,4,2;$83E1-$83E2-1-16(*plane-f4) } TABLE#
@@ -3127,8 +3128,10 @@ N $8A86 #UDGTABLE { #UDGARRAY2,11,4,2;$8A86-$8AB8-1-16{0,0,64,100}(sprite-fuel) 
 b $8AB8
 @ $8AC8 label=sprite_helicopter_rotor_right
 b $8AC8
-@ $8AD8 label=data_unused_8AD8
-u $8AD8
+@ $8AD8 label=sprite_unused_explosion
+u $8AD8 Unused explosion animation sprite (6 frames × 8 bytes).
+D $8AD8 A 6-frame animation showing a diamond shape expanding from a single pixel to a full diamond. Each frame is 8×8 pixels (1 tile). This appears to be an unused or early explosion effect that was not included in the final game.
+D $8AD8 #UDGTABLE { #UDGARRAY1,4,1,1;$8AD8-$8ADF-1-8(*explosion-f1) | #UDGARRAY1,4,1,1;$8AE0-$8AE7-1-8(*explosion-f2) | #UDGARRAY1,4,1,1;$8AE8-$8AEF-1-8(*explosion-f3) | #UDGARRAY1,4,1,1;$8AF0-$8AF7-1-8(*explosion-f4) | #UDGARRAY1,4,1,1;$8AF8-$8AFF-1-8(*explosion-f5) | #UDGARRAY1,4,1,1;$8B00-$8B07-1-8(*explosion-f6) } TABLE#
 @ $8B08 label=collision_dispatcher_ptr
 g $8B08 Pointer to collision handler routine at #R$6136. Called when sprite rendering detects pixel overlap.
 W $8B08

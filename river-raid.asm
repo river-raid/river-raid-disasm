@@ -6937,7 +6937,10 @@ sprite_road_attributes:
   DEFB $0E,$0E,$3C,$3C,$3C,$3C,$3C,$3C
   DEFB $3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C
 
-; Unused
+; Unused alternate road attributes.
+;
+; 32 bytes with the same structure as sprite_road_attributes but different values: $3F (white-on-white, invisible) and
+; $C0 (flash, black). Possibly an early version or debug variant of road attributes.
 data_unused_8391:
   DEFB $3F,$3F,$3F,$3F,$3F,$3F,$3F,$3F
   DEFB $3F,$3F,$3F,$3F,$3F,$3F,$C0,$C0
@@ -7730,8 +7733,11 @@ sprite_helicopter_rotor_right:
   DEFB $1E,$00,$03,$C0,$07,$80,$00,$F0
   DEFB $01,$E0,$00,$3C,$00,$78,$00,$0F
 
-; Unused
-data_unused_8AD8:
+; Unused explosion animation sprite (6 frames × 8 bytes).
+;
+; A 6-frame animation showing a diamond shape expanding from a single pixel to a full diamond. Each frame is 8×8 pixels
+; (1 tile). This appears to be an unused or early explosion effect that was not included in the final game.
+sprite_unused_explosion:
   DEFB $00,$00,$00,$10,$00,$00,$00,$00
   DEFB $00,$00,$00,$18,$18,$00,$00,$00
   DEFB $00,$00,$38,$38,$38,$00,$00,$00
