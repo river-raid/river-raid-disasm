@@ -3209,61 +3209,70 @@ add_island_offset_1000:
 
 ; Handle island rendering and scrolling
 ;
-; This routine manages island rendering by manipulating island data pointers based on bit flags, copying island data to
-; screen memory, and calling render_plane when appropriate. It loops through island lines, decrementing the island
-; counter until it reaches zero.
+; Core vertical scroll engine. Scrolls terrain by copying island data between screen lines. Called every frame from
+; render_plane_and_terrain.
+;
+; The algorithm processes 144 screen lines ($8F to $00), each copying 32 bytes via LDDR. This creates the vertical
+; scroll effect by shifting island data from source to destination addresses, where the offset between
+; source/destination is determined by current speed.
+;
+; Counter bits 7-6 select island data banks: bit 7 adds $1000, bit 6 adds $0800 to the base address. This allows 4 banks
+; of terrain patterns (64 lines each × 4 = 256 total pattern lines).
+;
+; Performance note: This is the game's hottest code path, executing 144 iterations × ~50 frames/sec. The inner loop
+; accounts for ~300M+ executions per session.
 handle_island_rendering:
-  LD A,$8F                             ; Initialize island line counter to $8F (143).
+  LD A,$8F                             ; Initialize line counter to $8F (143 lines to process).
 process_island_line:
-  LD (state_island_render_idx),A
-  AND $3F                              ; Mask to get lower 6 bits (index 0-63).
-  LD HL,screen_row_table               ; Look up pointer in table at screen_row_table (index × 2).
+  LD (state_island_render_idx),A       ;
+  AND $3F                              ; Mask lower 6 bits for table index (0-63).
+  LD HL,screen_row_table               ; Look up destination address in table at screen_row_table.
   LD C,A                               ;
   SLA C                                ;
   LD B,$00                             ;
-  ADD HL,BC
-  LD E,(HL)                            ; Load pointer into HL.
+  ADD HL,BC                            ;
+  LD E,(HL)                            ;
   INC HL                               ;
   LD D,(HL)                            ;
   EX DE,HL                             ;
-  LD A,(state_island_render_idx)       ; Reload island counter.
-  BIT 7,A                              ; If bit 7 set, add $1000 offset to island pointer.
+  LD A,(state_island_render_idx)       ; Apply bank offset based on bits 7-6.
+  BIT 7,A                              ;
   CALL NZ,add_island_offset_1000       ;
-  BIT 6,A                              ; If bit 6 set, add $0800 offset to island pointer.
+  BIT 6,A                              ;
   CALL NZ,add_island_offset_800        ;
-  PUSH HL                              ; Save adjusted island pointer.
-  LD HL,screen_row_table               ; Look up pointer for (counter - speed) in table at screen_row_table.
+  PUSH HL                              ; Save destination pointer.
+  LD HL,screen_row_table               ; Look up source address (counter - speed).
   LD A,(state_speed)                   ;
   LD B,A                               ;
   LD A,(state_island_render_idx)       ;
   SUB B                                ;
   AND $3F                              ;
   LD B,$00                             ;
-  LD C,A
-  SLA C
-  ADD HL,BC
-  LD E,(HL)
-  INC HL
-  LD D,(HL)
-  EX DE,HL                             ; Load pointer into HL.
-  LD A,(state_speed)                   ; Calculate (counter - speed).
+  LD C,A                               ;
+  SLA C                                ;
+  ADD HL,BC                            ;
+  LD E,(HL)                            ;
+  INC HL                               ;
+  LD D,(HL)                            ;
+  EX DE,HL                             ;
+  LD A,(state_speed)                   ; Apply bank offset to source pointer.
   LD D,A                               ;
   LD A,(state_island_render_idx)       ;
   SUB D                                ;
-  BIT 7,A                              ; If bit 7 set, add $1000 offset to island pointer.
+  BIT 7,A                              ;
   CALL NZ,add_island_offset_1000       ;
-  BIT 6,A                              ; If bit 6 set, add $0800 offset to island pointer.
+  BIT 6,A                              ;
   CALL NZ,add_island_offset_800        ;
-  POP DE                               ; Copy 32 bytes backward from first to second island line.
+  POP DE                               ; Copy 32 bytes from source to destination (LDDR).
   LD BC,$0020                          ;
   LDDR                                 ;
-  LD A,(state_island_render_idx)       ; Decrement island counter and check if finished.
+  LD A,(state_island_render_idx)       ; If counter reached 0, jump to clear_top_rows to clear top rows.
   DEC A                                ;
   CP $00                               ;
-  JP Z,clear_top_rows
-  CP $7F                               ; If counter is $7F, render plane.
+  JP Z,clear_top_rows                  ;
+  CP $7F                               ; At counter $7F, render plane sprite mid-scroll.
   CALL Z,render_plane                  ;
-  LD A,(state_island_render_idx)       ; Continue with next island line.
+  LD A,(state_island_render_idx)       ; Decrement and continue loop.
   DEC A                                ;
   JP process_island_line               ;
 

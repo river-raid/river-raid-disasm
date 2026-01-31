@@ -1,6 +1,6 @@
 # Task 006: Document Island Rendering System
 
-**Status:** Todo
+**Status:** Done
 **Phase:** 1 - System Architecture
 **Address:** $683B
 **Priority:** Critical
@@ -23,11 +23,26 @@ The routine at $683B and the hot path cluster ($6859-$68C0) execute ~300M+ times
 
 ## Acceptance Criteria
 
-- [ ] D block describes the island rendering system
-- [ ] Scrolling mechanism is explained
-- [ ] Terrain fragment generation is documented
-- [ ] Hot path routines are identified
-- [ ] Build passes after changes
+- [x] D block describes the island rendering system
+- [x] Scrolling mechanism is explained
+- [x] Terrain fragment generation is documented
+- [x] Hot path routines are identified
+- [x] Build passes after changes
+
+## Completed Work
+
+- Added D block explaining the core vertical scroll engine
+- Added N blocks explaining the algorithm:
+  - Processes 144 screen lines ($8F to $00)
+  - Each iteration copies 32 bytes via LDDR
+  - Source/destination offset determined by speed
+- Documented bank selection mechanism:
+  - Bits 7-6 of counter select data banks
+  - Bit 7 adds $1000, bit 6 adds $0800
+  - Allows 4 banks × 64 lines = 256 pattern lines
+- Added performance note about ~300M+ executions per session
+- Simplified line comments with logical groupings
+- Cross-referenced lookup table at #R$5B00
 
 ## Notes
 

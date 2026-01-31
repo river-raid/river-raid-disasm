@@ -1304,25 +1304,24 @@ c $6836 Add $1000 offset to island data pointer
   $6839,1 Add DE to HL (adjust island pointer)
 @ $683B label=handle_island_rendering
 c $683B Handle island rendering and scrolling
-D $683B This routine manages island rendering by manipulating island data pointers based on bit flags, copying island data to screen memory, and calling render_plane when appropriate. It loops through island lines, decrementing the island counter until it reaches zero.
-  $683B,2 Initialize island line counter to $8F (143).
+D $683B Core vertical scroll engine. Scrolls terrain by copying island data between screen lines. Called every frame from #R$60A5.
+N $683B The algorithm processes 144 screen lines ($8F to $00), each copying 32 bytes via LDDR. This creates the vertical scroll effect by shifting island data from source to destination addresses, where the offset between source/destination is determined by current speed.
+N $683B .
+N $683B Counter bits 7-6 select island data banks: bit 7 adds $1000, bit 6 adds $0800 to the base address. This allows 4 banks of terrain patterns (64 lines each × 4 = 256 total pattern lines).
+N $683B .
+N $683B Performance note: This is the game's hottest code path, executing 144 iterations × ~50 frames/sec. The inner loop accounts for ~300M+ executions per session.
+  $683B Initialize line counter to $8F (143 lines to process).
 @ $683D label=process_island_line
-  $6840 Mask to get lower 6 bits (index 0-63).
-  $6842,8 Look up pointer in table at #R$5B00 (index × 2).
-  $684B Load pointer into HL.
-  $684F Reload island counter.
-  $6852 If bit 7 set, add $1000 offset to island pointer.
-  $6857 If bit 6 set, add $0800 offset to island pointer.
-  $685C Save adjusted island pointer.
-  $685D,15 Look up pointer for (counter - speed) in table at #R$5B00.
-  $6873 Load pointer into HL.
-  $6874 Calculate (counter - speed).
-  $687C If bit 7 set, add $1000 offset to island pointer.
-  $6881 If bit 6 set, add $0800 offset to island pointer.
-  $6886 Copy 32 bytes backward from first to second island line.
-  $688C,6 Decrement island counter and check if finished.
-  $6895 If counter is $7F, render plane.
-  $689A Continue with next island line.
+  $6840 Mask lower 6 bits for table index (0-63).
+  $6842 Look up destination address in table at #R$5B00.
+  $684F Apply bank offset based on bits 7-6.
+  $685C Save destination pointer.
+  $685D Look up source address (counter - speed).
+  $6874 Apply bank offset to source pointer.
+  $6886 Copy 32 bytes from source to destination (LDDR).
+  $688C If counter reached 0, jump to #R$68A1 to clear top rows.
+  $6895 At counter $7F, render plane sprite mid-scroll.
+  $689A Decrement and continue loop.
 @ $68A1 label=clear_top_rows
 c $68A1 Clear top screen rows after scrolling
 D $68A1 Clears the top rows of the screen based on scroll speed. After island data scrolls upward, the topmost rows contain old data that needs to be zeroed.
