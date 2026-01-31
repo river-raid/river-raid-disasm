@@ -253,7 +253,10 @@ b $5A20 Screen attributes row 16 (boundary for visible sprite area).
 @ $5A40 label=screen_attributes_row_17
 b $5A40 Screen attributes row 17 (start of lower screen area).
 @ $5B00 label=screen_row_table
-b $5B00 Lookup table for screen row addresses, used in island rendering.
+b $5B00 Screen row address lookup table (64 entries × 2 bytes = 128 bytes).
+D $5B00 Pre-computed table mapping row indices (0-63) to screen memory addresses. Used by #R$683B for fast island/terrain scrolling. Avoids calculating addresses from the ZX Spectrum's non-linear screen layout.
+D $5B00 ZX Spectrum screen memory is organized in thirds with interleaved rows, making address calculation complex. This table provides O(1) lookup: screen_addr = screen_row_table[row_index × 2].
+W $5B00,128,2
 @ $5C78 label=int_counter
 g $5C78 Interrupt counter. Incremented by the interrupt handler.
 @ $5C79 label=data_unused_5C79
@@ -2836,23 +2839,25 @@ T $805D INK WHITE
 @ $805F label=status_line_4_end
 u $805F End marker for status_line_4 length calculation
 @ $8063 label=data_terrain_profiles
-b $8063 Array [15] of terrain element definitions (16 bytes each).
-N $8063 Each byte of the element defines the relative terrain width
-  $8063 Terrain 1
-  $8073 Terrain 2 (special, pre-bridge)
-  $8083 Terrain 3 (special, bridge)
-  $8093 Terrain 4 (special, post-bridge)
-  $80A3 Terrain 5
-  $80B3 Terrain 6
-  $80C3 Terrain 7
-  $80D3 Terrain 8
-  $80E3 Terrain 9
-  $80F3 Terrain 10
-  $8103 Terrain 11
-  $8113 Terrain 12 (river narrows)
-  $8123 Terrain 13 (river widens)
-  $8133 Terrain 14
-  $8143,16 Terrain 15
+b $8063 River bank shape profiles (15 profiles × 16 bytes = 240 bytes).
+D $8063 Defines how the river banks curve. Each profile has 16 bytes, one per scanline within a terrain fragment. Each byte is the X offset for the left bank edge at that line. Used by #R$6AA3 (terrain) and #R$6990 (islands).
+D $8063 #TABLE(default) { =h Profile | =h Type | =h Description } { 0 | Normal | Standard river section } { 1 | Normal | Alternate river shape } { 2 | Special | Pre-bridge approach (bit 7 set) } { 3 | Special | Bridge structure (bit 7 set) } { 4 | Special | Post-bridge transition } { 5-10 | Normal | Various river widths } { 11 | Narrow | River narrows significantly } { 12 | Wide | River widens significantly } { 13-14 | Normal | Additional variations } TABLE#
+D $8063 When bit 7 of a profile byte is set, #R$6AA3 jumps to special bridge/road rendering at #R$6B7B. Left edge X = profile_byte + row_offset - 16.
+  $8063 Profile 0: standard river
+  $8073 Profile 1: pre-bridge (special, bit 7 set)
+  $8083 Profile 2: bridge structure (special, bit 7 set)
+  $8093 Profile 3: post-bridge transition
+  $80A3 Profile 4
+  $80B3 Profile 5
+  $80C3 Profile 6
+  $80D3 Profile 7
+  $80E3 Profile 8
+  $80F3 Profile 9
+  $8103 Profile 10
+  $8113 Profile 11: river narrows
+  $8123 Profile 12: river widens
+  $8133 Profile 13
+  $8143 Profile 14
 @ $8153 label=msg_game_over
 t $8153 Game Over message.
 @ $8182 label=msg_credits
@@ -3514,9 +3519,10 @@ R $9423 O:HL Pointer to the current player's lives counter.
 @ $9430 label=data_unused_9430
 u $9430
 @ $9500 label=level_terrains
-b $9500 Array [48] of level terrain data (256 bytes each).
-N $9500 Array [64] of terrain rows (4 bytes each):
-N $9500 Byte 1 is the terrain type (see #R$8063).
+b $9500 Level terrain data (48 levels × 256 bytes = 12,288 bytes).
+D $9500 Defines the terrain shape for each of 48 game levels. Each level contains 64 terrain fragments × 4 bytes. Loaded by #R$6A4F as terrain scrolls.
+D $9500 #TABLE(default) { =h Byte | =h Contents } { 0 | Profile (0-14): #R$8063 index. 1=pre-bridge, 2=bridge, 3=post-bridge } { 1-2 | Row offset (16-bit): shifts bank position } { 3 | Bits 0-1: edge mode. Bits 2-7: island index (÷4 for #R$C600) } TABLE#
+D $9500 When profile is 2 (bridge), the bridge destroyed flag is cleared. When profile is 3 (post-bridge), bridge countdown begins. Fragments wrap at 64, advancing to the next level.
   $9500,256,4 Bridge 1
   $9600,256,4 Bridge 2
   $9700,256,4 Bridge 3
@@ -3566,7 +3572,10 @@ N $9500 Byte 1 is the terrain type (see #R$8063).
   $C300,256,4 Bridge 47
   $C400,256,4 Bridge 48
 @ $C600 label=data_islands
-b $C600 Array [?] island data (3 bytes each).
+b $C600 Island shape definitions (36 islands × 3 bytes = 108 bytes).
+D $C600 Defines the shape of islands that appear in the river. Each island is 3 bytes. Referenced from terrain fragment byte 3 (upper 6 bits = island index × 4). Initialized by #R$696B.
+D $C600 #TABLE(default) { =h Byte | =h Contents } { 0 | Profile index (0-14): selects shape from #R$8063 } { 1 | Width offset: added to profile values, shifts edge position } { 2 | Edge mode: 0=use byte directly, 1=mirror, 2=offset from left } TABLE#
+D $C600 Edge mode controls right edge calculation in #R$6990: mode 1 creates symmetric islands (right = 120 - left), mode 2 creates fixed-width channels (right = 60 + left).
   $C600,108,3
 @ $C800 label=level_objects
 b $C800 Level object spawn data (48 levels × 256 bytes = 12,288 bytes total).

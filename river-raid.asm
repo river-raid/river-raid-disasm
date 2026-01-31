@@ -1119,24 +1119,78 @@ screen_attributes_row_17:
   DEFB $07,$07,$07,$07,$07,$07,$07,$07
   DEFB $07,$07,$07,$07,$07,$38,$38,$38
 
-; Lookup table for screen row addresses, used in island rendering.
+; Screen row address lookup table (64 entries × 2 bytes = 128 bytes).
+;
+; Pre-computed table mapping row indices (0-63) to screen memory addresses. Used by handle_island_rendering for fast
+; island/terrain scrolling. Avoids calculating addresses from the ZX Spectrum's non-linear screen layout.
+;
+; ZX Spectrum screen memory is organized in thirds with interleaved rows, making address calculation complex. This table
+; provides O(1) lookup: screen_addr = screen_row_table[row_index × 2].
 screen_row_table:
-  DEFB $1F,$40,$1F,$41,$1F,$42,$1F,$43
-  DEFB $1F,$44,$1F,$45,$1F,$46,$1F,$47
-  DEFB $3F,$40,$3F,$41,$3F,$42,$3F,$43
-  DEFB $3F,$44,$3F,$45,$3F,$46,$3F,$47
-  DEFB $5F,$40,$5F,$41,$5F,$42,$5F,$43
-  DEFB $5F,$44,$5F,$45,$5F,$46,$5F,$47
-  DEFB $7F,$40,$7F,$41,$7F,$42,$7F,$43
-  DEFB $7F,$44,$7F,$45,$7F,$46,$7F,$47
-  DEFB $9F,$40,$9F,$41,$9F,$42,$9F,$43
-  DEFB $9F,$44,$9F,$45,$9F,$46,$9F,$47
-  DEFB $BF,$40,$BF,$41,$BF,$42,$BF,$43
-  DEFB $BF,$44,$BF,$45,$BF,$46,$BF,$47
-  DEFB $DF,$40,$DF,$41,$DF,$42,$DF,$43
-  DEFB $DF,$44,$DF,$45,$DF,$46,$DF,$47
-  DEFB $FF,$40,$FF,$41,$FF,$42,$FF,$43
-  DEFB $FF,$44,$FF,$45,$FF,$46,$FF,$47
+  DEFW $401F
+  DEFW $411F
+  DEFW $421F
+  DEFW $431F
+  DEFW $441F
+  DEFW $451F
+  DEFW $461F
+  DEFW $471F
+  DEFW $403F
+  DEFW $413F
+  DEFW $423F
+  DEFW $433F
+  DEFW $443F
+  DEFW $453F
+  DEFW $463F
+  DEFW $473F
+  DEFW $405F
+  DEFW $415F
+  DEFW $425F
+  DEFW $435F
+  DEFW $445F
+  DEFW $455F
+  DEFW $465F
+  DEFW $475F
+  DEFW $407F
+  DEFW $417F
+  DEFW $427F
+  DEFW $437F
+  DEFW $447F
+  DEFW $457F
+  DEFW $467F
+  DEFW $477F
+  DEFW $409F
+  DEFW $419F
+  DEFW $429F
+  DEFW $439F
+  DEFW $449F
+  DEFW $459F
+  DEFW $469F
+  DEFW $479F
+  DEFW $40BF
+  DEFW $41BF
+  DEFW $42BF
+  DEFW $43BF
+  DEFW $44BF
+  DEFW $45BF
+  DEFW $46BF
+  DEFW $47BF
+  DEFW $40DF
+  DEFW $41DF
+  DEFW $42DF
+  DEFW $43DF
+  DEFW $44DF
+  DEFW $45DF
+  DEFW $46DF
+  DEFW $47DF
+  DEFW $40FF
+  DEFW $41FF
+  DEFW $42FF
+  DEFW $43FF
+  DEFW $44FF
+  DEFW $45FF
+  DEFW $46FF
+  DEFW $47FF
   DEFB $C3,$90,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
@@ -6648,39 +6702,58 @@ status_line_4:
 status_line_4_end:
   DEFB $01,$05,$0A,$0F
 
-; Array [15] of terrain element definitions (16 bytes each).
+; River bank shape profiles (15 profiles × 16 bytes = 240 bytes).
 ;
-; Each byte of the element defines the relative terrain width
+; Defines how the river banks curve. Each profile has 16 bytes, one per scanline within a terrain fragment. Each byte is
+; the X offset for the left bank edge at that line. Used by render_terrain_fragment (terrain) and render_island_line
+; (islands).
+;
+; +---------+---------+---------------------------------+
+; | Profile | Type    | Description                     |
+; +---------+---------+---------------------------------+
+; | 0       | Normal  | Standard river section          |
+; | 1       | Normal  | Alternate river shape           |
+; | 2       | Special | Pre-bridge approach (bit 7 set) |
+; | 3       | Special | Bridge structure (bit 7 set)    |
+; | 4       | Special | Post-bridge transition          |
+; | 5-10    | Normal  | Various river widths            |
+; | 11      | Narrow  | River narrows significantly     |
+; | 12      | Wide    | River widens significantly      |
+; | 13-14   | Normal  | Additional variations           |
+; +---------+---------+---------------------------------+
+;
+; When bit 7 of a profile byte is set, render_terrain_fragment jumps to special bridge/road rendering at
+; handle_special_terrain_fragment. Left edge X = profile_byte + row_offset - 16.
 data_terrain_profiles:
-  DEFB $02,$04,$04,$06,$08,$08,$0A,$0A ; Terrain 1
+  DEFB $02,$04,$04,$06,$08,$08,$0A,$0A ; Profile 0: standard river
   DEFB $0C,$0A,$0A,$08,$06,$04,$02,$00 ;
-  DEFB $80,$80,$80,$80,$80,$80,$80,$80 ; Terrain 2 (special, pre-bridge)
+  DEFB $80,$80,$80,$80,$80,$80,$80,$80 ; Profile 1: pre-bridge (special, bit 7 set)
   DEFB $E0,$E0,$E0,$E0,$E0,$E0,$E0,$E0 ;
-  DEFB $C0,$C0,$C0,$C0,$C0,$C0,$C0,$F0 ; Terrain 3 (special, bridge)
+  DEFB $C0,$C0,$C0,$C0,$C0,$C0,$C0,$F0 ; Profile 2: bridge structure (special, bit 7 set)
   DEFB $F0,$C0,$C0,$C0,$C0,$C0,$C0,$C0 ;
-  DEFB $E0,$E0,$E0,$E0,$E0,$E0,$E0,$E0 ; Terrain 4 (special, post-bridge)
+  DEFB $E0,$E0,$E0,$E0,$E0,$E0,$E0,$E0 ; Profile 3: post-bridge transition
   DEFB $80,$80,$80,$80,$80,$80,$80,$80 ;
-  DEFB $00,$00,$02,$02,$04,$04,$06,$06 ; Terrain 5
+  DEFB $00,$00,$02,$02,$04,$04,$06,$06 ; Profile 4
   DEFB $08,$08,$06,$06,$04,$04,$06,$06 ;
-  DEFB $06,$06,$06,$06,$04,$04,$04,$04 ; Terrain 6
+  DEFB $06,$06,$06,$06,$04,$04,$04,$04 ; Profile 5
   DEFB $02,$02,$02,$02,$00,$00,$00,$00 ;
-  DEFB $00,$00,$02,$02,$04,$04,$06,$06 ; Terrain 7
+  DEFB $00,$00,$02,$02,$04,$04,$06,$06 ; Profile 6
   DEFB $08,$08,$0A,$0A,$0C,$0C,$0E,$0E ;
-  DEFB $0E,$0E,$0C,$0A,$0A,$08,$08,$06 ; Terrain 8
+  DEFB $0E,$0E,$0C,$0A,$0A,$08,$08,$06 ; Profile 7
   DEFB $06,$08,$08,$06,$04,$02,$02,$00 ;
-  DEFB $00,$00,$02,$04,$04,$06,$08,$08 ; Terrain 9
+  DEFB $00,$00,$02,$04,$04,$06,$08,$08 ; Profile 8
   DEFB $0A,$0C,$0E,$0E,$10,$12,$14,$16 ;
-  DEFB $16,$16,$14,$12,$10,$10,$0E,$0C ; Terrain 10
+  DEFB $16,$16,$14,$12,$10,$10,$0E,$0C ; Profile 9
   DEFB $0A,$08,$0A,$0A,$08,$06,$04,$02 ;
-  DEFB $02,$02,$04,$04,$06,$06,$04,$04 ; Terrain 11
+  DEFB $02,$02,$04,$04,$06,$06,$04,$04 ; Profile 10
   DEFB $02,$02,$00,$00,$02,$02,$02,$02 ;
-  DEFB $00,$02,$04,$06,$0A,$0C,$10,$12 ; Terrain 12 (river narrows)
+  DEFB $00,$02,$04,$06,$0A,$0C,$10,$12 ; Profile 11: river narrows
   DEFB $16,$18,$1C,$1E,$22,$24,$26,$28 ;
-  DEFB $28,$26,$24,$22,$1E,$1C,$18,$16 ; Terrain 13 (river widens)
+  DEFB $28,$26,$24,$22,$1E,$1C,$18,$16 ; Profile 12: river widens
   DEFB $12,$10,$0C,$0A,$06,$04,$02,$00 ;
-  DEFB $00,$02,$00,$00,$02,$02,$04,$02 ; Terrain 14
+  DEFB $00,$02,$00,$00,$02,$02,$04,$02 ; Profile 13
   DEFB $02,$00,$00,$02,$02,$04,$02,$00 ;
-  DEFB $00,$02,$04,$02,$02,$04,$04,$02 ; Terrain 15
+  DEFB $00,$02,$04,$02,$02,$04,$04,$02 ; Profile 14
   DEFB $00,$00,$00,$02,$02,$02,$00,$00 ;
 
 ; Game Over message.
@@ -8838,11 +8911,21 @@ data_unused_9430:
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
 
-; Array [48] of level terrain data (256 bytes each).
+; Level terrain data (48 levels × 256 bytes = 12,288 bytes).
 ;
-; Array [64] of terrain rows (4 bytes each):
+; Defines the terrain shape for each of 48 game levels. Each level contains 64 terrain fragments × 4 bytes. Loaded by
+; render_terrain_row as terrain scrolls.
 ;
-; Byte 1 is the terrain type (see data_terrain_profiles).
+; +------+------------------------------------------------------------------------------------+
+; | Byte | Contents                                                                           |
+; +------+------------------------------------------------------------------------------------+
+; | 0    | Profile (0-14): data_terrain_profiles index. 1=pre-bridge, 2=bridge, 3=post-bridge |
+; | 1-2  | Row offset (16-bit): shifts bank position                                          |
+; | 3    | Bits 0-1: edge mode. Bits 2-7: island index (÷4 for data_islands)                  |
+; +------+------------------------------------------------------------------------------------+
+;
+; When profile is 2 (bridge), the bridge destroyed flag is cleared. When profile is 3 (post-bridge), bridge countdown
+; begins. Fragments wrap at 64, advancing to the next level.
 level_terrains:
   DEFB $0C,$83,$4C,$01                 ; Bridge 1
   DEFB $02,$80,$50,$01                 ;
@@ -11949,7 +12032,21 @@ level_terrains:
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
 
-; Array [?] island data (3 bytes each).
+; Island shape definitions (36 islands × 3 bytes = 108 bytes).
+;
+; Defines the shape of islands that appear in the river. Each island is 3 bytes. Referenced from terrain fragment byte 3
+; (upper 6 bits = island index × 4). Initialized by handle_island.
+;
+; +------+----------------------------------------------------------------+
+; | Byte | Contents                                                       |
+; +------+----------------------------------------------------------------+
+; | 0    | Profile index (0-14): selects shape from data_terrain_profiles |
+; | 1    | Width offset: added to profile values, shifts edge position    |
+; | 2    | Edge mode: 0=use byte directly, 1=mirror, 2=offset from left   |
+; +------+----------------------------------------------------------------+
+;
+; Edge mode controls right edge calculation in render_island_line: mode 1 creates symmetric islands (right = 120 -
+; left), mode 2 creates fixed-width channels (right = 60 + left).
 data_islands:
   DEFB $09,$00,$01
   DEFB $0A,$00,$01
