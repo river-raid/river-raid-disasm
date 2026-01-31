@@ -1207,6 +1207,9 @@ screen_row_table:
   DEFW $45FF
   DEFW $46FF
   DEFW $47FF
+
+; Unused area.
+data_unused_5B80:
   DEFB $C3,$90,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00

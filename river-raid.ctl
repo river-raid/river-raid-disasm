@@ -273,6 +273,8 @@ b $5B00 Screen row address lookup table (64 entries × 2 bytes = 128 bytes).
 D $5B00 Pre-computed table mapping row indices (0-63) to screen memory addresses. Used by #R$683B for fast vertical scrolling. Avoids calculating addresses from the ZX Spectrum's non-linear screen layout.
 D $5B00 ZX Spectrum screen memory is organized in thirds with interleaved rows, making address calculation complex. This table provides O(1) lookup: screen_addr = screen_row_table[row_index × 2].
 W $5B00,128,2
+@ $5B80 label=data_unused_5B80
+u $5B80 Unused area.
 @ $5C78 label=int_counter
 g $5C78 Interrupt counter. Incremented by the interrupt handler.
 @ $5C79 label=data_unused_5C79
