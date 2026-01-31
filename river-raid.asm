@@ -1659,7 +1659,17 @@ exploding_fragments:
   DEFB $20,$20,$20
   DEFB $20
 
-; Bitmask for object activation timing. $1F = every 32 frames, $0F = every 16 frames.
+; Object activation interval bitmask
+;
+; Controls when newly spawned objects become active (start moving/shooting). Objects spawn inactive (bit 7 clear in
+; viewport_objects) and activate when (interrupt_counter AND mask) == 0. Checked in operate_viewport_objects.
+;
+; +-------+-----------------+--------------------------+
+; | Value | Meaning         | When Set                 |
+; +-------+-----------------+--------------------------+
+; | $1F   | Every 32 frames | Normal gameplay          |
+; | $0F   | Every 16 frames | After bridge destruction |
+; +-------+-----------------+--------------------------+
 state_activation_interval:
   DEFB $04
 
@@ -1690,8 +1700,21 @@ state_fuel:
 state_input_interface:
   DEFB $00
 
-; Current gameplay mode. $00=NORMAL (player control), $01=SCROLL_IN (terrain preview), $02=OVERVIEW (attract mode),
-; $03=REFUEL (over fuel depot).
+; Current gameplay mode
+;
+; Controls what actions are allowed and how rendering/collision works.
+;
+; +-----------+-------+-----------------------------------------+
+; | Mode      | Value | Description                             |
+; +-----------+-------+-----------------------------------------+
+; | NORMAL    | $00   | Full player control, collision active   |
+; | SCROLL_IN | $01   | Terrain preview at game start, no input |
+; | OVERVIEW  | $02   | Attract mode demo                       |
+; | REFUEL    | $06   | Over fuel depot, adding fuel            |
+; +-----------+-------+-----------------------------------------+
+;
+; During SCROLL_IN and OVERVIEW, player input is ignored and no collision occurs. During REFUEL, fuel is added each
+; frame and collisions use plane position instead of missile position.
 state_gameplay_mode:
   DEFB GAMEPLAY_MODE_NORMAL
 
@@ -3432,7 +3455,11 @@ fill_attribute_loop:
 ; Initialize bridge state for current player
 ;
 ; Clears the top attribute row, removes any active tank shell, and calculates the starting bridge index based on the
-; current player's saved progress. The algorithm handles wraparound for players who have progressed past bridge 48.
+; current player's saved progress.
+;
+; Bridge progression algorithm: The game has 48 unique bridge sections (1-48). Each bridge has 64 terrain fragments.
+; When a player's progress exceeds 48, the algorithm calculates a wraparound: new_bridge = ((progress - 48) mod 15) +
+; 33. This creates an infinite loop through bridges 33-48 (15 bridges) after completing all 48.
 init_current_bridge:
   LD HL,screen_attributes              ; Initialize to clear top attribute row (32 bytes).
   LD B,$20                             ;
@@ -3506,27 +3533,30 @@ clear_bridge_destroyed:
   LD (state_bridge_destroyed),A        ;
   RET
 
-; Increase bridge index and handle overflow by resetting to the first bridge.
+; Advance to next bridge/level
 ;
-; Used by the routine at render_terrain_row.
+; Called when all 64 terrain fragments of the current bridge are completed. Resets Y-position and advances to the next
+; bridge. Bridge index wraps from 49 back to 1, but the player's progress counter in state_bridge_player_1 continues
+; incrementing for the wraparound calculation in init_current_bridge.
 ;
 ; O:A Always set to 0
 increase_bridge_index:
-  LD DE,$0000                          ; Reset Y-position
+  LD DE,$0000                          ; Reset Y-position to start of new bridge.
   LD (state_scroll_offset),DE          ;
-  LD A,(state_bridge_index)            ; Increase bridge index
+  LD A,(state_bridge_index)            ; Increment bridge index at state_bridge_index.
   INC A                                ;
   LD (state_bridge_index),A            ;
-  CP $31                               ; Check for overflow
-  JP Z,next_bridge_index_overflow
-  LD A,$00
-  RET
+  CP $31                               ; If index reaches $31 (49), wrap via next_bridge_index_overflow.
+  JP Z,next_bridge_index_overflow      ;
+  LD A,$00                             ;
+  RET                                  ;
 
-; Handle bridge index overflow by wrapping to first bridge.
+; Wrap bridge index from 49 to 1
 ;
-; Used by the routine at increase_bridge_index.
+; Resets bridge index to 1 when it would exceed 48. Note: player progress at state_bridge_player_1 is not reset,
+; allowing the wraparound algorithm to work.
 next_bridge_index_overflow:
-  LD A,$01                             ; Reset bridge index to 0.
+  LD A,$01                             ; Reset bridge index to 1.
   LD (state_bridge_index),A            ;
   LD A,$00
   RET
@@ -5611,15 +5641,36 @@ invert_coordinate_sign:
   XOR $7F                              ; A = A XOR $7F.
   RET
 
-; Game status buffer entry at 7383
+; Tank shell state flags and speed
+;
+; Controls tank shell behavior during flight and explosion.
+;
+; +--------+------------------------------------------------------+
+; | Bit(s) | Meaning                                              |
+; +--------+------------------------------------------------------+
+; | 0-2    | Speed (1-4): horizontal pixels per frame             |
+; | 5      | TANK_SHELL_BIT_EXPLODING: explosion animation active |
+; | 6      | Orientation (same as SLOT_BIT_ORIENTATION)           |
+; | 7      | TANK_SHELL_BIT_FLYING: shell in flight               |
+; +--------+------------------------------------------------------+
+;
+; Speed is pseudo-random (1-4), set when shell is fired at tank_fire_shell_entry.
 tank_shell_state:
   DEFB $00
 
-; Game status buffer entry at 7384
+; Tank shell trajectory step (0-7)
+;
+; Current step in the shell's parabolic arc. Incremented each frame while flying. At step 8, shell explodes via
+; render_tank_shell_explosion.
+;
+; Higher steps produce lower-pitched whistle sounds (BEEPER with HL = step × 256).
 tank_shell_trajectory_step:
   DEFB $00
 
-; Game status buffer entry at 7385
+; Tank shell position (BC format: C=X, B=Y)
+;
+; Current screen position of the flying shell. Updated each frame based on speed and orientation. Cleared to $0000 when
+; shell is removed.
 tank_shell_coordinates:
   DEFW $0000
 
@@ -8123,27 +8174,31 @@ sprite_tank_shell_explosion:
   DEFB $00,$00                         ;
   DEFB $00,$00                         ;
 
-; Message at 90BC
+; Player 1 score ones and tens digits (2 ASCII chars)
+;
+; Score storage as 6 ASCII digit characters. Each player's score spans 6 bytes at offsets 0-5 (leftmost to rightmost).
+; Offset is calculated as (6 - update_type) in update_score. Bonus life is awarded when digit offset 2 (update_type=4,
+; the 10,000s place) is incremented.
 state_score_player_1_low:
   DEFM "00"
 
-; Message at 90BE
+; Player 1 score hundreds and thousands digits
 state_score_player_1_mid:
   DEFM "00"
 
-; Message at 90C0
+; Player 1 score ten-thousands and hundred-thousands digits
 state_score_player_1_high:
   DEFM "00"
 
-; Message at 90C2
+; Player 2 score ones and tens digits (2 ASCII chars)
 state_score_player_2_low:
   DEFM "00"
 
-; Message at 90C4
+; Player 2 score hundreds and thousands digits
 state_score_player_2_mid:
   DEFM "00"
 
-; Message at 90C6
+; Player 2 score ten-thousands and hundred-thousands digits
 state_score_player_2_high:
   DEFM "00"
 
@@ -8208,10 +8263,11 @@ add_life:
 
 ; Update and print score for current player.
 ;
-; Adds points to the current player's score and refreshes the on-screen display. The update type determines which digit
-; to increment: type 1 = 100,000s, type 2 = 10,000s, etc. Type 4 is special and awards a bonus life.
+; Increments a score digit and propagates carry if needed. The digit offset is calculated as (6 - type), where offset 0
+; is the leftmost (100,000s) and offset 5 is the rightmost (1s). When carry propagates to type=4 (offset 2, the 1,000s
+; column), add_life is called to award a bonus life. This means bonus lives are awarded every 10,000 points.
 ;
-; I:A Update type (1=player 1, 2=player 2, 4=both)
+; I:A Update type: determines digit offset (1=1s, 2=10s, 3=100s, 4=1000s+bonus life, 5=10000s, 6=100000s)
 update_score:
   PUSH AF                              ; Save A, open upper screen channel via ROM CHAN_OPEN, restore A.
   LD A,$01                             ;

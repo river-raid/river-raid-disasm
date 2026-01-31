@@ -493,7 +493,9 @@ D $5F2E #TABLE(default) { =h Byte | =h Contents } { 0 | X position (0-255 pixels
 D $5F2E Explosion frames: 1,5=#R$8471 (small), 2,4=#R$8481 (medium), 3=#R$8491 (large), 6=#R$82F5 (erase).
 B $5F2E,49,3
 @ $5F5F label=state_activation_interval
-g $5F5F Bitmask for object activation timing. $1F = every 32 frames, $0F = every 16 frames.
+g $5F5F Object activation interval bitmask
+D $5F5F Controls when newly spawned objects become active (start moving/shooting). Objects spawn inactive (bit 7 clear in viewport_objects) and activate when (interrupt_counter AND mask) == 0. Checked in #R$708E.
+D $5F5F #TABLE(default) { =h Value | =h Meaning | =h When Set } { $1F | Every 32 frames | Normal gameplay } { $0F | Every 16 frames | After bridge destruction } TABLE#
 @ $5F60 label=viewport_ptr
 g $5F60 Pointer to a slot from #R$5F00
 W $5F60
@@ -510,7 +512,10 @@ g $5F66 Fuel level (0-255). $FF=full tank, $00=empty. Decremented every 2 frames
 g $5F67 Input interface type ($00=Keyboard, $01=Sinclair, $02=Kempston, $03=Cursor).
 @ $5F68 label=state_gameplay_mode
 @ $5F68 isub=DEFB GAMEPLAY_MODE_NORMAL
-g $5F68 Current gameplay mode. $00=NORMAL (player control), $01=SCROLL_IN (terrain preview), $02=OVERVIEW (attract mode), $03=REFUEL (over fuel depot).
+g $5F68 Current gameplay mode
+D $5F68 Controls what actions are allowed and how rendering/collision works.
+D $5F68 #TABLE(default) { =h Mode | =h Value | =h Description } { NORMAL | $00 | Full player control, collision active } { SCROLL_IN | $01 | Terrain preview at game start, no input } { OVERVIEW | $02 | Attract mode demo } { REFUEL | $06 | Over fuel depot, adding fuel } TABLE#
+D $5F68 During SCROLL_IN and OVERVIEW, player input is ignored and no collision occurs. During REFUEL, fuel is added each frame and collisions use plane position instead of missile position.
 @ $5F69 label=state_plane_sprite_bank
 g $5F69 Plane sprite bank offset. $00=centered, $04=banked left/right. Added to sprite pointer for tilted plane animation.
 @ $5F6A label=state_bridge_player_1
@@ -1375,7 +1380,8 @@ D $68C5 Copies the bottom attribute row to the top of the screen, then fills the
   $68E5,3 Call #R$6F80 to spawn objects for new row.
 @ $68E9 label=init_current_bridge
 c $68E9 Initialize bridge state for current player
-D $68E9 Clears the top attribute row, removes any active tank shell, and calculates the starting bridge index based on the current player's saved progress. The algorithm handles wraparound for players who have progressed past bridge 48.
+D $68E9 Clears the top attribute row, removes any active tank shell, and calculates the starting bridge index based on the current player's saved progress.
+D $68E9 Bridge progression algorithm: The game has 48 unique bridge sections (1-48). Each bridge has 64 terrain fragments. When a player's progress exceeds 48, the algorithm calculates a wraparound: new_bridge = ((progress - 48) mod 15) + 33. This creates an infinite loop through bridges 33-48 (15 bridges) after completing all 48.
   $68E9 Initialize to clear top attribute row (32 bytes).
 @ $68EE label=clear_top_attributes_loop
   $68EE Clear byte, advance pointer, loop 32 times.
@@ -1406,14 +1412,16 @@ c $6947 Clear bridge destroyed flag
 D $6947 Called when terrain profile byte is $02, indicating bridge structure. Clears the destroyed flag so the bridge renders intact (unless player has destroyed it).
   $6947,5 Set state_bridge_destroyed = 0.
 @ $694D label=increase_bridge_index
-c $694D Increase bridge index and handle overflow by resetting to the first bridge.
+c $694D Advance to next bridge/level
+D $694D Called when all 64 terrain fragments of the current bridge are completed. Resets Y-position and advances to the next bridge. Bridge index wraps from 49 back to 1, but the player's progress counter in #R$5F6A continues incrementing for the wraparound calculation in #R$68E9.
 R $694D O:A Always set to 0
-  $694D Reset Y-position
-  $6954 Increase bridge index
-  $695B,2 Check for overflow
+  $694D Reset Y-position to start of new bridge.
+  $6954 Increment bridge index at #R$5EF0.
+  $695B If index reaches $31 (49), wrap via #R$6963.
 @ $6963 label=next_bridge_index_overflow
-c $6963 Handle bridge index overflow by wrapping to first bridge.
-  $6963,5 Reset bridge index to 0.
+c $6963 Wrap bridge index from 49 to 1
+D $6963 Resets bridge index to 1 when it would exceed 48. Note: player progress at #R$5F6A is not reset, allowing the wraparound algorithm to work.
+  $6963,5 Reset bridge index to 1.
 @ $696B label=handle_island
 c $696B Initialize island state from terrain data
 D $696B Called when terrain data indicates an island should appear. Looks up island parameters from data_islands table and stores them to state variables for use during island line rendering.
@@ -2370,11 +2378,17 @@ c $7380 Invert coordinate for position calculation
 D $7380 XORs A with $7F to flip coordinate sign for shell trajectory.
   $7380,2 A = A XOR $7F.
 @ $7383 label=tank_shell_state
-g $7383
+g $7383 Tank shell state flags and speed
+D $7383 Controls tank shell behavior during flight and explosion.
+D $7383 #TABLE(default) { =h Bit(s) | =h Meaning } { 0-2 | Speed (1-4): horizontal pixels per frame } { 5 | TANK_SHELL_BIT_EXPLODING: explosion animation active } { 6 | Orientation (same as SLOT_BIT_ORIENTATION) } { 7 | TANK_SHELL_BIT_FLYING: shell in flight } TABLE#
+D $7383 Speed is pseudo-random (1-4), set when shell is fired at #R$732E.
 @ $7384 label=tank_shell_trajectory_step
-g $7384
+g $7384 Tank shell trajectory step (0-7)
+D $7384 Current step in the shell's parabolic arc. Incremented each frame while flying. At step 8, shell explodes via #R$74C6.
+D $7384 Higher steps produce lower-pitched whistle sounds (BEEPER with HL = step × 256).
 @ $7385 label=tank_shell_coordinates
-g $7385
+g $7385 Tank shell position (BC format: C=X, B=Y)
+D $7385 Current screen position of the flying shell. Updated each frame based on speed and orientation. Cleared to $0000 when shell is removed.
 W $7385
 @ $7387 label=invert_shell_coordinate_delta
 c $7387 Invert shell coordinate delta
@@ -3212,17 +3226,18 @@ b $8FFC
   $907C,32,2 Frame 5
   $909C,32,2 Frame 6
 @ $90BC label=state_score_player_1_low
-t $90BC
+t $90BC Player 1 score ones and tens digits (2 ASCII chars)
+D $90BC Score storage as 6 ASCII digit characters. Each player's score spans 6 bytes at offsets 0-5 (leftmost to rightmost). Offset is calculated as (6 - update_type) in #R$9122. Bonus life is awarded when digit offset 2 (update_type=4, the 10,000s place) is incremented.
 @ $90BE label=state_score_player_1_mid
-t $90BE
+t $90BE Player 1 score hundreds and thousands digits
 @ $90C0 label=state_score_player_1_high
-t $90C0
+t $90C0 Player 1 score ten-thousands and hundred-thousands digits
 @ $90C2 label=state_score_player_2_low
-t $90C2
+t $90C2 Player 2 score ones and tens digits (2 ASCII chars)
 @ $90C4 label=state_score_player_2_mid
-t $90C4
+t $90C4 Player 2 score hundreds and thousands digits
 @ $90C6 label=state_score_player_2_high
-t $90C6
+t $90C6 Player 2 score ten-thousands and hundred-thousands digits
 @ $90C8 label=high_score_bridge_1
 t $90C8 High score storage for bridge 1 (6 ASCII digits).
 @ $90CE label=high_scores_extended
@@ -3244,8 +3259,8 @@ D $9109 Increments the current player's life count and triggers the bonus life s
   $9119,2 Set CONTROLS_BIT_BONUS_LIFE to trigger bonus sound.
 @ $9122 label=update_score
 c $9122 Update and print score for current player.
-D $9122 Adds points to the current player's score and refreshes the on-screen display. The update type determines which digit to increment: type 1 = 100,000s, type 2 = 10,000s, etc. Type 4 is special and awards a bonus life.
-R $9122 I:A Update type (1=player 1, 2=player 2, 4=both)
+D $9122 Increments a score digit and propagates carry if needed. The digit offset is calculated as (6 - type), where offset 0 is the leftmost (100,000s) and offset 5 is the rightmost (1s). When carry propagates to type=4 (offset 2, the 1,000s column), #R$9109 is called to award a bonus life. This means bonus lives are awarded every 10,000 points.
+R $9122 I:A Update type: determines digit offset (1=1s, 2=10s, 3=100s, 4=1000s+bonus life, 5=10000s, 6=100000s)
   $9122 Save A, open upper screen channel via ROM CHAN_OPEN, restore A.
   $9129 If update type is 4, award bonus life via #R$9109.
   $912E Calculate digit offset: C = 6 - update_type.

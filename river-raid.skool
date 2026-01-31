@@ -1736,8 +1736,17 @@ g$5F2E DEFB $20,$20,$20
  $5F5B DEFB $20,$20,$20
  $5F5E DEFB $20
 
-; Bitmask for object activation timing. $1F = every 32 frames, $0F = every 16
-; frames.
+; Object activation interval bitmask
+;
+; Controls when newly spawned objects become active (start moving/shooting).
+; Objects spawn inactive (bit 7 clear in viewport_objects) and activate when
+; (interrupt_counter AND mask) == 0. Checked in #R$708E.
+; .
+; #TABLE(default)
+; { =h Value | =h Meaning | =h When Set }
+; { $1F | Every 32 frames | Normal gameplay }
+; { $0F | Every 16 frames | After bridge destruction }
+; TABLE#
 @label=state_activation_interval
 g$5F5F DEFB $04
 
@@ -1769,8 +1778,21 @@ g$5F66 DEFB $00
 @label=state_input_interface
 g$5F67 DEFB $00
 
-; Current gameplay mode. $00=NORMAL (player control), $01=SCROLL_IN (terrain
-; preview), $02=OVERVIEW (attract mode), $03=REFUEL (over fuel depot).
+; Current gameplay mode
+;
+; Controls what actions are allowed and how rendering/collision works.
+; .
+; #TABLE(default)
+; { =h Mode | =h Value | =h Description }
+; { NORMAL | $00 | Full player control, collision active }
+; { SCROLL_IN | $01 | Terrain preview at game start, no input }
+; { OVERVIEW | $02 | Attract mode demo }
+; { REFUEL | $06 | Over fuel depot, adding fuel }
+; TABLE#
+; .
+; During SCROLL_IN and OVERVIEW, player input is ignored and no collision
+; occurs. During REFUEL, fuel is added each frame and collisions use plane
+; position instead of missile position.
 @label=state_gameplay_mode
 @isub=DEFB GAMEPLAY_MODE_NORMAL
 g$5F68 DEFB $00
@@ -3812,8 +3834,13 @@ c$68C5 LD DE,$5820   ; {Copy bottom attribute row to top of screen.
 ; Initialize bridge state for current player
 ;
 ; Clears the top attribute row, removes any active tank shell, and calculates
-; the starting bridge index based on the current player's saved progress. The
-; algorithm handles wraparound for players who have progressed past bridge 48.
+; the starting bridge index based on the current player's saved progress.
+; .
+; Bridge progression algorithm: The game has 48 unique bridge sections (1-48).
+; Each bridge has 64 terrain fragments. When a player's progress exceeds 48,
+; the algorithm calculates a wraparound: new_bridge = ((progress - 48) mod 15)
+; + 33. This creates an infinite loop through bridges 33-48 (15 bridges) after
+; completing all 48.
 @label=init_current_bridge
 c$68E9 LD HL,$5800   ; {Initialize to clear top attribute row (32 bytes).
  $68EC LD B,$20      ; }
@@ -3891,27 +3918,31 @@ c$6947 LD A,$00      ; {Set state_bridge_destroyed = 0.
  $6949 LD ($5F6D),A  ; }
  $694C RET           ;
 
-; Increase bridge index and handle overflow by resetting to the first bridge.
+; Advance to next bridge/level
 ;
-; Used by the routine at #R$6A4F.
+; Called when all 64 terrain fragments of the current bridge are completed.
+; Resets Y-position and advances to the next bridge. Bridge index wraps from 49
+; back to 1, but the player's progress counter in #R$5F6A continues
+; incrementing for the wraparound calculation in #R$68E9.
 ;
 ; O:A Always set to 0
 @label=increase_bridge_index
-c$694D LD DE,$0000   ; {Reset Y-position
+c$694D LD DE,$0000   ; {Reset Y-position to start of new bridge.
  $6950 LD ($5F70),DE ; }
- $6954 LD A,($5EF0)  ; {Increase bridge index
+ $6954 LD A,($5EF0)  ; {Increment bridge index at #R$5EF0.
  $6957 INC A         ;
  $6958 LD ($5EF0),A  ; }
- $695B CP $31        ; Check for overflow
+ $695B CP $31        ; {If index reaches $31 (49), wrap via #R$6963.
  $695D JP Z,$6963    ;
  $6960 LD A,$00      ;
- $6962 RET           ;
+ $6962 RET           ; }
 
-; Handle bridge index overflow by wrapping to first bridge.
+; Wrap bridge index from 49 to 1
 ;
-; Used by the routine at #R$694D.
+; Resets bridge index to 1 when it would exceed 48. Note: player progress at
+; #R$5F6A is not reset, allowing the wraparound algorithm to work.
 @label=next_bridge_index_overflow
-c$6963 LD A,$01      ; {Reset bridge index to 0.
+c$6963 LD A,$01      ; {Reset bridge index to 1.
  $6965 LD ($5EF0),A  ; }
  $6968 LD A,$00      ;
  $696A RET           ;
@@ -6288,15 +6319,36 @@ c$735E LD A,($5EF2)  ; {If TANK_SHELL_ACTIVE, cancel shell via #R$7358.
 c$7380 XOR $7F       ; A = A XOR $7F.
  $7382 RET           ;
 
-; Game status buffer entry at 7383
+; Tank shell state flags and speed
+;
+; Controls tank shell behavior during flight and explosion.
+; .
+; #TABLE(default)
+; { =h Bit(s) | =h Meaning }
+; { 0-2 | Speed (1-4): horizontal pixels per frame }
+; { 5 | TANK_SHELL_BIT_EXPLODING: explosion animation active }
+; { 6 | Orientation (same as SLOT_BIT_ORIENTATION) }
+; { 7 | TANK_SHELL_BIT_FLYING: shell in flight }
+; TABLE#
+; .
+; Speed is pseudo-random (1-4), set when shell is fired at #R$732E.
 @label=tank_shell_state
 g$7383 DEFB $00
 
-; Game status buffer entry at 7384
+; Tank shell trajectory step (0-7)
+;
+; Current step in the shell's parabolic arc. Incremented each frame while
+; flying. At step 8, shell explodes via #R$74C6.
+; .
+; Higher steps produce lower-pitched whistle sounds (BEEPER with HL = step ×
+; 256).
 @label=tank_shell_trajectory_step
 g$7384 DEFB $00
 
-; Game status buffer entry at 7385
+; Tank shell position (BC format: C=X, B=Y)
+;
+; Current screen position of the flying shell. Updated each frame based on
+; speed and orientation. Cleared to $0000 when shell is removed.
 @label=tank_shell_coordinates
 g$7385 DEFW $0000
 
@@ -9147,27 +9199,32 @@ b$8FFC DEFB $00,$00  ; {Frame 1
  $90B8 DEFB $00,$00  ;
  $90BA DEFB $00,$00  ; }
 
-; Message at 90BC
+; Player 1 score ones and tens digits (2 ASCII chars)
+;
+; Score storage as 6 ASCII digit characters. Each player's score spans 6 bytes
+; at offsets 0-5 (leftmost to rightmost). Offset is calculated as (6 -
+; update_type) in #R$9122. Bonus life is awarded when digit offset 2
+; (update_type=4, the 10,000s place) is incremented.
 @label=state_score_player_1_low
 t$90BC DEFM "00"
 
-; Message at 90BE
+; Player 1 score hundreds and thousands digits
 @label=state_score_player_1_mid
 t$90BE DEFM "00"
 
-; Message at 90C0
+; Player 1 score ten-thousands and hundred-thousands digits
 @label=state_score_player_1_high
 t$90C0 DEFM "00"
 
-; Message at 90C2
+; Player 2 score ones and tens digits (2 ASCII chars)
 @label=state_score_player_2_low
 t$90C2 DEFM "00"
 
-; Message at 90C4
+; Player 2 score hundreds and thousands digits
 @label=state_score_player_2_mid
 t$90C4 DEFM "00"
 
-; Message at 90C6
+; Player 2 score ten-thousands and hundred-thousands digits
 @label=state_score_player_2_high
 t$90C6 DEFM "00"
 
@@ -9234,11 +9291,14 @@ c$9109 PUSH AF       ;
 
 ; Update and print score for current player.
 ;
-; Adds points to the current player's score and refreshes the on-screen
-; display. The update type determines which digit to increment: type 1 =
-; 100,000s, type 2 = 10,000s, etc. Type 4 is special and awards a bonus life.
+; Increments a score digit and propagates carry if needed. The digit offset is
+; calculated as (6 - type), where offset 0 is the leftmost (100,000s) and
+; offset 5 is the rightmost (1s). When carry propagates to type=4 (offset 2,
+; the 1,000s column), #R$9109 is called to award a bonus life. This means bonus
+; lives are awarded every 10,000 points.
 ;
-; I:A Update type (1=player 1, 2=player 2, 4=both)
+; I:A Update type: determines digit offset (1=1s, 2=10s, 3=100s, 4=1000s+bonus
+; .   life, 5=10000s, 6=100000s)
 @label=update_score
 c$9122 PUSH AF       ; {Save A, open upper screen channel via ROM CHAN_OPEN,
  $9123 LD A,$01      ; restore A.
