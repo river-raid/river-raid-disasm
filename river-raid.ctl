@@ -94,9 +94,21 @@
 > $4000 OBJECT_BALLOON        EQU $06
 > $4000 OBJECT_FUEL           EQU $07
 > $4000
+> $4000 ; Object definition byte bit fields (byte 2 of viewport_objects entries)
+> $4000 ; +-------+--------------------------------------------------+
+> $4000 ; | Bit   | Meaning                                          |
+> $4000 ; +-------+--------------------------------------------------+
+> $4000 ; | 0-2   | Object type (OBJECT_* constants, 0-7)            |
+> $4000 ; | 3     | Rock flag (1=rock obstacle, 0=interactive)       |
+> $4000 ; | 4     | Unused                                           |
+> $4000 ; | 5     | Tank location (1=river bank, 0=bridge)           |
+> $4000 ; | 6     | Orientation (1=right-facing, 0=left-facing)      |
+> $4000 ; | 7     | Activation (1=active/interactive, 0=spawning)    |
+> $4000 ; +-------+--------------------------------------------------+
 > $4000 SLOT_BIT_ROCK         EQU $03
 > $4000 SLOT_BIT_TANK_ON_BANK EQU $05
 > $4000 SLOT_BIT_ORIENTATION  EQU $06
+> $4000 SLOT_BIT_ACTIVATION   EQU $07
 > $4000 SLOT_MASK_OBJECT_TYPE EQU $07
 > $4000
 > $4000 SIZE_LEVEL_SLOTS      EQU $0100
@@ -466,10 +478,16 @@ g $5EFD Island starting line index. Screen line (0-23) where island rendering be
 @ $5EFE label=data_unused_5EFE
 u $5EFE
 @ $5F00 label=viewport_objects
-g $5F00
+g $5F00 Active objects array (enemies, fuel depots on screen).
+D $5F00 Array of up to 15 active game objects. Each entry is 3 bytes. Iterated by #R$708E (operate) and #R$62E8 (collision). New objects added via #R$6EAB.
+D $5F00 #TABLE(default) { =h Byte | =h Contents } { 0 | X position (0-255 pixels) } { 1 | Y position (0-255 pixels, increases as object scrolls down) } { 2 | Object definition byte (see below) } TABLE#
+D $5F00 #TABLE(default) { =h Marker | =h Value | =h Meaning } { SET_MARKER_EMPTY_SLOT | $00 | Unused slot (skip during iteration) } { SET_MARKER_END_OF_SET | $FF | End of active objects (reset to start) } TABLE#
 B $5F00,46,3
 @ $5F2E label=exploding_fragments
-g $5F2E
+g $5F2E Explosion animation fragments array.
+D $5F2E Array of up to 16 explosion fragments. Each entry is 3 bytes. Animated by #R$6EC8. New explosions added via #R$6EAB.
+D $5F2E #TABLE(default) { =h Byte | =h Contents } { 0 | X position (0-255 pixels) } { 1 | Y offset (relative position, adjusted during scroll) } { 2 | Frame counter: bits 0-6 = frame (1-6), bit 7 = erase flag } TABLE#
+D $5F2E Explosion frames: 1,5=#R$8471 (small), 2,4=#R$8481 (medium), 3=#R$8491 (large), 6=#R$82F5 (erase).
 B $5F2E,49,3
 @ $5F5F label=state_activation_interval
 g $5F5F Bitmask for object activation timing. $1F = every 32 frames, $0F = every 16 frames.
@@ -3551,7 +3569,10 @@ N $9500 Byte 1 is the terrain type (see #R$8063).
 b $C600 Array [?] island data (3 bytes each).
   $C600,108,3
 @ $C800 label=level_objects
-b $C800 Byte 1: lowest 3 bits - object type (OBJECT_*), bit 3 - rock (then the 2 lowest bits are the rock number); Byte 2 - position.
+b $C800 Level object spawn data (48 levels × 256 bytes = 12,288 bytes total).
+D $C800 Defines what objects spawn at each scroll position for all 48 game levels (bridges). Each level has 128 spawn slots (256 bytes, 2 bytes per slot). Read by #R$6F80 during scroll.
+D $C800 #TABLE(default) { =h Byte | =h Contents } { 0 (D) | Object definition: bits 0-2 = type, bit 3 = rock flag } { 1 (E) | X position ($00 = empty slot, $01-$FF = spawn X coordinate) } TABLE#
+D $C800 When bit 3 (SLOT_BIT_ROCK) is set, bits 0-1 select rock variant (0-3). Otherwise bits 0-2 are OBJECT_* type. Level address = level_objects + (level_number × SIZE_LEVEL_SLOTS).
   $C800,256,2 Level 1
   $C900,256,2 Level 2
   $CA00,256,2 Level 3

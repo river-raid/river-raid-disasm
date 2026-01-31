@@ -92,9 +92,21 @@ OBJECT_FIGHTER        EQU $05
 OBJECT_BALLOON        EQU $06
 OBJECT_FUEL           EQU $07
 
+; Object definition byte bit fields (byte 2 of viewport_objects entries)
+; +-------+--------------------------------------------------+
+; | Bit   | Meaning                                          |
+; +-------+--------------------------------------------------+
+; | 0-2   | Object type (OBJECT_* constants, 0-7)            |
+; | 3     | Rock flag (1=rock obstacle, 0=interactive)       |
+; | 4     | Unused                                           |
+; | 5     | Tank location (1=river bank, 0=bridge)           |
+; | 6     | Orientation (1=right-facing, 0=left-facing)      |
+; | 7     | Activation (1=active/interactive, 0=spawning)    |
+; +-------+--------------------------------------------------+
 SLOT_BIT_ROCK         EQU $03
 SLOT_BIT_TANK_ON_BANK EQU $05
 SLOT_BIT_ORIENTATION  EQU $06
+SLOT_BIT_ACTIVATION   EQU $07
 SLOT_MASK_OBJECT_TYPE EQU $07
 
 SIZE_LEVEL_SLOTS      EQU $0100
@@ -1522,7 +1534,25 @@ state_island_line_idx:
 data_unused_5EFE:
   DEFB $FF,$FF
 
-; Game status buffer entry at 5F00
+; Active objects array (enemies, fuel depots on screen).
+;
+; Array of up to 15 active game objects. Each entry is 3 bytes. Iterated by operate_viewport_objects (operate) and
+; check_missile_vs_objects (collision). New objects added via add_object_to_set.
+;
+; +------+-------------------------------------------------------------+
+; | Byte | Contents                                                    |
+; +------+-------------------------------------------------------------+
+; | 0    | X position (0-255 pixels)                                   |
+; | 1    | Y position (0-255 pixels, increases as object scrolls down) |
+; | 2    | Object definition byte (see below)                          |
+; +------+-------------------------------------------------------------+
+;
+; +-----------------------+-------+----------------------------------------+
+; | Marker                | Value | Meaning                                |
+; +-----------------------+-------+----------------------------------------+
+; | SET_MARKER_EMPTY_SLOT | $00   | Unused slot (skip during iteration)    |
+; | SET_MARKER_END_OF_SET | $FF   | End of active objects (reset to start) |
+; +-----------------------+-------+----------------------------------------+
 viewport_objects:
   DEFB $20,$20,$20
   DEFB $20,$20,$20
@@ -1541,7 +1571,21 @@ viewport_objects:
   DEFB $20,$20,$20
   DEFB $20
 
-; Game status buffer entry at 5F2E
+; Explosion animation fragments array.
+;
+; Array of up to 16 explosion fragments. Each entry is 3 bytes. Animated by render_explosions. New explosions added via
+; add_object_to_set.
+;
+; +------+-----------------------------------------------------------+
+; | Byte | Contents                                                  |
+; +------+-----------------------------------------------------------+
+; | 0    | X position (0-255 pixels)                                 |
+; | 1    | Y offset (relative position, adjusted during scroll)      |
+; | 2    | Frame counter: bits 0-6 = frame (1-6), bit 7 = erase flag |
+; +------+-----------------------------------------------------------+
+;
+; Explosion frames: 1,5=sprite_explosion_f1 (small), 2,4=sprite_explosion_f2 (medium), 3=sprite_explosion_f3 (large),
+; 6=sprite_erasure (erase).
 exploding_fragments:
   DEFB $20,$20,$20
   DEFB $20,$20,$20
@@ -11995,8 +12039,20 @@ data_islands:
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00
 
-; Byte 1: lowest 3 bits - object type (OBJECT_*), bit 3 - rock (then the 2 lowest bits are the rock number); Byte 2 -
-; position.
+; Level object spawn data (48 levels × 256 bytes = 12,288 bytes total).
+;
+; Defines what objects spawn at each scroll position for all 48 game levels (bridges). Each level has 128 spawn slots
+; (256 bytes, 2 bytes per slot). Read by next_row during scroll.
+;
+; +-------+-------------------------------------------------------------+
+; | Byte  | Contents                                                    |
+; +-------+-------------------------------------------------------------+
+; | 0 (D) | Object definition: bits 0-2 = type, bit 3 = rock flag       |
+; | 1 (E) | X position ($00 = empty slot, $01-$FF = spawn X coordinate) |
+; +-------+-------------------------------------------------------------+
+;
+; When bit 3 (SLOT_BIT_ROCK) is set, bits 0-1 select rock variant (0-3). Otherwise bits 0-2 are OBJECT_* type. Level
+; address = level_objects + (level_number × SIZE_LEVEL_SLOTS).
 level_objects:
   DEFB $00,$00                         ; Level 1
   DEFB $00,$00                         ;
