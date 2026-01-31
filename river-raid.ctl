@@ -77,6 +77,22 @@
 > $4000 FIGHTER_POSITION_RIGHT_INIT  EQU $04
 > $4000 FIGHTER_POSITION_RIGHT_LIMIT EQU $E8
 > $4000
+> $4000 ; Object characteristics summary:
+> $4000 ; +---------------+------+--------+------------+----------------------+
+> $4000 ; | Object        | Type | Points | Speed      | Special              |
+> $4000 ; +---------------+------+--------+------------+----------------------+
+> $4000 ; | Helicopter    | $01  | 60     | 2 px/frame | Patrols, no missiles |
+> $4000 ; | Ship          | $02  | 30     | 2 px/frame | Patrols river        |
+> $4000 ; | Helicopter+   | $03  | 210    | 2 px/frame | Patrols, FIRES       |
+> $4000 ; | Tank          | $04  | 250    | 2 px/frame | Fires parabolic      |
+> $4000 ; | Fighter       | $05  | 160    | 4 px/frame | Fast, wraps screen   |
+> $4000 ; | Balloon       | $06  | 60     | 2 px/frame | Floats, bounces      |
+> $4000 ; | Fuel Depot    | $07  | 80     | 0 (static) | Refuels plane        |
+> $4000 ; | Bridge        | --   | 500    | 0 (static) | Increases activation |
+> $4000 ; +---------------+------+--------+------------+----------------------+
+> $4000 ; Note: Points encoded as value/10 (e.g., POINTS_SHIP=$03 = 30 points).
+> $4000 ; Helicopter+ (ADV) fires missiles at player unlike regular helicopter.
+> $4000
 > $4000 POINTS_SHIP           EQU $03
 > $4000 POINTS_HELICOPTER_REG EQU $06
 > $4000 POINTS_BALLOON        EQU $06
@@ -503,11 +519,15 @@ W $5F60
 g $5F62 Pointer to a slot from #R$5F2E
 W $5F62
 @ $5F64 label=state_speed
-g $5F64 Current scroll speed in pixels per frame. $01=SPEED_SLOW, $02=SPEED_NORMAL, $04=SPEED_FAST. Also determines plane sprite animation frame.
+g $5F64 Current scroll speed in pixels per frame.
+D $5F64 #TABLE(default) { =h Speed | =h Value | =h Terrain scroll } { SLOW | $01 | 1 pixel/frame } { NORMAL | $02 | 2 pixels/frame } { FAST | $04 | 4 pixels/frame } TABLE#
+D $5F64 Also determines plane Y position (Y = $80 + speed) and sprite animation frame. Horizontal movement is fixed at 2 pixels per input regardless of scroll speed.
 @ $5F65 label=low_fuel_sound_period
 g $5F65 Low fuel warning sound period (0-127). Used as delay loop iteration count for speaker ON/OFF phases. Lower values = higher pitch. Decremented each frame, creating a rising-then-resetting warble effect.
 @ $5F66 label=state_fuel
-g $5F66 Fuel level (0-255). $FF=full tank, $00=empty. Decremented every 2 frames. Low fuel warning triggers when <$40 (top 2 bits clear).
+g $5F66 Fuel level (0-255). $FF=full tank, $00=empty.
+D $5F66 #TABLE(default) { =h Mechanic | =h Rate | =h Formula } { Consumption | 1 unit every 2 frames | ~25 units/sec at 50fps } { Refueling | 4 units per frame | ~200 units/sec at 50fps } { Full tank duration | ~10 seconds | 255 / 25 = 10.2 sec } { Full refuel time | ~1.3 seconds | 255 / 200 = 1.3 sec } TABLE#
+D $5F66 Consumption rate does NOT depend on scroll speed. Low fuel warning triggers when <$40 (top 2 bits clear). Refueling only occurs when plane is centered over depot (not banking left/right).
 @ $5F67 label=state_input_interface
 g $5F67 Input interface type ($00=Keyboard, $01=Sinclair, $02=Kempston, $03=Cursor).
 @ $5F68 label=state_gameplay_mode
@@ -993,6 +1013,9 @@ c $6506 Print a space character
 @ $650A label=handle_no_fuel
 c $650A Handle the no fuel situation
 D $650A This routine is called when the player runs out of fuel. It stops the plane, creates two explosion fragments at the plane's position, animates the explosions over 16 frames, waits for a delay, then determines the next game state based on the current player and remaining lives in single or two-player mode.
+N $650A Two-player mode uses alternating turns. After death, the switching logic is:
+N $650A #TABLE(default) { =h Current | =h P1 Lives | =h P2 Lives | =h Action } { P1 | >0 | >0 | Switch to P2 } { P1 | >0 | 0 | Restart P1 } { P1 | 0 | >0 | Switch to P2 } { P1 | 0 | 0 | Game Over } { P2 | >0 | >0 | Switch to P1 } { P2 | >0 | 0 | Restart P2 } { P2 | 0 | >0 | Switch to P1 } { P2 | 0 | 0 | Game Over } TABLE#
+N $650A In single-player mode, the game simply restarts P1 if lives remain, otherwise Game Over.
   $650A Load plane X-coordinate
   $650D Align to 8-pixel boundary (clear lower 3 bits)
   $650F Store aligned X-coordinate in C register
@@ -1264,7 +1287,8 @@ N $6724 Creates a new missile if none is currently active. Positions missile at 
 g $673C Missile animation pass selector. $01=first pass (erase at old position), $00=second pass (draw at new position). Two-pass rendering prevents flicker.
 @ $673D label=animate_plane_missile
 c $673D Animate and render player missile
-N $673D Called twice per frame to animate the player's missile. On the first pass (#R$673C = $01), adjusts missile position for screen scrolling. On both passes, moves missile up by 6 pixels.
+D $673D Missile speed: 6 pixels upward per frame. Called twice per frame for two-pass rendering (erase then draw).
+N $673D On the first pass (#R$673C = $01), adjusts missile position for screen scrolling. On both passes, moves missile up by 6 pixels.
 N $673D .
 N $673D If missile reaches top of screen (Y AND $F8 == 0), jumps to #R$6794 to finalize collision. Clears CONTROLS_BIT_FIRE when missile is in lower screen area ($70 - Y >= 0).
 N $673D .
@@ -1768,8 +1792,8 @@ c $6DEB Initializes the starting bridge based on the value of #R$923A using #R$5
   $6DF7,1 Get the starting bridge number
 @ $6DFF label=consume_fuel
 c $6DFF Consume fuel and update gauge display
-D $6DFF Decrements fuel level and updates the fuel gauge. Called each tick during gameplay. Fuel only decreases on even ticks, and the gauge only updates every 4th decrement.
-D $6DFF #LIST { Fuel level stored in #R$5F66 (0-255) } { Low fuel warning when top 2 bits = 0 (fuel < $40) } { Empty fuel (fuel = 0) triggers game over via #R$650A } { Gauge position: column = (fuel >> 2) + $40, row = $A8 } LIST#
+D $6DFF Decrements fuel level by 1 every 2 frames (on even ticks only). At 50fps, this equals ~25 units/second. A full tank (255) lasts ~10 seconds. Fuel consumption does NOT vary with scroll speed.
+D $6DFF #LIST { Gauge updates every 4th decrement (fuel AND 3 == 0) } { Low fuel warning when top 2 bits = 0 (fuel < $40) } { Empty fuel (fuel = 0) triggers game over via #R$650A } { Gauge position: column = (fuel >> 2) + $40, row = $A8 } LIST#
   $6DFF Skip if odd tick (fuel only consumed on even ticks).
 @ $6E02 isub=AND TICK_MASK_FRAME_PARITY
 @ $6E04 isub=CP TICK_PARITY_EVEN
@@ -1790,8 +1814,8 @@ D $6DFF #LIST { Fuel level stored in #R$5F66 (0-255) } { Low fuel warning when t
   $6E35,10 Draw row, move down, decrement counter, loop for 8 rows.
 @ $6E40 label=add_fuel
 c $6E40 Add fuel during refueling
-D $6E40 Called when plane is over a fuel depot. Adds FUEL_INTAKE_AMOUNT (4) to fuel level, plays refueling sound, and updates gauge.
-D $6E40 #LIST { Returns immediately if #R$5F69 == 4 (refueling complete?) } { Plays high-pitched refuel sound via ROM BEEPER } { If fuel almost full ($FC), plays different sound via #R$6E92 } { Clears low fuel warning if fuel now sufficient } LIST#
+D $6E40 Adds FUEL_INTAKE_AMOUNT (4 units) per frame while plane is over a fuel depot. At 50fps, this equals ~200 units/second. A full refuel from empty takes ~1.3 seconds.
+D $6E40 #LIST { Returns if plane is banking (#R$5F69 == 4) - must be centered to refuel } { Plays high-pitched refuel sound via ROM BEEPER } { If fuel almost full ($FC), plays tank full sound via #R$6E92 } { Clears low fuel warning when fuel becomes sufficient } LIST#
   $6E40 Check if #R$5F69 == 4 (refuel limit), return if so.
   $6E46 Check if fuel almost full (AND $FC == $FC). If so, jump to #R$6E92 for tank full sound.
 @ $6E49 isub=AND FUEL_LEVEL_ALMOST_FULL
@@ -2520,8 +2544,8 @@ D $7546 Returns tank speed from #R$5F6A instead of #R$5F6B for difficulty level 
   $7546,3 Load speed from #R$5F6A, continue at #R$753A.
 @ $754C label=operate_fuel
 c $754C Operate fuel station
-D $754C Processes fuel station rendering with animated lights. Checks viewport boundary and renders with alternating attributes based on tick.
-D $754C #LIST { Stores position for rendering } { Checks if fuel station is within viewport } { Animates fuel lights based on tick counter } { Renders 2-tile wide, 25-pixel tall sprite } LIST#
+D $754C Processes fuel station rendering with animated lights. Blinks every 4 frames by toggling attribute bit 2 (TICK_MASK_FUEL_BLINK).
+D $754C #LIST { Stores position for rendering } { Checks if fuel station is within viewport } { Blink animation: attributes = base + (tick AND $04), toggles every 4 frames } { Renders 2-tile wide, 25-pixel tall sprite } LIST#
   $754C,8 Store position to #R$8B0A and #R$8B0C. Set height=$19.
   $7556 Check if Y+$19 is off-screen (boundary check).
   $755D If off-screen, return to main loop.
@@ -3365,14 +3389,17 @@ D $91E8 In 2-player mode, prints player 2's score. In 1-player mode, prints the 
   $9225 AT 1,18
   $922E,11 Print "HI" label, switch to channel 2 (main screen).
 @ $923A label=state_game_mode
-b $923A The game mode storing the number of players in the first bit and the starting bridge in the next two.
+b $923A Game mode configuration byte
+D $923A #TABLE(default) { =h Bit(s) | =h Meaning | =h Values } { 0 | Player count | 0=1 player, 1=2 players } { 1-2 | Starting bridge | 0=Bridge 1, 1=Bridge 5, 2=Bridge 9, 3=Bridge 15 } { 3-7 | Unused | Always 0 } TABLE#
+D $923A Set during control selection dialog. Read by various routines to determine player count and initial bridge offset.
   $923A,1
 @ $923B label=state_lives_player_1
 g $923B Player 1 lives remaining (0-4). Starts at 4, decremented on death. Game over when reaching 0.
 @ $923C label=state_lives_player_2
 g $923C Player 2 lives remaining (0-4). Starts at 4, decremented on death. Game over when reaching 0.
 @ $923D label=state_player
-b $923D Current active player. $01=PLAYER_1, $02=PLAYER_2. Determines which score/lives/bridge state to use.
+b $923D Current active player ($01=PLAYER_1, $02=PLAYER_2).
+D $923D Determines which player's state to use for: score (#R$90BC vs #R$90C2), lives (#R$923B vs #R$923C), bridge progress (#R$5F6A vs #R$5F6B). Players alternate turns in two-player mode, switching when one dies if the other has lives. Colors: P1=yellow ($06), P2=cyan ($05).
 @ $923E label=print_lives
 c $923E Print lives for current player.
 D $923E Displays the remaining lives as plane UDG symbols at row 20, column 18. Uses the appropriate player color (yellow for player 1, cyan for player 2).

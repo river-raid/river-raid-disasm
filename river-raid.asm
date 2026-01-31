@@ -75,6 +75,22 @@ FIGHTER_POSITION_LEFT_LIMIT  EQU $00
 FIGHTER_POSITION_RIGHT_INIT  EQU $04
 FIGHTER_POSITION_RIGHT_LIMIT EQU $E8
 
+; Object characteristics summary:
+; +---------------+------+--------+------------+----------------------+
+; | Object        | Type | Points | Speed      | Special              |
+; +---------------+------+--------+------------+----------------------+
+; | Helicopter    | $01  | 60     | 2 px/frame | Patrols, no missiles |
+; | Ship          | $02  | 30     | 2 px/frame | Patrols river        |
+; | Helicopter+   | $03  | 210    | 2 px/frame | Patrols, FIRES       |
+; | Tank          | $04  | 250    | 2 px/frame | Fires parabolic      |
+; | Fighter       | $05  | 160    | 4 px/frame | Fast, wraps screen   |
+; | Balloon       | $06  | 60     | 2 px/frame | Floats, bounces      |
+; | Fuel Depot    | $07  | 80     | 0 (static) | Refuels plane        |
+; | Bridge        | --   | 500    | 0 (static) | Increases activation |
+; +---------------+------+--------+------------+----------------------+
+; Note: Points encoded as value/10 (e.g., POINTS_SHIP=$03 = 30 points).
+; Helicopter+ (ADV) fires missiles at player unlike regular helicopter.
+
 POINTS_SHIP           EQU $03
 POINTS_HELICOPTER_REG EQU $06
 POINTS_BALLOON        EQU $06
@@ -1681,8 +1697,18 @@ viewport_ptr:
 exploding_fragments_ptr:
   DEFW $0000
 
-; Current scroll speed in pixels per frame. $01=SPEED_SLOW, $02=SPEED_NORMAL, $04=SPEED_FAST. Also determines plane
-; sprite animation frame.
+; Current scroll speed in pixels per frame.
+;
+; +--------+-------+----------------+
+; | Speed  | Value | Terrain scroll |
+; +--------+-------+----------------+
+; | SLOW   | $01   | 1 pixel/frame  |
+; | NORMAL | $02   | 2 pixels/frame |
+; | FAST   | $04   | 4 pixels/frame |
+; +--------+-------+----------------+
+;
+; Also determines plane Y position (Y = $80 + speed) and sprite animation frame. Horizontal movement is fixed at 2
+; pixels per input regardless of scroll speed.
 state_speed:
   DEFB $02
 
@@ -1691,8 +1717,19 @@ state_speed:
 low_fuel_sound_period:
   DEFB $00
 
-; Fuel level (0-255). $FF=full tank, $00=empty. Decremented every 2 frames. Low fuel warning triggers when <$40 (top 2
-; bits clear).
+; Fuel level (0-255). $FF=full tank, $00=empty.
+;
+; +--------------------+-----------------------+-------------------------+
+; | Mechanic           | Rate                  | Formula                 |
+; +--------------------+-----------------------+-------------------------+
+; | Consumption        | 1 unit every 2 frames | ~25 units/sec at 50fps  |
+; | Refueling          | 4 units per frame     | ~200 units/sec at 50fps |
+; | Full tank duration | ~10 seconds           | 255 / 25 = 10.2 sec     |
+; | Full refuel time   | ~1.3 seconds          | 255 / 200 = 1.3 sec     |
+; +--------------------+-----------------------+-------------------------+
+;
+; Consumption rate does NOT depend on scroll speed. Low fuel warning triggers when <$40 (top 2 bits clear). Refueling
+; only occurs when plane is centered over depot (not banking left/right).
 state_fuel:
   DEFB $00
 
@@ -2774,6 +2811,23 @@ print_space:
 ; This routine is called when the player runs out of fuel. It stops the plane, creates two explosion fragments at the
 ; plane's position, animates the explosions over 16 frames, waits for a delay, then determines the next game state based
 ; on the current player and remaining lives in single or two-player mode.
+;
+; Two-player mode uses alternating turns. After death, the switching logic is:
+;
+; +---------+----------+----------+--------------+
+; | Current | P1 Lives | P2 Lives | Action       |
+; +---------+----------+----------+--------------+
+; | P1      | >0       | >0       | Switch to P2 |
+; | P1      | >0       | 0        | Restart P1   |
+; | P1      | 0        | >0       | Switch to P2 |
+; | P1      | 0        | 0        | Game Over    |
+; | P2      | >0       | >0       | Switch to P1 |
+; | P2      | >0       | 0        | Restart P2   |
+; | P2      | 0        | >0       | Switch to P1 |
+; | P2      | 0        | 0        | Game Over    |
+; +---------+----------+----------+--------------+
+;
+; In single-player mode, the game simply restarts P1 if lives remain, otherwise Game Over.
 handle_no_fuel:
   LD A,(state_x)                       ; Load plane X-coordinate
   AND $F8                              ; Align to 8-pixel boundary (clear lower 3 bits)
@@ -3171,10 +3225,10 @@ missile_pass_selector:
 
 ; Animate and render player missile
 ;
-; Used by the routine at main_loop.
+; Missile speed: 6 pixels upward per frame. Called twice per frame for two-pass rendering (erase then draw).
 ;
-; Called twice per frame to animate the player's missile. On the first pass (missile_pass_selector = $01), adjusts
-; missile position for screen scrolling. On both passes, moves missile up by 6 pixels.
+; On the first pass (missile_pass_selector = $01), adjusts missile position for screen scrolling. On both passes, moves
+; missile up by 6 pixels.
 ;
 ; If missile reaches top of screen (Y AND $F8 == 0), jumps to finalize_collision to finalize collision. Clears
 ; CONTROLS_BIT_FIRE when missile is in lower screen area ($70 - Y >= 0).
@@ -4471,10 +4525,10 @@ init_starting_bridge:
 
 ; Consume fuel and update gauge display
 ;
-; Decrements fuel level and updates the fuel gauge. Called each tick during gameplay. Fuel only decreases on even ticks,
-; and the gauge only updates every 4th decrement.
+; Decrements fuel level by 1 every 2 frames (on even ticks only). At 50fps, this equals ~25 units/second. A full tank
+; (255) lasts ~10 seconds. Fuel consumption does NOT vary with scroll speed.
 ;
-; * Fuel level stored in state_fuel (0-255)
+; * Gauge updates every 4th decrement (fuel AND 3 == 0)
 ; * Low fuel warning when top 2 bits = 0 (fuel < $40)
 ; * Empty fuel (fuel = 0) triggers game over via handle_no_fuel
 ; * Gauge position: column = (fuel >> 2) + $40, row = $A8
@@ -4517,13 +4571,13 @@ draw_fuel_gauge_row_loop:
 
 ; Add fuel during refueling
 ;
-; Called when plane is over a fuel depot. Adds FUEL_INTAKE_AMOUNT (4) to fuel level, plays refueling sound, and updates
-; gauge.
+; Adds FUEL_INTAKE_AMOUNT (4 units) per frame while plane is over a fuel depot. At 50fps, this equals ~200 units/second.
+; A full refuel from empty takes ~1.3 seconds.
 ;
-; * Returns immediately if state_plane_sprite_bank == 4 (refueling complete?)
+; * Returns if plane is banking (state_plane_sprite_bank == 4) - must be centered to refuel
 ; * Plays high-pitched refuel sound via ROM BEEPER
-; * If fuel almost full ($FC), plays different sound via signal_fuel_level_excessive
-; * Clears low fuel warning if fuel now sufficient
+; * If fuel almost full ($FC), plays tank full sound via signal_fuel_level_excessive
+; * Clears low fuel warning when fuel becomes sufficient
 add_fuel:
   LD A,(state_plane_sprite_bank)       ; Check if state_plane_sprite_bank == 4 (refuel limit), return if so.
   CP $04                               ;
@@ -5996,12 +6050,12 @@ get_tank_speed_level_1:
 
 ; Operate fuel station
 ;
-; Processes fuel station rendering with animated lights. Checks viewport boundary and renders with alternating
-; attributes based on tick.
+; Processes fuel station rendering with animated lights. Blinks every 4 frames by toggling attribute bit 2
+; (TICK_MASK_FUEL_BLINK).
 ;
 ; * Stores position for rendering
 ; * Checks if fuel station is within viewport
-; * Animates fuel lights based on tick counter
+; * Blink animation: attributes = base + (tick AND $04), toggles every 4 frames
 ; * Renders 2-tile wide, 25-pixel tall sprite
 operate_fuel:
   LD (previous_object_coordinates),BC  ; Store position to previous_object_coordinates and object_coordinates. Set
@@ -8494,7 +8548,17 @@ print_player_2_score_area:
   CALL CHAN_OPEN                       ;
   RET
 
-; The game mode storing the number of players in the first bit and the starting bridge in the next two.
+; Game mode configuration byte
+;
+; +--------+-----------------+-------------------------------------------------+
+; | Bit(s) | Meaning         | Values                                          |
+; +--------+-----------------+-------------------------------------------------+
+; | 0      | Player count    | 0=1 player, 1=2 players                         |
+; | 1-2    | Starting bridge | 0=Bridge 1, 1=Bridge 5, 2=Bridge 9, 3=Bridge 15 |
+; | 3-7    | Unused          | Always 0                                        |
+; +--------+-----------------+-------------------------------------------------+
+;
+; Set during control selection dialog. Read by various routines to determine player count and initial bridge offset.
 state_game_mode:
   DEFB $00
 
@@ -8506,7 +8570,12 @@ state_lives_player_1:
 state_lives_player_2:
   DEFB $00
 
-; Current active player. $01=PLAYER_1, $02=PLAYER_2. Determines which score/lives/bridge state to use.
+; Current active player ($01=PLAYER_1, $02=PLAYER_2).
+;
+; Determines which player's state to use for: score (state_score_player_1_low vs state_score_player_2_low), lives
+; (state_lives_player_1 vs state_lives_player_2), bridge progress (state_bridge_player_1 vs state_bridge_player_2).
+; Players alternate turns in two-player mode, switching when one dies if the other has lives. Colors: P1=yellow ($06),
+; P2=cyan ($05).
 state_player:
   DEFB $00
 
