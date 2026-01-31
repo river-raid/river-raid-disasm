@@ -1862,72 +1862,81 @@ scan_keyboard:
 
 ; Render player plane and terrain fragments
 ;
-; This routine renders the player plane sprite (in normal gameplay mode) and then renders terrain fragments based on the
-; current speed. It calculates the screen position based on speed, then loops through terrain fragments, calling the
-; terrain rendering routine for each one. Every 8 fragments, it calls the attribute scrolling routine.
+; Top-level render routine called from main loop (main_loop). Orchestrates visual updates in a specific order to prevent
+; flicker.
+;
+; Render sequence:
+;
+; * Player plane sprite (GAMEPLAY_MODE_NORMAL only, via render_object)
+; * Island/terrain system (via handle_island_rendering)
+; * Terrain fragments (count = current speed, via render_terrain_fragment)
+; * Attribute scroll (every 8 fragments, via scroll_attributes)
+;
+; Speed affects both plane Y position (Y = $80 + speed) and number of terrain fragments rendered. Higher speed = lower
+; plane position and more fragments.
 render_plane_and_terrain:
-  LD A,(state_gameplay_mode)           ; Load gameplay mode from state_gameplay_mode
-  CP GAMEPLAY_MODE_NORMAL              ; Check if gameplay mode is NORMAL ($00)
-  JP NZ,render_terrain_fragments       ; If not normal mode, skip plane rendering and jump to render_terrain_fragments
-  LD A,COLLISION_MODE_NONE             ; Set collision mode to NONE ($00) for plane rendering
-  LD (state_collision_mode),A          ; Store collision mode to state_collision_mode
-  LD A,(state_x)                       ; Load plane X-coordinate from state_x
-  LD C,A                               ; Copy X-coordinate to C register
-  LD A,(state_speed)                   ; Load current speed from state_speed
-  LD E,A                               ; Copy speed to E register
-  LD A,$08                             ; Load $08 into A
-  SUB E                                ; Subtract speed from $08 (calculate frame offset)
-  LD D,$00                             ; Clear D register (prepare for 16-bit arithmetic)
-  LD E,A                               ; Copy result to E register
-  SLA E                                ; Shift E left (multiply by 2 for 16-byte frames)
-  LD HL,(ptr_plane_sprite)             ; Load sprite data pointer from ptr_plane_sprite
-  ADD HL,DE                            ; Add frame offset to sprite pointer
-  LD (render_sprite_ptr),HL            ; Store updated sprite pointer to render_sprite_ptr
-  ADD A,$80                            ; Add $80 to A (calculate Y-coordinate)
-  LD B,A                               ; Copy Y-coordinate to B register
-  LD A,(state_speed)                   ; Load current speed from state_speed
-  LD D,A                               ; Copy speed to D register
-  LD (previous_object_coordinates),BC  ; Store plane coordinates (BC) to previous_object_coordinates (previous position)
-  LD (object_coordinates),BC           ; Store plane coordinates (BC) to object_coordinates (current position)
-  LD E,$00                             ; Set E to $00 (sprite attributes)
-  LD BC,$0010                          ; Set BC to $0010 (sprite frame size: 16 bytes)
-  LD A,$02                             ; Set A to $02 (sprite width: 2 tiles)
-  LD HL,sprite_erasure                 ; Load address of sprite_erasure (sprite erasure data) into HL
-  CALL render_object                   ; Call render_object to render the plane sprite
+  LD A,(state_gameplay_mode)           ; Skip plane rendering if not GAMEPLAY_MODE_NORMAL.
+  CP GAMEPLAY_MODE_NORMAL              ;
+  JP NZ,render_terrain_fragments       ;
+  LD A,COLLISION_MODE_NONE             ; Set collision mode to NONE for plane (no collision during render).
+  LD (state_collision_mode),A          ;
+  LD A,(state_x)                       ; Calculate plane sprite frame: offset = (8 - speed) * 2.
+  LD C,A                               ;
+  LD A,(state_speed)                   ;
+  LD E,A                               ;
+  LD A,$08                             ;
+  SUB E                                ;
+  LD D,$00                             ;
+  LD E,A                               ;
+  SLA E                                ;
+  LD HL,(ptr_plane_sprite)             ; Apply offset to sprite pointer.
+  ADD HL,DE                            ;
+  LD (render_sprite_ptr),HL            ;
+  ADD A,$80                            ; Calculate plane Y: Y = $80 + speed (lower at higher speeds).
+  LD B,A                               ;
+  LD A,(state_speed)                   ;
+  LD D,A                               ;
+  LD (previous_object_coordinates),BC  ; Set plane coordinates for rendering.
+  LD (object_coordinates),BC           ;
+  LD E,$00                             ; Call render_object to render plane (width=2, size=$10, attrs=$00).
+  LD BC,$0010                          ;
+  LD A,$02                             ;
+  LD HL,sprite_erasure                 ;
+  CALL render_object                   ;
 render_terrain_fragments:
-  CALL handle_island_rendering         ; Call handle_island_rendering to handle island rendering
-  LD A,(state_speed)                   ; Load current speed from state_speed
-  LD DE,$0100                          ; Set DE to $0100 (256 bytes per screen row)
-  LD HL,screen_pixels                  ; Load screen_pixels into HL
-  OR A                                 ; Clear carry flag
-  SBC HL,DE                            ; Subtract DE from HL (move up one row)
+  CALL handle_island_rendering         ; Call handle_island_rendering to render islands.
+  LD A,(state_speed)                   ; Calculate starting screen row based on speed.
+  LD DE,$0100                          ;
+  LD HL,screen_pixels                  ;
+  OR A                                 ;
+  SBC HL,DE                            ;
 calculate_screen_row_loop:
-  ADD HL,DE                            ; Add DE to HL (move down one row)
-  DEC A                                ; Decrement A (speed counter)
-  JR NZ,calculate_screen_row_loop      ; If not zero, loop to calculate correct screen row
-  LD (screen_ptr),HL                   ; Store calculated screen pointer to screen_ptr
-  LD A,(state_speed)                   ; Load current speed from state_speed
-  LD B,A                               ; Copy speed to B register (loop counter)
-  LD A,(state_terrain_fragment_counter) ; Load terrain fragment counter from state_terrain_fragment_counter
-  LD C,A                               ; Copy fragment counter to C register
+  ADD HL,DE                            ; HL = screen_start + (speed * $100).
+  DEC A                                ;
+  JR NZ,calculate_screen_row_loop      ;
+  LD (screen_ptr),HL                   ; Store screen pointer to screen_ptr.
+  LD A,(state_speed)                    ; Set up terrain fragment loop (count = speed).
+  LD B,A                                ;
+  LD A,(state_terrain_fragment_counter) ;
+  LD C,A                                ;
 render_terrain_loop:
-  INC C                                ; Increment fragment counter
-  LD A,C                               ; Copy fragment counter to A
-  PUSH BC                              ; Push BC (save loop counter and fragment counter)
-  AND $07                              ; Mask lower 3 bits (check if fragment counter is multiple of 8)
-  CP $00                               ; Compare with $00
-  CALL Z,scroll_attributes             ; If zero (every 8 fragments), call scroll_attributes to scroll attributes
-  CALL render_terrain_fragment         ; Call render_terrain_fragment to render current terrain fragment
-  LD DE,$0100                          ; Set DE to $0100 (256 bytes per screen row)
-  LD HL,(screen_ptr)                   ; Load screen pointer from screen_ptr
-  OR A                                 ; Clear carry flag
-  SBC HL,DE                            ; Subtract DE from HL (move up one row for next fragment)
-  LD (screen_ptr),HL                   ; Store updated screen pointer to screen_ptr
-  POP BC                               ; Pop BC (restore loop counter and fragment counter)
-  DJNZ render_terrain_loop             ; Decrement B and loop if not zero
-  LD A,C                               ; Copy final fragment counter to A
-  LD (state_terrain_fragment_counter),A ; Store updated fragment counter to state_terrain_fragment_counter
-  RET
+  INC C                                ; Increment fragment counter.
+  LD A,C                               ;
+  PUSH BC                              ;
+  AND $07                              ; Every 8 fragments, call scroll_attributes to scroll attributes.
+  CP $00                               ;
+  CALL Z,scroll_attributes             ;
+  CALL render_terrain_fragment         ; Call render_terrain_fragment to render terrain fragment.
+  LD DE,$0100                          ; Move screen pointer up one row ($100 bytes).
+  LD HL,(screen_ptr)                   ;
+  OR A                                 ;
+  SBC HL,DE                            ;
+  LD (screen_ptr),HL                   ;
+  POP BC                               ;
+  DJNZ render_terrain_loop             ; Loop until all fragments rendered.
+  LD A,C                                ; Store updated fragment counter.
+  LD (state_terrain_fragment_counter),A ;
+  RET                                   ;
 
 ; Calculate fuel gauge sprite offset
 ;

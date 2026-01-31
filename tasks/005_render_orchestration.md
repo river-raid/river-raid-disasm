@@ -1,6 +1,6 @@
 # Task 005: Document Render Orchestration
 
-**Status:** Todo
+**Status:** Done
 **Phase:** 1 - System Architecture
 **Address:** $60A5
 **Priority:** Critical
@@ -23,11 +23,23 @@ The routine at $60A5 is the main render entry point but lacks documentation expl
 
 ## Acceptance Criteria
 
-- [ ] D block describes render orchestration role
-- [ ] Render sequence is documented
-- [ ] Sprite and terrain rendering are cross-referenced
-- [ ] Any flicker prevention techniques are noted
-- [ ] Build passes after changes
+- [x] D block describes render orchestration role
+- [x] Render sequence is documented
+- [x] Sprite and terrain rendering are cross-referenced
+- [x] Any flicker prevention techniques are noted
+- [x] Build passes after changes
+
+## Completed Work
+
+- Added D block explaining top-level render orchestration role
+- Added N block with render sequence list:
+  1. Player plane sprite (GAMEPLAY_MODE_NORMAL only, via #R$8B3C)
+  2. Island/terrain system (via #R$683B)
+  3. Terrain fragments (count = speed, via #R$6AA3)
+  4. Attribute scroll (every 8 fragments, via #R$68B7)
+- Documented speed effects on plane Y position and fragment count
+- Simplified line comments with logical groupings
+- Cross-referenced all called routines
 
 ## Notes
 

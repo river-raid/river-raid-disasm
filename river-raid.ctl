@@ -600,70 +600,35 @@ C $608C Scan lower row right (FIRE)
 C $6097 Scan lower row left (FIRE)
 @ $60A5 label=render_plane_and_terrain
 c $60A5 Render player plane and terrain fragments
-D $60A5 This routine renders the player plane sprite (in normal gameplay mode) and then renders terrain fragments based on the current speed. It calculates the screen position based on speed, then loops through terrain fragments, calling the terrain rendering routine for each one. Every 8 fragments, it calls the attribute scrolling routine.
-  $60A5 Load gameplay mode from #R$5F68
+D $60A5 Top-level render routine called from main loop (#R$5F91). Orchestrates visual updates in a specific order to prevent flicker.
+N $60A5 Render sequence:
+N $60A5 .
+N $60A5 #LIST { Player plane sprite (GAMEPLAY_MODE_NORMAL only, via #R$8B3C) } { Island/terrain system (via #R$683B) } { Terrain fragments (count = current speed, via #R$6AA3) } { Attribute scroll (every 8 fragments, via #R$68B7) } LIST#
+N $60A5 .
+N $60A5 Speed affects both plane Y position (Y = $80 + speed) and number of terrain fragments rendered. Higher speed = lower plane position and more fragments.
+  $60A5 Skip plane rendering if not GAMEPLAY_MODE_NORMAL.
 @ $60A8 isub=CP GAMEPLAY_MODE_NORMAL
-  $60A8 Check if gameplay mode is NORMAL ($00)
-  $60AA If not normal mode, skip plane rendering and jump to #R$60E5
 @ $60AD isub=LD A,COLLISION_MODE_NONE
-  $60AD Set collision mode to NONE ($00) for plane rendering
-  $60AF Store collision mode to #R$5EF5
-  $60B2 Load plane X-coordinate from #R$5F72
-  $60B5 Copy X-coordinate to C register
-  $60B6 Load current speed from #R$5F64
-  $60B9 Copy speed to E register
-  $60BA Load $08 into A
-  $60BC Subtract speed from $08 (calculate frame offset)
-  $60BD Clear D register (prepare for 16-bit arithmetic)
-  $60BF Copy result to E register
-  $60C0 Shift E left (multiply by 2 for 16-byte frames)
-  $60C2 Load sprite data pointer from #R$5EF7
-  $60C5 Add frame offset to sprite pointer
-  $60C6 Store updated sprite pointer to #R$8B0E
-  $60C9 Add $80 to A (calculate Y-coordinate)
-  $60CB Copy Y-coordinate to B register
-  $60CC Load current speed from #R$5F64
-  $60CF Copy speed to D register
-  $60D0 Store plane coordinates (BC) to #R$8B0A (previous position)
-  $60D4 Store plane coordinates (BC) to #R$8B0C (current position)
-  $60D8 Set E to $00 (sprite attributes)
-  $60DA Set BC to $0010 (sprite frame size: 16 bytes)
-  $60DD Set A to $02 (sprite width: 2 tiles)
-  $60DF Load address of #R$82F5 (sprite erasure data) into HL
-  $60E2 Call #R$8B3C to render the plane sprite
+  $60AD Set collision mode to NONE for plane (no collision during render).
+  $60B2 Calculate plane sprite frame: offset = (8 - speed) * 2.
+  $60C2 Apply offset to sprite pointer.
+  $60C9 Calculate plane Y: Y = $80 + speed (lower at higher speeds).
+  $60D0 Set plane coordinates for rendering.
+  $60D8 Call #R$8B3C to render plane (width=2, size=$10, attrs=$00).
 @ $60E5 label=render_terrain_fragments
-  $60E5 Call #R$683B to handle island rendering
-  $60E8 Load current speed from #R$5F64
-  $60EB Set DE to $0100 (256 bytes per screen row)
-  $60EE Load #R$4000 into HL
-  $60F1 Clear carry flag
-  $60F2 Subtract DE from HL (move up one row)
+  $60E5 Call #R$683B to render islands.
+  $60E8 Calculate starting screen row based on speed.
 @ $60F4 label=calculate_screen_row_loop
-  $60F4 Add DE to HL (move down one row)
-  $60F5 Decrement A (speed counter)
-  $60F6 If not zero, loop to calculate correct screen row
-  $60F8 Store calculated screen pointer to #R$5F7B
-  $60FB Load current speed from #R$5F64
-  $60FE Copy speed to B register (loop counter)
-  $60FF Load terrain fragment counter from #R$5EEE
-  $6102 Copy fragment counter to C register
+  $60F4 HL = screen_start + (speed * $100).
+  $60F8 Store screen pointer to #R$5F7B.
+  $60FB Set up terrain fragment loop (count = speed).
 @ $6103 label=render_terrain_loop
-  $6103 Increment fragment counter
-  $6104 Copy fragment counter to A
-  $6105 Push BC (save loop counter and fragment counter)
-  $6106 Mask lower 3 bits (check if fragment counter is multiple of 8)
-  $6108 Compare with $00
-  $610A If zero (every 8 fragments), call #R$68B7 to scroll attributes
-  $610D Call #R$6AA3 to render current terrain fragment
-  $6110 Set DE to $0100 (256 bytes per screen row)
-  $6113 Load screen pointer from #R$5F7B
-  $6116 Clear carry flag
-  $6117 Subtract DE from HL (move up one row for next fragment)
-  $6119 Store updated screen pointer to #R$5F7B
-  $611C Pop BC (restore loop counter and fragment counter)
-  $611D Decrement B and loop if not zero
-  $611F Copy final fragment counter to A
-  $6120,3 Store updated fragment counter to #R$5EEE
+  $6103 Increment fragment counter.
+  $6106 Every 8 fragments, call #R$68B7 to scroll attributes.
+  $610D Call #R$6AA3 to render terrain fragment.
+  $6110 Move screen pointer up one row ($100 bytes).
+  $611D Loop until all fragments rendered.
+  $611F Store updated fragment counter.
 @ $6124 label=calculate_fuel_gauge_offset
 c $6124 Calculate fuel gauge sprite offset
 D $6124 This routine is used by fuel consumption and refueling to calculate the sprite offset for the fuel gauge display. It performs bit manipulation on the fuel level to determine which sprite frame to display.
