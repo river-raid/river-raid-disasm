@@ -1284,7 +1284,7 @@ return_to_control_selection:
   LD I,A                               ; Set the I register to $3F (standard ZX Spectrum IM 1 mode).
   IM 1                                 ; Set interrupt mode 1 (standard ZX Spectrum interrupts).
   EI                                   ; Enable interrupts.
-  CALL clear_and_setup                 ; Call clear_and_setup to display the control selection dialog.
+  CALL clear_and_setup                 ; Display the control selection dialog.
 
 ; Start gameplay or overview mode based on user selection
 ;
@@ -1299,8 +1299,8 @@ start_gameplay_or_overview:
   LD A,(state_overview_mode)           ; Load the overview mode flag from state_overview_mode.
   CP OVERVIEW_MODE_ON                  ; Check if overview mode is enabled.
   JP Z,start_overview                  ; If overview mode is on, jump to start_overview.
-  CALL init_state                      ; Call init_state to initialize game state.
-  JP play                              ; Jump to play to start gameplay.
+  CALL init_state                      ; Initialize game state.
+  JP play                              ; Start gameplay.
 
 ; Start overview mode
 ;
@@ -1988,10 +1988,10 @@ scan_keyboard:
 ;
 ; Render sequence:
 ;
-; * Player plane sprite (GAMEPLAY_MODE_NORMAL only, via render_object)
-; * Island/terrain system (via handle_island_rendering)
-; * Terrain fragments (count = current speed, via render_terrain_fragment)
-; * Attribute scroll (every 8 fragments, via scroll_attributes)
+; * Player plane sprite (GAMEPLAY_MODE_NORMAL only)
+; * Island/terrain system
+; * Terrain fragments (count = current speed)
+; * Attribute scroll (every 8 fragments)
 ;
 ; Speed affects both plane Y position (Y = $80 + speed) and number of terrain fragments rendered. Higher speed = lower
 ; plane position and more fragments.
@@ -2019,13 +2019,13 @@ render_plane_and_terrain:
   LD D,A                               ;
   LD (previous_object_coordinates),BC  ; Set plane coordinates for rendering.
   LD (object_coordinates),BC           ;
-  LD E,$00                             ; Call render_object to render plane (width=2, size=$10, attrs=$00).
+  LD E,$00                             ; Render plane: width=2, size=$10, attrs=$00.
   LD BC,$0010                          ;
   LD A,$02                             ;
   LD HL,sprite_erasure                 ;
   CALL render_object                   ;
 render_terrain_fragments:
-  CALL handle_island_rendering         ; Call handle_island_rendering to render islands.
+  CALL handle_island_rendering         ; Render islands.
   LD A,(state_speed)                   ; Calculate starting screen row based on speed.
   LD DE,$0100                          ;
   LD HL,screen_pixels                  ;
@@ -2044,10 +2044,10 @@ render_terrain_loop:
   INC C                                ; Increment fragment counter.
   LD A,C                               ;
   PUSH BC                              ;
-  AND $07                              ; Every 8 fragments, call scroll_attributes to scroll attributes.
+  AND $07                              ; Every 8 fragments, scroll attributes.
   CP $00                               ;
   CALL Z,scroll_attributes             ;
-  CALL render_terrain_fragment         ; Call render_terrain_fragment to render terrain fragment.
+  CALL render_terrain_fragment         ; Render terrain fragment.
   LD DE,$0100                          ; Move screen pointer up one row ($100 bytes).
   LD HL,(screen_ptr)                   ;
   OR A                                 ;
@@ -2287,7 +2287,7 @@ handle_collision_mode_fuel_depot:
   LD A,(state_x)                          ; state_plane_missile_coordinates.
   LD C,A                                  ;
   LD (state_plane_missile_coordinates),BC ;
-  JP check_collision                   ; Jump to check_collision to check for collision with fuel depot.
+  JP check_collision                   ; Check for collision with fuel depot.
 
 ; Check collision with explosion fragments
 ;
@@ -2311,7 +2311,7 @@ check_fragment_collision:
   JP Z,check_fragment_collision        ;
   CP SET_MARKER_END_OF_SET             ; If end marker ($FF), jump to check_fragment_collision_end (no collision).
   JP Z,check_fragment_collision_end    ;
-  CALL advance_object                  ; Call advance_object to adjust Y coordinate for scrolling.
+  CALL advance_object                  ; Adjust Y coordinate for scrolling.
 ; Y-axis collision check (8-pixel height for both entity and fragment).
   LD DE,(state_plane_missile_coordinates) ; Check if entity_Y + 8 >= fragment_Y; if not, next fragment.
   LD A,D                                  ;
@@ -2532,8 +2532,8 @@ check_missile_vs_objects:
   JP Z,hit_fuel                        ;
 ; End of object list - check fragment collision and tank shell.
 check_missile_vs_objects_end:
-  CALL check_fragment_collision        ; Call check_fragment_collision and reset viewport_ptr/exploding_fragments_ptr to
-  LD HL,viewport_objects               ; list starts.
+  CALL check_fragment_collision        ; Reset viewport_ptr/exploding_fragments_ptr to list starts.
+  LD HL,viewport_objects               ;
   LD (viewport_ptr),HL                 ;
   LD HL,exploding_fragments            ;
   LD (exploding_fragments_ptr),HL      ;
@@ -2574,7 +2574,7 @@ no_collision_exit:
   LD HL,(collision_saved_hl)           ; Restore HL, DE, BC from collision_saved_hl, collision_saved_de,
   LD DE,(collision_saved_de)           ; collision_saved_bc.
   LD BC,(collision_saved_bc)           ;
-  JP handle_collision_mode_none        ; Jump to handle_collision_mode_none to continue rendering.
+  JP handle_collision_mode_none        ; Continue rendering.
 
 ; Handle missile hit on regular helicopter
 ;
@@ -2961,7 +2961,7 @@ handle_right:
   LD D,SPRITE_PLANE_HEIGHT_PIXELS      ; Set sprite height to $08 (8 pixels)
   LD A,SPRITE_PLANE_WIDTH_TILES        ; Set sprite width to $02 (2 tiles wide)
   LD HL,sprite_plane_banked            ; Load sprite data address sprite_plane_banked
-  CALL render_object                   ; Call render_object to render the plane sprite at new position
+  CALL render_object                   ; Render the plane sprite at new position.
 
 ; Restore plane state after rendering
 ;
@@ -3011,8 +3011,8 @@ handle_left:
   LD D,SPRITE_PLANE_HEIGHT_PIXELS      ; Set sprite height to $08 (8 pixels)
   LD A,SPRITE_PLANE_WIDTH_TILES        ; Set sprite width to $02 (2 tiles wide)
   LD HL,sprite_plane_banked            ; Load sprite data address sprite_plane_banked
-  CALL render_object                   ; Call render_object to render the plane sprite at new position
-  JP restore_plane_state_after_render  ; Jump to restore_plane_state_after_render to restore plane state after rendering
+  CALL render_object                   ; Render the plane sprite at new position.
+  JP restore_plane_state_after_render  ; Restore plane state after rendering.
 
 ; Render player plane sprite
 ;
@@ -3038,7 +3038,7 @@ render_plane:
   LD A,COLLISION_MODE_FUEL_DEPOT       ;
   LD (state_collision_mode),A          ;
   LD (object_coordinates),BC           ; (continued).
-  CALL advance_object                  ; Advance position via advance_object and store to previous_object_coordinates.
+  CALL advance_object                  ; Advance position and store to previous_object_coordinates.
   LD (previous_object_coordinates),BC  ;
   LD BC,SPRITE_PLANE_FRAME_SIZE        ; Set frame size and sprite pointer from ptr_plane_sprite.
   LD HL,(ptr_plane_sprite)             ;
@@ -3054,7 +3054,7 @@ render_plane:
   CALL Z,ld_sprite_plane_banked
   LD A,SPRITE_PLANE_WIDTH_TILES        ; Set width and call render_object to render.
   CALL render_object                   ;
-  JP restore_plane_state_after_render  ; Restore state via restore_plane_state_after_render.
+  JP restore_plane_state_after_render  ; Restore state.
 
 ; Load banked plane sprite address
 ;
@@ -3070,8 +3070,7 @@ ld_sprite_plane_banked:
 ; Used by the routines at play, main_loop and overview.
 ;
 ; Called each frame to advance the vertical scroll position. Adds current speed (state_speed) to scroll offset
-; (state_scroll_offset), updates the bridge's Y position via update_bridge_scroll, then resets speed to SPEED_NORMAL and
-; updates control flags.
+; (state_scroll_offset), updates the bridge's Y position, then resets speed to SPEED_NORMAL and updates control flags.
 ;
 ; The control bits modified are: clears CONTROLS_BIT_SPEED_ALTERED, sets CONTROLS_BIT_SPEED_DECREASED. This marks that
 ; speed has returned to normal after any joystick input.
@@ -3081,7 +3080,7 @@ advance_scroll:
   LD A,(state_speed)                   ;
   LD L,A                               ;
   ADD HL,BC                            ;
-  LD (state_scroll_offset),HL          ; Call update_bridge_scroll to update bridge; reset speed to SPEED_NORMAL.
+  LD (state_scroll_offset),HL          ; Update bridge position; reset speed to SPEED_NORMAL.
   CALL update_bridge_scroll            ;
   LD A,SPEED_NORMAL
   LD (state_speed),A
@@ -3095,10 +3094,9 @@ advance_scroll:
 ; Used by the routine at advance_scroll.
 ;
 ; Adjusts the bridge's Y position (state_bridge_y_position) based on current scrolling. If no bridge exists (Y=0),
-; returns immediately. If the bridge scrolls off the bottom of the screen (Y AND $88 == $88), clears it via
-; clear_bridge.
+; returns immediately. If the bridge scrolls off the bottom of the screen (Y AND $88 == $88), clears it.
 update_bridge_scroll:
-  LD A,(state_bridge_y_position)       ; If no bridge, return; otherwise advance bridge Y via advance_object.
+  LD A,(state_bridge_y_position)       ; If no bridge, return; otherwise advance bridge Y position.
   CP $00                               ;
   RET Z                                ;
   LD B,A                               ;
@@ -3175,8 +3173,8 @@ missile_pass_selector:
 ;
 ; Used by the routine at main_loop.
 ;
-; Called twice per frame (via main_loop) to animate the player's missile. On the first pass (missile_pass_selector =
-; $01), adjusts missile position for screen scrolling via advance_object. On both passes, moves missile up by 6 pixels.
+; Called twice per frame to animate the player's missile. On the first pass (missile_pass_selector = $01), adjusts
+; missile position for screen scrolling. On both passes, moves missile up by 6 pixels.
 ;
 ; If missile reaches top of screen (Y AND $F8 == 0), jumps to finalize_collision to finalize collision. Clears
 ; CONTROLS_BIT_FIRE when missile is in lower screen area ($70 - Y >= 0).
@@ -3268,7 +3266,7 @@ finalize_collision_erase_missile_loop:
   LD A,$01                             ; Set sprite dimensions: width=1, frame_size=8, height=8, attrs=$0C.
   LD BC,$0008                          ;
   LD DE,$080C                          ;
-  LD HL,sprite_erasure                 ; Call render_object with sprite_erasure to erase missile sprite.
+  LD HL,sprite_erasure                 ; Erase missile sprite.
   CALL render_object                   ;
   LD HL,state_controls                 ; Reset CONTROLS_BIT_SPEED_DECREASED in state_controls.
   RES 1,(HL)                           ;
@@ -3449,7 +3447,7 @@ fill_attribute_loop:
   LD (DE),A                            ; Store attribute, advance pointer, loop 32 times.
   INC DE                               ;
   DJNZ fill_attribute_loop             ;
-  CALL next_row                        ; Call next_row to spawn objects for new row.
+  CALL next_row                        ; Process objects for new row.
   RET
 
 ; Initialize bridge state for current player
@@ -3546,7 +3544,7 @@ increase_bridge_index:
   LD A,(state_bridge_index)            ; Increment bridge index at state_bridge_index.
   INC A                                ;
   LD (state_bridge_index),A            ;
-  CP $31                               ; If index reaches $31 (49), wrap via next_bridge_index_overflow.
+  CP $31                               ; If index reaches $31 (49), wrap to 1.
   JP Z,next_bridge_index_overflow      ;
   LD A,$00                             ;
   RET                                  ;
@@ -4135,8 +4133,8 @@ do_bonus_life:
   LD A,(bonus_life_sound_counter)      ; Increment counter and check if reached $40 (64). If so, sound is complete.
   INC A                                ;
   LD (bonus_life_sound_counter),A      ;
-  CP $40                               ; Check if counter reached $40 (64 frames). Jump to bonus_life_sound_done to
-  JP Z,bonus_life_sound_done           ; finish if done.
+  CP $40                               ; Check if counter reached $40 (64 frames). If done, finish sound sequence.
+  JP Z,bonus_life_sound_done           ;
   LD B,A                               ; Calculate pitch: pitch = $40 - counter. Store counter in B, load $40 into A,
   LD A,$40                             ; subtract.
   SUB B                                ;
@@ -4167,7 +4165,7 @@ bonus_life_sound_done:
 ;
 ; * Period = (controls_byte AND $0F), used for both on and off delays
 ; * Symmetric square wave: same delay for high and low phases
-; * Loops 8 cycles then returns via int_return
+; * Loops 8 cycles then returns
 ;
 ; I:HL Pointer to state_controls (controls state byte)
 beep_speed_decreased:
@@ -4188,7 +4186,7 @@ beep_speed_decreased_delay_on:
 beep_speed_decreased_delay_off:
   DEC D                                ; Delay loop for speaker OFF phase.
   JR NZ,beep_speed_decreased_delay_off ;
-  DEC C                                ; Decrement cycle counter, loop if not zero. Jump to int_return when done.
+  DEC C                                ; Decrement cycle counter, loop if not zero. Return from interrupt when done.
   JP NZ,beep_speed_decreased_loop      ;
   JP int_return                        ;
 
@@ -4279,7 +4277,7 @@ beep_speed_increased_delay_on:
 beep_speed_increased_delay_off:
   DEC D                                ; Delay loop for speaker OFF phase (asymmetric wave).
   JR NZ,beep_speed_increased_delay_off ;
-  DEC C                                ; Decrement cycle counter, loop if not zero. Jump to int_return when done.
+  DEC C                                ; Decrement cycle counter, loop if not zero. Return from interrupt when done.
   JP NZ,beep_speed_increased_loop      ;
   JP int_return                        ;
 
@@ -4311,7 +4309,7 @@ beep_speed_combined_delay_on:
 beep_speed_combined_delay_off:
   DEC D                                ; Delay loop for speaker OFF phase.
   JR NZ,beep_speed_combined_delay_off  ;
-  DEC C                                ; Decrement cycle counter, loop if not zero. Jump to int_return when done.
+  DEC C                                ; Decrement cycle counter, loop if not zero. Return from interrupt when done.
   JP NZ,beep_speed_combined_loop       ;
   JP int_return                        ;
 
@@ -4344,7 +4342,7 @@ do_low_fuel_delay_on:
 do_low_fuel_delay_off:
   DEC D                                ; Delay loop for speaker OFF phase.
   JR NZ,do_low_fuel_delay_off          ;
-  DEC C                                ; Decrement cycle counter, loop for 3 cycles. Jump to int_return when done.
+  DEC C                                ; Decrement cycle counter, loop for 3 cycles. Return from interrupt when done.
   JP NZ,do_low_fuel_loop               ;
   JP int_return                        ;
 
@@ -4371,7 +4369,7 @@ overview:
   CALL print_bridge                    ; Initialize gameplay: call print_bridge, setup_player_2_display,
   CALL setup_player_2_display          ; init_starting_bridge (init_starting_bridge).
   CALL init_starting_bridge            ;
-  CALL init_current_bridge             ; Call init_current_bridge to initialize terrain rendering.
+  CALL init_current_bridge             ; Initialize terrain rendering.
   LD A,$04                                ; Print "GAME" text (status_line_4, length 5) using ROM PR_STRING.
   LD (state_terrain_fragment_counter),A   ;
   LD DE,status_line_4                     ;
@@ -4388,7 +4386,7 @@ overview:
   LD (state_overview_start_scroll),A
 ; This entry point is used by the routine at reset_scroll_text.
 overview_loop:
-  LD A,$BF                             ; Check Enter key (row 6, bit 0). Call handle_enter if pressed.
+  LD A,$BF                             ; Check Enter key (row 6, bit 0). Handle Enter if pressed.
   IN A,($FE)                           ;
   BIT 0,A                              ;
   CALL Z,handle_enter                  ;
@@ -4405,7 +4403,7 @@ overview_loop:
   CALL operate_viewport_objects        ;
   CALL operate_tank_shell              ;
   CALL operate_helicopter_missile      ;
-  CALL advance_scroll                  ; Call advance_scroll for rendering.
+  CALL advance_scroll                  ; Advance scroll and render terrain.
   CALL scroll_attribute_row            ; Call delay, increment frame counter state_overview_frame, call ROM KEYBOARD
   LD HL,state_overview_frame           ; ($02BF), enable interrupts.
   INC (HL)                             ;
@@ -4504,7 +4502,7 @@ update_fuel_gauge:
   SRL A                                ;
   ADD A,$40                            ;
   LD C,A                               ;
-  CALL calculate_pixel_address         ; Call calculate_pixel_address to compute screen address from B,C coordinates.
+  CALL calculate_pixel_address         ; Compute screen address from B,C coordinates.
 draw_fuel_gauge_loop:
   LD A,$08                             ; Loop counter: 8 rows of gauge.
   LD D,$86                             ; Set pixel pattern $86 for gauge.
@@ -4550,7 +4548,7 @@ update_fuel_gauge_refuel:
   SRL A                                ;
   ADD A,$3F                            ;
   LD C,A                               ;
-  CALL calculate_pixel_address         ; Call calculate_pixel_address to compute screen address.
+  CALL calculate_pixel_address         ; Compute screen address.
   LD A,$08                             ; Loop counter: 8 rows.
   LD D,$C6                             ; Draw 8 rows of fuel gauge with pattern $C6 (filled). Increment H each row.
 draw_fuel_gauge_refuel_loop:
@@ -4838,7 +4836,7 @@ locate_level:
   LD A,D                               ; Get object type (D AND $07). If type == OBJECT_FUEL (7), jump to render_fuel.
   AND SLOT_MASK_OBJECT_TYPE            ;
   CP OBJECT_FUEL                       ;
-  JP Z,render_fuel                     ; Otherwise spawn enemy via render_enemy.
+  JP Z,render_fuel                     ; Otherwise render enemy.
   JP render_enemy                      ;
 
 ; Render rock sprite
@@ -4849,7 +4847,7 @@ locate_level:
 ; * Sprite address = sprite_rock + (frame_index * $30)
 ; * Frame index from bits 0-2 of D (0-7 rock variants)
 ; * Sprite stored at render_sprite_ptr, position at previous_object_coordinates and object_coordinates
-; * Renders via render_object with width=3 tiles, height=16 pixels
+; * Width=3 tiles, height=16 pixels
 ;
 ; I:D Object type byte (bits 0-2 = rock frame index)
 ; I:E X position
@@ -4872,7 +4870,7 @@ locate_rock_sprite:
   LD (object_coordinates),BC           ; sprite sprite_erasure.
   LD (previous_object_coordinates),BC  ;
   LD A,SPRITE_ROCK_WIDTH_TILES                              ; Set dimensions: A=3 (width in tiles), D=$10 (height 16
-  LD DE,SPRITE_ROCK_HEIGHT_PIXELS<<8|SPRITE_ROCK_ATTRIBUTES ; pixels), E=$14 (attributes). Call render_object to render.
+  LD DE,SPRITE_ROCK_HEIGHT_PIXELS<<8|SPRITE_ROCK_ATTRIBUTES ; pixels), E=$14 (attributes). Render rock.
   CALL render_object                                        ;
   RET
 
@@ -4888,11 +4886,11 @@ ld_enemy_sprites_right:
 
 ; Set up object screen position for rendering
 ;
-; Calculates screen coordinates via advance_object and stores the result in both previous_object_coordinates and
-; object_coordinates for sprite rendering.
+; Calculates screen coordinates and stores the result in both previous_object_coordinates and object_coordinates for
+; sprite rendering.
 setup_object_position:
-  CALL advance_object                  ; Call advance_object to calculate position, store result BC in both position
-  LD (object_coordinates),BC           ; registers.
+  CALL advance_object                  ; Calculate position and store result BC in both position registers.
+  LD (object_coordinates),BC           ;
   LD (previous_object_coordinates),BC  ;
   RET                                  ;
 
@@ -4902,7 +4900,7 @@ setup_object_position:
 ; balloon) with appropriate sprites and attributes.
 ;
 ; * Balloon (type 6) uses separate routine render_balloon
-; * Fighter/Tank (types 4,5) need blending mode setup via blending_mode_xor_nop
+; * Fighter/Tank (types 4,5) need XOR blending mode setup
 ; * Adds enemy to active objects set at viewport_objects
 ; * Sprite size: 3 tiles wide, 8 pixels high ($18 bytes per frame)
 ;
@@ -4912,18 +4910,18 @@ setup_object_position:
 render_enemy:
   CP OBJECT_BALLOON                    ; If balloon (type 6), use separate balloon renderer at render_balloon.
   JP Z,render_balloon                  ;
-  CP OBJECT_FIGHTER                    ; If fighter (type 5), set XOR blending mode via blending_mode_xor_nop.
+  CP OBJECT_FIGHTER                    ; If fighter (type 5), set XOR blending mode.
   CALL Z,blending_mode_xor_nop         ;
-  CP OBJECT_TANK                       ; If tank (type 4), set XOR blending mode via blending_mode_xor_nop.
+  CP OBJECT_TANK                       ; If tank (type 4), set XOR blending mode.
   CALL Z,blending_mode_xor_nop         ;
-  CALL ld_enemy_sprites                ; Call ld_enemy_sprites to get sprite pointer based on enemy direction.
+  CALL ld_enemy_sprites                ; Get sprite pointer based on enemy direction.
   LD B,$00                             ; Add enemy to active objects set: BC = (0, X_pos), call add_object_to_set with
   LD C,E                               ; HL = viewport_objects.
   PUSH HL                              ;
   LD HL,viewport_objects               ;
   CALL add_object_to_set               ;
   POP HL
-  CALL setup_object_position           ; Call setup_object_position to set up screen position.
+  CALL setup_object_position           ; Set up screen position.
   LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE   ; Set sprite frame size ($18 = 24 bytes) and default attributes ($0E).
   LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES    ;
   LD A,D                               ; Get object type (D AND $07). Load type-specific attributes:
@@ -4934,8 +4932,8 @@ render_enemy:
   CALL Z,ld_attributes_fighter         ;
   CP OBJECT_TANK                       ;
   CALL Z,ld_attributes_tank            ;
-  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES   ; Set sprite dimensions: A=3 (width tiles), D=8 (height pixels). Call
-  LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS ; render_sprite and blending_mode_or_or to render.
+  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES   ; Set sprite dimensions: A=3 (width tiles), D=8 (height pixels). Render enemy.
+  LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS ;
   CALL render_sprite                   ;
   CALL blending_mode_or_or             ;
   RET
@@ -4996,14 +4994,14 @@ blending_mode_xor_nop:
 render_fuel:
   LD B,$00                             ; BC = (0, E): set X position in BC for object entry.
   LD C,E                               ;
-  LD HL,viewport_objects               ; Add fuel station to viewport_objects active objects set via add_object_to_set.
+  LD HL,viewport_objects               ; Add fuel station to active objects set.
   CALL add_object_to_set               ;
   LD HL,sprite_fuel                    ; Load fuel sprite address sprite_fuel and call setup_object_position to set up
   CALL setup_object_position           ; screen position.
   LD BC,SPRITE_FUEL_STATION_FRAME_SIZE                                      ; Set sprite parameters: frame size=0,
   LD A,SPRITE_FUEL_STATION_WIDTH_TILES                                      ; width=2 tiles, height=25 pixels,
   LD DE,SPRITE_FUEL_STATION_HEIGHT_PIXELS<<8|SPRITE_FUEL_STATION_ATTRIBUTES ; attributes=$0B.
-  CALL render_sprite                   ; Render fuel station sprite via render_sprite.
+  CALL render_sprite                   ; Render fuel station sprite.
   RET
 
 ; Render balloon
@@ -5028,9 +5026,9 @@ render_balloon:
   CALL add_object_to_set               ;
   POP HL                               ;
   CALL setup_object_position           ;
-  LD BC,SPRITE_BALLOON_FRAME_SIZE                                 ; Set sprite parameters: frame size=$20, width=2,
-  LD A,SPRITE_BALLOON_WIDTH_TILES                                 ; height=16px, attributes=$0E. Render via
-  LD DE,SPRITE_BALLOON_HEIGHT_PIXELS<<8|SPRITE_BALLOON_ATTRIBUTES ; render_sprite.
+  LD BC,SPRITE_BALLOON_FRAME_SIZE                                 ; Render sprite: frame size=$20, width=2, height=16px,
+  LD A,SPRITE_BALLOON_WIDTH_TILES                                 ; attributes=$0E.
+  LD DE,SPRITE_BALLOON_HEIGHT_PIXELS<<8|SPRITE_BALLOON_ATTRIBUTES ;
   CALL render_sprite                                              ;
   RET
 
@@ -5134,7 +5132,7 @@ dispatch_object_type:
 ; * Checks tick parity for movement timing
 ; * Determines direction from bit 6 (SLOT_BIT_ORIENTATION)
 ; * Left-facing objects advance left, right-facing advance right
-; * Collision with terrain triggers direction reversal via handle_object_proximity
+; * Collision with terrain triggers direction reversal
 ;
 ; I:B Y position of object
 ; I:C X position of object
@@ -5159,9 +5157,9 @@ ship_or_helicopter_left_advance:
   LD A,C                               ;
   SUB $10                              ;
   LD C,A                               ;
-  CALL calculate_pixel_address         ; Call calculate_pixel_address to get terrain byte at (C, B). Load result into A.
+  CALL calculate_pixel_address         ; Get terrain byte at (C, B). Load result into A.
   LD A,(HL)                            ;
-  POP BC                               ; Restore BC. If terrain != 0, reverse direction via handle_object_proximity.
+  POP BC                               ; Restore BC. If terrain != 0, reverse direction.
   CP $00                               ;
   CALL NZ,handle_object_proximity      ;
   LD (previous_object_coordinates),BC  ; Store position to previous_object_coordinates. Advance X position left by 2
@@ -5180,7 +5178,7 @@ operate_ship_or_helicopter_continue:
   DEC HL                               ;
   LD (HL),C                            ;
   LD (object_coordinates),BC           ; Store position to object_coordinates, sprite address all_ff to
-  LD HL,all_ff                         ; render_sprite_ptr. Get sprite via ld_enemy_sprites.
+  LD HL,all_ff                         ; render_sprite_ptr. Get sprite pointer.
   LD (render_sprite_ptr),HL            ;
   CALL ld_enemy_sprites
   LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE   ; Set frame size=$18, default attributes=$0E.
@@ -5189,8 +5187,8 @@ operate_ship_or_helicopter_continue:
   AND SLOT_MASK_OBJECT_TYPE            ;
   CP OBJECT_SHIP                       ;
   CALL Z,ld_attributes_ship
-  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES   ; Set width=3 tiles, height=8 pixels. Render via render_object, return to main
-  LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS ; loop.
+  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES   ; Render sprite: width=3 tiles, height=8 pixels.
+  LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS ;
   CALL render_object                   ;
   JP operate_viewport_objects
 
@@ -5238,15 +5236,15 @@ operate_fighter_continue:
   LD (HL),B                            ;
   DEC HL                               ;
   LD (HL),C                            ;
-  LD (object_coordinates),BC           ; Store position to object_coordinates, get sprite pointer via ld_enemy_sprites.
+  LD (object_coordinates),BC           ; Store position to object_coordinates, get sprite pointer.
   CALL ld_enemy_sprites                ;
   LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE   ; Set frame size=$18, call blending_mode_xor_xor to set XOR blending mode.
   CALL blending_mode_xor_xor           ;
   LD A,COLLISION_MODE_FIGHTER          ; Set collision mode to COLLISION_MODE_FIGHTER ($03) at state_collision_mode.
   LD (state_collision_mode),A          ;
-  LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_FIGHTER_ATTRIBUTES ; Set height=8px, attributes=$00. Render via
-  CALL render_sprite                                                 ; render_sprite, restore blending via
-  CALL blending_mode_or_or                                           ; blending_mode_or_or.
+  LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_FIGHTER_ATTRIBUTES ; Render sprite: height=8px, attributes=$00.
+  CALL render_sprite                                                 ; Restore blending.
+  CALL blending_mode_or_or                                           ;
   JP operate_viewport_objects          ; Return to main viewport loop.
 
 ; Advance right-facing fighter
@@ -5335,7 +5333,7 @@ tank_shell_render_entry:
   LD BC,SPRITE_SHELL_EXPLOSION_FRAME_SIZE_BYTES ;
   LD D,SPRITE_SHELL_EXPLOSION_HEIGHT_PIXELS     ;
   LD A,SPRITE_SHELL_EXPLOSION_WIDTH_TILES       ;
-  CALL render_object                   ; Render via render_object, return to main loop.
+  CALL render_object                   ; Render and return to main loop.
   JP operate_viewport_objects          ;
 
 ; Finish tank shell explosion animation
@@ -5417,14 +5415,14 @@ animate_helicopter:
   BIT SLOT_BIT_ORIENTATION,D              ; clear), load sprite_helicopter_rotor_right.
   CALL Z,ld_sprite_helicopter_rotor_right ;
   LD (object_coordinates),BC           ; Store positions to object_coordinates and previous_object_coordinates. Push
-  LD (previous_object_coordinates),BC  ; rotor sprite, get main sprite via ld_enemy_sprites.
+  LD (previous_object_coordinates),BC  ; rotor sprite, get main sprite pointer.
   PUSH HL                              ;
   CALL ld_enemy_sprites                ;
   LD HL,all_ff                         ; Store erase sprite all_ff to render_sprite_ptr. Pop rotor sprite.
   LD (render_sprite_ptr),HL            ;
   POP HL                               ;
-  LD DE,SPRITE_ROTOR_HEIGHT_PIXELS<<8|SPRITE_ROTOR_ATTRIBUTES ; Set rotor params: height=2, attributes=$0E, frame
-  LD BC,SPRITE_ROTOR_FRAME_SIZE                               ; size=4, width=2. Render via render_object.
+  LD DE,SPRITE_ROTOR_HEIGHT_PIXELS<<8|SPRITE_ROTOR_ATTRIBUTES ; Render rotor: height=2, attributes=$0E, frame size=4,
+  LD BC,SPRITE_ROTOR_FRAME_SIZE                               ; width=2.
   LD A,SPRITE_ROTOR_WIDTH_TILES                               ;
   CALL render_object                                          ;
   JP operate_viewport_objects
@@ -5484,8 +5482,8 @@ tank_move_entry:
   LD A,C                               ; If X == $80 (center), set tank shell active via set_tank_shell_active.
   CP $80                               ;
   CALL Z,set_tank_shell_active
-  LD HL,(viewport_ptr)                 ; Update position in viewport array, store to object_coordinates, get sprite via
-  DEC HL                               ; ld_enemy_sprites.
+  LD HL,(viewport_ptr)                 ; Update position in viewport array, store to object_coordinates, get sprite
+  DEC HL                               ; pointer.
   LD D,(HL)                            ;
   DEC HL                               ;
   LD (HL),B                            ;
@@ -5495,8 +5493,8 @@ tank_move_entry:
   CALL ld_enemy_sprites
   LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE   ; Set frame size=$18, enable XOR blending via blending_mode_xor_xor.
   CALL blending_mode_xor_xor           ;
-  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES                              ; Set width=3, height=8, attributes=$00. Render via
-  LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_TANK_ATTRIBUTES ; render_sprite, restore blending, return.
+  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES                              ; Render sprite: width=3, height=8, attributes=$00.
+  LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_TANK_ATTRIBUTES ; Restore blending.
   CALL render_sprite                                              ;
   CALL blending_mode_or_or                                        ;
   JP operate_viewport_objects
@@ -5558,8 +5556,8 @@ operate_tank_on_bank:
   LD C,A
   BIT SLOT_BIT_ORIENTATION,D           ; If left-facing, adjust offset via invert_tank_offset_delta.
   CALL NZ,invert_tank_offset_delta     ;
-  CALL calculate_pixel_address         ; Call calculate_pixel_address for terrain check. If terrain == $FF, move tank
-  LD A,(HL)                            ; normally.
+  CALL calculate_pixel_address         ; Check terrain. If terrain == $FF, move tank normally.
+  LD A,(HL)                            ;
   CP $FF                               ;
   POP BC                               ;
   POP DE                               ;
@@ -5606,9 +5604,9 @@ init_tank_shell_state:
 
 ; Cancel and remove tank shell
 ;
-; Removes the tank shell via remove_tank_shell and returns to main loop.
+; Removes the tank shell and returns to main loop.
 cancel_and_remove_shell:
-  CALL remove_tank_shell               ; Call remove_tank_shell to remove shell, return to main loop.
+  CALL remove_tank_shell               ; Remove shell, return to main loop.
   JP operate_viewport_objects          ;
 
 ; Check shell initialization condition
@@ -5708,9 +5706,9 @@ invert_helicopter_missile_offset:
 ; orientation. Removed when reaching viewport boundary.
 ;
 ; * Loads position from helicopter_missile_coordinates_ptr
-; * Advances Y position via advance_object
+; * Advances Y position
 ; * Moves X position by HELICOPTER_MISSILE_STEP ($08)
-; * Removed at VIEWPORT_HEIGHT boundary via remove_helicopter_missile
+; * Removed at VIEWPORT_HEIGHT boundary
 ; * Sets COLLISION_MODE_HELICOPTER_MISSILE for collision
 operate_helicopter_missile:
   LD BC,(helicopter_missile_coordinates_ptr) ; Load missile coordinates from helicopter_missile_coordinates_ptr. Return
@@ -5731,8 +5729,8 @@ operate_helicopter_missile:
   CALL Z,invert_helicopter_missile_offset ;
   LD (object_coordinates),BC                 ; Store position to object_coordinates and
   LD (helicopter_missile_coordinates_ptr),BC ; helicopter_missile_coordinates_ptr.
-  LD A,COLLISION_MODE_HELICOPTER_MISSILE     ; Set collision mode=$04, width=1, attributes=$00, height=1. Render via
-  LD (state_collision_mode),A                ; render_sprite.
+  LD A,COLLISION_MODE_HELICOPTER_MISSILE     ; Render missile: collision mode=$04, width=1, attributes=$00, height=1.
+  LD (state_collision_mode),A                ;
   LD A,SPRITE_HELICOPTER_MISSILE_WIDTH_TILES ;
   LD E,SPRITE_HELICOPTER_MISSILE_ATTRIBUTES  ;
   LD D,$01                                   ;
@@ -5878,8 +5876,8 @@ operate_tank_shell:
   AND VIEWPORT_HEIGHT                  ;
   CP VIEWPORT_HEIGHT                   ;
   JP Z,erase_tank_shell_offscreen      ;
-  LD HL,sprite_missile                                        ; Load shell sprite sprite_missile, set params: height=1,
-  LD DE,SPRITE_SHELL_HEIGHT_PIXELS<<8|SPRITE_SHELL_ATTRIBUTES ; width=1, frame=$08. Render via render_sprite.
+  LD HL,sprite_missile                                        ; Render shell sprite: height=1, width=1, frame=$08.
+  LD DE,SPRITE_SHELL_HEIGHT_PIXELS<<8|SPRITE_SHELL_ATTRIBUTES ;
   LD A,SPRITE_SHELL_WIDTH_TILES                               ;
   LD BC,SPRITE_SHELL_FRAME_SIZE_BYTES                         ;
   CALL render_sprite                                          ;
@@ -5900,11 +5898,11 @@ erase_tank_shell_offscreen:
   ADD HL,DE                            ;
   LD (render_sprite_ptr),HL            ; Add offset to sprite address, store to render_sprite_ptr. Load erase sprite
   LD HL,sprite_erasure                 ; sprite_erasure.
-  LD DE,$0100                          ; Set sprite params, render via render_object, remove shell.
+  LD DE,$0100                          ; Render erase sprite and remove shell.
   LD A,$01                             ;
   LD BC,$0008                          ;
   CALL render_object                   ;
-  JP remove_tank_shell                 ; Remove shell via remove_tank_shell.
+  JP remove_tank_shell                 ; Remove shell.
 
 ; Trigger tank shell explosion
 ;
@@ -5962,7 +5960,7 @@ handle_tank_at_boundary:
   LD HL,(viewport_ptr)                 ;
   DEC HL                               ;
   DEC HL                               ;
-  LD B,(HL)                            ; Call explode_fragment to add explosion, award POINTS_TANK via add_points.
+  LD B,(HL)                            ; Add explosion and award POINTS_TANK.
   DEC HL                               ;
   LD (HL),$00                          ;
   LD D,$80                             ;
@@ -6018,7 +6016,7 @@ operate_fuel:
   LD A,B                               ;
   AND VIEWPORT_HEIGHT                  ;
   CP VIEWPORT_HEIGHT                   ;
-  JP Z,operate_viewport_objects        ; Load fuel sprite sprite_fuel, get sprite pointer via ld_enemy_sprites.
+  JP Z,operate_viewport_objects        ; Load fuel sprite sprite_fuel, get sprite pointer.
   LD A,B                               ;
   AND $87                              ;
   CP $87                               ;
@@ -6029,7 +6027,7 @@ operate_fuel:
   AND TICK_MASK_FUEL_BLINK             ;
   ADD A,SPRITE_FUEL_STATION_ATTRIBUTES ;
   LD E,A                               ;
-  LD A,SPRITE_FUEL_STATION_WIDTH_TILES ; Set width=2, render via render_sprite.
+  LD A,SPRITE_FUEL_STATION_WIDTH_TILES ; Render fuel station: width=2.
   CALL render_sprite                   ;
   JP operate_viewport_objects          ;
 
@@ -6074,9 +6072,9 @@ ship_or_helicopter_right_advance:
   LD A,C                               ;
   ADD A,$20                            ;
   LD C,A                               ;
-  CALL calculate_pixel_address         ; Call calculate_pixel_address to get terrain byte at (C, B). Load result into A.
+  CALL calculate_pixel_address         ; Get terrain byte at (C, B). Load result into A.
   LD A,(HL)                            ;
-  POP BC                               ; Restore BC. If terrain != 0, reverse direction via handle_object_proximity.
+  POP BC                               ; Restore BC. If terrain != 0, reverse direction.
   CP $00                               ;
   CALL NZ,handle_object_proximity      ;
   LD (previous_object_coordinates),BC  ; Store position to previous_object_coordinates. Advance X position right by 2
@@ -6122,7 +6120,7 @@ handle_object_proximity:
   LD HL,(viewport_ptr)                 ;
   DEC HL                               ;
   LD D,(HL)                            ;
-  CALL ld_enemy_sprites                ; Get sprite pointer via ld_enemy_sprites, reload position.
+  CALL ld_enemy_sprites                ; Get sprite pointer, reload position.
   LD BC,(previous_object_coordinates)  ;
   LD A,C                               ; Calculate animation frame offset from X position.
   AND $07                              ;
@@ -6141,7 +6139,7 @@ handle_object_proximity_frame_loop:
   LD A,D                               ; Invert object orientation (XOR bit 6).
   XOR 1<<SLOT_BIT_ORIENTATION          ;
   LD D,A                               ;
-  LD HL,(viewport_ptr)                 ; Update orientation in viewport array, get new sprite via ld_enemy_sprites.
+  LD HL,(viewport_ptr)                 ; Update orientation in viewport array, get new sprite pointer.
   DEC HL                               ;
   LD (HL),A                            ;
   CALL ld_enemy_sprites                ;
@@ -6243,7 +6241,7 @@ operate_balloon_shared:
   LD BC,SPRITE_BALLOON_FRAME_SIZE
   LD E,SPRITE_BALLOON_ATTRIBUTES
   LD D,SPRITE_BALLOON_HEIGHT_PIXELS
-  CALL render_sprite                   ; Call render_sprite to render balloon, return to main loop.
+  CALL render_sprite                   ; Render balloon, return to main loop.
   JP operate_viewport_objects          ;
 
 ; A useless procedure that unconcditionally jumps to operate_viewport_objects.
@@ -6381,7 +6379,7 @@ clear_and_setup:
   LD (setup_sp),SP                     ; Save current stack pointer to setup_sp.
   LD D,COLOR_BLACK<<3|COLOR_WHITE      ; Clear screen with white-on-black attributes.
   CALL clear_screen                    ;
-  JP setup                             ; Jump to setup (setup routine).
+  JP setup                             ; Continue with setup.
 
 ; Temporary stack pointer used by the control choice dialog
 setup_sp:
@@ -8616,7 +8614,7 @@ set_sprite_attributes:
   LD (attr_sprite_width),A             ;
   LD A,E                               ;
   CP $00                               ;
-  JP Z,handle_zero_attributes          ; Jump to handle_zero_attributes if attribute is 0 (nothing to draw).
+  JP Z,handle_zero_attributes          ; If attribute is 0, skip drawing (nothing to draw).
   LD (attr_saved_de),DE                ; Save DE, BC, HL to memory at attr_saved_de, attr_saved_bc, attr_saved_hl for
   LD (attr_saved_bc),BC                ; later use.
   LD (attr_saved_hl),HL                ;

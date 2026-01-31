@@ -1312,7 +1312,7 @@ c$5D06 LD A,$3F      ; Load $3F into A (high byte of ROM address for IM 1).
                      ; mode).
  $5D0A IM 1          ; Set interrupt mode 1 (standard ZX Spectrum interrupts).
  $5D0C EI            ; Enable interrupts.
- $5D0D CALL $7804    ; Call #R$7804 to display the control selection dialog.
+ $5D0D CALL $7804    ; Display the control selection dialog.
 
 ; Start gameplay or overview mode based on user selection
 ;
@@ -1334,8 +1334,8 @@ c$5D10 LD A,$FC      ; {Set the I register to the high byte of the interrupt
 @isub=CP OVERVIEW_MODE_ON
  $5D20 CP $01        ; Check if overview mode is enabled.
  $5D22 JP Z,$5D2B    ; If overview mode is on, jump to #R$5D2B.
- $5D25 CALL $5D44    ; Call #R$5D44 to initialize game state.
- $5D28 JP $5DA6      ; Jump to #R$5DA6 to start gameplay.
+ $5D25 CALL $5D44    ; Initialize game state.
+ $5D28 JP $5DA6      ; Start gameplay.
 
 ; Start overview mode
 ;
@@ -2097,10 +2097,10 @@ c$6068 LD A,$DF      ; {Scan "O" (LEFT)
 ; .
 ; .
 ; #LIST
-; { Player plane sprite (GAMEPLAY_MODE_NORMAL only, via #R$8B3C) }
-; { Island/terrain system (via #R$683B) }
-; { Terrain fragments (count = current speed, via #R$6AA3) }
-; { Attribute scroll (every 8 fragments, via #R$68B7) }
+; { Player plane sprite (GAMEPLAY_MODE_NORMAL only) }
+; { Island/terrain system }
+; { Terrain fragments (count = current speed) }
+; { Attribute scroll (every 8 fragments) }
 ; LIST#
 ; .
 ; .
@@ -2133,13 +2133,13 @@ c$60A5 LD A,($5F68)  ; {Skip plane rendering if not GAMEPLAY_MODE_NORMAL.
  $60CF LD D,A        ; }
  $60D0 LD ($8B0A),BC ; {Set plane coordinates for rendering.
  $60D4 LD ($8B0C),BC ; }
- $60D8 LD E,$00      ; {Call #R$8B3C to render plane (width=2, size=$10,
- $60DA LD BC,$0010   ; attrs=$00).
+ $60D8 LD E,$00      ; {Render plane: width=2, size=$10, attrs=$00.
+ $60DA LD BC,$0010   ;
  $60DD LD A,$02      ;
  $60DF LD HL,$82F5   ;
  $60E2 CALL $8B3C    ; }
 @label=render_terrain_fragments
-*$60E5 CALL $683B    ; Call #R$683B to render islands.
+*$60E5 CALL $683B    ; Render islands.
  $60E8 LD A,($5F64)  ; {Calculate starting screen row based on speed.
  $60EB LD DE,$0100   ;
  $60EE LD HL,$4000   ;
@@ -2158,10 +2158,10 @@ c$60A5 LD A,($5F68)  ; {Skip plane rendering if not GAMEPLAY_MODE_NORMAL.
 *$6103 INC C         ; {Increment fragment counter.
  $6104 LD A,C        ;
  $6105 PUSH BC       ; }
- $6106 AND $07       ; {Every 8 fragments, call #R$68B7 to scroll attributes.
+ $6106 AND $07       ; {Every 8 fragments, scroll attributes.
  $6108 CP $00        ;
  $610A CALL Z,$68B7  ; }
- $610D CALL $6AA3    ; Call #R$6AA3 to render terrain fragment.
+ $610D CALL $6AA3    ; Render terrain fragment.
  $6110 LD DE,$0100   ; {Move screen pointer up one row ($100 bytes).
  $6113 LD HL,($5F7B) ;
  $6116 OR A          ;
@@ -2443,7 +2443,7 @@ c$6256 LD A,$06      ; {Set gameplay mode to GAMEPLAY_MODE_REFUEL in #R$5F68.
  $625D LD A,($5F72)  ; #R$5EF3.
  $6260 LD C,A        ;
  $6261 LD ($5EF3),BC ; }
- $6265 JP $61BB      ; Jump to #R$61BB to check for collision with fuel depot.
+ $6265 JP $61BB      ; Check for collision with fuel depot.
 
 ; Check collision with explosion fragments
 ;
@@ -2475,7 +2475,7 @@ c$6268 LD HL,($5F62) ; {Load fragment coordinates (C=X, B=Y) from list pointer
 @isub=CP SET_MARKER_END_OF_SET
  $6279 CP $FF        ; {If end marker ($FF), jump to #R$62CE (no collision).
  $627B JP Z,$62CE    ; }
- $627E CALL $62DA    ; Call #R$62DA to adjust Y coordinate for scrolling.
+ $627E CALL $62DA    ; Adjust Y coordinate for scrolling.
 ; Y-axis collision check (8-pixel height for both entity and fragment).
  $6281 LD DE,($5EF3) ; {Check if entity_Y + 8 >= fragment_Y; if not, next
  $6285 LD A,D        ; fragment.
@@ -2722,7 +2722,7 @@ c$62E8 LD HL,($5F60) ; {Load object coordinates (C=X, B=Y) from list pointer
  $63B6 JP Z,$6478    ; }
 ; End of object list - check fragment collision and tank shell.
 @label=check_missile_vs_objects_end
-*$63B9 CALL $6268    ; {Call #R$6268 and reset #R$5F60/#R$5F62 to list starts.
+*$63B9 CALL $6268    ; {Reset #R$5F60/#R$5F62 to list starts.
  $63BC LD HL,$5F00   ;
  $63BF LD ($5F60),HL ;
  $63C2 LD HL,$5F2E   ;
@@ -2766,7 +2766,7 @@ c$63FC LD A,$00      ; Load GAMEPLAY_MODE_NORMAL ($00).
  $6406 LD HL,($5F85) ; {Restore HL, DE, BC from #R$5F85, #R$5F87, #R$5F89.
  $6409 LD DE,($5F87) ;
  $640D LD BC,($5F89) ; }
- $6411 JP $8C3B      ; Jump to #R$8C3B to continue rendering.
+ $6411 JP $8C3B      ; Continue rendering.
 
 ; Handle missile hit on regular helicopter
 ;
@@ -3240,7 +3240,7 @@ c$65F3 LD A,($5F72)  ; Load current plane X-coordinate from #R$5F72
 @isub=LD A,SPRITE_PLANE_WIDTH_TILES
  $6628 LD A,$02      ; Set sprite width to $02 (2 tiles wide)
  $662A LD HL,$83F1   ; Load sprite data address #R$83F1
- $662D CALL $8B3C    ; Call #R$8B3C to render the plane sprite at new position
+ $662D CALL $8B3C    ; Render the plane sprite at new position.
 
 ; Restore plane state after rendering
 ;
@@ -3305,8 +3305,8 @@ c$6642 LD A,($5F72)  ; Load current plane X-coordinate from #R$5F72
 @isub=LD A,SPRITE_PLANE_WIDTH_TILES
  $6677 LD A,$02      ; Set sprite width to $02 (2 tiles wide)
  $6679 LD HL,$83F1   ; Load sprite data address #R$83F1
- $667C CALL $8B3C    ; Call #R$8B3C to render the plane sprite at new position
- $667F JP $6630      ; Jump to #R$6630 to restore plane state after rendering
+ $667C CALL $8B3C    ; Render the plane sprite at new position.
+ $667F JP $6630      ; Restore plane state after rendering.
 
 ; Render player plane sprite
 ;
@@ -3342,7 +3342,7 @@ c$6682 LD A,($5F68)  ; {Return if not in GAMEPLAY_MODE_NORMAL.
  $6694 LD A,$01      ;
  $6696 LD ($5EF5),A  ; }
  $6699 LD ($8B0C),BC ; (continued).
- $669D CALL $62DA    ; {Advance position via #R$62DA and store to #R$8B0A.
+ $669D CALL $62DA    ; {Advance position and store to #R$8B0A.
  $66A0 LD ($8B0A),BC ; }
 @isub=LD BC,SPRITE_PLANE_FRAME_SIZE
  $66A4 LD BC,$0010   ; {Set frame size and sprite pointer from #R$5EF7.
@@ -3363,7 +3363,7 @@ c$6682 LD A,($5F68)  ; {Return if not in GAMEPLAY_MODE_NORMAL.
 @isub=LD A,SPRITE_PLANE_WIDTH_TILES
  $66C4 LD A,$02      ; {Set width and call #R$8B3C to render.
  $66C6 CALL $8B3C    ; }
- $66C9 JP $6630      ; Restore state via #R$6630.
+ $66C9 JP $6630      ; Restore state.
 
 ; Load banked plane sprite address
 ;
@@ -3384,8 +3384,8 @@ c$66CC LD HL,$83F1   ; Load #R$83F1 into HL.
 ; .
 ;
 ; Called each frame to advance the vertical scroll position. Adds current speed
-; (#R$5F64) to scroll offset (#R$5F70), updates the bridge's Y position via
-; #R$66EE, then resets speed to SPEED_NORMAL and updates control flags.
+; (#R$5F64) to scroll offset (#R$5F70), updates the bridge's Y position, then
+; resets speed to SPEED_NORMAL and updates control flags.
 ; .
 ; .
 ; .
@@ -3398,8 +3398,8 @@ c$66D0 LD BC,($5F70) ; {Add speed to scroll offset and store result.
  $66D6 LD A,($5F64)  ;
  $66D9 LD L,A        ;
  $66DA ADD HL,BC     ; }
- $66DB LD ($5F70),HL ; {Call #R$66EE to update bridge; reset speed to
- $66DE CALL $66EE    ; SPEED_NORMAL.}
+ $66DB LD ($5F70),HL ; {Update bridge position; reset speed to SPEED_NORMAL.
+ $66DE CALL $66EE    ; }
 @isub=LD A,SPEED_NORMAL
  $66E1 LD A,$02      ;
  $66E3 LD ($5F64),A  ;
@@ -3416,10 +3416,10 @@ c$66D0 LD BC,($5F70) ; {Add speed to scroll offset and store result.
 ;
 ; Adjusts the bridge's Y position (#R$5F6E) based on current scrolling. If no
 ; bridge exists (Y=0), returns immediately. If the bridge scrolls off the
-; bottom of the screen (Y AND $88 == $88), clears it via #R$6704.
+; bottom of the screen (Y AND $88 == $88), clears it.
 @label=update_bridge_scroll
-c$66EE LD A,($5F6E)  ; {If no bridge, return; otherwise advance bridge Y via
- $66F1 CP $00        ; #R$62DA.
+c$66EE LD A,($5F6E)  ; {If no bridge, return; otherwise advance bridge Y
+ $66F1 CP $00        ; position.
  $66F3 RET Z         ;
  $66F4 LD B,A        ; }
  $66F5 CALL $62DA    ; {If bridge scrolled off screen, call #R$6704 to clear
@@ -3515,9 +3515,9 @@ g$673C DEFB $00
 ;
 ; .
 ;
-; Called twice per frame (via #R$5F91) to animate the player's missile. On the
-; first pass (#R$673C = $01), adjusts missile position for screen scrolling via
-; #R$62DA. On both passes, moves missile up by 6 pixels.
+; Called twice per frame to animate the player's missile. On the first pass
+; (#R$673C = $01), adjusts missile position for screen scrolling. On both
+; passes, moves missile up by 6 pixels.
 ; .
 ; .
 ; .
@@ -3631,7 +3631,7 @@ c$6794 LD BC,($5EF3) ; {Load missile coordinates from #R$5EF3 and call #R$72EF
  $67D0 LD A,$01      ; {Set sprite dimensions: width=1, frame_size=8, height=8,
  $67D2 LD BC,$0008   ; attrs=$0C.
  $67D5 LD DE,$080C   ; }
- $67D8 LD HL,$82F5   ; {Call #R$8B3C with #R$82F5 to erase missile sprite.
+ $67D8 LD HL,$82F5   ; {Erase missile sprite.
  $67DB CALL $8B3C    ; }
  $67DE LD HL,$6BB0   ; {Reset CONTROLS_BIT_SPEED_DECREASED in #R$6BB0.
  $67E1 RES 1,(HL)    ; }
@@ -3828,7 +3828,7 @@ c$68C5 LD DE,$5820   ; {Copy bottom attribute row to top of screen.
 *$68E1 LD (DE),A     ; {Store attribute, advance pointer, loop 32 times.
  $68E2 INC DE        ;
  $68E3 DJNZ $68E1    ; }
- $68E5 CALL $6F80    ; Call #R$6F80 to spawn objects for new row.
+ $68E5 CALL $6F80    ; Process objects for new row.
  $68E8 RET           ;
 
 ; Initialize bridge state for current player
@@ -3932,7 +3932,7 @@ c$694D LD DE,$0000   ; {Reset Y-position to start of new bridge.
  $6954 LD A,($5EF0)  ; {Increment bridge index at #R$5EF0.
  $6957 INC A         ;
  $6958 LD ($5EF0),A  ; }
- $695B CP $31        ; {If index reaches $31 (49), wrap via #R$6963.
+ $695B CP $31        ; {If index reaches $31 (49), wrap to 1.
  $695D JP Z,$6963    ;
  $6960 LD A,$00      ;
  $6962 RET           ; }
@@ -4581,8 +4581,8 @@ g$6C30 DEFB $00
 c$6C31 LD A,($6C30)  ; {Increment counter and check if reached $40 (64). If so,
  $6C34 INC A         ; sound is complete.
  $6C35 LD ($6C30),A  ; }
- $6C38 CP $40        ; {Check if counter reached $40 (64 frames). Jump to
- $6C3A JP Z,$6C52    ; #R$6C52 to finish if done.}
+ $6C38 CP $40        ; {Check if counter reached $40 (64 frames). If done,
+ $6C3A JP Z,$6C52    ; finish sound sequence.}
  $6C3D LD B,A        ; {Calculate pitch: pitch = $40 - counter. Store counter
  $6C3E LD A,$40      ; in B, load $40 into A, subtract.
  $6C40 SUB B         ; }
@@ -4616,7 +4616,7 @@ c$6C52 LD A,$00      ; {Reset counter to 0.
 ; #LIST
 ; { Period = (controls_byte AND $0F), used for both on and off delays }
 ; { Symmetric square wave: same delay for high and low phases }
-; { Loops 8 cycles then returns via #R$6C24 }
+; { Loops 8 cycles then returns }
 ; LIST#
 ;
 ; I:HL Pointer to #R$6BB0 (controls state byte)
@@ -4638,8 +4638,8 @@ c$6C5D LD A,(HL)     ; {Extract period from low 4 bits of controls byte. Higher
 @label=beep_speed_decreased_delay_off
 *$6C70 DEC D         ; {Delay loop for speaker OFF phase.
  $6C71 JR NZ,$6C70   ; }
- $6C73 DEC C         ; {Decrement cycle counter, loop if not zero. Jump to
- $6C74 JP NZ,$6C63   ; #R$6C24 when done.
+ $6C73 DEC C         ; {Decrement cycle counter, loop if not zero. Return from
+ $6C74 JP NZ,$6C63   ; interrupt when done.
  $6C77 JP $6C24      ; }
 
 ; Explosion sound frame counter. Counts down from $18 (24) to 0. Value also
@@ -4736,8 +4736,8 @@ c$6CB8 LD A,(HL)     ; {Extract period from low 3 bits of controls byte.
 @label=beep_speed_increased_delay_off
 *$6CCC DEC D         ; {Delay loop for speaker OFF phase (asymmetric wave).
  $6CCD JR NZ,$6CCC   ; }
- $6CCF DEC C         ; {Decrement cycle counter, loop if not zero. Jump to
- $6CD0 JP NZ,$6CBE   ; #R$6C24 when done.
+ $6CCF DEC C         ; {Decrement cycle counter, loop if not zero. Return from
+ $6CD0 JP NZ,$6CBE   ; interrupt when done.
  $6CD3 JP $6C24      ; }
 
 ; Play combined speed change sound
@@ -4770,8 +4770,8 @@ c$6CD6 LD A,(HL)     ; {Extract period from bits 0-2 and bit 4 of controls
 @label=beep_speed_combined_delay_off
 *$6CEA DEC D         ; {Delay loop for speaker OFF phase.
  $6CEB JR NZ,$6CEA   ; }
- $6CED DEC C         ; {Decrement cycle counter, loop if not zero. Jump to
- $6CEE JP NZ,$6CDC   ; #R$6C24 when done.
+ $6CED DEC C         ; {Decrement cycle counter, loop if not zero. Return from
+ $6CEE JP NZ,$6CDC   ; interrupt when done.
  $6CF1 JP $6C24      ; }
 
 ; Play low fuel warning sound
@@ -4806,8 +4806,8 @@ c$6CF4 LD C,$03      ; Loop counter: 3 cycles of waveform.
 @label=do_low_fuel_delay_off
 *$6D0D DEC D         ; {Delay loop for speaker OFF phase.
  $6D0E JR NZ,$6D0D   ; }
- $6D10 DEC C         ; {Decrement cycle counter, loop for 3 cycles. Jump to
- $6D11 JP NZ,$6CF6   ; #R$6C24 when done.
+ $6D10 DEC C         ; {Decrement cycle counter, loop for 3 cycles. Return from
+ $6D11 JP NZ,$6CF6   ; interrupt when done.
  $6D14 JP $6C24      ; }
 
 ; Level overview screen
@@ -4839,7 +4839,7 @@ c$6D17 LD BC,$0010   ; {Initialize scroll position (#R$5F70 = $0010) and scroll
  $6D34 CALL $64BC    ; {Initialize gameplay: call #R$64BC, #R$6587, #R$6DEB
  $6D37 CALL $6587    ; (init_starting_bridge).
  $6D3A CALL $6DEB    ; }
- $6D3D CALL $68E9    ; Call #R$68E9 to initialize terrain rendering.
+ $6D3D CALL $68E9    ; Initialize terrain rendering.
  $6D40 LD A,$04      ; {Print "GAME" text (#R$805A, length 5) using ROM
  $6D42 LD ($5EEE),A  ; PR_STRING.
  $6D45 LD DE,$805A   ;
@@ -4857,7 +4857,7 @@ c$6D17 LD BC,$0010   ; {Initialize scroll position (#R$5F70 = $0010) and scroll
  $6D61 LD ($5D43),A  ;
 ; This entry point is used by the routine at #R$6DDD.
 @label=overview_loop
-*$6D64 LD A,$BF      ; {Check Enter key (row 6, bit 0). Call #R$6BBF if
+*$6D64 LD A,$BF      ; {Check Enter key (row 6, bit 0). Handle Enter if
  $6D66 IN A,($FE)    ; pressed.
  $6D68 BIT 0,A       ;
  $6D6A CALL Z,$6BBF  ; }
@@ -4874,7 +4874,7 @@ c$6D17 LD BC,$0010   ; {Initialize scroll position (#R$5F70 = $0010) and scroll
  $6D84 CALL $708E    ;
  $6D87 CALL $7441    ;
  $6D8A CALL $7393    ; }
- $6D8D CALL $66D0    ; Call #R$66D0 for rendering.
+ $6D8D CALL $66D0    ; Advance scroll and render terrain.
  $6D90 CALL $8A1B    ; {Call delay, increment frame counter #R$5F81, call ROM
  $6D93 LD HL,$5F81   ; KEYBOARD ($02BF), enable interrupts.
  $6D96 INC (HL)      ;
@@ -4989,8 +4989,7 @@ c$6DFF LD A,($5EEF)  ; {Skip if odd tick (fuel only consumed on even ticks).
  $6E29 SRL A         ;
  $6E2B ADD A,$40     ;
  $6E2D LD C,A        ; }
- $6E2E CALL $8A4E    ; Call #R$8A4E to compute screen address from B,C
-                     ; coordinates.
+ $6E2E CALL $8A4E    ; Compute screen address from B,C coordinates.
 @label=draw_fuel_gauge_loop
  $6E31 LD A,$08      ; Loop counter: 8 rows of gauge.
  $6E33 LD D,$86      ; Set pixel pattern $86 for gauge.
@@ -5042,7 +5041,7 @@ c$6E40 LD A,($5F69)  ; {Check if #R$5F69 == 4 (refuel limit), return if so.
  $6E6F SRL A         ;
  $6E71 ADD A,$3F     ;
  $6E73 LD C,A        ; }
- $6E74 CALL $8A4E    ; Call #R$8A4E to compute screen address.
+ $6E74 CALL $8A4E    ; Compute screen address.
  $6E77 LD A,$08      ; Loop counter: 8 rows.
  $6E79 LD D,$C6      ; {Draw 8 rows of fuel gauge with pattern $C6 (filled).
 @label=draw_fuel_gauge_refuel_loop
@@ -5362,7 +5361,7 @@ c$6F80 LD A,$00      ; {Clear collision mode (#R$5EF5).
  $6FB1 AND $07       ; (7), jump to #R$7051.
 @isub=CP OBJECT_FUEL
  $6FB3 CP $07        ; }
- $6FB5 JP Z,$7051    ; {Otherwise spawn enemy via #R$6FF6.
+ $6FB5 JP Z,$7051    ; {Otherwise render enemy.
  $6FB8 JP $6FF6      ; }
 
 ; Render rock sprite
@@ -5374,7 +5373,7 @@ c$6F80 LD A,$00      ; {Clear collision mode (#R$5EF5).
 ; { Sprite address = #R$84A1 + (frame_index * $30) }
 ; { Frame index from bits 0-2 of D (0-7 rock variants) }
 ; { Sprite stored at #R$8B0E, position at #R$8B0A and #R$8B0C }
-; { Renders via #R$8B3C with width=3 tiles, height=16 pixels }
+; { Width=3 tiles, height=16 pixels }
 ; LIST#
 ;
 ; I:D Object type byte (bits 0-2 = rock frame index)
@@ -5402,7 +5401,7 @@ c$6FBB LD A,D        ; {Extract rock frame index: A = D AND $07. Set flags with
 @isub=LD A,SPRITE_ROCK_WIDTH_TILES
  $6FDD LD A,$03      ; {Set dimensions: A=3 (width in tiles), D=$10 (height 16
 @isub=LD DE,SPRITE_ROCK_HEIGHT_PIXELS<<8|SPRITE_ROCK_ATTRIBUTES
- $6FDF LD DE,$1014   ; pixels), E=$14 (attributes). Call #R$8B3C to render.
+ $6FDF LD DE,$1014   ; pixels), E=$14 (attributes). Render rock.
  $6FE2 CALL $8B3C    ; }
  $6FE5 RET           ;
 
@@ -5418,11 +5417,11 @@ c$6FE6 LD HL,$8793   ; {Load HL with #R$8793 (right-facing sprites base
 
 ; Set up object screen position for rendering
 ;
-; Calculates screen coordinates via #R$62DA and stores the result in both
-; #R$8B0A and #R$8B0C for sprite rendering.
+; Calculates screen coordinates and stores the result in both #R$8B0A and
+; #R$8B0C for sprite rendering.
 @label=setup_object_position
-c$6FEA CALL $62DA    ; {Call #R$62DA to calculate position, store result BC in
- $6FED LD ($8B0C),BC ; both position registers.
+c$6FEA CALL $62DA    ; {Calculate position and store result BC in both position
+ $6FED LD ($8B0C),BC ; registers.
  $6FF1 LD ($8B0A),BC ;
  $6FF5 RET           ; }
 
@@ -5434,7 +5433,7 @@ c$6FEA CALL $62DA    ; {Call #R$62DA to calculate position, store result BC in
 ; .
 ; #LIST
 ; { Balloon (type 6) uses separate routine #R$706C }
-; { Fighter/Tank (types 4,5) need blending mode setup via #R$7046 }
+; { Fighter/Tank (types 4,5) need XOR blending mode setup }
 ; { Adds enemy to active objects set at #R$5F00 }
 ; { Sprite size: 3 tiles wide, 8 pixels high ($18 bytes per frame) }
 ; LIST#
@@ -5447,20 +5446,19 @@ c$6FEA CALL $62DA    ; {Call #R$62DA to calculate position, store result BC in
 c$6FF6 CP $06        ; {If balloon (type 6), use separate balloon renderer at
  $6FF8 JP Z,$706C    ; #R$706C.}
 @isub=CP OBJECT_FIGHTER
- $6FFB CP $05        ; {If fighter (type 5), set XOR blending mode via #R$7046.
+ $6FFB CP $05        ; {If fighter (type 5), set XOR blending mode.
  $6FFD CALL Z,$7046  ; }
 @isub=CP OBJECT_TANK
- $7000 CP $04        ; {If tank (type 4), set XOR blending mode via #R$7046.
+ $7000 CP $04        ; {If tank (type 4), set XOR blending mode.
  $7002 CALL Z,$7046  ; }
- $7005 CALL $75BA    ; Call #R$75BA to get sprite pointer based on enemy
-                     ; direction.
+ $7005 CALL $75BA    ; Get sprite pointer based on enemy direction.
  $7008 LD B,$00      ; {Add enemy to active objects set: BC = (0, X_pos), call
  $700A LD C,E        ; #R$6EAB with HL = #R$5F00.
  $700B PUSH HL       ;
  $700C LD HL,$5F00   ;
  $700F CALL $6EAB    ; }
  $7012 POP HL        ;
- $7013 CALL $6FEA    ; Call #R$6FEA to set up screen position.
+ $7013 CALL $6FEA    ; Set up screen position.
 @isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
  $7016 LD BC,$0018   ; {Set sprite frame size ($18 = 24 bytes) and default
 @isub=LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES
@@ -5480,7 +5478,7 @@ c$6FF6 CP $06        ; {If balloon (type 6), use separate balloon renderer at
 @isub=LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
  $702D LD A,$03      ; {Set sprite dimensions: A=3 (width tiles), D=8 (height
 @isub=LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
- $702F LD D,$08      ; pixels). Call #R$8B1E and #R$72EF to render.
+ $702F LD D,$08      ; pixels). Render enemy.
  $7031 CALL $8B1E    ;
  $7034 CALL $72EF    ; }
  $7037 RET           ;
@@ -5554,8 +5552,8 @@ c$7046 LD A,$A8      ; {Patch XOR B ($A8) into #R$8C3C and NOP ($00) into
 @label=render_fuel
 c$7051 LD B,$00      ; {BC = (0, E): set X position in BC for object entry.
  $7053 LD C,E        ; }
- $7054 LD HL,$5F00   ; {Add fuel station to #R$5F00 active objects set via
- $7057 CALL $6EAB    ; #R$6EAB.}
+ $7054 LD HL,$5F00   ; {Add fuel station to active objects set.
+ $7057 CALL $6EAB    ; }
  $705A LD HL,$8A86   ; {Load fuel sprite address #R$8A86 and call #R$6FEA to
  $705D CALL $6FEA    ; set up screen position.}
 @isub=LD BC,SPRITE_FUEL_STATION_FRAME_SIZE
@@ -5564,7 +5562,7 @@ c$7051 LD B,$00      ; {BC = (0, E): set X position in BC for object entry.
  $7063 LD A,$02      ; height=25 pixels, attributes=$0B.
 @isub=LD DE,SPRITE_FUEL_STATION_HEIGHT_PIXELS<<8|SPRITE_FUEL_STATION_ATTRIBUTES
  $7065 LD DE,$190B   ; }
- $7068 CALL $8B1E    ; Render fuel station sprite via #R$8B1E.
+ $7068 CALL $8B1E    ; Render fuel station sprite.
  $706B RET           ;
 
 ; Render balloon
@@ -5595,9 +5593,9 @@ c$706C LD B,$00      ; {BC = (0, E): set X position in BC for object entry.
  $707E POP HL        ;
  $707F CALL $6FEA    ; }
 @isub=LD BC,SPRITE_BALLOON_FRAME_SIZE
- $7082 LD BC,$0020   ; {Set sprite parameters: frame size=$20, width=2,
+ $7082 LD BC,$0020   ; {Render sprite: frame size=$20, width=2, height=16px,
 @isub=LD A,SPRITE_BALLOON_WIDTH_TILES
- $7085 LD A,$02      ; height=16px, attributes=$0E. Render via #R$8B1E.
+ $7085 LD A,$02      ; attributes=$0E.
 @isub=LD DE,SPRITE_BALLOON_HEIGHT_PIXELS<<8|SPRITE_BALLOON_ATTRIBUTES
  $7087 LD DE,$100E   ;
  $708A CALL $8B1E    ; }
@@ -5734,7 +5732,7 @@ c$708E LD A,$00      ; {Reset state_collision_mode to COLLISION_MODE_NONE.
 ; { Checks tick parity for movement timing }
 ; { Determines direction from bit 6 (SLOT_BIT_ORIENTATION) }
 ; { Left-facing objects advance left, right-facing advance right }
-; { Collision with terrain triggers direction reversal via #R$75D0 }
+; { Collision with terrain triggers direction reversal }
 ; LIST#
 ;
 ; I:B Y position of object
@@ -5764,10 +5762,10 @@ c$7113 PUSH BC       ; {Save BC, calculate terrain check position: C -= 16
  $7114 LD A,C        ; pixels.
  $7115 SUB $10       ;
  $7117 LD C,A        ; }
- $7118 CALL $8A4E    ; {Call #R$8A4E to get terrain byte at (C, B). Load result
- $711B LD A,(HL)     ; into A.}
- $711C POP BC        ; {Restore BC. If terrain != 0, reverse direction via
- $711D CP $00        ; #R$75D0.
+ $7118 CALL $8A4E    ; {Get terrain byte at (C, B). Load result into A.
+ $711B LD A,(HL)     ; }
+ $711C POP BC        ; {Restore BC. If terrain != 0, reverse direction.
+ $711D CP $00        ;
  $711F CALL NZ,$75D0 ; }
  $7122 LD ($8B0A),BC ; {Store position to #R$8B0A. Advance X position left by 2
  $7126 DEC C         ; pixels (DEC C twice).
@@ -5785,7 +5783,7 @@ c$7128 LD HL,($5F60) ; {Load viewport_ptr, navigate back to current slot,
  $712F DEC HL        ;
  $7130 LD (HL),C     ; }
  $7131 LD ($8B0C),BC ; {Store position to #R$8B0C, sprite address #R$82C5 to
- $7135 LD HL,$82C5   ; #R$8B0E. Get sprite via #R$75BA.
+ $7135 LD HL,$82C5   ; #R$8B0E. Get sprite pointer.
  $7138 LD ($8B0E),HL ; }
  $713B CALL $75BA    ;
 @isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
@@ -5799,9 +5797,9 @@ c$7128 LD HL,($5F60) ; {Load viewport_ptr, navigate back to current slot,
  $7146 CP $02        ; }
  $7148 CALL Z,$7038  ;
 @isub=LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
- $714B LD A,$03      ; {Set width=3 tiles, height=8 pixels. Render via #R$8B3C,
+ $714B LD A,$03      ; {Render sprite: width=3 tiles, height=8 pixels.
 @isub=LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
- $714D LD D,$08      ; return to main loop.
+ $714D LD D,$08      ;
  $714F CALL $8B3C    ; }
  $7152 JP $708E      ;
 
@@ -5857,8 +5855,8 @@ c$716B LD HL,($5F60) ; {Load viewport_ptr, navigate to current slot, update [X,
  $7171 LD (HL),B     ;
  $7172 DEC HL        ;
  $7173 LD (HL),C     ; }
- $7174 LD ($8B0C),BC ; {Store position to #R$8B0C, get sprite pointer via
- $7178 CALL $75BA    ; #R$75BA.}
+ $7174 LD ($8B0C),BC ; {Store position to #R$8B0C, get sprite pointer.
+ $7178 CALL $75BA    ; }
 @isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
  $717B LD BC,$0018   ; {Set frame size=$18, call #R$72E6 to set XOR blending
  $717E CALL $72E6    ; mode.}
@@ -5866,8 +5864,8 @@ c$716B LD HL,($5F60) ; {Load viewport_ptr, navigate to current slot, update [X,
  $7181 LD A,$03      ; {Set collision mode to COLLISION_MODE_FIGHTER ($03) at
  $7183 LD ($5EF5),A  ; #R$5EF5.}
 @isub=LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_FIGHTER_ATTRIBUTES
- $7186 LD DE,$0800   ; {Set height=8px, attributes=$00. Render via #R$8B1E,
- $7189 CALL $8B1E    ; restore blending via #R$72EF.
+ $7186 LD DE,$0800   ; {Render sprite: height=8px, attributes=$00. Restore
+ $7189 CALL $8B1E    ; blending.
  $718C CALL $72EF    ; }
  $718F JP $708E      ; Return to main viewport loop.
 
@@ -5969,7 +5967,7 @@ c$71A2 LD A,($5EEF)  ; {Skip if even tick (explosions animate on odd ticks).
  $7204 LD D,$10      ;
 @isub=LD A,SPRITE_SHELL_EXPLOSION_WIDTH_TILES
  $7206 LD A,$02      ; }
- $7208 CALL $8B3C    ; {Render via #R$8B3C, return to main loop.
+ $7208 CALL $8B3C    ; {Render and return to main loop.
  $720B JP $708E      ; }
 
 ; Finish tank shell explosion animation
@@ -6063,16 +6061,16 @@ c$7259 LD HL,($5F60) ; {Load viewport_ptr, extract [D, B, C] from current slot.
  $7265 BIT 6,D       ; clear), load #R$8AC8.
  $7267 CALL Z,$7248  ; }
  $726A LD ($8B0C),BC ; {Store positions to #R$8B0C and #R$8B0A. Push rotor
- $726E LD ($8B0A),BC ; sprite, get main sprite via #R$75BA.
+ $726E LD ($8B0A),BC ; sprite, get main sprite pointer.
  $7272 PUSH HL       ;
  $7273 CALL $75BA    ; }
  $7276 LD HL,$82C5   ; {Store erase sprite #R$82C5 to #R$8B0E. Pop rotor
  $7279 LD ($8B0E),HL ; sprite.
  $727C POP HL        ; }
 @isub=LD DE,SPRITE_ROTOR_HEIGHT_PIXELS<<8|SPRITE_ROTOR_ATTRIBUTES
- $727D LD DE,$020E   ; {Set rotor params: height=2, attributes=$0E, frame
+ $727D LD DE,$020E   ; {Render rotor: height=2, attributes=$0E, frame size=4,
 @isub=LD BC,SPRITE_ROTOR_FRAME_SIZE
- $7280 LD BC,$0004   ; size=4, width=2. Render via #R$8B3C.
+ $7280 LD BC,$0004   ; width=2.
 @isub=LD A,SPRITE_ROTOR_WIDTH_TILES
  $7283 LD A,$02      ;
  $7285 CALL $8B3C    ; }
@@ -6141,7 +6139,7 @@ c$7296 LD A,($5EEF)  ; {Skip if odd tick (tanks move on even ticks).
  $72BD CP $80        ; #R$7290.}
  $72BF CALL Z,$7290  ;
  $72C2 LD HL,($5F60) ; {Update position in viewport array, store to #R$8B0C,
- $72C5 DEC HL        ; get sprite via #R$75BA.
+ $72C5 DEC HL        ; get sprite pointer.
  $72C6 LD D,(HL)     ;
  $72C7 DEC HL        ;
  $72C8 LD (HL),B     ;
@@ -6153,9 +6151,9 @@ c$7296 LD A,($5EEF)  ; {Skip if odd tick (tanks move on even ticks).
  $72D2 LD BC,$0018   ; {Set frame size=$18, enable XOR blending via #R$72E6.
  $72D5 CALL $72E6    ; }
 @isub=LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
- $72D8 LD A,$03      ; {Set width=3, height=8, attributes=$00. Render via
+ $72D8 LD A,$03      ; {Render sprite: width=3, height=8, attributes=$00.
 @isub=LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_TANK_ATTRIBUTES
- $72DA LD DE,$0800   ; #R$8B1E, restore blending, return.
+ $72DA LD DE,$0800   ; Restore blending.
  $72DD CALL $8B1E    ;
  $72E0 CALL $72EF    ; }
  $72E3 JP $708E      ;
@@ -6226,8 +6224,8 @@ c$7302 LD BC,($8B0A) ; {Load stored position, add $10 offset to X.
 @isub=BIT SLOT_BIT_ORIENTATION,D
  $730A BIT 6,D       ; {If left-facing, adjust offset via #R$72F8.
  $730C CALL NZ,$72F8 ; }
- $730F CALL $8A4E    ; {Call #R$8A4E for terrain check. If terrain == $FF, move
- $7312 LD A,(HL)     ; tank normally.
+ $730F CALL $8A4E    ; {Check terrain. If terrain == $FF, move tank normally.
+ $7312 LD A,(HL)     ;
  $7313 CP $FF        ;
  $7315 POP BC        ;
  $7316 POP DE        ; }
@@ -6282,9 +6280,9 @@ c$7343 BIT 4,D       ; {If bit 4 set, use alternate initialization via #R$735E.
 
 ; Cancel and remove tank shell
 ;
-; Removes the tank shell via #R$74E4 and returns to main loop.
+; Removes the tank shell and returns to main loop.
 @label=cancel_and_remove_shell
-c$7358 CALL $74E4    ; {Call #R$74E4 to remove shell, return to main loop.
+c$7358 CALL $74E4    ; {Remove shell, return to main loop.
  $735B JP $708E      ; }
 
 ; Check shell initialization condition
@@ -6390,9 +6388,9 @@ c$738E LD A,C        ; {C = C + $10.
 ; .
 ; #LIST
 ; { Loads position from #R$5F73 }
-; { Advances Y position via #R$62DA }
+; { Advances Y position }
 ; { Moves X position by HELICOPTER_MISSILE_STEP ($08) }
-; { Removed at VIEWPORT_HEIGHT boundary via #R$73D0 }
+; { Removed at VIEWPORT_HEIGHT boundary }
 ; { Sets COLLISION_MODE_HELICOPTER_MISSILE for collision }
 ; LIST#
 @label=operate_helicopter_missile
@@ -6419,8 +6417,8 @@ c$7393 LD BC,($5F73) ; {Load missile coordinates from #R$5F73. Return if B==0
  $73B6 LD ($8B0C),BC ; {Store position to #R$8B0C and #R$5F73.
  $73BA LD ($5F73),BC ; }
 @isub=LD A,COLLISION_MODE_HELICOPTER_MISSILE
- $73BE LD A,$04      ; {Set collision mode=$04, width=1, attributes=$00,
- $73C0 LD ($5EF5),A  ; height=1. Render via #R$8B1E.
+ $73BE LD A,$04      ; {Render missile: collision mode=$04, width=1,
+ $73C0 LD ($5EF5),A  ; attributes=$00, height=1.
 @isub=LD A,SPRITE_HELICOPTER_MISSILE_WIDTH_TILES
  $73C3 LD A,$01      ;
 @isub=LD E,SPRITE_HELICOPTER_MISSILE_ATTRIBUTES
@@ -6583,9 +6581,9 @@ c$7441 LD A,($7383)  ; {Return if TANK_SHELL_BIT_FLYING not set.
 @isub=CP VIEWPORT_HEIGHT
  $748C CP $88        ;
  $748E JP Z,$74A0    ; }
- $7491 LD HL,$8431   ; {Load shell sprite #R$8431, set params: height=1,
+ $7491 LD HL,$8431   ; {Render shell sprite: height=1, width=1, frame=$08.
 @isub=LD DE,SPRITE_SHELL_HEIGHT_PIXELS<<8|SPRITE_SHELL_ATTRIBUTES
- $7494 LD DE,$0100   ; width=1, frame=$08. Render via #R$8B1E.
+ $7494 LD DE,$0100   ;
 @isub=LD A,SPRITE_SHELL_WIDTH_TILES
  $7497 LD A,$01      ;
 @isub=LD BC,SPRITE_SHELL_FRAME_SIZE_BYTES
@@ -6609,11 +6607,11 @@ c$74A0 LD BC,($8B0A) ; {Load shell position from #R$8B0A, shell sprite #R$8431.
  $74B1 ADD HL,DE     ; }
  $74B2 LD ($8B0E),HL ; {Add offset to sprite address, store to #R$8B0E. Load
  $74B5 LD HL,$82F5   ; erase sprite #R$82F5.}
- $74B8 LD DE,$0100   ; {Set sprite params, render via #R$8B3C, remove shell.
+ $74B8 LD DE,$0100   ; {Render erase sprite and remove shell.
  $74BB LD A,$01      ;
  $74BD LD BC,$0008   ;
  $74C0 CALL $8B3C    ; }
- $74C3 JP $74E4      ; Remove shell via #R$74E4.
+ $74C3 JP $74E4      ; Remove shell.
 
 ; Trigger tank shell explosion
 ;
@@ -6674,8 +6672,8 @@ c$74EE LD HL,($5F60) ; {Load viewport_ptr, navigate to X position in current
  $7512 LD HL,($5F60) ; marker).
  $7515 DEC HL        ;
  $7516 DEC HL        ; }
- $7517 LD B,(HL)     ; {Call #R$6E9C to add explosion, award POINTS_TANK via
- $7518 DEC HL        ; #R$90E0.
+ $7517 LD B,(HL)     ; {Add explosion and award POINTS_TANK.
+ $7518 DEC HL        ;
  $7519 LD (HL),$00   ;
  $751B LD D,$80      ;
  $751D CALL $6E9C    ; }
@@ -6736,8 +6734,8 @@ c$754C LD ($8B0A),BC ; {Store position to #R$8B0A and #R$8B0C. Set height=$19.
  $7565 AND $88       ;
 @isub=CP VIEWPORT_HEIGHT
  $7567 CP $88        ; }
- $7569 JP Z,$708E    ; {Load fuel sprite #R$8A86, get sprite pointer via
- $756C LD A,B        ; #R$75BA.
+ $7569 JP Z,$708E    ; {Load fuel sprite #R$8A86, get sprite pointer.
+ $756C LD A,B        ;
  $756D AND $87       ;
  $756F CP $87        ;
  $7571 JP Z,$708E    ; }
@@ -6751,7 +6749,7 @@ c$754C LD ($8B0A),BC ; {Store position to #R$8B0A and #R$8B0C. Set height=$19.
  $757F ADD A,$0B     ;
  $7581 LD E,A        ; }
 @isub=LD A,SPRITE_FUEL_STATION_WIDTH_TILES
- $7582 LD A,$02      ; {Set width=2, render via #R$8B1E.
+ $7582 LD A,$02      ; {Render fuel station: width=2.
  $7584 CALL $8B1E    ;
  $7587 JP $708E      ; }
 
@@ -6800,10 +6798,10 @@ c$75A2 PUSH BC       ; {Save BC, calculate terrain check position: C += $20
  $75A3 LD A,C        ; pixels.
  $75A4 ADD A,$20     ;
  $75A6 LD C,A        ; }
- $75A7 CALL $8A4E    ; {Call #R$8A4E to get terrain byte at (C, B). Load result
- $75AA LD A,(HL)     ; into A.}
- $75AB POP BC        ; {Restore BC. If terrain != 0, reverse direction via
- $75AC CP $00        ; #R$75D0.
+ $75A7 CALL $8A4E    ; {Get terrain byte at (C, B). Load result into A.
+ $75AA LD A,(HL)     ; }
+ $75AB POP BC        ; {Restore BC. If terrain != 0, reverse direction.
+ $75AC CP $00        ;
  $75AE CALL NZ,$75D0 ; }
  $75B1 LD ($8B0A),BC ; {Store position to #R$8B0A. Advance X position right by
  $75B5 INC C         ; 2 pixels (INC C twice).
@@ -6849,7 +6847,7 @@ c$75D0 LD ($8B0A),BC ;
  $75DD LD HL,($5F60) ;
  $75E0 DEC HL        ;
  $75E1 LD D,(HL)     ; }
- $75E2 CALL $75BA    ; {Get sprite pointer via #R$75BA, reload position.
+ $75E2 CALL $75BA    ; {Get sprite pointer, reload position.
  $75E5 LD BC,($8B0A) ; }
  $75E9 LD A,C        ; {Calculate animation frame offset from X position.
  $75EA AND $07       ; }
@@ -6871,7 +6869,7 @@ c$75D0 LD ($8B0A),BC ;
  $7605 XOR $40       ;
  $7607 LD D,A        ; }
  $7608 LD HL,($5F60) ; {Update orientation in viewport array, get new sprite
- $760B DEC HL        ; via #R$75BA.
+ $760B DEC HL        ; pointer.
  $760C LD (HL),A     ;
  $760D CALL $75BA    ; }
  $7610 LD E,$0E      ;
@@ -6988,7 +6986,7 @@ c$7649 BIT 7,B       ; {If balloon is off-screen (Y bit 7 set), skip to main
  $76A2 LD E,$0E      ;
 @isub=LD D,SPRITE_BALLOON_HEIGHT_PIXELS
  $76A4 LD D,$10      ;
- $76A6 CALL $8B1E    ; {Call #R$8B1E to render balloon, return to main loop.
+ $76A6 CALL $8B1E    ; {Render balloon, return to main loop.
  $76A9 JP $708E      ; }
 
 ; A useless procedure that unconcditionally jumps to #R$708E.
@@ -7129,7 +7127,7 @@ c$7804 LD ($7810),SP ; Save current stack pointer to #R$7810.
 @isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
  $7808 LD D,$07      ; {Clear screen with white-on-black attributes.
  $780A CALL $940A    ; }
- $780D JP $7AB9      ; Jump to #R$7AB9 (setup routine).
+ $780D JP $7AB9      ; Continue with setup.
 
 ; Temporary stack pointer used by the control choice dialog
 @label=setup_sp
@@ -9691,7 +9689,7 @@ c$928D PUSH HL       ; {Save registers, store width to #R$928B. If attribute E
  $928F LD ($928B),A  ;
  $9292 LD A,E        ;
  $9293 CP $00        ; }
- $9295 JP Z,$935D    ; Jump to #R$935D if attribute is 0 (nothing to draw).
+ $9295 JP Z,$935D    ; If attribute is 0, skip drawing (nothing to draw).
  $9298 LD ($9287),DE ; {Save DE, BC, HL to memory at #R$9287, #R$9285, #R$9289
  $929C LD ($9285),BC ; for later use.
  $92A0 LD ($9289),HL ; }

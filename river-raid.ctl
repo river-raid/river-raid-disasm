@@ -296,7 +296,7 @@ N $5D06 After the user selects controls and game mode, execution continues at #R
   $5D08 Set the I register to $3F (standard ZX Spectrum IM 1 mode).
   $5D0A Set interrupt mode 1 (standard ZX Spectrum interrupts).
   $5D0C Enable interrupts.
-  $5D0D Call #R$7804 to display the control selection dialog.
+  $5D0D Display the control selection dialog.
 @ $5D10 label=start_gameplay_or_overview
 @ $5D10 isub=LD A,INT_VECTOR_TABLE_HI
 c $5D10 Start gameplay or overview mode based on user selection
@@ -309,8 +309,8 @@ N $5D10 This routine is called after the user selects controls and game mode fro
 @ $5D20 isub=CP OVERVIEW_MODE_ON
   $5D20 Check if overview mode is enabled.
   $5D22 If overview mode is on, jump to #R$5D2B.
-  $5D25 Call #R$5D44 to initialize game state.
-  $5D28 Jump to #R$5DA6 to start gameplay.
+  $5D25 Initialize game state.
+  $5D28 Start gameplay.
 @ $5D2B label=start_overview
 c $5D2B Start overview mode
 N $5D2B This routine is called when overview mode is selected (either from the control selection dialog or after game over).
@@ -629,7 +629,7 @@ c $60A5 Render player plane and terrain fragments
 D $60A5 Top-level render routine called from main loop (#R$5F91). Orchestrates visual updates in a specific order to prevent flicker.
 N $60A5 Render sequence:
 N $60A5 .
-N $60A5 #LIST { Player plane sprite (GAMEPLAY_MODE_NORMAL only, via #R$8B3C) } { Island/terrain system (via #R$683B) } { Terrain fragments (count = current speed, via #R$6AA3) } { Attribute scroll (every 8 fragments, via #R$68B7) } LIST#
+N $60A5 #LIST { Player plane sprite (GAMEPLAY_MODE_NORMAL only) } { Island/terrain system } { Terrain fragments (count = current speed) } { Attribute scroll (every 8 fragments) } LIST#
 N $60A5 .
 N $60A5 Speed affects both plane Y position (Y = $80 + speed) and number of terrain fragments rendered. Higher speed = lower plane position and more fragments.
   $60A5 Skip plane rendering if not GAMEPLAY_MODE_NORMAL.
@@ -640,9 +640,9 @@ N $60A5 Speed affects both plane Y position (Y = $80 + speed) and number of terr
   $60C2 Apply offset to sprite pointer.
   $60C9 Calculate plane Y: Y = $80 + speed (lower at higher speeds).
   $60D0 Set plane coordinates for rendering.
-  $60D8 Call #R$8B3C to render plane (width=2, size=$10, attrs=$00).
+  $60D8 Render plane: width=2, size=$10, attrs=$00.
 @ $60E5 label=render_terrain_fragments
-  $60E5 Call #R$683B to render islands.
+  $60E5 Render islands.
   $60E8 Calculate starting screen row based on speed.
 @ $60F4 label=calculate_screen_row_loop
   $60F4 HL = screen_start + (speed * $100).
@@ -650,8 +650,8 @@ N $60A5 Speed affects both plane Y position (Y = $80 + speed) and number of terr
   $60FB Set up terrain fragment loop (count = speed).
 @ $6103 label=render_terrain_loop
   $6103 Increment fragment counter.
-  $6106 Every 8 fragments, call #R$68B7 to scroll attributes.
-  $610D Call #R$6AA3 to render terrain fragment.
+  $6106 Every 8 fragments, scroll attributes.
+  $610D Render terrain fragment.
   $6110 Move screen pointer up one row ($100 bytes).
   $611D Loop until all fragments rendered.
   $611F Store updated fragment counter.
@@ -764,7 +764,7 @@ N $6256 .
 N $6256 This allows the plane itself to interact with fuel depots via #R$61BB.
   $6256 Set gameplay mode to GAMEPLAY_MODE_REFUEL in #R$5F68.
   $625B Load plane coordinates (Y=$80, X from #R$5F72) into #R$5EF3.
-  $6265 Jump to #R$61BB to check for collision with fuel depot.
+  $6265 Check for collision with fuel depot.
 @ $6268 label=check_fragment_collision
 c $6268 Check collision with explosion fragments
 N $6268 Iterates through #R$5F2E (exploding_fragments) to check if the entity collides with any active debris. Each fragment entry is 3 bytes: X, Y, and type/state.
@@ -776,7 +776,7 @@ N $6268 Collision uses 8x8 bounding box for the entity and 16x8 for fragments. R
   $6274 If empty slot marker ($00), skip to next fragment.
 @ $6279 isub=CP SET_MARKER_END_OF_SET
   $6279 If end marker ($FF), jump to #R$62CE (no collision).
-  $627E Call #R$62DA to adjust Y coordinate for scrolling.
+  $627E Adjust Y coordinate for scrolling.
 N $6281 Y-axis collision check (8-pixel height for both entity and fragment).
   $6281 Check if entity_Y + 8 >= fragment_Y; if not, next fragment.
   $6291 (continued).
@@ -871,7 +871,7 @@ N $637D Collision detected - prepare for type dispatch.
   $63B4 If fuel depot, jump to #R$6478.
 @ $63B9 label=check_missile_vs_objects_end
 N $63B9 End of object list - check fragment collision and tank shell.
-  $63B9 Call #R$6268 and reset #R$5F60/#R$5F62 to list starts.
+  $63B9 Reset #R$5F60/#R$5F62 to list starts.
   $63C8 If fragment collision detected ($02), jump to #R$63FC.
   $63D0,10 Compare missile Y with tank shell Y; if equal, jump to #R$63FC.
 @ $63DD label=process_collision_hit
@@ -892,7 +892,7 @@ N $6401 Exit collision system with no collision detected.
   $6401 Load COLLISION_MODE_NONE ($00).
   $6403 Store to #R$5EF5.
   $6406 Restore HL, DE, BC from #R$5F85, #R$5F87, #R$5F89.
-  $6411 Jump to #R$8C3B to continue rendering.
+  $6411 Continue rendering.
 @ $6414 label=hit_helicopter_reg
 @ $6414 isub=LD A,POINTS_HELICOPTER_REG
 c $6414 Handle missile hit on regular helicopter
@@ -1143,7 +1143,7 @@ D $65F3 This routine is called when the player presses right on the joystick or 
 @ $6628 isub=LD A,SPRITE_PLANE_WIDTH_TILES
   $6628 Set sprite width to $02 (2 tiles wide)
   $662A Load sprite data address #R$83F1
-  $662D Call #R$8B3C to render the plane sprite at new position
+  $662D Render the plane sprite at new position.
 @ $6630 label=restore_plane_state_after_render
 c $6630 Restore plane state after rendering
 D $6630 This shared cleanup routine is used by #R$65F3, #R$6642, and #R$6682 to restore the plane's missile coordinates and sprite bank selector after rendering the plane sprite. It ensures the game state is properly restored after sprite rendering operations.
@@ -1187,8 +1187,8 @@ D $6642 This routine is called when the player presses left on the joystick or k
 @ $6677 isub=LD A,SPRITE_PLANE_WIDTH_TILES
   $6677 Set sprite width to $02 (2 tiles wide)
   $6679 Load sprite data address #R$83F1
-  $667C Call #R$8B3C to render the plane sprite at new position
-  $667F Jump to #R$6630 to restore plane state after rendering
+  $667C Render the plane sprite at new position.
+  $667F Restore plane state after rendering.
 @ $6682 label=render_plane
 c $6682 Render player plane sprite
 N $6682 Renders the player's plane at its current position. Only executes in GAMEPLAY_MODE_NORMAL; returns immediately in other modes (scroll-in, overview, refuel).
@@ -1202,7 +1202,7 @@ N $6682 Selects between normal sprite (#R$83B1) and banked sprite (#R$83F1) base
   $6691 Set COLLISION_MODE_FUEL_DEPOT and store plane coords to #R$8B0C.
 @ $6694 isub=LD A,COLLISION_MODE_FUEL_DEPOT
   $6699 (continued).
-  $669D Advance position via #R$62DA and store to #R$8B0A.
+  $669D Advance position and store to #R$8B0A.
 @ $66A4 isub=LD BC,SPRITE_PLANE_FRAME_SIZE
   $66A4 Set frame size and sprite pointer from #R$5EF7.
 @ $66AD isub=LD E,SPRITE_PLANE_ATTRIBUTES
@@ -1212,24 +1212,24 @@ N $6682 Selects between normal sprite (#R$83B1) and banked sprite (#R$83F1) base
   $66B7,10 Set height, load sprite base; if bank=$04, use #R$83F1.
 @ $66C4 isub=LD A,SPRITE_PLANE_WIDTH_TILES
   $66C4 Set width and call #R$8B3C to render.
-  $66C9 Restore state via #R$6630.
+  $66C9 Restore state.
 @ $66CC label=ld_sprite_plane_banked
 c $66CC Load banked plane sprite address
 N $66CC Helper to load the banked sprite address (#R$83F1) into HL when sprite bank selector is $04.
   $66CC,3 Load #R$83F1 into HL.
 @ $66D0 label=advance_scroll
 c $66D0 Advance game scroll and update bridge position
-N $66D0 Called each frame to advance the vertical scroll position. Adds current speed (#R$5F64) to scroll offset (#R$5F70), updates the bridge's Y position via #R$66EE, then resets speed to SPEED_NORMAL and updates control flags.
+N $66D0 Called each frame to advance the vertical scroll position. Adds current speed (#R$5F64) to scroll offset (#R$5F70), updates the bridge's Y position, then resets speed to SPEED_NORMAL and updates control flags.
 N $66D0 .
 N $66D0 The control bits modified are: clears CONTROLS_BIT_SPEED_ALTERED, sets CONTROLS_BIT_SPEED_DECREASED. This marks that speed has returned to normal after any joystick input.
   $66D0 Add speed to scroll offset and store result.
-  $66DB,6 Call #R$66EE to update bridge; reset speed to SPEED_NORMAL.
+  $66DB,6 Update bridge position; reset speed to SPEED_NORMAL.
 @ $66E1 isub=LD A,SPEED_NORMAL
   $66E6,7 Clear CONTROLS_BIT_SPEED_ALTERED, set CONTROLS_BIT_SPEED_DECREASED in #R$6BB0.
 @ $66EE label=update_bridge_scroll
 c $66EE Update bridge Y position during scroll
-N $66EE Adjusts the bridge's Y position (#R$5F6E) based on current scrolling. If no bridge exists (Y=0), returns immediately. If the bridge scrolls off the bottom of the screen (Y AND $88 == $88), clears it via #R$6704.
-  $66EE If no bridge, return; otherwise advance bridge Y via #R$62DA.
+N $66EE Adjusts the bridge's Y position (#R$5F6E) based on current scrolling. If no bridge exists (Y=0), returns immediately. If the bridge scrolls off the bottom of the screen (Y AND $88 == $88), clears it.
+  $66EE If no bridge, return; otherwise advance bridge Y position.
   $66F5 If bridge scrolled off screen, call #R$6704 to clear it.
 @ $66F8 isub=AND VIEWPORT_HEIGHT
 @ $66FA isub=CP VIEWPORT_HEIGHT
@@ -1264,7 +1264,7 @@ N $6724 Creates a new missile if none is currently active. Positions missile at 
 g $673C Missile animation pass selector. $01=first pass (erase at old position), $00=second pass (draw at new position). Two-pass rendering prevents flicker.
 @ $673D label=animate_plane_missile
 c $673D Animate and render player missile
-N $673D Called twice per frame (via #R$5F91) to animate the player's missile. On the first pass (#R$673C = $01), adjusts missile position for screen scrolling via #R$62DA. On both passes, moves missile up by 6 pixels.
+N $673D Called twice per frame to animate the player's missile. On the first pass (#R$673C = $01), adjusts missile position for screen scrolling. On both passes, moves missile up by 6 pixels.
 N $673D .
 N $673D If missile reaches top of screen (Y AND $F8 == 0), jumps to #R$6794 to finalize collision. Clears CONTROLS_BIT_FIRE when missile is in lower screen area ($70 - Y >= 0).
 N $673D .
@@ -1307,7 +1307,7 @@ N $6794 The sprite frame selection uses the X coordinate's lower 3 bits to choos
   $67BD If first missile pass, call #R$62DA to advance position.
   $67C5 Store sprite pointer and coordinates to rendering vars.
   $67D0 Set sprite dimensions: width=1, frame_size=8, height=8, attrs=$0C.
-  $67D8 Call #R$8B3C with #R$82F5 to erase missile sprite.
+  $67D8 Erase missile sprite.
   $67DE Reset CONTROLS_BIT_SPEED_DECREASED in #R$6BB0.
   $67E3 Reload coordinates from #R$5EF3, then clear them.
   $67EA (continued).
@@ -1377,7 +1377,7 @@ D $68C5 Copies the bottom attribute row to the top of the screen, then fills the
   $68DA Initialize bottom row fill with river attribute (green).
 @ $68E1 label=fill_attribute_loop
   $68E1 Store attribute, advance pointer, loop 32 times.
-  $68E5,3 Call #R$6F80 to spawn objects for new row.
+  $68E5,3 Process objects for new row.
 @ $68E9 label=init_current_bridge
 c $68E9 Initialize bridge state for current player
 D $68E9 Clears the top attribute row, removes any active tank shell, and calculates the starting bridge index based on the current player's saved progress.
@@ -1417,7 +1417,7 @@ D $694D Called when all 64 terrain fragments of the current bridge are completed
 R $694D O:A Always set to 0
   $694D Reset Y-position to start of new bridge.
   $6954 Increment bridge index at #R$5EF0.
-  $695B If index reaches $31 (49), wrap via #R$6963.
+  $695B If index reaches $31 (49), wrap to 1.
 @ $6963 label=next_bridge_index_overflow
 c $6963 Wrap bridge index from 49 to 1
 D $6963 Resets bridge index to 1 when it would exceed 48. Note: player progress at #R$5F6A is not reset, allowing the wraparound algorithm to work.
@@ -1617,7 +1617,7 @@ c $6C31 Play bonus life sound effect
 D $6C31 Generates a rising pitch sound effect when player earns an extra life. Called once per frame while CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 frames.
 D $6C31 #LIST { Counter increments from 0 to 64 over successive frames } { Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases } { Lower pitch values = higher frequency, so sound rises in pitch } { Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001 } LIST#
   $6C31 Increment counter and check if reached $40 (64). If so, sound is complete.
-  $6C38 Check if counter reached $40 (64 frames). Jump to #R$6C52 to finish if done.
+  $6C38 Check if counter reached $40 (64 frames). If done, finish sound sequence.
   $6C3D Calculate pitch: pitch = $40 - counter. Store counter in B, load $40 into A, subtract.
   $6C41 Set up BEEPER parameters: H = pitch >> 3 (range 7-0), L = $FF (duration).
   $6C4A,7 Call ROM BEEPER at $03B5 with DE=$0001 (one iteration). Disable interrupts after.
@@ -1629,7 +1629,7 @@ D $6C52 Resets the sound counter and clears the CONTROLS_BIT_BONUS_LIFE flag to 
 @ $6C5D label=beep_speed_decreased
 c $6C5D Play deceleration engine sound
 D $6C5D Generates an engine sound when player is decelerating. Called when only CONTROLS_BIT_SPEED_DECREASED is set in #R$6BB0. HL points to the controls byte on entry.
-D $6C5D #LIST { Period = (controls_byte AND $0F), used for both on and off delays } { Symmetric square wave: same delay for high and low phases } { Loops 8 cycles then returns via #R$6C24 } LIST#
+D $6C5D #LIST { Period = (controls_byte AND $0F), used for both on and off delays } { Symmetric square wave: same delay for high and low phases } { Loops 8 cycles then returns } LIST#
 R $6C5D I:HL Pointer to #R$6BB0 (controls state byte)
   $6C5D Extract period from low 4 bits of controls byte. Higher value = lower pitch.
   $6C61 Loop counter: 8 cycles of the waveform.
@@ -1642,7 +1642,7 @@ R $6C5D I:HL Pointer to #R$6BB0 (controls state byte)
   $6C6F Load period into D.
 @ $6C70 label=beep_speed_decreased_delay_off
   $6C70 Delay loop for speaker OFF phase.
-  $6C73,7 Decrement cycle counter, loop if not zero. Jump to #R$6C24 when done.
+  $6C73,7 Decrement cycle counter, loop if not zero. Return from interrupt when done.
 @ $6C7A label=explosion_counter
 g $6C7A Explosion sound frame counter. Counts down from $18 (24) to 0. Value also controls pitch - higher values = lower frequency.
 @ $6C7B label=beep_explosion
@@ -1686,7 +1686,7 @@ R $6CB8 I:HL Pointer to #R$6BB0 (controls state byte)
   $6CCA Load fixed delay ($04) into D.
 @ $6CCC label=beep_speed_increased_delay_off
   $6CCC Delay loop for speaker OFF phase (asymmetric wave).
-  $6CCF Decrement cycle counter, loop if not zero. Jump to #R$6C24 when done.
+  $6CCF Decrement cycle counter, loop if not zero. Return from interrupt when done.
 @ $6CD6 label=beep_speed_combined
 c $6CD6 Play combined speed change sound
 D $6CD6 Generates a sound when both CONTROLS_BIT_SPEED_DECREASED and CONTROLS_BIT_SPEED_ALTERED are set. HL points to the controls byte on entry.
@@ -1703,7 +1703,7 @@ R $6CD6 I:HL Pointer to #R$6BB0 (controls state byte)
   $6CE8 Load fixed delay ($0C) into D.
 @ $6CEA label=beep_speed_combined_delay_off
   $6CEA Delay loop for speaker OFF phase.
-  $6CED Decrement cycle counter, loop if not zero. Jump to #R$6C24 when done.
+  $6CED Decrement cycle counter, loop if not zero. Return from interrupt when done.
 @ $6CF4 label=do_low_fuel
 c $6CF4 Play low fuel warning sound
 D $6CF4 Generates a warbling warning sound when fuel is low. Called once per frame while CONTROLS_BIT_LOW_FUEL is set. The sound pitch varies each frame creating an urgent warbling effect.
@@ -1719,7 +1719,7 @@ D $6CF4 #LIST { Decrements #R$5F65 each frame, wrapping at $7F (0-127 range) } {
   $6D0C Load period into D.
 @ $6D0D label=do_low_fuel_delay_off
   $6D0D Delay loop for speaker OFF phase.
-  $6D10 Decrement cycle counter, loop for 3 cycles. Jump to #R$6C24 when done.
+  $6D10 Decrement cycle counter, loop for 3 cycles. Return from interrupt when done.
 @ $6D17 label=overview
 c $6D17 Level overview screen
 D $6D17 Displays a preview fly-over of the upcoming terrain before the game starts. Shows scrolling terrain with game number and scrolling title text. Player can press Enter to start the game early, or wait for 5 scroll units to auto-start.
@@ -1731,16 +1731,16 @@ D $6D17 #LIST { Initializes screen with PAPER RIVER, INK BANK } { Prints status 
   $6D2B Print status line 1 (#R$8000, length $31 bytes) using ROM PR_STRING ($203C).
 @ $6D2E isub=LD BC,status_line_2 - status_line_1
   $6D34 Initialize gameplay: call #R$64BC, #R$6587, #R$6DEB (init_starting_bridge).
-  $6D3D Call #R$68E9 to initialize terrain rendering.
+  $6D3D Initialize terrain rendering.
   $6D40,11 Print "GAME" text (#R$805A, length 5) using ROM PR_STRING.
 @ $6D48 isub=LD BC,status_line_4_end - status_line_4
   $6D4E Print game number: load game mode from #R$923A, add '1' ($31) for ASCII digit, output via RST $10.
   $6D54,13 Initialize state: store 'h' ($68) in last key, clear #R$5F7D, save initial scroll value to #R$5D43.
 @ $6D64 label=overview_loop
-  $6D64 Check Enter key (row 6, bit 0). Call #R$6BBF if pressed.
+  $6D64 Check Enter key (row 6, bit 0). Handle Enter if pressed.
   $6D6D Check if 5 scroll units passed: if (#R$5EF0 - #R$5D43) == 5, jump to #R$5D06 to start game.
   $6D7A Render frame: call delay, scroll, increment counter, render terrain/objects.
-  $6D8D Call #R$66D0 for rendering.
+  $6D8D Advance scroll and render terrain.
   $6D90,10 Call delay, increment frame counter #R$5F81, call ROM KEYBOARD ($02BF), enable interrupts.
   $6D9B Check if Enter ($0D) was pressed. If so, jump to #R$5DA6.
   $6DA3,7 Check frame counter AND 3: if not zero, loop back to overview_loop.
@@ -1782,7 +1782,7 @@ D $6DFF #LIST { Fuel level stored in #R$5F66 (0-255) } { Low fuel warning when t
   $6E1B If fuel low (top 2 bits = 0), call #R$6E86 to set low fuel warning.
 @ $6E22 label=update_fuel_gauge
   $6E22 Calculate gauge position: B = $A8 (row), C = (fuel >> 2) + $40 (column).
-  $6E2E Call #R$8A4E to compute screen address from B,C coordinates.
+  $6E2E Compute screen address from B,C coordinates.
 @ $6E31 label=draw_fuel_gauge_loop
   $6E31 Loop counter: 8 rows of gauge.
   $6E33 Set pixel pattern $86 for gauge.
@@ -1802,7 +1802,7 @@ D $6E40 #LIST { Returns immediately if #R$5F69 == 4 (refueling complete?) } { Pl
 @ $6E61 isub=AND FUEL_LEVEL_LOW
 @ $6E68 label=update_fuel_gauge_refuel
   $6E68 Calculate gauge position: B = $A8, C = (fuel >> 2) + $3F.
-  $6E74 Call #R$8A4E to compute screen address.
+  $6E74 Compute screen address.
   $6E77 Loop counter: 8 rows.
   $6E79,12 Draw 8 rows of fuel gauge with pattern $C6 (filled). Increment H each row.
 @ $6E7B label=draw_fuel_gauge_refuel_loop
@@ -1923,11 +1923,11 @@ D $6F80 #LIST { Level data starts at #R$C800, with SIZE_LEVEL_SLOTS ($100) bytes
   $6FB0 Get object type (D AND $07). If type == OBJECT_FUEL (7), jump to #R$7051.
 @ $6FB1 isub=AND SLOT_MASK_OBJECT_TYPE
 @ $6FB3 isub=CP OBJECT_FUEL
-  $6FB5 Otherwise spawn enemy via #R$6FF6.
+  $6FB5 Otherwise render enemy.
 @ $6FBB label=render_rock
 c $6FBB Render rock sprite
 D $6FBB Renders a rock obstacle at the specified position. Rocks use 3x2 tile sprites (24x16 pixels) stored sequentially at #R$84A1 with $30 bytes per frame.
-D $6FBB #LIST { Sprite address = #R$84A1 + (frame_index * $30) } { Frame index from bits 0-2 of D (0-7 rock variants) } { Sprite stored at #R$8B0E, position at #R$8B0A and #R$8B0C } { Renders via #R$8B3C with width=3 tiles, height=16 pixels } LIST#
+D $6FBB #LIST { Sprite address = #R$84A1 + (frame_index * $30) } { Frame index from bits 0-2 of D (0-7 rock variants) } { Sprite stored at #R$8B0E, position at #R$8B0A and #R$8B0C } { Width=3 tiles, height=16 pixels } LIST#
 R $6FBB I:D Object type byte (bits 0-2 = rock frame index)
 R $6FBB I:E X position
   $6FBB Extract rock frame index: A = D AND $07. Set flags with OR A.
@@ -1939,7 +1939,7 @@ R $6FBB I:E X position
   $6FCC Set BC = X position (B=0, C=E from input).
   $6FCF Store rendering state: sprite pointer at #R$8B0E, X position at #R$8B0C and #R$8B0A (duplicated). Load erase sprite #R$82F5.
 @ $6FDD isub=LD A,SPRITE_ROCK_WIDTH_TILES
-  $6FDD,8 Set dimensions: A=3 (width in tiles), D=$10 (height 16 pixels), E=$14 (attributes). Call #R$8B3C to render.
+  $6FDD,8 Set dimensions: A=3 (width in tiles), D=$10 (height 16 pixels), E=$14 (attributes). Render rock.
 @ $6FDF isub=LD DE,SPRITE_ROCK_HEIGHT_PIXELS<<8|SPRITE_ROCK_ATTRIBUTES
 @ $6FE6 label=ld_enemy_sprites_right
 c $6FE6 Load pointer to right-facing enemy sprites
@@ -1948,24 +1948,24 @@ R $6FE6 O:HL Pointer to right-facing enemy sprite array at #R$8793.
   $6FE6 Load HL with #R$8793 (right-facing sprites base address).
 @ $6FEA label=setup_object_position
 c $6FEA Set up object screen position for rendering
-D $6FEA Calculates screen coordinates via #R$62DA and stores the result in both #R$8B0A and #R$8B0C for sprite rendering.
-  $6FEA Call #R$62DA to calculate position, store result BC in both position registers.
+D $6FEA Calculates screen coordinates and stores the result in both #R$8B0A and #R$8B0C for sprite rendering.
+  $6FEA Calculate position and store result BC in both position registers.
 @ $6FF6 label=render_enemy
 @ $6FF6 isub=CP OBJECT_BALLOON
 c $6FF6 Spawn and render enemy on screen
 D $6FF6 Creates a new enemy from level data and renders it. Handles different enemy types (helicopter, ship, tank, fighter, balloon) with appropriate sprites and attributes.
-D $6FF6 #LIST { Balloon (type 6) uses separate routine #R$706C } { Fighter/Tank (types 4,5) need blending mode setup via #R$7046 } { Adds enemy to active objects set at #R$5F00 } { Sprite size: 3 tiles wide, 8 pixels high ($18 bytes per frame) } LIST#
+D $6FF6 #LIST { Balloon (type 6) uses separate routine #R$706C } { Fighter/Tank (types 4,5) need XOR blending mode setup } { Adds enemy to active objects set at #R$5F00 } { Sprite size: 3 tiles wide, 8 pixels high ($18 bytes per frame) } LIST#
 R $6FF6 I:A Object type (from D AND $07)
 R $6FF6 I:D Object definition byte from level data
 R $6FF6 I:E X position
   $6FF6 If balloon (type 6), use separate balloon renderer at #R$706C.
 @ $6FFB isub=CP OBJECT_FIGHTER
-  $6FFB If fighter (type 5), set XOR blending mode via #R$7046.
+  $6FFB If fighter (type 5), set XOR blending mode.
 @ $7000 isub=CP OBJECT_TANK
-  $7000 If tank (type 4), set XOR blending mode via #R$7046.
-  $7005 Call #R$75BA to get sprite pointer based on enemy direction.
+  $7000 If tank (type 4), set XOR blending mode.
+  $7005 Get sprite pointer based on enemy direction.
   $7008,10 Add enemy to active objects set: BC = (0, X_pos), call #R$6EAB with HL = #R$5F00.
-  $7013 Call #R$6FEA to set up screen position.
+  $7013 Set up screen position.
 @ $7016 isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
   $7016 Set sprite frame size ($18 = 24 bytes) and default attributes ($0E).
 @ $7019 isub=LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES
@@ -1975,7 +1975,7 @@ R $6FF6 I:E X position
 @ $7023 isub=CP OBJECT_FIGHTER
 @ $7028 isub=CP OBJECT_TANK
 @ $702D isub=LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
-  $702D,10 Set sprite dimensions: A=3 (width tiles), D=8 (height pixels). Call #R$8B1E and #R$72EF to render.
+  $702D,10 Set sprite dimensions: A=3 (width tiles), D=8 (height pixels). Render enemy.
 @ $702F isub=LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
 @ $7038 isub=LD E,SPRITE_SHIP_ATTRIBUTES
 @ $7038 label=ld_attributes_ship
@@ -2010,13 +2010,13 @@ D $7051 Renders a fuel station sprite at the specified X position. Fuel stations
 D $7051 #LIST { Adds fuel station to #R$5F00 active objects set } { Sprite located at #R$8A86 (single frame, no animation) } { Dimensions: 2 tiles wide (16px) × 25 pixels tall } { Attributes: $0B (PAPER RIVER, INK FUEL) } LIST#
 R $7051 I:E X position of fuel station
   $7051 BC = (0, E): set X position in BC for object entry.
-  $7054 Add fuel station to #R$5F00 active objects set via #R$6EAB.
+  $7054 Add fuel station to active objects set.
   $705A Load fuel sprite address #R$8A86 and call #R$6FEA to set up screen position.
 @ $7060 isub=LD BC,SPRITE_FUEL_STATION_FRAME_SIZE
   $7060 Set sprite parameters: frame size=0, width=2 tiles, height=25 pixels, attributes=$0B.
 @ $7063 isub=LD A,SPRITE_FUEL_STATION_WIDTH_TILES
 @ $7065 isub=LD DE,SPRITE_FUEL_STATION_HEIGHT_PIXELS<<8|SPRITE_FUEL_STATION_ATTRIBUTES
-  $7068,3 Render fuel station sprite via #R$8B1E.
+  $7068,3 Render fuel station sprite.
 @ $706C label=render_balloon
 c $706C Render balloon
 D $706C Renders a balloon enemy sprite at the specified X position. Balloons are 2-tile wide animated objects that float above the river. Unlike other enemies, balloons disable collision detection during rendering.
@@ -2027,7 +2027,7 @@ R $706C I:E X position of balloon
 @ $7072 isub=LD A,COLLISION_MODE_NONE
   $7077 Push sprite addr, add balloon to #R$5F00 objects set, pop and call #R$6FEA.
 @ $7082 isub=LD BC,SPRITE_BALLOON_FRAME_SIZE
-  $7082,11 Set sprite parameters: frame size=$20, width=2, height=16px, attributes=$0E. Render via #R$8B1E.
+  $7082,11 Render sprite: frame size=$20, width=2, height=16px, attributes=$0E.
 @ $7085 isub=LD A,SPRITE_BALLOON_WIDTH_TILES
 @ $7087 isub=LD DE,SPRITE_BALLOON_HEIGHT_PIXELS<<8|SPRITE_BALLOON_ATTRIBUTES
 @ $708E label=operate_viewport_objects
@@ -2115,7 +2115,7 @@ N $708E 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHT
 @ $7104 label=operate_ship_or_helicopter
 c $7104 Ship or helicopter operation routine
 D $7104 Animates and moves ships and helicopters. On even ticks, advances the object by 2 pixels toward the opposite river bank. When the object gets within 16 pixels of the bank edge, it reverses direction.
-D $7104 #LIST { Checks tick parity for movement timing } { Determines direction from bit 6 (SLOT_BIT_ORIENTATION) } { Left-facing objects advance left, right-facing advance right } { Collision with terrain triggers direction reversal via #R$75D0 } LIST#
+D $7104 #LIST { Checks tick parity for movement timing } { Determines direction from bit 6 (SLOT_BIT_ORIENTATION) } { Left-facing objects advance left, right-facing advance right } { Collision with terrain triggers direction reversal } LIST#
 R $7104 I:B Y position of object
 R $7104 I:C X position of object
 R $7104 I:D Object definition byte
@@ -2131,14 +2131,14 @@ R $7113 I:B Y position
 R $7113 I:C X position
 R $7113 I:D Object definition
   $7113 Save BC, calculate terrain check position: C -= 16 pixels.
-  $7118 Call #R$8A4E to get terrain byte at (C, B). Load result into A.
-  $711C Restore BC. If terrain != 0, reverse direction via #R$75D0.
+  $7118 Get terrain byte at (C, B). Load result into A.
+  $711C Restore BC. If terrain != 0, reverse direction.
   $7122 Store position to #R$8B0A. Advance X position left by 2 pixels (DEC C twice).
 @ $7128 label=operate_ship_or_helicopter_continue
 c $7128 Continue ship/helicopter rendering
 D $7128 Updates the object's position in the viewport array and renders the sprite.
   $7128 Load viewport_ptr, navigate back to current slot, update [X, Y, D] values.
-  $7131,10 Store position to #R$8B0C, sprite address #R$82C5 to #R$8B0E. Get sprite via #R$75BA.
+  $7131,10 Store position to #R$8B0C, sprite address #R$82C5 to #R$8B0E. Get sprite pointer.
 @ $713E isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
   $713E Set frame size=$18, default attributes=$0E.
 @ $7141 isub=LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES
@@ -2146,7 +2146,7 @@ D $7128 Updates the object's position in the viewport array and renders the spri
 @ $7144 isub=AND SLOT_MASK_OBJECT_TYPE
 @ $7146 isub=CP OBJECT_SHIP
 @ $714B isub=LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
-  $714B,7 Set width=3 tiles, height=8 pixels. Render via #R$8B3C, return to main loop.
+  $714B,7 Render sprite: width=3 tiles, height=8 pixels.
 @ $714D isub=LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
 @ $7155 label=fighter_left_reset
 @ $7155 isub=LD C,FIGHTER_POSITION_LEFT_INIT
@@ -2170,13 +2170,13 @@ R $7158 I:D Object definition byte
 c $716B Continue fighter operation
 D $716B Updates fighter position in viewport array and renders the sprite with XOR blending.
   $716B Load viewport_ptr, navigate to current slot, update [X, Y, D] values.
-  $7174 Store position to #R$8B0C, get sprite pointer via #R$75BA.
+  $7174 Store position to #R$8B0C, get sprite pointer.
 @ $717B isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
   $717B Set frame size=$18, call #R$72E6 to set XOR blending mode.
 @ $7181 isub=LD A,COLLISION_MODE_FIGHTER
   $7181 Set collision mode to COLLISION_MODE_FIGHTER ($03) at #R$5EF5.
 @ $7186 isub=LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_FIGHTER_ATTRIBUTES
-  $7186 Set height=8px, attributes=$00. Render via #R$8B1E, restore blending via #R$72EF.
+  $7186 Render sprite: height=8px, attributes=$00. Restore blending.
   $718F Return to main viewport loop.
 @ $7192 label=fighter_right_advance
 c $7192 Advance right-facing fighter
@@ -2214,7 +2214,7 @@ R $71A2 I:D Object definition (bits 3-5 = frame index)
 @ $7201 isub=LD BC,SPRITE_SHELL_EXPLOSION_FRAME_SIZE_BYTES
 @ $7204 isub=LD D,SPRITE_SHELL_EXPLOSION_HEIGHT_PIXELS
 @ $7206 isub=LD A,SPRITE_SHELL_EXPLOSION_WIDTH_TILES
-  $7208 Render via #R$8B3C, return to main loop.
+  $7208 Render and return to main loop.
 @ $720E label=finish_tank_shell_explosion
 c $720E Finish tank shell explosion animation
 D $720E Clears the explosion object from the viewport and resets the tank shell state.
@@ -2258,10 +2258,10 @@ D $7259 Renders the helicopter rotor sprite based on orientation. Uses left-faci
   $7259 Load viewport_ptr, extract [D, B, C] from current slot.
   $7262 Load left rotor sprite #R$8AB8. If right-facing (bit 6 clear), load #R$8AC8.
 @ $7265 isub=BIT SLOT_BIT_ORIENTATION,D
-  $726A Store positions to #R$8B0C and #R$8B0A. Push rotor sprite, get main sprite via #R$75BA.
+  $726A Store positions to #R$8B0C and #R$8B0A. Push rotor sprite, get main sprite pointer.
   $7276 Store erase sprite #R$82C5 to #R$8B0E. Pop rotor sprite.
 @ $727D isub=LD DE,SPRITE_ROTOR_HEIGHT_PIXELS<<8|SPRITE_ROTOR_ATTRIBUTES
-  $727D,11 Set rotor params: height=2, attributes=$0E, frame size=4, width=2. Render via #R$8B3C.
+  $727D,11 Render rotor: height=2, attributes=$0E, frame size=4, width=2.
 @ $7280 isub=LD BC,SPRITE_ROTOR_FRAME_SIZE
 @ $7283 isub=LD A,SPRITE_ROTOR_WIDTH_TILES
 @ $728B label=tank_advance_right
@@ -2291,11 +2291,11 @@ R $7296 I:D Object definition byte
   $72B5,10 Move tank: DEC C twice (left), then INC C × 4 if right-facing.
   $72B5 Move tank: DEC C twice (left), then INC C × 4 if right-facing.
   $72BC If X == $80 (center), set tank shell active via #R$7290.
-  $72C2,13 Update position in viewport array, store to #R$8B0C, get sprite via #R$75BA.
+  $72C2,13 Update position in viewport array, store to #R$8B0C, get sprite pointer.
 @ $72D2 isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
   $72D2 Set frame size=$18, enable XOR blending via #R$72E6.
 @ $72D8 isub=LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
-  $72D8,11 Set width=3, height=8, attributes=$00. Render via #R$8B1E, restore blending, return.
+  $72D8,11 Render sprite: width=3, height=8, attributes=$00. Restore blending.
 @ $72DA isub=LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_TANK_ATTRIBUTES
 @ $72E6 label=blending_mode_xor_xor
 c $72E6 Set XOR/XOR blending mode
@@ -2334,7 +2334,7 @@ R $7302 I:D Object definition byte
   $7302,7 Load stored position, add $10 offset to X.
 @ $730A isub=BIT SLOT_BIT_ORIENTATION,D
   $730A If left-facing, adjust offset via #R$72F8.
-  $730F Call #R$8A4E for terrain check. If terrain == $FF, move tank normally.
+  $730F Check terrain. If terrain == $FF, move tank normally.
   $7317 Pop BC/DE, jump to #R$72B5 if terrain clear.
   $731A,5 Check shell state: if already flying, return to main loop.
 @ $731D isub=BIT TANK_SHELL_BIT_FLYING,A
@@ -2363,8 +2363,8 @@ R $7343 O:A Shell state with orientation and speed bits
   $7353 Ensure speed >= 1, combine with orientation, continue to fire shell.
 @ $7358 label=cancel_and_remove_shell
 c $7358 Cancel and remove tank shell
-D $7358 Removes the tank shell via #R$74E4 and returns to main loop.
-  $7358 Call #R$74E4 to remove shell, return to main loop.
+D $7358 Removes the tank shell and returns to main loop.
+  $7358 Remove shell, return to main loop.
 @ $735E label=check_shell_init_condition
 c $735E Check shell initialization condition
 D $735E Alternative shell initialization when bit 4 is set. Checks if tank can fire based on shell active state and position.
@@ -2407,7 +2407,7 @@ R $738E O:C X position + $10
 @ $7393 label=operate_helicopter_missile
 c $7393 Operate helicopter missile
 D $7393 Advances the helicopter missile position and renders it. Missiles move down and sideways based on helicopter orientation. Removed when reaching viewport boundary.
-D $7393 #LIST { Loads position from #R$5F73 } { Advances Y position via #R$62DA } { Moves X position by HELICOPTER_MISSILE_STEP ($08) } { Removed at VIEWPORT_HEIGHT boundary via #R$73D0 } { Sets COLLISION_MODE_HELICOPTER_MISSILE for collision } LIST#
+D $7393 #LIST { Loads position from #R$5F73 } { Advances Y position } { Moves X position by HELICOPTER_MISSILE_STEP ($08) } { Removed at VIEWPORT_HEIGHT boundary } { Sets COLLISION_MODE_HELICOPTER_MISSILE for collision } LIST#
   $7393,7 Load missile coordinates from #R$5F73. Return if B==0 (no missile).
   $739B,7 Advance Y position, store to #R$8B0A, move X left by $08.
 @ $73A3 isub=SUB HELICOPTER_MISSILE_STEP
@@ -2418,7 +2418,7 @@ D $7393 #LIST { Loads position from #R$5F73 } { Advances Y position via #R$62DA 
 @ $73B1 isub=BIT SLOT_BIT_ORIENTATION,A
   $73B6 Store position to #R$8B0C and #R$5F73.
 @ $73BE isub=LD A,COLLISION_MODE_HELICOPTER_MISSILE
-  $73BE,17 Set collision mode=$04, width=1, attributes=$00, height=1. Render via #R$8B1E.
+  $73BE,17 Render missile: collision mode=$04, width=1, attributes=$00, height=1.
 @ $73C3 isub=LD A,SPRITE_HELICOPTER_MISSILE_WIDTH_TILES
 @ $73C5 isub=LD E,SPRITE_HELICOPTER_MISSILE_ATTRIBUTES
 @ $73D0 label=remove_helicopter_missile
@@ -2472,7 +2472,7 @@ D $7441 #LIST { Returns if shell not flying (bit 7 of #R$7383) } { Increments tr
   $7489 Check viewport boundary. If off-screen, handle via #R$74A0.
 @ $748A isub=AND VIEWPORT_HEIGHT
 @ $748C isub=CP VIEWPORT_HEIGHT
-  $7491,14 Load shell sprite #R$8431, set params: height=1, width=1, frame=$08. Render via #R$8B1E.
+  $7491,14 Render shell sprite: height=1, width=1, frame=$08.
 @ $7494 isub=LD DE,SPRITE_SHELL_HEIGHT_PIXELS<<8|SPRITE_SHELL_ATTRIBUTES
 @ $7497 isub=LD A,SPRITE_SHELL_WIDTH_TILES
 @ $7499 isub=LD BC,SPRITE_SHELL_FRAME_SIZE_BYTES
@@ -2482,8 +2482,8 @@ D $74A0 Erases the tank shell sprite when it goes off-screen and removes it from
   $74A0 Load shell position from #R$8B0A, shell sprite #R$8431.
   $74A7 Calculate sprite frame offset from X position: (X AND 6) << 2.
   $74B2 Add offset to sprite address, store to #R$8B0E. Load erase sprite #R$82F5.
-  $74B8 Set sprite params, render via #R$8B3C, remove shell.
-  $74C3 Remove shell via #R$74E4.
+  $74B8 Render erase sprite and remove shell.
+  $74C3 Remove shell.
 @ $74C6 label=render_tank_shell_explosion
 c $74C6 Trigger tank shell explosion
 D $74C6 Converts the flying tank shell into an explosion. Clears flying bit, sets exploding bit, and adds explosion to viewport objects.
@@ -2505,7 +2505,7 @@ D $74EE Called when a tank on the river reaches the viewport boundary. Checks if
   $74F5 Check if X+$0A < $70: if true, tank at left boundary, jump to reverse.
   $7502 Check if X > $90: if true, tank at right boundary, jump to reverse.
   $750F Tank destroyed: clear X position, set D=$80 (explosion marker).
-  $7517,9 Call #R$6E9C to add explosion, award POINTS_TANK via #R$90E0.
+  $7517,9 Add explosion and award POINTS_TANK.
 @ $7520 isub=LD A,POINTS_TANK
 @ $7525 label=tank_reverse_direction
   $7525,6 Reload viewport_ptr, set bits 4 and 5 (direction change flags).
@@ -2527,13 +2527,13 @@ D $754C #LIST { Stores position for rendering } { Checks if fuel station is with
   $755D If off-screen, return to main loop.
 @ $7565 isub=AND VIEWPORT_HEIGHT
 @ $7567 isub=CP VIEWPORT_HEIGHT
-  $7569,11 Load fuel sprite #R$8A86, get sprite pointer via #R$75BA.
+  $7569,11 Load fuel sprite #R$8A86, get sprite pointer.
 @ $7577 isub=LD BC,SPRITE_FUEL_STATION_FRAME_SIZE
   $7577 Set frame size=0, calculate animated attributes from tick.
 @ $757D isub=AND TICK_MASK_FUEL_BLINK
 @ $757F isub=ADD A,SPRITE_FUEL_STATION_ATTRIBUTES
 @ $7582 isub=LD A,SPRITE_FUEL_STATION_WIDTH_TILES
-  $7582 Set width=2, render via #R$8B1E.
+  $7582 Render fuel station: width=2.
 @ $758A label=handle_fuel_off_viewport
 c $758A Clip fuel station height to viewport
 D $758A Called when the fuel station extends past the viewport bottom. Calculates the visible portion height by subtracting the overflow from the full height.
@@ -2551,8 +2551,8 @@ R $75A2 I:B Y position
 R $75A2 I:C X position
 R $75A2 I:D Object definition
   $75A2 Save BC, calculate terrain check position: C += $20 pixels.
-  $75A7 Call #R$8A4E to get terrain byte at (C, B). Load result into A.
-  $75AB Restore BC. If terrain != 0, reverse direction via #R$75D0.
+  $75A7 Get terrain byte at (C, B). Load result into A.
+  $75AB Restore BC. If terrain != 0, reverse direction.
   $75B1 Store position to #R$8B0A. Advance X position right by 2 pixels (INC C twice).
   $75B7 Continue to #R$7128 for rendering.
 @ $75BA label=ld_enemy_sprites
@@ -2572,7 +2572,7 @@ D $75D0 When a ship or helicopter approaches a river bank or fuel station, inver
 R $75D0 I:BC Object coordinates
   $75D4 Return if Y >= $80 (object in top half, might be player).
   $75D8 Reload position, pop return address, load viewport_ptr, get object definition.
-  $75E2 Get sprite pointer via #R$75BA, reload position.
+  $75E2 Get sprite pointer, reload position.
   $75E9 Calculate animation frame offset from X position.
 @ $75EC isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
   $75EC Set frame size, shift and increment offset.
@@ -2582,7 +2582,7 @@ R $75D0 I:BC Object coordinates
   $75FC Reload position, store to #R$8B0C.
   $7604 Invert object orientation (XOR bit 6).
 @ $7605 isub=XOR 1<<SLOT_BIT_ORIENTATION
-  $7608,8 Update orientation in viewport array, get new sprite via #R$75BA.
+  $7608,8 Update orientation in viewport array, get new sprite pointer.
 @ $7613 isub=AND SLOT_MASK_OBJECT_TYPE
 @ $7615 isub=CP OBJECT_SHIP
 @ $761A isub=LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
@@ -2627,7 +2627,7 @@ N $7685 Shared entry point for balloon rendering (also used by right-facing ball
 @ $769F isub=LD BC,SPRITE_BALLOON_FRAME_SIZE
 @ $76A2 isub=LD E,SPRITE_BALLOON_ATTRIBUTES
 @ $76A4 isub=LD D,SPRITE_BALLOON_HEIGHT_PIXELS
-  $76A6,6 Call #R$8B1E to render balloon, return to main loop.
+  $76A6,6 Render balloon, return to main loop.
 @ $76AC label=jp_operate_viewport_objects
 c $76AC A useless procedure that unconcditionally jumps to #R$708E.
 @ $76AF label=operate_balloon_right
@@ -2666,7 +2666,7 @@ D $7804 Saves stack pointer, clears screen with white-on-black attributes, then 
   $7804 Save current stack pointer to #R$7810.
 @ $7808 isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
   $7808 Clear screen with white-on-black attributes.
-  $780D,3 Jump to #R$7AB9 (setup routine).
+  $780D,3 Continue with setup.
 @ $7810 label=setup_sp
 w $7810 Temporary stack pointer used by the control choice dialog
 @ $7812 label=msg_keyboard_config
@@ -3429,7 +3429,7 @@ R $928D I:DE Sprite height in pixels (D), attribute color byte (E).
 R $928D I:BC Old position coordinates from #R$8B0A.
 R $928D I:HL New position coordinates from #R$8B0C.
   $928D Save registers, store width to #R$928B. If attribute E is 0, skip to #R$935D.
-  $9295 Jump to #R$935D if attribute is 0 (nothing to draw).
+  $9295 If attribute is 0, skip drawing (nothing to draw).
   $9298 Save DE, BC, HL to memory at #R$9287, #R$9285, #R$9289 for later use.
   $92A3 Calculate attribute address for old position: HL = #R$5800 + (Y AND $F8) * 4 + (X >> 3). Y coordinate is in B of stored BC at #R$8B0A, X in C.
   $92BD Calculate row count B = (height >> 3) + 3. This covers sprite height plus padding. Load width into C.
