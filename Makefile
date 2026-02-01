@@ -22,7 +22,7 @@ SP = 65344
 
 .PHONY: clean verify test lint lint-order lint-instruction-order lint-lengths
 
-all: $(ASM_FIXED) $(Z80_FIXED) verify
+all: $(ASM_FIXED) $(Z80_FIXED) verify html
 
 # Download and convert original TZX to pristine snapshot
 $(Z80_PRISTINE): $(T2S)
@@ -81,8 +81,16 @@ $(ASM_NON_FIXED): $(SKOOL)
 		rm -f $@.stderr; mv $@.tmp $@; \
 	fi
 
+# Generate HTML documentation
+html: html/.stamp
+
+html/.stamp: $(SKOOL)
+	skool2html.py -d html -H -o $(SKOOL)
+	touch $@
+
 clean:
-	rm -f \
+	rm -rf \
+		html \
 		*.asm \
 		*.bin \
 		*.skool \

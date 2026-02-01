@@ -7737,6 +7737,7 @@ sprite_helicopter_rotor_right:
 ;
 ; A 6-frame animation showing a diamond shape expanding from a single pixel to a full diamond. Each frame is 8×8 pixels
 ; (1 tile). This appears to be an unused or early explosion effect that was not included in the final game.
+;
 sprite_unused_explosion:
   DEFB $00,$00,$00,$10,$00,$00,$00,$00
   DEFB $00,$00,$00,$18,$18,$00,$00,$00

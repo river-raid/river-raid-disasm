@@ -3131,7 +3131,7 @@ b $8AC8
 @ $8AD8 label=sprite_unused_explosion
 u $8AD8 Unused explosion animation sprite (6 frames × 8 bytes).
 D $8AD8 A 6-frame animation showing a diamond shape expanding from a single pixel to a full diamond. Each frame is 8×8 pixels (1 tile). This appears to be an unused or early explosion effect that was not included in the final game.
-D $8AD8 #UDGTABLE { #UDGARRAY1,4,1,1;$8AD8-$8ADF-1-8(*explosion-f1) | #UDGARRAY1,4,1,1;$8AE0-$8AE7-1-8(*explosion-f2) | #UDGARRAY1,4,1,1;$8AE8-$8AEF-1-8(*explosion-f3) | #UDGARRAY1,4,1,1;$8AF0-$8AF7-1-8(*explosion-f4) | #UDGARRAY1,4,1,1;$8AF8-$8AFF-1-8(*explosion-f5) | #UDGARRAY1,4,1,1;$8B00-$8B07-1-8(*explosion-f6) } TABLE#
+N $8AD8 #UDGTABLE { #UDG$8AD8,4,4(unused-exp-f1) | #UDG$8AE0,4,4(unused-exp-f2) | #UDG$8AE8,4,4(unused-exp-f3) | #UDG$8AF0,4,4(unused-exp-f4) | #UDG$8AF8,4,4(unused-exp-f5) | #UDG$8B00,4,4(unused-exp-f6) } TABLE#
 @ $8B08 label=collision_dispatcher_ptr
 g $8B08 Pointer to collision handler routine at #R$6136. Called when sprite rendering detects pixel overlap.
 W $8B08
