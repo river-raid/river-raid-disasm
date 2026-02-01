@@ -3125,9 +3125,11 @@ C $8A78,14 Add column offset and extract bit position.
 b $8A86 Fuel sprite
 N $8A86 #UDGTABLE { #UDGARRAY2,11,4,2;$8A86-$8AB8-1-16{0,0,64,100}(sprite-fuel) } TABLE#
 @ $8AB8 label=sprite_helicopter_rotor_left
-b $8AB8
+b $8AB8 Helicopter rotor sprite (left-facing)
+N $8AB8 #UDGTABLE { #UDGARRAY2,6,4;$8AB8;$8AC0(rotor-left) } TABLE#
 @ $8AC8 label=sprite_helicopter_rotor_right
-b $8AC8
+b $8AC8 Helicopter rotor sprite (right-facing)
+N $8AC8 #UDGTABLE { #UDGARRAY2,6,4;$8AC8;$8AD0(rotor-right) } TABLE#
 @ $8AD8 label=sprite_unused_explosion
 u $8AD8 Unused explosion animation sprite (6 frames × 8 bytes).
 D $8AD8 A 6-frame animation showing a diamond shape expanding from a single pixel to a full diamond. Each frame is 8×8 pixels (1 tile). This appears to be an unused or early explosion effect that was not included in the final game.

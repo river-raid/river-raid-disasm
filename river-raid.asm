@@ -7723,12 +7723,14 @@ sprite_fuel:
   DEFB $0D,$F0,$0D,$F0,$0D,$F0,$0C,$30
   DEFB $0F,$F0
 
-; Data block at 8AB8
+; Helicopter rotor sprite (left-facing)
+;
 sprite_helicopter_rotor_left:
   DEFB $1E,$00,$F0,$00,$07,$80,$3C,$00
   DEFB $01,$E0,$0F,$00,$00,$78,$03,$C0
 
-; Data block at 8AC8
+; Helicopter rotor sprite (right-facing)
+;
 sprite_helicopter_rotor_right:
   DEFB $1E,$00,$03,$C0,$07,$80,$00,$F0
   DEFB $01,$E0,$00,$3C,$00,$78,$00,$0F

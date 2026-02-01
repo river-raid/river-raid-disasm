@@ -8742,12 +8742,28 @@ b$8A86 DEFB $0F,$F0,$0C,$30,$0D,$F0,$0C,$70
  $8AAE DEFB $0D,$F0,$0D,$F0,$0D,$F0,$0C,$30
  $8AB6 DEFB $0F,$F0
 
-; Data block at 8AB8
+; Helicopter rotor sprite (left-facing)
+;
+; .
+;
+; .
+;
+; #UDGTABLE
+; { #UDGARRAY2,6,4;$8AB8;$8AC0(rotor-left) }
+; TABLE#
 @label=sprite_helicopter_rotor_left
 b$8AB8 DEFB $1E,$00,$F0,$00,$07,$80,$3C,$00
  $8AC0 DEFB $01,$E0,$0F,$00,$00,$78,$03,$C0
 
-; Data block at 8AC8
+; Helicopter rotor sprite (right-facing)
+;
+; .
+;
+; .
+;
+; #UDGTABLE
+; { #UDGARRAY2,6,4;$8AC8;$8AD0(rotor-right) }
+; TABLE#
 @label=sprite_helicopter_rotor_right
 b$8AC8 DEFB $1E,$00,$03,$C0,$07,$80,$00,$F0
  $8AD0 DEFB $01,$E0,$00,$3C,$00,$78,$00,$0F
