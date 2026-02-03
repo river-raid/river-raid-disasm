@@ -50,11 +50,16 @@ SPEED_NORMAL EQU $02
 SPEED_FAST   EQU $04
 
 CONTROLS_BIT_FIRE            EQU 0
-CONTROLS_BIT_SPEED_DECREASED EQU 1
-CONTROLS_BIT_SPEED_ALTERED   EQU 2
+CONTROLS_BIT_SPEED_NOT_FAST  EQU 1
+CONTROLS_BIT_SPEED_CHANGED   EQU 2
 CONTROLS_BIT_LOW_FUEL        EQU 3
 CONTROLS_BIT_BONUS_LIFE      EQU 4
 CONTROLS_BIT_EXPLODING       EQU 5
+
+CONTROLS_SPEED_MASK   EQU 1<<CONTROLS_BIT_SPEED_NOT_FAST|1<<CONTROLS_BIT_SPEED_CHANGED
+CONTROLS_SPEED_NORMAL EQU 1<<CONTROLS_BIT_SPEED_NOT_FAST
+CONTROLS_SPEED_FAST   EQU 1<<CONTROLS_BIT_SPEED_CHANGED
+CONTROLS_SPEED_SLOW   EQU 1<<CONTROLS_BIT_SPEED_NOT_FAST|1<<CONTROLS_BIT_SPEED_CHANGED
 
 TANK_SHELL_STATE_UNITIALIZED   EQU $00
 TANK_SHELL_MASK_SPEED          EQU $07
@@ -3449,9 +3454,9 @@ c$66CC LD HL,$83F1   ; Load #R$83F1 into HL.
 ; .
 ; .
 ; .
-; The control bits modified are: clears CONTROLS_BIT_SPEED_ALTERED, sets
-; CONTROLS_BIT_SPEED_DECREASED. This marks that speed has returned to normal
-; after any joystick input.
+; The control bits modified are: clears CONTROLS_BIT_SPEED_CHANGED, sets
+; CONTROLS_BIT_SPEED_NOT_FAST. This triggers #R$6C5D to play the normal speed
+; engine sound.
 @label=advance_scroll
 c$66D0 LD BC,($5F70) ; {Add speed to scroll offset and store result.
  $66D4 LD H,$00      ;
@@ -3463,8 +3468,8 @@ c$66D0 LD BC,($5F70) ; {Add speed to scroll offset and store result.
 @isub=LD A,SPEED_NORMAL
  $66E1 LD A,$02      ;
  $66E3 LD ($5F64),A  ;
- $66E6 LD HL,$6BB0   ; {Clear CONTROLS_BIT_SPEED_ALTERED, set
- $66E9 RES 2,(HL)    ; CONTROLS_BIT_SPEED_DECREASED in #R$6BB0.
+ $66E6 LD HL,$6BB0   ; {Clear CONTROLS_BIT_SPEED_CHANGED, set
+ $66E9 RES 2,(HL)    ; CONTROLS_BIT_SPEED_NOT_FAST in #R$6BB0.
  $66EB SET 1,(HL)    ; }
  $66ED RET           ;
 
@@ -3517,10 +3522,10 @@ c$6704 LD A,$00      ; {Clear bridge destroyed flag.
 @isub=LD A,SPEED_FAST
 c$670A LD A,$04      ; {Set speed to SPEED_FAST.
  $670C LD ($5F64),A  ; }
- $670F LD HL,$6BB0   ; {Set CONTROLS_BIT_SPEED_ALTERED, clear
-@isub=SET CONTROLS_BIT_SPEED_ALTERED,(HL)
- $6712 SET 2,(HL)    ; CONTROLS_BIT_SPEED_DECREASED.
-@isub=RES CONTROLS_BIT_SPEED_DECREASED,(HL)
+ $670F LD HL,$6BB0   ; {Set CONTROLS_BIT_SPEED_CHANGED, clear
+@isub=SET CONTROLS_BIT_SPEED_CHANGED,(HL)
+ $6712 SET 2,(HL)    ; CONTROLS_BIT_SPEED_NOT_FAST.
+@isub=RES CONTROLS_BIT_SPEED_NOT_FAST,(HL)
  $6714 RES 1,(HL)    ; }
  $6716 RET           ;
 
@@ -3536,10 +3541,10 @@ c$670A LD A,$04      ; {Set speed to SPEED_FAST.
 @isub=LD A,SPEED_SLOW
 c$6717 LD A,$01      ; {Set speed to SPEED_SLOW.
  $6719 LD ($5F64),A  ; }
- $671C LD HL,$6BB0   ; {Set CONTROLS_BIT_SPEED_ALTERED and
-@isub=SET CONTROLS_BIT_SPEED_ALTERED,(HL)
- $671F SET 2,(HL)    ; CONTROLS_BIT_SPEED_DECREASED.
-@isub=SET CONTROLS_BIT_SPEED_DECREASED,(HL)
+ $671C LD HL,$6BB0   ; {Set CONTROLS_BIT_SPEED_CHANGED and
+@isub=SET CONTROLS_BIT_SPEED_CHANGED,(HL)
+ $671F SET 2,(HL)    ; CONTROLS_BIT_SPEED_NOT_FAST.
+@isub=SET CONTROLS_BIT_SPEED_NOT_FAST,(HL)
  $6721 SET 1,(HL)    ; }
  $6723 RET           ;
 
@@ -3649,7 +3654,7 @@ c$678E LD HL,$6BB0   ; {Clear CONTROLS_BIT_FIRE in #R$6BB0.
 ; Called after a successful collision to clean up the game state. Erases the
 ; missile sprite from the screen, resets the collision mode to
 ; COLLISION_MODE_NONE, clears the missile coordinates, and resets
-; CONTROLS_BIT_SPEED_DECREASED.
+; CONTROLS_BIT_SPEED_NOT_FAST.
 ; .
 ; .
 ; .
@@ -3693,7 +3698,7 @@ c$6794 LD BC,($5EF3) ; {Load missile coordinates from #R$5EF3 and call #R$72EF
  $67D5 LD DE,$080C   ; }
  $67D8 LD HL,$82F5   ; {Erase missile sprite.
  $67DB CALL $8B3C    ; }
- $67DE LD HL,$6BB0   ; {Reset CONTROLS_BIT_SPEED_DECREASED in #R$6BB0.
+ $67DE LD HL,$6BB0   ; {Reset CONTROLS_BIT_SPEED_NOT_FAST in #R$6BB0.
  $67E1 RES 1,(HL)    ; }
  $67E3 LD BC,($5EF3) ; {Reload coordinates from #R$5EF3, then clear them.
  $67E7 LD HL,$0000   ; }
@@ -4564,9 +4569,9 @@ c$6BDB DI            ; {Disable interrupts and save registers.
 ; #TABLE(default)
 ; { =h Bit | =h Flag | =h Sound Handler }
 ; { 0 | FIRE | #R$8A02 (fire) }
-; { 1 | SPEED_DECREASED | #R$6C5D (deceleration) }
-; { 2 | SPEED_ALTERED | #R$6CB8 (acceleration) }
-; { 1+2 | Both speed bits | #R$6CD6 (combined) }
+; { 1 | SPEED_NOT_FAST | #R$6C5D (normal speed) }
+; { 2 | SPEED_CHANGED | #R$6CB8 (fast speed) }
+; { 1+2 | Both speed bits | #R$6CD6 (slow speed) }
 ; { 3 | LOW_FUEL | #R$6CF4 (warning) }
 ; { 4 | BONUS_LIFE | #R$6C31 (jingle) }
 ; { 5 | EXPLODING | #R$6C7B (explosion) }
@@ -4596,12 +4601,16 @@ c$6BED LD A,($5C08)  ; {Skip if paused (H key).
  $6C0D BIT 3,(HL)    ; {Check LOW_FUEL → #R$6CF4.
  $6C0F JP NZ,$6CF4   ;
  $6C12 LD A,(HL)     ; }
- $6C13 AND $06       ; Mask speed bits (1+2).
- $6C15 CP $02        ; {SPEED_DECREASED only → #R$6C5D.
+@isub=AND CONTROLS_SPEED_MASK
+ $6C13 AND $06       ; Mask speed bits.
+@isub=CP CONTROLS_SPEED_NORMAL
+ $6C15 CP $02        ; {Normal speed → #R$6C5D.
  $6C17 JP Z,$6C5D    ; }
- $6C1A CP $04        ; {SPEED_ALTERED only → #R$6CB8.
+@isub=CP CONTROLS_SPEED_FAST
+ $6C1A CP $04        ; {Fast speed → #R$6CB8.
  $6C1C JP Z,$6CB8    ; }
- $6C1F CP $06        ; {Both speed bits → #R$6CD6.
+@isub=CP CONTROLS_SPEED_SLOW
+ $6C1F CP $06        ; {Slow speed → #R$6CD6.
  $6C21 JP Z,$6CD6    ; }
 
 ; Return from interrupt handler
@@ -4667,11 +4676,11 @@ c$6C52 LD A,$00      ; {Reset counter to 0.
  $6C5A RES 4,(HL)    ; sound is complete.}
  $6C5C RET           ;
 
-; Play deceleration engine sound
+; Play normal speed engine sound
 ;
-; Generates an engine sound when player is decelerating. Called when only
-; CONTROLS_BIT_SPEED_DECREASED is set in #R$6BB0. HL points to the controls
-; byte on entry.
+; Generates the engine sound for normal speed. Called when only
+; CONTROLS_BIT_SPEED_NOT_FAST is set (player not pressing up or down). HL
+; points to the controls byte on entry.
 ; .
 ; #LIST
 ; { Period = (controls_byte AND $0F), used for both on and off delays }
@@ -4680,22 +4689,22 @@ c$6C52 LD A,$00      ; {Reset counter to 0.
 ; LIST#
 ;
 ; I:HL Pointer to #R$6BB0 (controls state byte)
-@label=beep_speed_decreased
+@label=beep_engine_normal
 c$6C5D LD A,(HL)     ; {Extract period from low 4 bits of controls byte. Higher
  $6C5E AND $0F       ; value = lower pitch.
  $6C60 LD E,A        ; }
  $6C61 LD C,$08      ; Loop counter: 8 cycles of the waveform.
-@label=beep_speed_decreased_loop
+@label=beep_engine_normal_loop
 *$6C63 LD A,$10      ; {Turn speaker ON (bit 4 of port $FE).
  $6C65 OUT ($FE),A   ; }
  $6C67 LD D,E        ; Load period into D.
-@label=beep_speed_decreased_delay_on
+@label=beep_engine_normal_delay_on
 *$6C68 DEC D         ; {Delay loop for speaker ON phase.
  $6C69 JR NZ,$6C68   ; }
  $6C6B LD A,$00      ; {Turn speaker OFF.
  $6C6D OUT ($FE),A   ; }
  $6C6F LD D,E        ; Load period into D.
-@label=beep_speed_decreased_delay_off
+@label=beep_engine_normal_delay_off
 *$6C70 DEC D         ; {Delay loop for speaker OFF phase.
  $6C71 JR NZ,$6C70   ; }
  $6C73 DEC C         ; {Decrement cycle counter, loop if not zero. Return from
@@ -4765,69 +4774,70 @@ c$6CAD LD A,$18      ; {Reset explosion counter to $18 (24) for next explosion.
  $6CB5 RES 5,(HL)    ; }
  $6CB7 RET           ;
 
-; Play acceleration engine sound
+; Play fast speed engine sound
 ;
-; Generates an engine sound when player is accelerating. Called when only
-; CONTROLS_BIT_SPEED_ALTERED is set in #R$6BB0. HL points to the controls byte
-; on entry.
+; Generates the engine sound for fast speed. Called when only
+; CONTROLS_BIT_SPEED_CHANGED is set (player holding up). HL points to the
+; controls byte on entry.
 ; .
 ; #LIST
 ; { Period = (controls_byte AND $07), used for speaker ON delay }
 ; { Fixed OFF delay of 4 iterations (shorter than ON = asymmetric wave) }
-; { Asymmetric wave gives a different timbre than deceleration sound }
+; { Asymmetric wave gives a higher-pitched timbre than normal speed }
 ; LIST#
 ;
 ; I:HL Pointer to #R$6BB0 (controls state byte)
-@label=beep_speed_increased
+@label=beep_engine_fast
 c$6CB8 LD A,(HL)     ; {Extract period from low 3 bits of controls byte.
  $6CB9 AND $07       ;
  $6CBB LD E,A        ; }
  $6CBC LD C,$08      ; Loop counter: 8 cycles of the waveform.
-@label=beep_speed_increased_loop
+@label=beep_engine_fast_loop
 *$6CBE LD A,$10      ; {Turn speaker ON (bit 4 of port $FE).
  $6CC0 OUT ($FE),A   ; }
  $6CC2 LD D,E        ; Load period into D.
-@label=beep_speed_increased_delay_on
+@label=beep_engine_fast_delay_on
 *$6CC3 DEC D         ; {Delay loop for speaker ON phase.
  $6CC4 JR NZ,$6CC3   ; }
  $6CC6 LD A,$00      ; {Turn speaker OFF.
  $6CC8 OUT ($FE),A   ; }
  $6CCA LD D,$04      ; Load fixed delay ($04) into D.
-@label=beep_speed_increased_delay_off
+@label=beep_engine_fast_delay_off
 *$6CCC DEC D         ; {Delay loop for speaker OFF phase (asymmetric wave).
  $6CCD JR NZ,$6CCC   ; }
  $6CCF DEC C         ; {Decrement cycle counter, loop if not zero. Return from
  $6CD0 JP NZ,$6CBE   ; interrupt when done.
  $6CD3 JP $6C24      ; }
 
-; Play combined speed change sound
+; Play slow speed engine sound
 ;
-; Generates a sound when both CONTROLS_BIT_SPEED_DECREASED and
-; CONTROLS_BIT_SPEED_ALTERED are set. HL points to the controls byte on entry.
+; Generates the engine sound for slow speed. Called when both
+; CONTROLS_BIT_SPEED_NOT_FAST and CONTROLS_BIT_SPEED_CHANGED are set (player
+; holding down). HL points to the controls byte on entry.
 ; .
 ; #LIST
 ; { Period = (controls_byte AND $17), uses bits 0-2 and bit 4 }
-; { Fixed OFF delay of $0C (12) iterations (longer than acceleration sound) }
-; { Different timbre from both acceleration and deceleration }
+; { Fixed OFF delay of $0C (12) iterations (longer than fast speed sound) }
+; { Lower-pitched timbre than normal and fast speeds }
 ; LIST#
 ;
 ; I:HL Pointer to #R$6BB0 (controls state byte)
-@label=beep_speed_combined
+@label=beep_engine_slow
 c$6CD6 LD A,(HL)     ; {Extract period from bits 0-2 and bit 4 of controls
  $6CD7 AND $17       ; byte.
  $6CD9 LD E,A        ; }
  $6CDA LD C,$08      ; Loop counter: 8 cycles of the waveform.
-@label=beep_speed_combined_loop
+@label=beep_engine_slow_loop
 *$6CDC LD A,$10      ; {Turn speaker ON (bit 4 of port $FE).
  $6CDE OUT ($FE),A   ; }
  $6CE0 LD D,E        ; Load period into D.
-@label=beep_speed_combined_delay_on
+@label=beep_engine_slow_delay_on
 *$6CE1 DEC D         ; {Delay loop for speaker ON phase.
  $6CE2 JR NZ,$6CE1   ; }
  $6CE4 LD A,$00      ; {Turn speaker OFF.
  $6CE6 OUT ($FE),A   ; }
  $6CE8 LD D,$0C      ; Load fixed delay ($0C) into D.
-@label=beep_speed_combined_delay_off
+@label=beep_engine_slow_delay_off
 *$6CEA DEC D         ; {Delay loop for speaker OFF phase.
  $6CEB JR NZ,$6CEA   ; }
  $6CED DEC C         ; {Decrement cycle counter, loop if not zero. Return from

@@ -48,11 +48,16 @@ SPEED_NORMAL EQU $02
 SPEED_FAST   EQU $04
 
 CONTROLS_BIT_FIRE            EQU 0
-CONTROLS_BIT_SPEED_DECREASED EQU 1
-CONTROLS_BIT_SPEED_ALTERED   EQU 2
+CONTROLS_BIT_SPEED_NOT_FAST  EQU 1
+CONTROLS_BIT_SPEED_CHANGED   EQU 2
 CONTROLS_BIT_LOW_FUEL        EQU 3
 CONTROLS_BIT_BONUS_LIFE      EQU 4
 CONTROLS_BIT_EXPLODING       EQU 5
+
+CONTROLS_SPEED_MASK   EQU 1<<CONTROLS_BIT_SPEED_NOT_FAST|1<<CONTROLS_BIT_SPEED_CHANGED
+CONTROLS_SPEED_NORMAL EQU 1<<CONTROLS_BIT_SPEED_NOT_FAST
+CONTROLS_SPEED_FAST   EQU 1<<CONTROLS_BIT_SPEED_CHANGED
+CONTROLS_SPEED_SLOW   EQU 1<<CONTROLS_BIT_SPEED_NOT_FAST|1<<CONTROLS_BIT_SPEED_CHANGED
 
 TANK_SHELL_STATE_UNITIALIZED   EQU $00
 TANK_SHELL_MASK_SPEED          EQU $07
@@ -3129,8 +3134,8 @@ ld_sprite_plane_banked:
 ; Called each frame to advance the vertical scroll position. Adds current speed (state_speed) to scroll offset
 ; (state_scroll_offset), updates the bridge's Y position, then resets speed to SPEED_NORMAL and updates control flags.
 ;
-; The control bits modified are: clears CONTROLS_BIT_SPEED_ALTERED, sets CONTROLS_BIT_SPEED_DECREASED. This marks that
-; speed has returned to normal after any joystick input.
+; The control bits modified are: clears CONTROLS_BIT_SPEED_CHANGED, sets CONTROLS_BIT_SPEED_NOT_FAST. This triggers
+; beep_engine_normal to play the normal speed engine sound.
 advance_scroll:
   LD BC,(state_scroll_offset)          ; Add speed to scroll offset and store result.
   LD H,$00                             ;
@@ -3141,7 +3146,7 @@ advance_scroll:
   CALL update_bridge_scroll            ;
   LD A,SPEED_NORMAL
   LD (state_speed),A
-  LD HL,state_controls                 ; Clear CONTROLS_BIT_SPEED_ALTERED, set CONTROLS_BIT_SPEED_DECREASED in
+  LD HL,state_controls                 ; Clear CONTROLS_BIT_SPEED_CHANGED, set CONTROLS_BIT_SPEED_NOT_FAST in
   RES 2,(HL)                           ; state_controls.
   SET 1,(HL)                           ;
   RET
@@ -3184,9 +3189,9 @@ clear_bridge:
 handle_up:
   LD A,SPEED_FAST                      ; Set speed to SPEED_FAST.
   LD (state_speed),A                   ;
-  LD HL,state_controls                  ; Set CONTROLS_BIT_SPEED_ALTERED, clear CONTROLS_BIT_SPEED_DECREASED.
-  SET CONTROLS_BIT_SPEED_ALTERED,(HL)   ;
-  RES CONTROLS_BIT_SPEED_DECREASED,(HL) ;
+  LD HL,state_controls                 ; Set CONTROLS_BIT_SPEED_CHANGED, clear CONTROLS_BIT_SPEED_NOT_FAST.
+  SET CONTROLS_BIT_SPEED_CHANGED,(HL)  ;
+  RES CONTROLS_BIT_SPEED_NOT_FAST,(HL) ;
   RET
 
 ; Handle down/decelerate input
@@ -3197,9 +3202,9 @@ handle_up:
 handle_down:
   LD A,SPEED_SLOW                      ; Set speed to SPEED_SLOW.
   LD (state_speed),A                   ;
-  LD HL,state_controls                  ; Set CONTROLS_BIT_SPEED_ALTERED and CONTROLS_BIT_SPEED_DECREASED.
-  SET CONTROLS_BIT_SPEED_ALTERED,(HL)   ;
-  SET CONTROLS_BIT_SPEED_DECREASED,(HL) ;
+  LD HL,state_controls                 ; Set CONTROLS_BIT_SPEED_CHANGED and CONTROLS_BIT_SPEED_NOT_FAST.
+  SET CONTROLS_BIT_SPEED_CHANGED,(HL)  ;
+  SET CONTROLS_BIT_SPEED_NOT_FAST,(HL) ;
   RET
 
 ; Handle fire button input
@@ -3287,7 +3292,7 @@ clear_fire_bit:
 ; and animate_plane_missile.
 ;
 ; Called after a successful collision to clean up the game state. Erases the missile sprite from the screen, resets the
-; collision mode to COLLISION_MODE_NONE, clears the missile coordinates, and resets CONTROLS_BIT_SPEED_DECREASED.
+; collision mode to COLLISION_MODE_NONE, clears the missile coordinates, and resets CONTROLS_BIT_SPEED_NOT_FAST.
 ;
 ; If in GAMEPLAY_MODE_REFUEL, jumps to handle_no_fuel instead.
 ;
@@ -3325,7 +3330,7 @@ finalize_collision_erase_missile_loop:
   LD DE,$080C                          ;
   LD HL,sprite_erasure                 ; Erase missile sprite.
   CALL render_object                   ;
-  LD HL,state_controls                 ; Reset CONTROLS_BIT_SPEED_DECREASED in state_controls.
+  LD HL,state_controls                 ; Reset CONTROLS_BIT_SPEED_NOT_FAST in state_controls.
   RES 1,(HL)                           ;
   LD BC,(state_plane_missile_coordinates) ; Reload coordinates from state_plane_missile_coordinates, then clear them.
   LD HL,$0000                             ;
@@ -4119,17 +4124,17 @@ int_handler:
 ; Sound processing dispatcher called from interrupt handler. Reads state_controls control flags and calls appropriate
 ; sound routines. Multiple sounds can trigger simultaneously (e.g., fire + low fuel).
 ;
-; +-----+-----------------+-------------------------------------+
-; | Bit | Flag            | Sound Handler                       |
-; +-----+-----------------+-------------------------------------+
-; | 0   | FIRE            | do_fire (fire)                      |
-; | 1   | SPEED_DECREASED | beep_speed_decreased (deceleration) |
-; | 2   | SPEED_ALTERED   | beep_speed_increased (acceleration) |
-; | 1+2 | Both speed bits | beep_speed_combined (combined)      |
-; | 3   | LOW_FUEL        | do_low_fuel (warning)               |
-; | 4   | BONUS_LIFE      | do_bonus_life (jingle)              |
-; | 5   | EXPLODING       | beep_explosion (explosion)          |
-; +-----+-----------------+-------------------------------------+
+; +-----+-----------------+-----------------------------------+
+; | Bit | Flag            | Sound Handler                     |
+; +-----+-----------------+-----------------------------------+
+; | 0   | FIRE            | do_fire (fire)                    |
+; | 1   | SPEED_NOT_FAST  | beep_engine_normal (normal speed) |
+; | 2   | SPEED_CHANGED   | beep_engine_fast (fast speed)     |
+; | 1+2 | Both speed bits | beep_engine_slow (slow speed)     |
+; | 3   | LOW_FUEL        | do_low_fuel (warning)             |
+; | 4   | BONUS_LIFE      | do_bonus_life (jingle)            |
+; | 5   | EXPLODING       | beep_explosion (explosion)        |
+; +-----+-----------------+-----------------------------------+
 ;
 ; Flags are set by game logic (input handlers, collision, fuel system) and cleared by sound routines when complete.
 handle_controls:
@@ -4148,13 +4153,13 @@ handle_controls:
   BIT CONTROLS_BIT_LOW_FUEL,(HL)       ; Check LOW_FUEL → do_low_fuel.
   JP NZ,do_low_fuel                    ;
   LD A,(HL)                            ;
-  AND $06                              ; Mask speed bits (1+2).
-  CP $02                               ; SPEED_DECREASED only → beep_speed_decreased.
-  JP Z,beep_speed_decreased            ;
-  CP $04                               ; SPEED_ALTERED only → beep_speed_increased.
-  JP Z,beep_speed_increased            ;
-  CP $06                               ; Both speed bits → beep_speed_combined.
-  JP Z,beep_speed_combined             ;
+  AND CONTROLS_SPEED_MASK              ; Mask speed bits.
+  CP CONTROLS_SPEED_NORMAL             ; Normal speed → beep_engine_normal.
+  JP Z,beep_engine_normal              ;
+  CP CONTROLS_SPEED_FAST               ; Fast speed → beep_engine_fast.
+  JP Z,beep_engine_fast                ;
+  CP CONTROLS_SPEED_SLOW               ; Slow speed → beep_engine_slow.
+  JP Z,beep_engine_slow                ;
 
 ; Return from interrupt handler
 ;
@@ -4215,36 +4220,36 @@ bonus_life_sound_done:
   RES 4,(HL)                           ;
   RET
 
-; Play deceleration engine sound
+; Play normal speed engine sound
 ;
-; Generates an engine sound when player is decelerating. Called when only CONTROLS_BIT_SPEED_DECREASED is set in
-; state_controls. HL points to the controls byte on entry.
+; Generates the engine sound for normal speed. Called when only CONTROLS_BIT_SPEED_NOT_FAST is set (player not pressing
+; up or down). HL points to the controls byte on entry.
 ;
 ; * Period = (controls_byte AND $0F), used for both on and off delays
 ; * Symmetric square wave: same delay for high and low phases
 ; * Loops 8 cycles then returns
 ;
 ; I:HL Pointer to state_controls (controls state byte)
-beep_speed_decreased:
+beep_engine_normal:
   LD A,(HL)                            ; Extract period from low 4 bits of controls byte. Higher value = lower pitch.
   AND $0F                              ;
   LD E,A                               ;
   LD C,$08                             ; Loop counter: 8 cycles of the waveform.
-beep_speed_decreased_loop:
+beep_engine_normal_loop:
   LD A,$10                             ; Turn speaker ON (bit 4 of port $FE).
   OUT ($FE),A                          ;
   LD D,E                               ; Load period into D.
-beep_speed_decreased_delay_on:
+beep_engine_normal_delay_on:
   DEC D                                ; Delay loop for speaker ON phase.
-  JR NZ,beep_speed_decreased_delay_on  ;
+  JR NZ,beep_engine_normal_delay_on    ;
   LD A,$00                             ; Turn speaker OFF.
   OUT ($FE),A                          ;
   LD D,E                               ; Load period into D.
-beep_speed_decreased_delay_off:
+beep_engine_normal_delay_off:
   DEC D                                ; Delay loop for speaker OFF phase.
-  JR NZ,beep_speed_decreased_delay_off ;
+  JR NZ,beep_engine_normal_delay_off   ;
   DEC C                                ; Decrement cycle counter, loop if not zero. Return from interrupt when done.
-  JP NZ,beep_speed_decreased_loop      ;
+  JP NZ,beep_engine_normal_loop        ;
   JP int_return                        ;
 
 ; Explosion sound frame counter. Counts down from $18 (24) to 0. Value also controls pitch - higher values = lower
@@ -4306,68 +4311,68 @@ explosion_render_finish:
   RES CONTROLS_BIT_EXPLODING,(HL)      ;
   RET
 
-; Play acceleration engine sound
+; Play fast speed engine sound
 ;
-; Generates an engine sound when player is accelerating. Called when only CONTROLS_BIT_SPEED_ALTERED is set in
-; state_controls. HL points to the controls byte on entry.
+; Generates the engine sound for fast speed. Called when only CONTROLS_BIT_SPEED_CHANGED is set (player holding up). HL
+; points to the controls byte on entry.
 ;
 ; * Period = (controls_byte AND $07), used for speaker ON delay
 ; * Fixed OFF delay of 4 iterations (shorter than ON = asymmetric wave)
-; * Asymmetric wave gives a different timbre than deceleration sound
+; * Asymmetric wave gives a higher-pitched timbre than normal speed
 ;
 ; I:HL Pointer to state_controls (controls state byte)
-beep_speed_increased:
+beep_engine_fast:
   LD A,(HL)                            ; Extract period from low 3 bits of controls byte.
   AND $07                              ;
   LD E,A                               ;
   LD C,$08                             ; Loop counter: 8 cycles of the waveform.
-beep_speed_increased_loop:
+beep_engine_fast_loop:
   LD A,$10                             ; Turn speaker ON (bit 4 of port $FE).
   OUT ($FE),A                          ;
   LD D,E                               ; Load period into D.
-beep_speed_increased_delay_on:
+beep_engine_fast_delay_on:
   DEC D                                ; Delay loop for speaker ON phase.
-  JR NZ,beep_speed_increased_delay_on  ;
+  JR NZ,beep_engine_fast_delay_on      ;
   LD A,$00                             ; Turn speaker OFF.
   OUT ($FE),A                          ;
   LD D,$04                             ; Load fixed delay ($04) into D.
-beep_speed_increased_delay_off:
+beep_engine_fast_delay_off:
   DEC D                                ; Delay loop for speaker OFF phase (asymmetric wave).
-  JR NZ,beep_speed_increased_delay_off ;
+  JR NZ,beep_engine_fast_delay_off     ;
   DEC C                                ; Decrement cycle counter, loop if not zero. Return from interrupt when done.
-  JP NZ,beep_speed_increased_loop      ;
+  JP NZ,beep_engine_fast_loop          ;
   JP int_return                        ;
 
-; Play combined speed change sound
+; Play slow speed engine sound
 ;
-; Generates a sound when both CONTROLS_BIT_SPEED_DECREASED and CONTROLS_BIT_SPEED_ALTERED are set. HL points to the
-; controls byte on entry.
+; Generates the engine sound for slow speed. Called when both CONTROLS_BIT_SPEED_NOT_FAST and CONTROLS_BIT_SPEED_CHANGED
+; are set (player holding down). HL points to the controls byte on entry.
 ;
 ; * Period = (controls_byte AND $17), uses bits 0-2 and bit 4
-; * Fixed OFF delay of $0C (12) iterations (longer than acceleration sound)
-; * Different timbre from both acceleration and deceleration
+; * Fixed OFF delay of $0C (12) iterations (longer than fast speed sound)
+; * Lower-pitched timbre than normal and fast speeds
 ;
 ; I:HL Pointer to state_controls (controls state byte)
-beep_speed_combined:
+beep_engine_slow:
   LD A,(HL)                            ; Extract period from bits 0-2 and bit 4 of controls byte.
   AND $17                              ;
   LD E,A                               ;
   LD C,$08                             ; Loop counter: 8 cycles of the waveform.
-beep_speed_combined_loop:
+beep_engine_slow_loop:
   LD A,$10                             ; Turn speaker ON (bit 4 of port $FE).
   OUT ($FE),A                          ;
   LD D,E                               ; Load period into D.
-beep_speed_combined_delay_on:
+beep_engine_slow_delay_on:
   DEC D                                ; Delay loop for speaker ON phase.
-  JR NZ,beep_speed_combined_delay_on   ;
+  JR NZ,beep_engine_slow_delay_on      ;
   LD A,$00                             ; Turn speaker OFF.
   OUT ($FE),A                          ;
   LD D,$0C                             ; Load fixed delay ($0C) into D.
-beep_speed_combined_delay_off:
+beep_engine_slow_delay_off:
   DEC D                                ; Delay loop for speaker OFF phase.
-  JR NZ,beep_speed_combined_delay_off  ;
+  JR NZ,beep_engine_slow_delay_off     ;
   DEC C                                ; Decrement cycle counter, loop if not zero. Return from interrupt when done.
-  JP NZ,beep_speed_combined_loop       ;
+  JP NZ,beep_engine_slow_loop          ;
   JP int_return                        ;
 
 ; Play low fuel warning sound
