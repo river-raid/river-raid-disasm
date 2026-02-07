@@ -1034,6 +1034,7 @@ c$5D44 LD A,$78      ; {Initialize plane X position to $78. Why isn't it $80?
  $5D72 LD ($5F64),A  ; }
 @isub=LD (state_bridge_destroyed),A
  $5D75 LD ($5F6D),A  ; Store $02 to #R$5F6D (unclear why $02 is used here).
+@isub=LD HL,CHAR_0<<8|CHAR_0
  $5D78 LD HL,$3030   ; {Initialize all player scores to zero (ASCII "00").
  $5D7B LD ($90BC),HL ;
  $5D7E LD ($90BE),HL ;

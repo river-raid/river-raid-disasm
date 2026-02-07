@@ -980,7 +980,7 @@ init_state:
   LD (state_gameplay_mode),A           ;
   LD (state_speed),A                   ;
   LD (state_bridge_destroyed),A        ; Store $02 to state_bridge_destroyed (unclear why $02 is used here).
-  LD HL,$3030                          ; Initialize all player scores to zero (ASCII "00").
+  LD HL,CHAR_0<<8|CHAR_0               ; Initialize all player scores to zero (ASCII "00").
   LD (state_score_player_1_low),HL     ;
   LD (state_score_player_1_mid),HL     ;
   LD (state_score_player_1_high),HL    ;

@@ -395,6 +395,7 @@ N $5D44 This routine sets up the initial game state used by the overview (attrac
   $5D6A Initialize terrain profile, gameplay mode, and speed to $02 (GAMEPLAY_MODE_OVERVIEW / SPEED_NORMAL).
 @ $5D75 isub=LD (state_bridge_destroyed),A
   $5D75 Store $02 to #R$5F6D (unclear why $02 is used here).
+@ $5D78 isub=LD HL,CHAR_0<<8|CHAR_0
   $5D78 Initialize all player scores to zero (ASCII "00").
   $5D8D Set level fragment number and terrain position to 1.
   $5D95 Set both players' lives to 4.
