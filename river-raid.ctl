@@ -296,16 +296,20 @@
 @ $4000 equ=INT_VECTOR_ENTRY=$FE
 @ $4000 label=screen_pixels
 b $4000 Screen pixels.
-b $4000 Screen pixels.
 D $4000 #UDGTABLE { #SCR(loading) } TABLE#
+  $4000,6144,16
 @ $5800 label=screen_attributes
 b $5800 Screen attributes.
+  $5800,32,16
 @ $5820 label=screen_attributes_row_1
 b $5820 Screen attributes row 1.
+  $5820,512,16
 @ $5A20 label=screen_attributes_row_16
 b $5A20 Screen attributes row 16 (boundary for visible sprite area).
+  $5A20,32,16
 @ $5A40 label=screen_attributes_row_17
 b $5A40 Screen attributes row 17 (start of lower screen area).
+  $5A40,192,16
 @ $5B00 label=screen_row_table
 b $5B00 Screen row address lookup table (64 entries × 2 bytes = 128 bytes).
 D $5B00 Pre-computed table mapping row indices (0-63) to screen memory addresses. Used by #R$683B for fast vertical scrolling. Avoids calculating addresses from the ZX Spectrum's non-linear screen layout.
@@ -2869,10 +2873,13 @@ b $82C5
 b $82F5
 @ $8331 label=sprite_terrain_pre_post_bridge
 b $8331
+  $8331,32,16
 @ $8351 label=sprite_road_and_bridge_pixels
 b $8351
+  $8351,32,16
 @ $8371 label=sprite_road_attributes
 b $8371
+  $8371,32,16
 @ $8391 label=data_unused_8391
 u $8391 Unused alternate road attributes.
 D $8391 32 bytes with the same structure as #R$8371 but different values: $3F (white-on-white, invisible) and $C0 (flash, black). Possibly an early version or debug variant of road attributes.
@@ -2901,6 +2908,10 @@ b $8431
   $8449,8,1 Frame 4
 @ $8451 label=sprite_missile_trail
 b $8451
+  $8451,8,1 Frame 1
+  $8459,8,1 Frame 2
+  $8461,8,1 Frame 3
+  $8469,8,1 Frame 4
 @ $8471 label=sprite_explosion_f1
 b $8471
 N $8471 #UDGTABLE { #UDGARRAY2,14,4,2;$8471-$8472-1-16(*explosion-f1) } TABLE#
@@ -3074,16 +3085,25 @@ C $8A78,14 Add column offset and extract bit position.
 @ $8A86 label=sprite_fuel
 b $8A86 Fuel sprite
 N $8A86 #UDGTABLE { #UDGARRAY2,11,4,2;$8A86-$8AB8-1-16{0,0,64,100}(sprite-fuel) } TABLE#
+  $8A86,50,2
 @ $8AB8 label=sprite_helicopter_rotor_left
 b $8AB8 Helicopter rotor sprite (left-facing)
 N $8AB8 #UDGTABLE { #UDGARRAY2,6,4;$8AB8;$8AC0(rotor-left) } TABLE#
+  $8AB8,16,2
 @ $8AC8 label=sprite_helicopter_rotor_right
 b $8AC8 Helicopter rotor sprite (right-facing)
 N $8AC8 #UDGTABLE { #UDGARRAY2,6,4;$8AC8;$8AD0(rotor-right) } TABLE#
+  $8AC8,16,2
 @ $8AD8 label=sprite_unused_explosion
 u $8AD8 Unused explosion animation sprite (6 frames × 8 bytes).
 D $8AD8 A 6-frame animation showing a diamond shape expanding from a single pixel to a full diamond. Each frame is 8×8 pixels (1 tile). This appears to be an unused or early explosion effect that was not included in the final game.
 N $8AD8 #UDGTABLE { #UDG$8AD8,4,4(unused-exp-f1) | #UDG$8AE0,4,4(unused-exp-f2) | #UDG$8AE8,4,4(unused-exp-f3) | #UDG$8AF0,4,4(unused-exp-f4) | #UDG$8AF8,4,4(unused-exp-f5) | #UDG$8B00,4,4(unused-exp-f6) } TABLE#
+  $8AD8,8,1 Frame 1
+  $8AE0,8,1 Frame 2
+  $8AE8,8,1 Frame 3
+  $8AF0,8,1 Frame 4
+  $8AF8,8,1 Frame 5
+  $8B00,8,1 Frame 6
 @ $8B08 label=collision_dispatcher_ptr
 g $8B08 Pointer to collision handler routine at #R$6136. Called when sprite rendering detects pixel overlap.
 W $8B08
