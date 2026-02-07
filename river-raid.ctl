@@ -61,6 +61,8 @@
 > $4000 PLAYER_1 EQU $01
 > $4000 PLAYER_2 EQU $02
 > $4000
+> $4000 LIVES_INITIAL EQU $04
+> $4000
 > $4000 SPEED_STOP   EQU $01
 > $4000 SPEED_SLOW   EQU $01
 > $4000 SPEED_NORMAL EQU $02
@@ -398,6 +400,7 @@ N $5D44 This routine sets up the initial game state used by the overview (attrac
 @ $5D78 isub=LD HL,CHAR_0<<8|CHAR_0
   $5D78 Initialize all player scores to zero (ASCII "00").
   $5D8D Set level fragment number and terrain position to 1.
+@ $5D95 isub=LD HL,LIVES_INITIAL<<8|LIVES_INITIAL
   $5D95 Set both players' lives to 4.
   $5D9B,3 Set current player to PLAYER_1.
 @ $5D9F label=decrease_lives_player_2

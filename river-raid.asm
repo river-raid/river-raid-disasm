@@ -59,6 +59,8 @@ GAME_MODE_BIT_TWO_PLAYERS EQU 0
 PLAYER_1 EQU $01
 PLAYER_2 EQU $02
 
+LIVES_INITIAL EQU $04
+
 SPEED_STOP   EQU $01
 SPEED_SLOW   EQU $01
 SPEED_NORMAL EQU $02
@@ -990,7 +992,7 @@ init_state:
   LD A,$01                             ; Set level fragment number and terrain position to 1.
   LD (state_level_fragment_number),A   ;
   LD (state_terrain_position),A        ;
-  LD HL,$0404                          ; Set both players' lives to 4.
+  LD HL,LIVES_INITIAL<<8|LIVES_INITIAL ; Set both players' lives to 4.
   LD (state_lives_player_1),HL         ;
   LD (state_player),A                  ; Set current player to PLAYER_1.
   RET

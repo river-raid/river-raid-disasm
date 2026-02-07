@@ -61,6 +61,8 @@ GAME_MODE_BIT_TWO_PLAYERS EQU 0
 PLAYER_1 EQU $01
 PLAYER_2 EQU $02
 
+LIVES_INITIAL EQU $04
+
 SPEED_STOP   EQU $01
 SPEED_SLOW   EQU $01
 SPEED_NORMAL EQU $02
@@ -1045,6 +1047,7 @@ c$5D44 LD A,$78      ; {Initialize plane X position to $78. Why isn't it $80?
  $5D8D LD A,$01      ; {Set level fragment number and terrain position to 1.
  $5D8F LD ($5F76),A  ;
  $5D92 LD ($5F7D),A  ; }
+@isub=LD HL,LIVES_INITIAL<<8|LIVES_INITIAL
  $5D95 LD HL,$0404   ; {Set both players' lives to 4.
  $5D98 LD ($923B),HL ; }
  $5D9B LD ($923D),A  ; Set current player to PLAYER_1.
