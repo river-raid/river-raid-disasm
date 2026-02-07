@@ -32,11 +32,13 @@
 > $4000 EXT_ATTR_AT    EQU $16
 > $4000
 > $4000 ; ASCII character codes
-> $4000 CHAR_ENTER EQU $0D
-> $4000 CHAR_SPACE EQU $20
-> $4000 CHAR_0     EQU $30
-> $4000 CHAR_1     EQU $31
-> $4000 CHAR_H     EQU $68
+> $4000 CHAR_ENTER   EQU $0D
+> $4000 CHAR_SPACE   EQU $20
+> $4000 CHAR_0       EQU $30
+> $4000 CHAR_1       EQU $31
+> $4000 CHAR_H_UPPER EQU $48
+> $4000 CHAR_I_UPPER EQU $49
+> $4000 CHAR_H       EQU $68
 > $4000
 > $4000 ; Z80 opcodes used in self-modifying code
 > $4000 OPCODE_NOP   EQU $00
@@ -3375,7 +3377,9 @@ D $91E8 In 2-player mode, prints player 2's score. In 1-player mode, prints the 
   $9204 Select high score for current bridge: offset = (game_mode AND $FE) * 3 = bridge_index * 6 (6 bytes per entry). Print 6-digit score with trailing '0'.
 @ $9225 isub=LD A,EXT_ATTR_AT
   $9225 AT 1,18
+@ $922E isub=LD A,CHAR_H_UPPER
   $922E,11 Print "HI" label, switch to channel 2 (main screen).
+@ $9231 isub=LD A,CHAR_I_UPPER
 @ $923A label=state_game_mode
 b $923A Game mode configuration byte
 D $923A #TABLE(default) { =h Bit(s) | =h Meaning | =h Values } { 0 | Player count | 0=1 player, 1=2 players } { 1-2 | Starting bridge | 0=Bridge 1, 1=Bridge 5, 2=Bridge 9, 3=Bridge 15 } { 3-7 | Unused | Always 0 } TABLE#

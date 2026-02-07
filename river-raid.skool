@@ -32,11 +32,13 @@ EXT_ATTR_PAPER EQU $11
 EXT_ATTR_AT    EQU $16
 
 ; ASCII character codes
-CHAR_ENTER EQU $0D
-CHAR_SPACE EQU $20
-CHAR_0     EQU $30
-CHAR_1     EQU $31
-CHAR_H     EQU $68
+CHAR_ENTER   EQU $0D
+CHAR_SPACE   EQU $20
+CHAR_0       EQU $30
+CHAR_1       EQU $31
+CHAR_H_UPPER EQU $48
+CHAR_I_UPPER EQU $49
+CHAR_H       EQU $68
 
 ; Z80 opcodes used in self-modifying code
 OPCODE_NOP   EQU $00
@@ -9394,8 +9396,10 @@ c$91E8 LD A,$01      ; {Open channel 1 (upper screen).
  $922A RST $10       ;
  $922B LD A,$12      ;
  $922D RST $10       ; }
+@isub=LD A,CHAR_H_UPPER
  $922E LD A,$48      ; {Print "HI" label, switch to channel 2 (main screen).
  $9230 RST $10       ;
+@isub=LD A,CHAR_I_UPPER
  $9231 LD A,$49      ;
  $9233 RST $10       ;
  $9234 LD A,$02      ;

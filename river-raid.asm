@@ -30,11 +30,13 @@ EXT_ATTR_PAPER EQU $11
 EXT_ATTR_AT    EQU $16
 
 ; ASCII character codes
-CHAR_ENTER EQU $0D
-CHAR_SPACE EQU $20
-CHAR_0     EQU $30
-CHAR_1     EQU $31
-CHAR_H     EQU $68
+CHAR_ENTER   EQU $0D
+CHAR_SPACE   EQU $20
+CHAR_0       EQU $30
+CHAR_1       EQU $31
+CHAR_H_UPPER EQU $48
+CHAR_I_UPPER EQU $49
+CHAR_H       EQU $68
 
 ; Z80 opcodes used in self-modifying code
 OPCODE_NOP   EQU $00
@@ -8251,9 +8253,9 @@ print_player_2_score_area:
   RST $10                              ;
   LD A,$12                             ;
   RST $10                              ;
-  LD A,$48                             ; Print "HI" label, switch to channel 2 (main screen).
+  LD A,CHAR_H_UPPER                    ; Print "HI" label, switch to channel 2 (main screen).
   RST $10                              ;
-  LD A,$49                             ;
+  LD A,CHAR_I_UPPER                    ;
   RST $10                              ;
   LD A,$02                             ;
   CALL CHAN_OPEN                       ;
