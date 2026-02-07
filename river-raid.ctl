@@ -312,8 +312,7 @@ b $5A40 Screen attributes row 17 (start of lower screen area).
   $5A40,192,16
 @ $5B00 label=screen_row_table
 b $5B00 Screen row address lookup table (64 entries × 2 bytes = 128 bytes).
-D $5B00 Pre-computed table mapping row indices (0-63) to screen memory addresses. Used by #R$683B for fast vertical scrolling. Avoids calculating addresses from the ZX Spectrum's non-linear screen layout.
-D $5B00 ZX Spectrum screen memory is organized in thirds with interleaved rows, making address calculation complex. This table provides O(1) lookup: screen_addr = screen_row_table[row_index × 2].
+D $5B00 Pre-computed table mapping row indices (0-63) to screen memory addresses. Used by #R$683B for fast vertical scrolling. This table provides O(1) lookup: screen_addr = screen_row_table[row_index × 2].
 W $5B00,128,2
 @ $5B80 label=data_unused_5B80
 u $5B80 Unused area.
@@ -351,12 +350,12 @@ N $5CD2 This is the main entry point invoked by the BASIC loader. It performs on
 @ $5D06 label=return_to_control_selection
 @ $5D06 isub=LD A,IM1_VECTOR_TABLE_HI
 c $5D06 Return to control selection dialog
-N $5D06 This entry point is used when returning to the control selection dialog from the game (via #R$6BD2) or from the overview mode. It switches back to the standard ZX Spectrum interrupt mode (IM 1), then calls clear_and_setup to display the control selection dialog.
+N $5D06 This entry point is used when returning to the control selection dialog from the game (via #R$6BD2) or from the overview mode. It switches back to IM 1, then calls clear_and_setup to display the control selection dialog.
 N $5D06 .
 N $5D06 After the user selects controls and game mode, execution continues at #R$5D10.
   $5D06 Restore standard IM 1 interrupt vector table.
-  $5D08 Set the I register to $3F (standard ZX Spectrum IM 1 mode).
-  $5D0A Set interrupt mode 1 (standard ZX Spectrum interrupts).
+  $5D08 Set the I register to $3F for IM 1 mode.
+  $5D0A Set interrupt mode 1.
   $5D0C Enable interrupts.
   $5D0D Display the control selection dialog.
 @ $5D10 label=start_gameplay_or_overview
@@ -1560,7 +1559,7 @@ D $6BD2 Resets the scrolling text pointer and jumps back to the title screen.
   $6BD8 Jump to title screen initialization.
 @ $6BDB label=int_handler
 c $6BDB Maskable interrupt handler (IM 2)
-D $6BDB Frame interrupt handler triggered ~50 times/second by the ZX Spectrum ULA. Installed via IM 2 at game startup (see #R$5CD2). Uses RETN instead of RETI (functionally equivalent on ZX Spectrum).
+D $6BDB Frame interrupt handler triggered ~50 times/second. Installed via IM 2 at game startup (see #R$5CD2). Uses RETN instead of RETI (functionally equivalent).
 N $6BDB The handler performs three functions each frame:
 N $6BDB .
 N $6BDB #LIST { Increment interrupt counter (#R$5C78) } { Check H key for pause (jumps to #R$6BB1) } { Process control flags for sound effects (falls through to #R$6BED) } LIST#
@@ -1593,7 +1592,7 @@ N $6BED Flags are set by game logic (input handlers, collision, fuel system) and
   $6C1F Slow speed → #R$6CD6.
 @ $6C24 label=int_return
 c $6C24 Return from interrupt handler
-D $6C24 Restores registers and returns. Uses RETN instead of RETI (both work identically on ZX Spectrum since ULA doesn't respond to RETI).
+D $6C24 Restores registers and returns. Uses RETN instead of RETI (both work identically).
   $6C24 Restore registers.
   $6C28 Enable interrupts and return.
 @ $6C2B label=data_unused_6C2B
@@ -3136,7 +3135,7 @@ g $8B1A Sprite width in tiles (1-3). Used by render loop to process correct numb
 s $8B1B
 @ $8B1E label=render_sprite
 c $8B1E Render a sprite at position from #R$8B0A.
-D $8B1E Selects the pre-shifted sprite frame based on X position bits 1-2 (4 frames at 2-pixel alignment intervals) and renders it. Sprites are stored pre-shifted because the ZX Spectrum screen is byte-aligned (8 pixels per byte).
+D $8B1E Selects the pre-shifted sprite frame based on X position bits 1-2 (4 frames at 2-pixel alignment intervals) and renders it.
 R $8B1E I:A Sprite width in tiles
 R $8B1E I:BC Sprite frame size
 R $8B1E I:D Sprite height in pixels
@@ -3166,7 +3165,7 @@ R $8B3C I:HL Pointer to sprite data array (base of all frames)
   $8B6D Jump to render loop.
 @ $8B70 label=render_row_loop
 c $8B70 Process one row of sprite rendering.
-D $8B70 Handles ZX Spectrum screen memory boundary wrapping. The screen address increments by $0100 per pixel row, but crossing character row or screen-third boundaries requires corrections: subtract $07E0 at character row boundaries (within same third), or subtract $00E0 at third-of-screen boundaries.
+D $8B70 Handles screen memory boundary wrapping. The screen address increments by $0100 per pixel row, but crossing character row or screen-third boundaries requires corrections: subtract $07E0 at character row boundaries (within same third), or subtract $00E0 at third-of-screen boundaries.
   $8B70 Check if new Y position crosses a character row boundary (Y AND $07 = 0).
   $8B7D If at a third-of-screen boundary (Y AND $3F = 0), jump to subtract $00E0 instead.
   $8B85,12 Subtract $07E0 from screen address for character row crossing.
@@ -3529,7 +3528,7 @@ D $93F2 For 2-player games, compares scores and copies player 2 score to player 
 @ $9404 isub=LD BC,state_score_player_2_low - state_score_player_1_low
 @ $940A label=clear_screen
 c $940A Clear the screen by setting all pixel bytes to $00 and all attributes to the value set in #REGd.
-D $940A ZX Spectrum screen memory starts at #R$4000 with 6144 bytes of pixel data ($18 blocks of 256 bytes), followed by 768 bytes of attribute data ($03 blocks of 256 bytes).
+D $940A Clears screen memory.
 R $940A I:D Attribute value to fill the attribute area.
   $940A Point HL to start of screen memory (#R$4000).
   $940D Set outer loop counter to $18 (24 blocks for pixel area).

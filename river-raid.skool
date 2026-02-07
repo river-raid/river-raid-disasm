@@ -749,11 +749,7 @@ b$5A40 DEFB $07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07
 ; Screen row address lookup table (64 entries × 2 bytes = 128 bytes).
 ;
 ; Pre-computed table mapping row indices (0-63) to screen memory addresses.
-; Used by #R$683B for fast vertical scrolling. Avoids calculating addresses
-; from the ZX Spectrum's non-linear screen layout.
-; .
-; ZX Spectrum screen memory is organized in thirds with interleaved rows,
-; making address calculation complex. This table provides O(1) lookup:
+; Used by #R$683B for fast vertical scrolling. This table provides O(1) lookup:
 ; screen_addr = screen_row_table[row_index × 2].
 @label=screen_row_table
 b$5B00 DEFW $401F
@@ -924,9 +920,8 @@ c$5CD2 LD HL,$6BB0   ; {Initialize #R$9283 to point to #R$6BB0.
 ; .
 ;
 ; This entry point is used when returning to the control selection dialog from
-; the game (via #R$6BD2) or from the overview mode. It switches back to the
-; standard ZX Spectrum interrupt mode (IM 1), then calls clear_and_setup to
-; display the control selection dialog.
+; the game (via #R$6BD2) or from the overview mode. It switches back to IM 1,
+; then calls clear_and_setup to display the control selection dialog.
 ; .
 ; .
 ; .
@@ -935,9 +930,8 @@ c$5CD2 LD HL,$6BB0   ; {Initialize #R$9283 to point to #R$6BB0.
 @label=return_to_control_selection
 @isub=LD A,IM1_VECTOR_TABLE_HI
 c$5D06 LD A,$3F      ; Restore standard IM 1 interrupt vector table.
- $5D08 LD I,A        ; Set the I register to $3F (standard ZX Spectrum IM 1
-                     ; mode).
- $5D0A IM 1          ; Set interrupt mode 1 (standard ZX Spectrum interrupts).
+ $5D08 LD I,A        ; Set the I register to $3F for IM 1 mode.
+ $5D0A IM 1          ; Set interrupt mode 1.
  $5D0C EI            ; Enable interrupts.
  $5D0D CALL $7804    ; Display the control selection dialog.
 
@@ -4131,9 +4125,9 @@ c$6BD2 LD HL,$8182   ; {Reset text pointer to #R$8182 (credits text start).
 
 ; Maskable interrupt handler (IM 2)
 ;
-; Frame interrupt handler triggered ~50 times/second by the ZX Spectrum ULA.
-; Installed via IM 2 at game startup (see #R$5CD2). Uses RETN instead of RETI
-; (functionally equivalent on ZX Spectrum).
+; Frame interrupt handler triggered ~50 times/second. Installed via IM 2 at
+; game startup (see #R$5CD2). Uses RETN instead of RETI (functionally
+; equivalent).
 ;
 ; .
 ;
@@ -4221,7 +4215,7 @@ c$6BED LD A,($5C08)  ; {Skip if paused (H key).
 ; Return from interrupt handler
 ;
 ; Restores registers and returns. Uses RETN instead of RETI (both work
-; identically on ZX Spectrum since ULA doesn't respond to RETI).
+; identically).
 @label=int_return
 c$6C24 POP AF        ; {Restore registers.
  $6C25 POP BC        ;
@@ -8584,9 +8578,7 @@ s$8B1B DEFS $03
 ; Render a sprite at position from #R$8B0A.
 ;
 ; Selects the pre-shifted sprite frame based on X position bits 1-2 (4 frames
-; at 2-pixel alignment intervals) and renders it. Sprites are stored
-; pre-shifted because the ZX Spectrum screen is byte-aligned (8 pixels per
-; byte).
+; at 2-pixel alignment intervals) and renders it.
 ;
 ; I:A Sprite width in tiles
 ; I:BC Sprite frame size
@@ -8656,10 +8648,10 @@ c$8B3C PUSH DE       ; {Store width and set screen attributes for the sprite
 
 ; Process one row of sprite rendering.
 ;
-; Handles ZX Spectrum screen memory boundary wrapping. The screen address
-; increments by $0100 per pixel row, but crossing character row or screen-third
-; boundaries requires corrections: subtract $07E0 at character row boundaries
-; (within same third), or subtract $00E0 at third-of-screen boundaries.
+; Handles screen memory boundary wrapping. The screen address increments by
+; $0100 per pixel row, but crossing character row or screen-third boundaries
+; requires corrections: subtract $07E0 at character row boundaries (within same
+; third), or subtract $00E0 at third-of-screen boundaries.
 @label=render_row_loop
 c$8B70 PUSH DE       ; {Check if new Y position crosses a character row
  $8B71 LD BC,($8B0C) ; boundary (Y AND $07 = 0).
@@ -9861,9 +9853,7 @@ c$93F2 LD HL,$90BC   ; {Compare player 1 score (#R$90BC) with player 2 score
 ; Clear the screen by setting all pixel bytes to $00 and all attributes to the
 ; value set in #REGd.
 ;
-; ZX Spectrum screen memory starts at #R$4000 with 6144 bytes of pixel data
-; ($18 blocks of 256 bytes), followed by 768 bytes of attribute data ($03
-; blocks of 256 bytes).
+; Clears screen memory.
 ;
 ; I:D Attribute value to fill the attribute area.
 @label=clear_screen
