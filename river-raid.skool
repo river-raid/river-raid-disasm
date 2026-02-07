@@ -2558,10 +2558,10 @@ c$6268 LD HL,($5F62) ; {Load fragment coordinates (C=X, B=Y) from list pointer
  $6270 LD ($5F62),HL ; {Store updated pointer; copy X to A for marker check.
  $6273 LD A,C        ; }
 @isub=CP SET_MARKER_EMPTY_SLOT
- $6274 CP $00        ; {If empty slot marker ($00), skip to next fragment.
+ $6274 CP $00        ; {If empty slot, skip to next fragment.
  $6276 JP Z,$6268    ; }
 @isub=CP SET_MARKER_END_OF_SET
- $6279 CP $FF        ; {If end marker ($FF), jump to #R$62CE (no collision).
+ $6279 CP $FF        ; {If end-of-set marker, jump to #R$62CE (no collision).
  $627B JP Z,$62CE    ; }
  $627E CALL $62DA    ; Adjust Y coordinate for scrolling.
 ; Y-axis collision check (8-pixel height for both entity and fragment).
@@ -2695,10 +2695,10 @@ c$62E8 LD HL,($5F60) ; {Load object coordinates (C=X, B=Y) from list pointer
  $62F0 LD ($5F60),HL ; {Store updated pointer; copy X to A for marker check.
  $62F3 LD A,C        ; }
 @isub=CP SET_MARKER_EMPTY_SLOT
- $62F4 CP $00        ; {If empty slot marker ($00), skip to next object.
+ $62F4 CP $00        ; {If empty slot, skip to next object.
  $62F6 JP Z,$62E8    ; }
 @isub=CP SET_MARKER_END_OF_SET
- $62F9 CP $FF        ; {If end marker ($FF), jump to #R$63B9 for fragment
+ $62F9 CP $FF        ; {If end-of-set marker, jump to #R$63B9 for fragment
  $62FB JP Z,$63B9    ; collision check.}
  $62FE LD A,($5F68)  ; {If GAMEPLAY_MODE_REFUEL, call #R$62DA to adjust object
 @isub=CP GAMEPLAY_MODE_REFUEL
@@ -2845,12 +2845,12 @@ c$62E8 LD HL,($5F60) ; {Load object coordinates (C=X, B=Y) from list pointer
 ;
 ; Used by the routines at #R$62E8 and #R$64A1.
 @label=reset_gameplay_mode
-c$63FC LD A,$00      ; Load GAMEPLAY_MODE_NORMAL ($00).
+c$63FC LD A,$00      ; Load GAMEPLAY_MODE_NORMAL.
  $63FE LD ($5F68),A  ; Store to #R$5F68.
 ; Exit collision system with no collision detected.
 @label=no_collision_exit
 @isub=LD A,COLLISION_MODE_NONE
-*$6401 LD A,$00      ; Load COLLISION_MODE_NONE ($00).
+*$6401 LD A,$00      ; Load COLLISION_MODE_NONE.
  $6403 LD ($5EF5),A  ; Store to #R$5EF5.
  $6406 LD HL,($5F85) ; {Restore HL, DE, BC from #R$5F85, #R$5F87, #R$5F89.
  $6409 LD DE,($5F87) ;
@@ -3222,7 +3222,7 @@ c$6587 LD A,($923A)  ; Load game mode (1 or 2 player)
 @isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
  $658A BIT 0,A       ; Check if two-player mode is active
  $658C RET Z         ; Return if single-player mode
- $658D LD A,$01      ; {Reset current player to Player 1 ($01) for game start.
+ $658D LD A,$01      ; {Reset current player to PLAYER_1 for game start.
  $658F LD ($923D),A  ; }
  $6592 CALL $64BC    ; Print bridge number (uses state_player, so prints P1's).
 @isub=LD A,EXT_ATTR_INK
@@ -3293,7 +3293,7 @@ c$65CB LD A,($923C)  ; Load Player 2 lives remaining
 ; It switches the current player to Player 1 and restarts gameplay, or triggers
 ; game over if Player 1 has no lives.
 @label=switch_to_player_1
-c$65DE LD A,$01      ; {Set current player to Player 1 ($01)
+c$65DE LD A,$01      ; {Set current player to PLAYER_1.
  $65E0 LD ($923D),A  ; }
 ; This entry point is used by the routine at #R$65CB.
 @label=check_player_1_lives
@@ -3301,7 +3301,7 @@ c$65DE LD A,$01      ; {Set current player to Player 1 ($01)
 @isub=CP $00
  $65E6 CP $00        ; Check if Player 1 has no lives left
  $65E8 JP Z,$6577    ; If no lives, trigger game over
- $65EB LD A,$01      ; {Set current player to Player 1 ($01)
+ $65EB LD A,$01      ; {Set current player to PLAYER_1.
  $65ED LD ($923D),A  ; }
  $65F0 JP $6568      ; Restart gameplay for Player 1
 
@@ -5202,7 +5202,7 @@ c$6E40 LD A,($5F69)  ; {Check if #R$5F69 == 4 (refuel limit), return if so.
 ; Sets CONTROLS_BIT_LOW_FUEL in #R$6BB0 to trigger the warbling low fuel
 ; warning sound.
 @label=register_low_fuel
-c$6E86 LD HL,$6BB0   ; {Set CONTROLS_BIT_LOW_FUEL (bit 3) in controls state.
+c$6E86 LD HL,$6BB0   ; {Set CONTROLS_BIT_LOW_FUEL in controls state.
 @isub=SET CONTROLS_BIT_LOW_FUEL,(HL)
  $6E89 SET 3,(HL)    ; }
  $6E8B RET           ;
@@ -5211,7 +5211,7 @@ c$6E86 LD HL,$6BB0   ; {Set CONTROLS_BIT_LOW_FUEL (bit 3) in controls state.
 ;
 ; Clears CONTROLS_BIT_LOW_FUEL in #R$6BB0 to stop the low fuel warning sound.
 @label=register_sufficient_fuel
-c$6E8C LD HL,$6BB0   ; {Clear CONTROLS_BIT_LOW_FUEL (bit 3) in controls state.
+c$6E8C LD HL,$6BB0   ; {Clear CONTROLS_BIT_LOW_FUEL in controls state.
 @isub=RES CONTROLS_BIT_LOW_FUEL,(HL)
  $6E8F RES 3,(HL)    ; }
  $6E91 RET           ;
@@ -5234,18 +5234,18 @@ c$6E92 LD DE,$0008   ; {Play tank full sound: BEEPER with DE=$0008, HL=$0111.
 ; #LIST
 ; { Sets CONTROLS_BIT_EXPLODING to trigger explosion sound }
 ; { Clears CONTROLS_BIT_FIRE to prevent firing during explosion }
-; { Resets #R$6C7A (explosion counter) to $18 (24 frames) }
+; { Resets #R$6C7A (explosion counter) to EXPLOSION_SOUND_FRAMES }
 ; { Falls through to #R$6EAB to add explosion to set }
 ; LIST#
 ;
 ; I:BC BC contains fragment position: B=Y offset, C=X position
 ; I:D Object type/definition byte
 @label=explode_fragment
-c$6E9C LD HL,$6BB0   ; {Set CONTROLS_BIT_EXPLODING (bit 5) in #R$6BB0.
+c$6E9C LD HL,$6BB0   ; {Set CONTROLS_BIT_EXPLODING in #R$6BB0.
 @isub=SET CONTROLS_BIT_EXPLODING,(HL)
  $6E9F SET 5,(HL)    ; }
 @isub=RES CONTROLS_BIT_FIRE,(HL)
- $6EA1 RES 0,(HL)    ; Clear CONTROLS_BIT_FIRE (bit 0).
+ $6EA1 RES 0,(HL)    ; Clear CONTROLS_BIT_FIRE.
 @isub=LD A,EXPLOSION_SOUND_FRAMES
  $6EA3 LD A,$18      ; {Reset explosion counter.
  $6EA5 LD ($6C7A),A  ; }
@@ -5260,8 +5260,8 @@ c$6E9C LD HL,$6BB0   ; {Set CONTROLS_BIT_EXPLODING (bit 5) in #R$6BB0.
 ; .
 ; #LIST
 ; { Searches forward through set, 3 bytes per entry }
-; { Empty slot marker = $00, end-of-set marker = $FF }
-; { Skips non-empty entries until finding $00 or $FF }
+; { Skips non-empty entries until finding SET_MARKER_EMPTY_SLOT or
+; SET_MARKER_END_OF_SET }
 ; LIST#
 ;
 ; I:B Y offset (usually 0 for new objects)
@@ -5269,13 +5269,13 @@ c$6E9C LD HL,$6BB0   ; {Set CONTROLS_BIT_EXPLODING (bit 5) in #R$6BB0.
 ; I:D Object type/definition
 ; I:HL Pointer to start of object set
 @label=add_object_to_set
-c$6EAB LD A,(HL)     ; {Load current entry's first byte. If empty slot ($00),
+c$6EAB LD A,(HL)     ; {Load current entry's first byte. If empty slot, jump to
 @isub=CP SET_MARKER_EMPTY_SLOT
- $6EAC CP $00        ; jump to write.
+ $6EAC CP $00        ; write.
  $6EAE JP Z,$6EBC    ; }
 @isub=CP SET_MARKER_END_OF_SET
- $6EB1 CP $FF        ; {If end-of-set marker ($FF), jump to write (will extend
- $6EB3 JP Z,$6EBC    ; set).}
+ $6EB1 CP $FF        ; {If end-of-set marker, jump to write (will extend set).
+ $6EB3 JP Z,$6EBC    ; }
  $6EB6 INC HL        ; {Entry occupied: advance HL by 3 bytes and loop.
  $6EB7 INC HL        ;
  $6EB8 INC HL        ;
@@ -5328,12 +5328,12 @@ c$6EC8 LD HL,($5F62) ; {Load 3-byte entry from set: C=X, B=Y offset, D=frame.
  $6ECF LD D,(HL)     ;
  $6ED0 INC HL        ;
  $6ED1 LD ($5F62),HL ; }
- $6ED4 LD A,C        ; {Skip empty entries ($00), continue to next.
+ $6ED4 LD A,C        ; {Skip empty entries, continue to next.
 @isub=CP SET_MARKER_EMPTY_SLOT
  $6ED5 CP $00        ;
  $6ED7 JP Z,$6EC8    ; }
 @isub=CP SET_MARKER_END_OF_SET
- $6EDA CP $FF        ; {If end marker ($FF), jump to #R$6F73 to reset pointer.
+ $6EDA CP $FF        ; {If end-of-set marker, jump to #R$6F73 to reset pointer.
  $6EDC JP Z,$6F73    ; }
  $6EDF LD A,($5F64)  ; {Add scroll speed (#R$5F64) to Y offset, store back.
  $6EE2 ADD A,B       ;
@@ -5643,10 +5643,10 @@ c$7038 LD E,$0D      ; {Load E with $0D (ship attributes).
 
 ; Load fighter screen attributes
 ;
-; Returns SPRITE_FIGHTER_ATTRIBUTES ($00) = PAPER BLACK, INK BLACK
-; (invisible/XOR mode).
+; Returns SPRITE_FIGHTER_ATTRIBUTES = PAPER BLACK, INK BLACK (invisible/XOR
+; mode).
 ;
-; O:E Attributes value $00.
+; O:E Attributes value (SPRITE_FIGHTER_ATTRIBUTES).
 @isub=LD E,SPRITE_FIGHTER_ATTRIBUTES
 @label=ld_attributes_fighter
 c$703B LD E,$00      ; {Load E with $00 (fighter attributes).
@@ -6243,7 +6243,7 @@ c$728B INC C         ; {INC C × 4: move right 4 pixels.
 ; Sets #R$5EF2 to TANK_SHELL_ACTIVE, indicating tank is at firing position.
 @label=set_tank_shell_active
 @isub=LD A,TANK_SHELL_ACTIVE
-c$7290 LD A,$01      ; {Set tank shell state to active ($01).
+c$7290 LD A,$01      ; {Set tank shell state to TANK_SHELL_ACTIVE.
  $7292 LD ($5EF2),A  ; }
  $7295 RET           ;
 
@@ -7025,7 +7025,7 @@ c$75D0 LD ($8B0A),BC ;
  $75F9 LD ($8B0E),HL ; }
  $75FC LD BC,($8B0A) ; {Reload position, store to #R$8B0C.
  $7600 LD ($8B0C),BC ; }
- $7604 LD A,D        ; {Invert object orientation (XOR bit 6).
+ $7604 LD A,D        ; {Invert object orientation.
 @isub=XOR 1<<SLOT_BIT_ORIENTATION
  $7605 XOR $40       ;
  $7607 LD D,A        ; }

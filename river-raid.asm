@@ -2385,9 +2385,9 @@ check_fragment_collision:
   INC HL                               ;
   LD (exploding_fragments_ptr),HL      ; Store updated pointer; copy X to A for marker check.
   LD A,C                               ;
-  CP SET_MARKER_EMPTY_SLOT             ; If empty slot marker ($00), skip to next fragment.
+  CP SET_MARKER_EMPTY_SLOT             ; If empty slot, skip to next fragment.
   JP Z,check_fragment_collision        ;
-  CP SET_MARKER_END_OF_SET             ; If end marker ($FF), jump to check_fragment_collision_end (no collision).
+  CP SET_MARKER_END_OF_SET             ; If end-of-set marker, jump to check_fragment_collision_end (no collision).
   JP Z,check_fragment_collision_end    ;
   CALL advance_object                  ; Adjust Y coordinate for scrolling.
 ; Y-axis collision check (8-pixel height for both entity and fragment).
@@ -2509,9 +2509,9 @@ check_missile_vs_objects:
   INC HL                               ;
   LD (viewport_ptr),HL                 ; Store updated pointer; copy X to A for marker check.
   LD A,C                               ;
-  CP SET_MARKER_EMPTY_SLOT             ; If empty slot marker ($00), skip to next object.
+  CP SET_MARKER_EMPTY_SLOT             ; If empty slot, skip to next object.
   JP Z,check_missile_vs_objects        ;
-  CP SET_MARKER_END_OF_SET             ; If end marker ($FF), jump to check_missile_vs_objects_end for fragment
+  CP SET_MARKER_END_OF_SET             ; If end-of-set marker, jump to check_missile_vs_objects_end for fragment
   JP Z,check_missile_vs_objects_end    ; collision check.
   LD A,(state_gameplay_mode)           ; If GAMEPLAY_MODE_REFUEL, call advance_object to adjust object Y for scrolling.
   CP GAMEPLAY_MODE_REFUEL              ;
@@ -2643,11 +2643,11 @@ process_collision_hit:
 ;
 ; Used by the routines at check_missile_vs_objects and refuel_from_depot.
 reset_gameplay_mode:
-  LD A,$00                             ; Load GAMEPLAY_MODE_NORMAL ($00).
+  LD A,$00                             ; Load GAMEPLAY_MODE_NORMAL.
   LD (state_gameplay_mode),A           ; Store to state_gameplay_mode.
 ; Exit collision system with no collision detected.
 no_collision_exit:
-  LD A,COLLISION_MODE_NONE             ; Load COLLISION_MODE_NONE ($00).
+  LD A,COLLISION_MODE_NONE             ; Load COLLISION_MODE_NONE.
   LD (state_collision_mode),A          ; Store to state_collision_mode.
   LD HL,(collision_saved_hl)           ; Restore HL, DE, BC from collision_saved_hl, collision_saved_de,
   LD DE,(collision_saved_de)           ; collision_saved_bc.
@@ -2954,7 +2954,7 @@ setup_overview_status_player_2:
   LD A,(state_game_mode)               ; Load game mode (1 or 2 player)
   BIT GAME_MODE_BIT_TWO_PLAYERS,A      ; Check if two-player mode is active
   RET Z                                ; Return if single-player mode
-  LD A,$01                             ; Reset current player to Player 1 ($01) for game start.
+  LD A,$01                             ; Reset current player to PLAYER_1 for game start.
   LD (state_player),A                  ;
   CALL print_bridge                    ; Print bridge number (uses state_player, so prints P1's).
   LD A,EXT_ATTR_INK                    ; INK PLAYER_2
@@ -3012,14 +3012,14 @@ handle_player_2_death:
 ; This routine is called when Player 2 dies and Player 1 has lives remaining. It switches the current player to Player 1
 ; and restarts gameplay, or triggers game over if Player 1 has no lives.
 switch_to_player_1:
-  LD A,$01                             ; Set current player to Player 1 ($01)
+  LD A,$01                             ; Set current player to PLAYER_1.
   LD (state_player),A                  ;
 ; This entry point is used by the routine at handle_player_2_death.
 check_player_1_lives:
   LD A,(state_lives_player_1)          ; Load Player 1 lives remaining
   CP $00                               ; Check if Player 1 has no lives left
   JP Z,game_over                       ; If no lives, trigger game over
-  LD A,$01                             ; Set current player to Player 1 ($01)
+  LD A,$01                             ; Set current player to PLAYER_1.
   LD (state_player),A                  ;
   JP restart_current_player            ; Restart gameplay for Player 1
 
@@ -4659,7 +4659,7 @@ draw_fuel_gauge_refuel_loop:
 ;
 ; Sets CONTROLS_BIT_LOW_FUEL in state_controls to trigger the warbling low fuel warning sound.
 register_low_fuel:
-  LD HL,state_controls                 ; Set CONTROLS_BIT_LOW_FUEL (bit 3) in controls state.
+  LD HL,state_controls                 ; Set CONTROLS_BIT_LOW_FUEL in controls state.
   SET CONTROLS_BIT_LOW_FUEL,(HL)       ;
   RET
 
@@ -4667,7 +4667,7 @@ register_low_fuel:
 ;
 ; Clears CONTROLS_BIT_LOW_FUEL in state_controls to stop the low fuel warning sound.
 register_sufficient_fuel:
-  LD HL,state_controls                 ; Clear CONTROLS_BIT_LOW_FUEL (bit 3) in controls state.
+  LD HL,state_controls                 ; Clear CONTROLS_BIT_LOW_FUEL in controls state.
   RES CONTROLS_BIT_LOW_FUEL,(HL)       ;
   RET
 
@@ -4687,15 +4687,15 @@ signal_fuel_level_excessive:
 ;
 ; * Sets CONTROLS_BIT_EXPLODING to trigger explosion sound
 ; * Clears CONTROLS_BIT_FIRE to prevent firing during explosion
-; * Resets explosion_counter (explosion counter) to $18 (24 frames)
+; * Resets explosion_counter (explosion counter) to EXPLOSION_SOUND_FRAMES
 ; * Falls through to add_object_to_set to add explosion to set
 ;
 ; I:BC BC contains fragment position: B=Y offset, C=X position
 ; I:D Object type/definition byte
 explode_fragment:
-  LD HL,state_controls                 ; Set CONTROLS_BIT_EXPLODING (bit 5) in state_controls.
+  LD HL,state_controls                 ; Set CONTROLS_BIT_EXPLODING in state_controls.
   SET CONTROLS_BIT_EXPLODING,(HL)      ;
-  RES CONTROLS_BIT_FIRE,(HL)           ; Clear CONTROLS_BIT_FIRE (bit 0).
+  RES CONTROLS_BIT_FIRE,(HL)           ; Clear CONTROLS_BIT_FIRE.
   LD A,EXPLOSION_SOUND_FRAMES          ; Reset explosion counter.
   LD (explosion_counter),A             ;
   LD HL,exploding_fragments            ; Point HL to explosions set at exploding_fragments, fall through to
@@ -4707,18 +4707,17 @@ explode_fragment:
 ; an object with X position, Y offset, and type.
 ;
 ; * Searches forward through set, 3 bytes per entry
-; * Empty slot marker = $00, end-of-set marker = $FF
-; * Skips non-empty entries until finding $00 or $FF
+; * Skips non-empty entries until finding SET_MARKER_EMPTY_SLOT or SET_MARKER_END_OF_SET
 ;
 ; I:B Y offset (usually 0 for new objects)
 ; I:C X position
 ; I:D Object type/definition
 ; I:HL Pointer to start of object set
 add_object_to_set:
-  LD A,(HL)                            ; Load current entry's first byte. If empty slot ($00), jump to write.
+  LD A,(HL)                            ; Load current entry's first byte. If empty slot, jump to write.
   CP SET_MARKER_EMPTY_SLOT             ;
   JP Z,write_object_to_set             ;
-  CP SET_MARKER_END_OF_SET             ; If end-of-set marker ($FF), jump to write (will extend set).
+  CP SET_MARKER_END_OF_SET             ; If end-of-set marker, jump to write (will extend set).
   JP Z,write_object_to_set             ;
   INC HL                               ; Entry occupied: advance HL by 3 bytes and loop.
   INC HL                               ;
@@ -4766,10 +4765,10 @@ render_explosions:
   LD D,(HL)                            ;
   INC HL                               ;
   LD (exploding_fragments_ptr),HL      ;
-  LD A,C                               ; Skip empty entries ($00), continue to next.
+  LD A,C                               ; Skip empty entries, continue to next.
   CP SET_MARKER_EMPTY_SLOT             ;
   JP Z,render_explosions               ;
-  CP SET_MARKER_END_OF_SET             ; If end marker ($FF), jump to reset_explosions_pointer to reset pointer.
+  CP SET_MARKER_END_OF_SET             ; If end-of-set marker, jump to reset_explosions_pointer to reset pointer.
   JP Z,reset_explosions_pointer        ;
   LD A,(state_speed)                   ; Add scroll speed (state_speed) to Y offset, store back.
   ADD A,B                              ;
@@ -5044,9 +5043,9 @@ ld_attributes_ship:
 
 ; Load fighter screen attributes
 ;
-; Returns SPRITE_FIGHTER_ATTRIBUTES ($00) = PAPER BLACK, INK BLACK (invisible/XOR mode).
+; Returns SPRITE_FIGHTER_ATTRIBUTES = PAPER BLACK, INK BLACK (invisible/XOR mode).
 ;
-; O:E Attributes value $00.
+; O:E Attributes value (SPRITE_FIGHTER_ATTRIBUTES).
 ld_attributes_fighter:
   LD E,SPRITE_FIGHTER_ATTRIBUTES       ; Load E with $00 (fighter attributes).
   RET                                  ;
@@ -5536,7 +5535,7 @@ tank_advance_right:
 ;
 ; Sets state_tank_shell to TANK_SHELL_ACTIVE, indicating tank is at firing position.
 set_tank_shell_active:
-  LD A,TANK_SHELL_ACTIVE               ; Set tank shell state to active ($01).
+  LD A,TANK_SHELL_ACTIVE               ; Set tank shell state to TANK_SHELL_ACTIVE.
   LD (state_tank_shell),A              ;
   RET
 
@@ -6231,7 +6230,7 @@ reverse_enemy_direction_frame_loop:
   LD (render_sprite_ptr),HL                ;
   LD BC,(previous_object_coordinates)  ; Reload position, store to object_coordinates.
   LD (object_coordinates),BC           ;
-  LD A,D                               ; Invert object orientation (XOR bit 6).
+  LD A,D                               ; Invert object orientation.
   XOR 1<<SLOT_BIT_ORIENTATION          ;
   LD D,A                               ;
   LD HL,(viewport_ptr)                 ; Update orientation in viewport array, get new sprite pointer.

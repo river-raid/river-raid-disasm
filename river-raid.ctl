@@ -842,9 +842,9 @@ N $6268 Collision uses 8x8 bounding box for the entity and 16x8 for fragments. R
   $6268 Load fragment coordinates (C=X, B=Y) from list pointer #R$5F62 and advance by 3.
   $6270 Store updated pointer; copy X to A for marker check.
 @ $6274 isub=CP SET_MARKER_EMPTY_SLOT
-  $6274 If empty slot marker ($00), skip to next fragment.
+  $6274 If empty slot, skip to next fragment.
 @ $6279 isub=CP SET_MARKER_END_OF_SET
-  $6279 If end marker ($FF), jump to #R$62CE (no collision).
+  $6279 If end-of-set marker, jump to #R$62CE (no collision).
   $627E Adjust Y coordinate for scrolling.
 N $6281 Y-axis collision check (8-pixel height for both entity and fragment).
   $6281 Check if entity_Y + 8 >= fragment_Y; if not, next fragment.
@@ -889,9 +889,9 @@ N $62E8 During GAMEPLAY_MODE_REFUEL, object Y coordinates are adjusted for scrol
   $62E8 Load object coordinates (C=X, B=Y) from list pointer #R$5F60 and advance by 3.
   $62F0 Store updated pointer; copy X to A for marker check.
 @ $62F4 isub=CP SET_MARKER_EMPTY_SLOT
-  $62F4 If empty slot marker ($00), skip to next object.
+  $62F4 If empty slot, skip to next object.
 @ $62F9 isub=CP SET_MARKER_END_OF_SET
-  $62F9 If end marker ($FF), jump to #R$63B9 for fragment collision check.
+  $62F9 If end-of-set marker, jump to #R$63B9 for fragment collision check.
   $62FE If GAMEPLAY_MODE_REFUEL, call #R$62DA to adjust object Y for scrolling.
 @ $6301 isub=CP GAMEPLAY_MODE_REFUEL
 N $6306 Y-axis collision check (entity height: 9 pixels).
@@ -954,12 +954,12 @@ N $63DD Entry point for collision hit processing. Cleans up stack and finalizes 
   $63F9 Finalize collision.
 @ $63FC label=reset_gameplay_mode
 c $63FC Reset gameplay mode to normal and exit collision system
-  $63FC Load GAMEPLAY_MODE_NORMAL ($00).
+  $63FC Load GAMEPLAY_MODE_NORMAL.
   $63FE Store to #R$5F68.
 @ $6401 label=no_collision_exit
 @ $6401 isub=LD A,COLLISION_MODE_NONE
 N $6401 Exit collision system with no collision detected.
-  $6401 Load COLLISION_MODE_NONE ($00).
+  $6401 Load COLLISION_MODE_NONE.
   $6403 Store to #R$5EF5.
   $6406 Restore HL, DE, BC from #R$5F85, #R$5F87, #R$5F89.
   $6411 Continue rendering.
@@ -1133,7 +1133,7 @@ D $6587 Called during overview mode in two-player games to add the Player 2 stat
 @ $658A isub=BIT GAME_MODE_BIT_TWO_PLAYERS,A
   $658A Check if two-player mode is active
   $658C Return if single-player mode
-  $658D Reset current player to Player 1 ($01) for game start.
+  $658D Reset current player to PLAYER_1 for game start.
   $6592 Print bridge number (uses state_player, so prints P1's).
 @ $6595 isub=LD A,EXT_ATTR_INK
   $6595 INK PLAYER_2
@@ -1176,13 +1176,13 @@ D $65CB This routine is called when Player 2 dies. It checks both players' lives
 @ $65DE label=switch_to_player_1
 c $65DE Switch to Player 1 after Player 2 death
 D $65DE This routine is called when Player 2 dies and Player 1 has lives remaining. It switches the current player to Player 1 and restarts gameplay, or triggers game over if Player 1 has no lives.
-  $65DE Set current player to Player 1 ($01)
+  $65DE Set current player to PLAYER_1.
 @ $65E3 label=check_player_1_lives
   $65E3 Load Player 1 lives remaining
 @ $65E6 isub=CP $00
   $65E6 Check if Player 1 has no lives left
   $65E8 If no lives, trigger game over
-  $65EB Set current player to Player 1 ($01)
+  $65EB Set current player to PLAYER_1.
   $65F0 Restart gameplay for Player 1
 @ $65F3 label=handle_right
 c $65F3 Move player plane right by 2 pixels
@@ -1916,12 +1916,12 @@ D $6E40 #LIST { Returns if plane is banking (#R$5F69 == 4) - must be centered to
 @ $6E86 label=register_low_fuel
 c $6E86 Set low fuel warning flag
 D $6E86 Sets CONTROLS_BIT_LOW_FUEL in #R$6BB0 to trigger the warbling low fuel warning sound.
-  $6E86,5 Set CONTROLS_BIT_LOW_FUEL (bit 3) in controls state.
+  $6E86,5 Set CONTROLS_BIT_LOW_FUEL in controls state.
 @ $6E89 isub=SET CONTROLS_BIT_LOW_FUEL,(HL)
 @ $6E8C label=register_sufficient_fuel
 c $6E8C Clear low fuel warning flag
 D $6E8C Clears CONTROLS_BIT_LOW_FUEL in #R$6BB0 to stop the low fuel warning sound.
-  $6E8C,5 Clear CONTROLS_BIT_LOW_FUEL (bit 3) in controls state.
+  $6E8C,5 Clear CONTROLS_BIT_LOW_FUEL in controls state.
 @ $6E8F isub=RES CONTROLS_BIT_LOW_FUEL,(HL)
 @ $6E92 label=signal_fuel_level_excessive
 c $6E92 Play tank full sound
@@ -1930,27 +1930,27 @@ D $6E92 Plays a different beep when fuel tank is already full and cannot accept 
 @ $6E9C label=explode_fragment
 c $6E9C Create explosion at fragment position
 D $6E9C Called when an enemy is destroyed or the player collides. Sets up explosion state and adds an explosion entry to the explosions set at #R$5F2E.
-D $6E9C #LIST { Sets CONTROLS_BIT_EXPLODING to trigger explosion sound } { Clears CONTROLS_BIT_FIRE to prevent firing during explosion } { Resets #R$6C7A (explosion counter) to $18 (24 frames) } { Falls through to #R$6EAB to add explosion to set } LIST#
+D $6E9C #LIST { Sets CONTROLS_BIT_EXPLODING to trigger explosion sound } { Clears CONTROLS_BIT_FIRE to prevent firing during explosion } { Resets #R$6C7A (explosion counter) to EXPLOSION_SOUND_FRAMES } { Falls through to #R$6EAB to add explosion to set } LIST#
 R $6E9C I:BC BC contains fragment position: B=Y offset, C=X position
 R $6E9C I:D Object type/definition byte
-  $6E9C Set CONTROLS_BIT_EXPLODING (bit 5) in #R$6BB0.
+  $6E9C Set CONTROLS_BIT_EXPLODING in #R$6BB0.
 @ $6E9F isub=SET CONTROLS_BIT_EXPLODING,(HL)
 @ $6EA1 isub=RES CONTROLS_BIT_FIRE,(HL)
-  $6EA1 Clear CONTROLS_BIT_FIRE (bit 0).
+  $6EA1 Clear CONTROLS_BIT_FIRE.
 @ $6EA3 isub=LD A,EXPLOSION_SOUND_FRAMES
   $6EA3 Reset explosion counter.
   $6EA8 Point HL to explosions set at #R$5F2E, fall through to add_object_to_set.
 @ $6EAB label=add_object_to_set
 c $6EAB Add object entry to a set
 D $6EAB Finds an empty slot or end-of-set marker in the object set and writes a 3-byte entry (C, B, D). Each entry represents an object with X position, Y offset, and type.
-D $6EAB #LIST { Searches forward through set, 3 bytes per entry } { Empty slot marker = $00, end-of-set marker = $FF } { Skips non-empty entries until finding $00 or $FF } LIST#
+D $6EAB #LIST { Searches forward through set, 3 bytes per entry } { Skips non-empty entries until finding SET_MARKER_EMPTY_SLOT or SET_MARKER_END_OF_SET } LIST#
 R $6EAB I:B Y offset (usually 0 for new objects)
 R $6EAB I:C X position
 R $6EAB I:D Object type/definition
 R $6EAB I:HL Pointer to start of object set
-  $6EAB Load current entry's first byte. If empty slot ($00), jump to write.
+  $6EAB Load current entry's first byte. If empty slot, jump to write.
 @ $6EAC isub=CP SET_MARKER_EMPTY_SLOT
-  $6EB1 If end-of-set marker ($FF), jump to write (will extend set).
+  $6EB1 If end-of-set marker, jump to write (will extend set).
 @ $6EB1 isub=CP SET_MARKER_END_OF_SET
   $6EB6 Entry occupied: advance HL by 3 bytes and loop.
 @ $6EBC label=write_object_to_set
@@ -1970,10 +1970,10 @@ c $6EC8 Process and render all active explosions
 D $6EC8 Iterates through the explosions set at #R$5F2E via pointer #R$5F62. Each explosion has 6 animation frames before being removed. Adjusts Y position based on scroll speed.
 D $6EC8 #LIST { Entry format: [X_pos, Y_offset, frame_counter] where frame_counter bits 0-6 = frame (1-6), bit 7 = erase flag } { Frame 1,5: small explosion (#R$6F63) } { Frame 2,4: medium explosion (#R$6F67) } { Frame 3: large explosion (#R$6F6B) } { Frame 6: erase explosion (#R$6F6F) then remove entry } LIST#
   $6EC8 Load 3-byte entry from set: C=X, B=Y offset, D=frame. Advance pointer #R$5F62.
-  $6ED4 Skip empty entries ($00), continue to next.
+  $6ED4 Skip empty entries, continue to next.
 @ $6ED5 isub=CP SET_MARKER_EMPTY_SLOT
 @ $6EDA isub=CP SET_MARKER_END_OF_SET
-  $6EDA If end marker ($FF), jump to #R$6F73 to reset pointer.
+  $6EDA If end-of-set marker, jump to #R$6F73 to reset pointer.
   $6EDF Add scroll speed (#R$5F64) to Y offset, store back.
   $6EE6 Extract frame number (bits 0-6), increment. If frame == 7, entry complete.
   $6EEF Increment frame counter and store back.
@@ -2097,8 +2097,8 @@ R $7038 O:E Attributes value $0D.
 @ $703B isub=LD E,SPRITE_FIGHTER_ATTRIBUTES
 @ $703B label=ld_attributes_fighter
 c $703B Load fighter screen attributes
-D $703B Returns SPRITE_FIGHTER_ATTRIBUTES ($00) = PAPER BLACK, INK BLACK (invisible/XOR mode).
-R $703B O:E Attributes value $00.
+D $703B Returns SPRITE_FIGHTER_ATTRIBUTES = PAPER BLACK, INK BLACK (invisible/XOR mode).
+R $703B O:E Attributes value (SPRITE_FIGHTER_ATTRIBUTES).
   $703B Load E with $00 (fighter attributes).
 @ $703E isub=LD E,SPRITE_TANK_ATTRIBUTES
 @ $703E label=ld_attributes_tank
@@ -2387,7 +2387,7 @@ D $728B Increments X position by 4 pixels for right-moving tank.
 @ $7290 isub=LD A,TANK_SHELL_ACTIVE
 c $7290 Set tank shell state to active
 D $7290 Sets #R$5EF2 to TANK_SHELL_ACTIVE, indicating tank is at firing position.
-  $7290,5 Set tank shell state to active ($01).
+  $7290,5 Set tank shell state to TANK_SHELL_ACTIVE.
 @ $7296 label=operate_tank
 c $7296 Tank operation routine
 D $7296 Operates tanks on the river. Tanks move 2 pixels per frame and fire shells when reaching the center position ($80). Tanks on the river bank are handled separately via #R$7302.
@@ -2702,7 +2702,7 @@ R $75D0 I:BC Object coordinates
 @ $75F5 label=reverse_enemy_direction_frame_loop
   $75F5 Loop to add frame offset to sprite pointer, store to #R$8B0E.
   $75FC Reload position, store to #R$8B0C.
-  $7604 Invert object orientation (XOR bit 6).
+  $7604 Invert object orientation.
 @ $7605 isub=XOR 1<<SLOT_BIT_ORIENTATION
   $7608,8 Update orientation in viewport array, get new sprite pointer.
 @ $7613 isub=AND SLOT_MASK_OBJECT_TYPE
