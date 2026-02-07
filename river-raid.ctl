@@ -31,6 +31,23 @@
 > $4000 EXT_ATTR_PAPER EQU $11
 > $4000 EXT_ATTR_AT    EQU $16
 > $4000
+> $4000 ; ASCII character codes
+> $4000 CHAR_ENTER EQU $0D
+> $4000 CHAR_SPACE EQU $20
+> $4000 CHAR_0     EQU $30
+> $4000 CHAR_1     EQU $31
+> $4000 CHAR_H     EQU $68
+> $4000
+> $4000 ; Z80 opcodes used in self-modifying code
+> $4000 OPCODE_NOP   EQU $00
+> $4000 OPCODE_JP    EQU $C3
+> $4000 OPCODE_XOR_B EQU $A8
+> $4000 OPCODE_OR_B  EQU $B0
+> $4000
+> $4000 ; ULA port speaker control
+> $4000 ULA_SPEAKER_ON  EQU $10
+> $4000 ULA_SPEAKER_OFF EQU $00
+> $4000
 > $4000 INPUT_INTERFACE_KEYBOARD EQU $00
 > $4000 INPUT_INTERFACE_SINCLAIR EQU $01
 > $4000 INPUT_INTERFACE_KEMPSTON EQU $02
@@ -226,6 +243,22 @@
 > $4000
 > $4000 VIEWPORT_HEIGHT EQU $88
 > $4000
+> $4000 ACTIVATION_INTERVAL_NORMAL EQU $1F
+> $4000 ACTIVATION_INTERVAL_FAST   EQU $0F
+> $4000
+> $4000 SCROLL_IN_ITERATIONS EQU $28
+> $4000
+> $4000 TERRAIN_PROFILE_SIZE EQU $10
+> $4000
+> $4000 EXPLOSION_ANIM_FRAMES  EQU $10
+> $4000 EXPLOSION_SOUND_FRAMES EQU $18
+> $4000
+> $4000 BONUS_LIFE_SOUND_FRAMES EQU $40
+> $4000
+> $4000 SCORE_DIGIT_COUNT EQU $06
+> $4000
+> $4000 IM1_VECTOR_TABLE_HI EQU $3F
+> $4000
 > $4000 ; STRUCTURES
 > $4000 ; ----------
 > $4000 ;
@@ -290,6 +323,7 @@ N $5CD2 This is the main entry point invoked by the BASIC loader. It performs on
   $5CD2 Initialize #R$9283 to point to #R$6BB0.
 @ $5CD8 nowarn
   $5CD8 Initialize #R$8B08 to point to #R$6136
+@ $5CDE isub=LD A,OPCODE_JP
   $5CDE Write the JP opcode to the address that all vector table entries will point to.
 @ $5CE0 isub=LD (INT_VECTOR_ENTRY<<8|INT_VECTOR_ENTRY),A
 @ $5CE3 nowarn
@@ -311,11 +345,12 @@ N $5CD2 This is the main entry point invoked by the BASIC loader. It performs on
   $5CFD,2 Set interrupt mode 2 (vectored interrupts).
   $5D00 Store the address of #R$8182 in #R$5F7E.
 @ $5D06 label=return_to_control_selection
+@ $5D06 isub=LD A,IM1_VECTOR_TABLE_HI
 c $5D06 Return to control selection dialog
 N $5D06 This entry point is used when returning to the control selection dialog from the game (via #R$6BD2) or from the overview mode. It switches back to the standard ZX Spectrum interrupt mode (IM 1), then calls clear_and_setup to display the control selection dialog.
 N $5D06 .
 N $5D06 After the user selects controls and game mode, execution continues at #R$5D10.
-  $5D06 Load $3F into A (high byte of ROM address for IM 1).
+  $5D06 Restore standard IM 1 interrupt vector table.
   $5D08 Set the I register to $3F (standard ZX Spectrum IM 1 mode).
   $5D0A Set interrupt mode 1 (standard ZX Spectrum interrupts).
   $5D0C Enable interrupts.
@@ -355,9 +390,9 @@ N $5D44 This routine sets up the initial game state used by the overview (attrac
   $5D4F Store the viewport_objects address in viewport_ptr.
 @ $5D52 isub=LD (HL),SET_MARKER_END_OF_SET
   $5D52 Mark the viewport objects list as empty (SET_MARKER_END_OF_SET).
-  $5D54 Load $1F (31 decimal) into A.
+@ $5D54 isub=LD A,ACTIVATION_INTERVAL_NORMAL
+  $5D54 Set normal activation timing (every 32 frames).
 @ $5D56 isub=LD (state_activation_interval),A
-  $5D56 Store $1F to #R$5F5F (normal activation timing).
   $5D59 Load $00 into A.
   $5D5B Set border to black and disable sound (OUT to ULA port $FE).
 @ $5D5D isub=LD (state_tank_shell),A
@@ -391,7 +426,8 @@ c $5D9F Decrease player 2 lives
 c $5DA6 Initialize and start gameplay mode
 D $5DA6 This routine prepares the game for play and is called when starting a new game or after losing a life.
   $5DA6 Initialize island line index (starting line for island rendering).
-  $5DAB Initialize activation interval (objects activate when int_counter AND $1F == 0, i.e., every 32 frames).
+@ $5DAB isub=LD A,ACTIVATION_INTERVAL_NORMAL
+  $5DAB Initialize activation interval (every 32 frames).
   $5DB0
 @ $5DB4 isub=LD D,COLOR_RIVER<<3|COLOR_BANK
   $5DB4 Clear screen with PAPER RIVER, INK BANK.
@@ -428,13 +464,15 @@ D $5DA6 This routine prepares the game for play and is called when starting a ne
   $5E38 Open channel 2.
 @ $5E40 isub=LD BC,status_line_4_end - status_line_4
   $5E3D Print status line 4.
+@ $5E49 isub=ADD A,CHAR_1
   $5E46 Print game mode digit (1 or 2 player).
   $5E4C Open channel 1.
   $5E51 Set terrain position to $FF (forces terrain regeneration).
   $5E56 Initialize terrain profile number.
   $5E5B Open channel 2.
   $5E5E,8 Initialize level fragment number, gameplay mode, and bridge destroyed flag.
-  $5E69 Set last key to dummy value (ignore initial input).
+@ $5E69 isub=LD A,CHAR_H
+  $5E69 Set last key to 'h' (suppress H-key pause on first frame).
   $5E6E Clear control state and tank shell state.
 @ $5E76 isub=LD A,SPEED_FAST
   $5E76 Set speed for scroll-in animation.
@@ -442,6 +480,7 @@ D $5DA6 This routine prepares the game for play and is called when starting a ne
   $5E7B Initialize terrain element 23.
   $5E82
   $5E85
+@ $5E88 isub=LD B,SCROLL_IN_ITERATIONS
   $5E88 Set loop counter for scroll-in (40 iterations).
 @ $5E8A label=scroll_in_loop
   $5E8A Save loop counter.
@@ -456,6 +495,7 @@ D $5DA6 This routine prepares the game for play and is called when starting a ne
   $5EA0 Clear control state.
   $5EA5 Set gameplay mode to normal (ready for player control).
   $5EA8
+@ $5EAB isub=LD A,CHAR_ENTER
   $5EAB Set last key to Enter (wait for start input).
 @ $5EB3 isub=CP PLAYER_2
   $5EB0 Decrement current player's lives.
@@ -464,6 +504,7 @@ D $5DA6 This routine prepares the game for play and is called when starting a ne
 @ $5EBF label=wait_for_start_input
   $5EBF
   $5EC2 Enable interrupts.
+@ $5EC6 isub=CP CHAR_ENTER
   $5EC3 If any key except Enter pressed, start game.
 @ $5ECD isub=CP INPUT_INTERFACE_KEMPSTON
   $5ECA If not Kempston joystick, keep waiting.
@@ -752,7 +793,8 @@ N $61BB If no bridge collision, falls through to #R$62E8 to check collision agai
 @ $61D3 isub=LD A,POINTS_BRIDGE
 N $61D3 Bridge hit - award points and spawn explosions.
   $61D3 Award POINTS_BRIDGE to player.
-  $61D8 Store $0F to #R$5F5F (new activation mask).
+@ $61D8 isub=LD A,ACTIVATION_INTERVAL_FAST
+  $61D8 Increase activation rate (every 16 frames after bridge destruction).
   $61DD Clean up stack and store hit Y to #R$5EF6.
   $61E5 Set up first explosion row: Y = bridge_Y - 4, X = $70, D = 0.
   $61EF Spawn explosion 1 (top-left).
@@ -881,6 +923,7 @@ N $637D Collision detected - prepare for type dispatch.
 @ $6380 isub=CP GAMEPLAY_MODE_REFUEL
   $6385 Store object coordinates to #R$5F8B.
   $6389 Load object type from viewport pointer.
+@ $638E isub=AND SLOT_MASK_OBJECT_TYPE
   $638E If type is 0, jump to #R$63DD to process collision.
   $6395 Mark object slot as empty.
   $6399 Clear D for type dispatch.
@@ -1015,8 +1058,9 @@ N $64F1 Shared code for printing Player 2's bridge number. Called directly when 
   $64F7 (continued) If so, print leading space.
   $64FC,9 Print bridge count from #R$5F6B.
 @ $6506 label=print_space
+@ $6506 isub=LD A,CHAR_SPACE
 c $6506 Print a space character
-  $6506,3 Output space ($20) via RST $10.
+  $6506,3 Output space via RST $10.
 @ $650A label=handle_no_fuel
 c $650A Handle the no fuel situation
 D $650A This routine is called when the player runs out of fuel. It stops the plane, creates two explosion fragments at the plane's position, animates the explosions over 16 frames, waits for a delay, then determines the next game state based on the current player and remaining lives in single or two-player mode.
@@ -1032,7 +1076,8 @@ N $650A In single-player mode, the game simply restarts P1 if lives remain, othe
   $651D Create first explosion fragment at plane position
   $6522 Offset Y-coordinate by $05 pixels for second explosion
   $6526 Create second explosion fragment
-  $6529 Set animation frame counter to $10 (16 frames)
+@ $6529 isub=LD A,EXPLOSION_ANIM_FRAMES
+  $6529 Set animation frame counter (16 frames).
 @ $652B label=animate_explosion_loop
   $652B Save frame counter
   $652C Set outer delay loop counter to $40 (64 iterations)
@@ -1256,6 +1301,8 @@ N $66D0 The control bits modified are: clears CONTROLS_BIT_SPEED_CHANGED, sets C
   $66DB,6 Update bridge position; reset speed to SPEED_NORMAL.
 @ $66E1 isub=LD A,SPEED_NORMAL
   $66E6,7 Clear CONTROLS_BIT_SPEED_CHANGED, set CONTROLS_BIT_SPEED_NOT_FAST in #R$6BB0.
+@ $66E9 isub=RES CONTROLS_BIT_SPEED_CHANGED,(HL)
+@ $66EB isub=SET CONTROLS_BIT_SPEED_NOT_FAST,(HL)
 @ $66EE label=update_bridge_scroll
 c $66EE Update bridge Y position during scroll
 N $66EE Adjusts the bridge's Y position (#R$5F6E) based on current scrolling. If no bridge exists (Y=0), returns immediately. If the bridge scrolls off the bottom of the screen (Y AND $88 == $88), clears it.
@@ -1290,6 +1337,7 @@ N $6724 Creates a new missile if none is currently active. Positions missile at 
   $6724 Return if missile already active (Y != 0).
   $672A Create missile at (plane_X + 4, $7E).
   $6736,5 Set CONTROLS_BIT_FIRE in #R$6BB0.
+@ $6739 isub=SET CONTROLS_BIT_FIRE,(HL)
 @ $673C label=missile_pass_selector
 g $673C Missile animation pass selector. $01=first pass (erase at old position), $00=second pass (draw at new position). Two-pass rendering prevents flicker.
 @ $673D label=animate_plane_missile
@@ -1318,6 +1366,7 @@ N $673D Sets COLLISION_MODE_MISSILE so the rendering system checks for object co
 c $678E Clear CONTROLS_BIT_FIRE flag
 N $678E Called when missile has moved past the plane's Y position, indicating the fire button can trigger a new missile.
   $678E,5 Clear CONTROLS_BIT_FIRE in #R$6BB0.
+@ $6791 isub=RES CONTROLS_BIT_FIRE,(HL)
 @ $6794 label=finalize_collision
 c $6794 Finalize collision and erase missile sprite
 N $6794 Called after a successful collision to clean up the game state. Erases the missile sprite from the screen, resets the collision mode to COLLISION_MODE_NONE, clears the missile coordinates, and resets CONTROLS_BIT_SPEED_NOT_FAST.
@@ -1340,6 +1389,7 @@ N $6794 The sprite frame selection uses the X coordinate's lower 3 bits to choos
   $67D0 Set sprite dimensions: width=1, frame_size=8, height=8, attrs=$0C.
   $67D8 Erase missile sprite.
   $67DE Reset CONTROLS_BIT_SPEED_NOT_FAST in #R$6BB0.
+@ $67E1 isub=RES CONTROLS_BIT_SPEED_NOT_FAST,(HL)
   $67E3 Reload coordinates from #R$5EF3, then clear them.
   $67EA (continued).
   $67ED Calculate residue Y position (missile_Y - 6).
@@ -1471,7 +1521,8 @@ N $6990 The left edge X position is calculated as: state_island_byte_2 + profile
 N $6990 .
 N $6990 The right edge position depends on state_island_byte_3: 0=use byte_3 directly, 1=mirror around center (2*$3C - left), 2=offset from left ($3C + left). $3C (60) is the default river half-width.
   $6990 Increment island line counter.
-  $6994 Set up lookup: HL=data_terrain_profiles, DE=$10 (profile size).
+@ $699A isub=LD DE,TERRAIN_PROFILE_SIZE
+  $6994 Set up lookup: HL=data_terrain_profiles, DE=TERRAIN_PROFILE_SIZE.
 @ $69A0 label=locate_island_profile
   $69A0 Locate 16-byte profile entry by state_island_profile_idx.
   $69A4 Index into profile by (state_terrain_position AND $0F) to get edge offset byte.
@@ -1529,12 +1580,15 @@ c $6AA3 Render one pixel line of terrain
 D $6AA3 Renders a single pixel line of the current terrain fragment. Called 16 times per fragment (lines 0-15). Draws left edge sprite, fills left terrain, draws right edge sprite, fills right terrain. Handles special fragments (bridges/roads) separately.
 N $6AA3 .
 N $6AA3 Left edge X = profile_byte + row_offset - 16. The profile_byte comes from #R$8063[profile_number][line]. The -16 adjusts for the edge sprite width. Right edge depends on state_terrain_extras mode.
-  $6AA3 Set up profile lookup: HL = #R$8063, DE = $10 (profile size).
+@ $6AA9 isub=LD DE,TERRAIN_PROFILE_SIZE
+  $6AA3 Set up profile lookup: HL = #R$8063, DE = TERRAIN_PROFILE_SIZE.
 @ $6AAF label=locate_terrain_profile
   $6AAF Locate profile: data_terrain_profiles[state_terrain_profile_number].
   $6AB3 Increment state_terrain_position (line 0-15).
-  $6ABA If line reached 16, jump to #R$6A4F to load next fragment.
-  $6ABF Index into profile: HL = profile_base + (line AND $0F).
+@ $6ABA isub=CP TERRAIN_PROFILE_SIZE
+  $6ABA If line reached TERRAIN_PROFILE_SIZE, jump to #R$6A4F to load next fragment.
+@ $6ABF isub=AND TERRAIN_PROFILE_SIZE-1
+  $6ABF Index into profile: HL = profile_base + (line mod TERRAIN_PROFILE_SIZE).
   $6AC5 Load row offset (B) from state_terrain_element_23 and profile byte (A).
   $6ACA If bit 7 of profile byte set, jump to #R$6B7B (special fragment).
   $6ACF Left edge X = profile_byte + row_offset - 16. Save original X, work with adjusted X.
@@ -1550,6 +1604,7 @@ N $6AA3 Left edge X = profile_byte + row_offset - 16. The profile_byte comes fro
   $6B31,13 Fill count = 30 - (right_X >> 3). Fill rightward with $FF.
   $6B45,13 If island active (state_island_line_idx != 16), call #R$6990.
 @ $6B4B label=fill_terrain_right_loop
+@ $6B52 isub=CP TERRAIN_PROFILE_SIZE
 @ $6B58 label=calc_terrain_right_mirrored
 c $6B58 Calculate mirrored right edge (terrain extras mode 1)
 D $6B58 For symmetric river sections. Right edge = 2*C - D where C is the default river width from state_terrain_element_23 low byte and D is the left edge coordinate. This mirrors the left edge around the river center.
@@ -1652,8 +1707,10 @@ c $6C31 Play bonus life sound effect
 D $6C31 Generates a rising pitch sound effect when player earns an extra life. Called once per frame while CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 frames.
 D $6C31 #LIST { Counter increments from 0 to 64 over successive frames } { Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases } { Lower pitch values = higher frequency, so sound rises in pitch } { Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001 } LIST#
   $6C31 Increment counter and check if reached $40 (64). If so, sound is complete.
-  $6C38 Check if counter reached $40 (64 frames). If done, finish sound sequence.
-  $6C3D Calculate pitch: pitch = $40 - counter. Store counter in B, load $40 into A, subtract.
+@ $6C38 isub=CP BONUS_LIFE_SOUND_FRAMES
+  $6C38 Check if counter reached BONUS_LIFE_SOUND_FRAMES. If done, finish sound sequence.
+@ $6C3E isub=LD A,BONUS_LIFE_SOUND_FRAMES
+  $6C3D Calculate pitch: pitch = BONUS_LIFE_SOUND_FRAMES - counter.
   $6C41 Set up BEEPER parameters: H = pitch >> 3 (range 7-0), L = $FF (duration).
   $6C4A,7 Call ROM BEEPER at $03B5 with DE=$0001 (one iteration). Disable interrupts after.
 @ $6C52 label=bonus_life_sound_done
@@ -1661,6 +1718,7 @@ c $6C52 Complete bonus life sound sequence
 D $6C52 Resets the sound counter and clears the CONTROLS_BIT_BONUS_LIFE flag to stop the sound effect.
   $6C52 Reset counter to 0.
   $6C57,5 Clear CONTROLS_BIT_BONUS_LIFE in #R$6BB0 to indicate sound is complete.
+@ $6C5A isub=RES CONTROLS_BIT_BONUS_LIFE,(HL)
 @ $6C5D label=beep_engine_normal
 c $6C5D Play normal speed engine sound
 D $6C5D Generates the engine sound for normal speed. Called when only CONTROLS_BIT_SPEED_NOT_FAST is set (player not pressing up or down). HL points to the controls byte on entry.
@@ -1669,11 +1727,13 @@ R $6C5D I:HL Pointer to #R$6BB0 (controls state byte)
   $6C5D Extract period from low 4 bits of controls byte. Higher value = lower pitch.
   $6C61 Loop counter: 8 cycles of the waveform.
 @ $6C63 label=beep_engine_normal_loop
-  $6C63 Turn speaker ON (bit 4 of port $FE).
+@ $6C63 isub=LD A,ULA_SPEAKER_ON
+  $6C63 Speaker ON.
   $6C67 Load period into D.
 @ $6C68 label=beep_engine_normal_delay_on
   $6C68 Delay loop for speaker ON phase.
-  $6C6B Turn speaker OFF.
+@ $6C6B isub=LD A,ULA_SPEAKER_OFF
+  $6C6B Speaker OFF.
   $6C6F Load period into D.
 @ $6C70 label=beep_engine_normal_delay_off
   $6C70 Delay loop for speaker OFF phase.
@@ -1690,19 +1750,22 @@ R $6C7B I:DE Pointer to game state byte affecting pitch
   $6C87 Calculate ON delay: ((DE) AND $07) << 3 + $10. Gives value $10-$48 based on low 3 bits of (DE).
   $6C92 Set ON delay in E, loop counter = 4 cycles.
 @ $6C95 label=beep_explosion_loop
-  $6C95 Turn speaker ON (bit 4 of port $FE).
+@ $6C95 isub=LD A,ULA_SPEAKER_ON
+  $6C95 Speaker ON.
   $6C99 Load ON delay into D.
 @ $6C9A label=beep_explosion_delay_on
   $6C9A Delay loop for speaker ON phase.
-  $6C9D Turn speaker OFF.
+@ $6C9D isub=LD A,ULA_SPEAKER_OFF
+  $6C9D Speaker OFF.
   $6CA1 Load counter value as OFF delay.
 @ $6CA5 label=beep_explosion_delay_off
   $6CA5 Delay loop for speaker OFF phase (speeds up as counter decreases).
   $6CA8 Decrement cycle counter, loop for 4 cycles per frame.
 @ $6CAD label=explosion_render_finish
+@ $6CAD isub=LD A,EXPLOSION_SOUND_FRAMES
 c $6CAD Complete explosion sound sequence
 D $6CAD Resets the explosion counter and clears CONTROLS_BIT_EXPLODING flag.
-  $6CAD Reset explosion counter to $18 (24) for next explosion.
+  $6CAD Reset explosion counter for next explosion.
   $6CB2,5 Clear CONTROLS_BIT_EXPLODING in #R$6BB0.
 @ $6CB5 isub=RES CONTROLS_BIT_EXPLODING,(HL)
 @ $6CB8 label=beep_engine_fast
@@ -1713,11 +1776,13 @@ R $6CB8 I:HL Pointer to #R$6BB0 (controls state byte)
   $6CB8 Extract period from low 3 bits of controls byte.
   $6CBC Loop counter: 8 cycles of the waveform.
 @ $6CBE label=beep_engine_fast_loop
-  $6CBE Turn speaker ON (bit 4 of port $FE).
+@ $6CBE isub=LD A,ULA_SPEAKER_ON
+  $6CBE Speaker ON.
   $6CC2 Load period into D.
 @ $6CC3 label=beep_engine_fast_delay_on
   $6CC3 Delay loop for speaker ON phase.
-  $6CC6 Turn speaker OFF.
+@ $6CC6 isub=LD A,ULA_SPEAKER_OFF
+  $6CC6 Speaker OFF.
   $6CCA Load fixed delay ($04) into D.
 @ $6CCC label=beep_engine_fast_delay_off
   $6CCC Delay loop for speaker OFF phase (asymmetric wave).
@@ -1730,11 +1795,13 @@ R $6CD6 I:HL Pointer to #R$6BB0 (controls state byte)
   $6CD6 Extract period from bits 0-2 and bit 4 of controls byte.
   $6CDA Loop counter: 8 cycles of the waveform.
 @ $6CDC label=beep_engine_slow_loop
-  $6CDC Turn speaker ON (bit 4 of port $FE).
+@ $6CDC isub=LD A,ULA_SPEAKER_ON
+  $6CDC Speaker ON.
   $6CE0 Load period into D.
 @ $6CE1 label=beep_engine_slow_delay_on
   $6CE1 Delay loop for speaker ON phase.
-  $6CE4 Turn speaker OFF.
+@ $6CE4 isub=LD A,ULA_SPEAKER_OFF
+  $6CE4 Speaker OFF.
   $6CE8 Load fixed delay ($0C) into D.
 @ $6CEA label=beep_engine_slow_delay_off
   $6CEA Delay loop for speaker OFF phase.
@@ -1746,11 +1813,13 @@ D $6CF4 #LIST { Decrements #R$5F65 each frame, wrapping at $7F (0-127 range) } {
   $6CF4 Loop counter: 3 cycles of waveform.
 @ $6CF6 label=do_low_fuel_loop
   $6CF6 Decrement period (#R$5F65), wrap at $7F. Store new period in E.
-  $6CFF Turn speaker ON (bit 4 of port $FE).
+@ $6D00 isub=LD A,ULA_SPEAKER_ON
+  $6CFF Speaker ON.
   $6D04 Load period into D.
 @ $6D05 label=do_low_fuel_delay_on
   $6D05 Delay loop for speaker ON phase.
-  $6D08 Turn speaker OFF.
+@ $6D08 isub=LD A,ULA_SPEAKER_OFF
+  $6D08 Speaker OFF.
   $6D0C Load period into D.
 @ $6D0D label=do_low_fuel_delay_off
   $6D0D Delay loop for speaker OFF phase.
@@ -1769,15 +1838,18 @@ D $6D17 #LIST { Initializes screen with PAPER RIVER, INK BANK } { Prints status 
   $6D3D Initialize terrain rendering.
   $6D40,11 Print "GAME" text (#R$805A, length 5) using ROM PR_STRING.
 @ $6D48 isub=LD BC,status_line_4_end - status_line_4
-  $6D4E Print game number: load game mode from #R$923A, add '1' ($31) for ASCII digit, output via RST $10.
-  $6D54,13 Initialize state: store 'h' ($68) in last key, clear #R$5F7D, save initial scroll value to #R$5D43.
+@ $6D51 isub=ADD A,CHAR_1
+  $6D4E Print game number: load game mode from #R$923A, add CHAR_1 for ASCII digit, output via RST $10.
+@ $6D54 isub=LD A,CHAR_H
+  $6D54,13 Initialize state: store 'h' in last key (suppress H-key pause), clear #R$5F7D, save initial scroll value to #R$5D43.
 @ $6D64 label=overview_loop
   $6D64 Check Enter key (row 6, bit 0). Handle Enter if pressed.
   $6D6D Check if 5 scroll units passed: if (#R$5EF0 - #R$5D43) == 5, jump to #R$5D06 to start game.
   $6D7A Render frame: call delay, scroll, increment counter, render terrain/objects.
   $6D8D Advance scroll and render terrain.
   $6D90,10 Call delay, increment frame counter #R$5F81, call ROM KEYBOARD ($02BF), enable interrupts.
-  $6D9B Check if Enter ($0D) was pressed. If so, jump to #R$5DA6.
+@ $6D9E isub=CP CHAR_ENTER
+  $6D9B Check if Enter was pressed. If so, jump to #R$5DA6.
   $6DA3,7 Check frame counter AND 3: if not zero, loop back to overview_loop.
   $6DAD Select upper screen channel via ROM CHAN_OPEN ($1601).
 @ $6DB2 isub=LD A,EXT_ATTR_INK
@@ -1845,10 +1917,12 @@ D $6E40 #LIST { Returns if plane is banking (#R$5F69 == 4) - must be centered to
 c $6E86 Set low fuel warning flag
 D $6E86 Sets CONTROLS_BIT_LOW_FUEL in #R$6BB0 to trigger the warbling low fuel warning sound.
   $6E86,5 Set CONTROLS_BIT_LOW_FUEL (bit 3) in controls state.
+@ $6E89 isub=SET CONTROLS_BIT_LOW_FUEL,(HL)
 @ $6E8C label=register_sufficient_fuel
 c $6E8C Clear low fuel warning flag
 D $6E8C Clears CONTROLS_BIT_LOW_FUEL in #R$6BB0 to stop the low fuel warning sound.
   $6E8C,5 Clear CONTROLS_BIT_LOW_FUEL (bit 3) in controls state.
+@ $6E8F isub=RES CONTROLS_BIT_LOW_FUEL,(HL)
 @ $6E92 label=signal_fuel_level_excessive
 c $6E92 Play tank full sound
 D $6E92 Plays a different beep when fuel tank is already full and cannot accept more fuel.
@@ -1861,8 +1935,10 @@ R $6E9C I:BC BC contains fragment position: B=Y offset, C=X position
 R $6E9C I:D Object type/definition byte
   $6E9C Set CONTROLS_BIT_EXPLODING (bit 5) in #R$6BB0.
 @ $6E9F isub=SET CONTROLS_BIT_EXPLODING,(HL)
+@ $6EA1 isub=RES CONTROLS_BIT_FIRE,(HL)
   $6EA1 Clear CONTROLS_BIT_FIRE (bit 0).
-  $6EA3 Reset explosion counter to $18 (24 frames).
+@ $6EA3 isub=LD A,EXPLOSION_SOUND_FRAMES
+  $6EA3 Reset explosion counter.
   $6EA8 Point HL to explosions set at #R$5F2E, fall through to add_object_to_set.
 @ $6EAB label=add_object_to_set
 c $6EAB Add object entry to a set
@@ -2034,10 +2110,12 @@ R $703E O:E Attributes value $00 or $04.
 @ $7040 isub=BIT SLOT_BIT_TANK_ON_BANK,D
 @ $7043 isub=LD E,SPRITE_TANK_ON_BANK_ATTRIBUTES
 @ $7046 label=blending_mode_xor_nop
+@ $7046 isub=LD A,OPCODE_XOR_B
 c $7046 Set XOR blending mode for sprite rendering
 D $7046 Modifies sprite rendering code via self-modifying instructions. Patches #R$8C3C with XOR B and #R$8C1B with NOP to enable XOR blending mode for fighters/tanks.
-  $7046 Patch XOR B ($A8) into #R$8C3C and NOP ($00) into #R$8C1B for XOR rendering.
+  $7046 Patch OPCODE_XOR_B into #R$8C3C and OPCODE_NOP into #R$8C1B for XOR rendering.
 @ $7048 nowarn
+@ $704B isub=LD A,OPCODE_NOP
 @ $704D nowarn
 @ $7051 label=render_fuel
 c $7051 Render fuel station
@@ -2115,6 +2193,7 @@ N $708E 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHT
 @ $70C9 isub=CP GAMEPLAY_MODE_SCROLL_IN
   $70C9 Check if gameplay mode is GAMEPLAY_MODE_SCROLL_IN.
   $70CB If so, skip to the next object without further processing.
+@ $70CE isub=BIT SLOT_BIT_ACTIVATION,D
   $70CE Check bit 7 of the object definition (activation flag).
   $70D0 If bit 7 is set, the object is already activated, skip to operation dispatch.
 @ $70D3 isub=LD A,(state_activation_interval)
@@ -2124,6 +2203,7 @@ N $708E 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHT
   $70DA AND the counter with the interval to check if it's time to activate.
   $70DB Compare with zero.
   $70DD If not zero, skip activation and jump to L7224.
+@ $70E0 isub=SET SLOT_BIT_ACTIVATION,D
   $70E0 Set bit 7 of D to mark the object as activated.
   $70E2 Move HL forward to point to the object definition byte.
   $70E3 Store the updated definition (with bit 7 set) back to the slot.
@@ -2325,6 +2405,7 @@ R $7296 I:D Object definition byte
 @ $72B5 label=tank_move_entry
   $72B5,10 Move tank: DEC C twice (left), then INC C × 4 if right-facing.
   $72B5 Move tank: DEC C twice (left), then INC C × 4 if right-facing.
+@ $72B7 isub=BIT SLOT_BIT_ORIENTATION,D
   $72BC If X == $80 (center), set tank shell active via #R$7290.
   $72C2,13 Update position in viewport array, store to #R$8B0C, get sprite pointer.
 @ $72D2 isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
@@ -2333,17 +2414,19 @@ R $7296 I:D Object definition byte
   $72D8,11 Render sprite: width=3, height=8, attributes=$00. Restore blending.
 @ $72DA isub=LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_TANK_ATTRIBUTES
 @ $72E6 label=blending_mode_xor_xor
+@ $72E6 isub=LD A,OPCODE_XOR_B
 c $72E6 Set XOR/XOR blending mode
 D $72E6 Patches sprite renderer to use XOR for both mask and sprite operations. Used for tanks and fighters.
-  $72E6 Load XOR B opcode ($A8).
+  $72E6 Load OPCODE_XOR_B.
 @ $72E8 nowarn
   $72E8 Patch XOR B into #R$8C1B.
 @ $72EB nowarn
   $72EB,3 Patch XOR B into #R$8C3C.
 @ $72EF label=blending_mode_or_or
+@ $72EF isub=LD A,OPCODE_OR_B
 c $72EF Set OR/OR blending mode
 D $72EF Patches sprite renderer to use OR for both mask and sprite operations. Restores default blending after XOR rendering.
-  $72EF Load OR B opcode ($B0).
+  $72EF Load OPCODE_OR_B.
 @ $72F1 nowarn
   $72F1 Patch OR B into #R$8C1B.
 @ $72F4 nowarn
@@ -2407,6 +2490,7 @@ D $735E Alternative shell initialization when bit 4 is set. Checks if tank can f
 @ $7361 isub=CP TANK_SHELL_ACTIVE
   $7366 Push BC, check X position sign bit, invert if positive via #R$7380.
   $7373 Shift right 4 times to get upper nibble.
+@ $7379 isub=AND 1<<SLOT_BIT_ORIENTATION
   $737B Combine with orientation, pop BC, continue to fire shell.
 @ $7380 label=invert_coordinate_sign
 c $7380 Invert coordinate for position calculation
@@ -2474,7 +2558,9 @@ D $73DD #LIST { Returns immediately during GAMEPLAY_MODE_SCROLL_IN } { Returns i
   $73EB Play missile launch sound: BEEPER with DE=$0001, HL=$2800.
   $73F4 Load viewport_ptr, extract [D, B, C] from helicopter's slot.
   $73FD Align X to 8-pixel boundary (AND $F8), extract orientation bit.
+@ $7402 isub=AND 1<<SLOT_BIT_ORIENTATION
   $7404 Store orientation to #R$5F75. If right-facing, add offset via #R$73D8.
+@ $7407 isub=BIT SLOT_BIT_ORIENTATION,A
   $740C,8 Add 4 to Y position (INC B × 4), store to #R$5F73.
 @ $7415 label=handle_collision_mode_helicopter_missile
 c $7415 Handle helicopter missile collision
@@ -2599,6 +2685,7 @@ R $75BA O:HL Pointer to sprite data
 @ $75C0 isub=BIT SLOT_BIT_ORIENTATION,D
   $75C0 If right-facing (bit 6 clear), get right sprites via #R$6FE6.
   $75C5 Extract object type (bits 0-2), prepare for loop.
+@ $75C6 isub=AND SLOT_MASK_OBJECT_TYPE
   $75C9,7 Loop: HL += $60 for each type. Result: HL = base + (type * $60).
 @ $75CB label=ld_enemy_sprites_loop
 @ $75D0 label=reverse_enemy_direction
@@ -2650,6 +2737,7 @@ R $7649 I:C X position
 R $7649 I:D Object definition (bit 6 = orientation: 0=right, 1=left)
   $7649 If balloon is off-screen (Y bit 7 set), skip to main loop.
   $764E,10 Only operate every 4th frame (frame counter AND 3 == 1). Check orientation.
+@ $7658 isub=BIT SLOT_BIT_ORIENTATION,D
   $765D Left-facing: Check terrain at (X-16, Y). If collision, reverse direction.
   $766C Check terrain at (X-16, Y+8). If collision, reverse direction.
   $767F Save position, move left by 2 pixels.
@@ -2797,12 +2885,14 @@ R $7AB9 Initializes #R$7800, #R$7801 and #R$923A.
 R $7AB9 Sets the stack pointer to #R$7810 and returns using that stack.
 C $7AB9,9 Print control types dialog
 C $7AC2,6 Initialize timer
+@ $7AC8 isub=LD A,CHAR_ENTER
 @ $7ACD label=controls_input
 c $7ACD Wait until the user chooses a valid control type or switch to the overview mode on timeout.
   $7ACD Decrease timer
   $7AD4,5 Check if the time is up
   $7ADC Scan keyboard
-  $7AE0,2 Subtract $31 from the pressed key ASCII code, effectively mapping the "1" key to 0, "2" to 1, etc.
+@ $7AE0 isub=SUB CHAR_1
+  $7AE0,2 Subtract CHAR_1 from the pressed key ASCII code, mapping "1" to 0, "2" to 1, etc.
   $7AE5 Validate the pressed key by making sure that none of the bits older than the first two are set, effectively allowing values 0 through 3.
   $7AE9,2 Repeat if a valid key was not pressed.
 @ $7AED label=game_mode_print
@@ -2812,10 +2902,12 @@ c $7ACD Wait until the user chooses a valid control type or switch to the overvi
 @ $7AF4 isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
   $7AF4,2 PAPER BLACK; INK WHITE
   $7AF9,9 Print game mode dialog
+@ $7B02 isub=LD A,CHAR_ENTER
 @ $7B07 label=game_mode_input
 c $7B07 Wait until the user chooses a valid game mode.
   $7B0A Scan keyboard
-  $7B0E,2 Subtract $31 from the pressed key ASCII code, effectively mapping the "1" key to 0, "2" to 1, etc.
+@ $7B0E isub=SUB CHAR_1
+  $7B0E,2 Subtract CHAR_1 from the pressed key ASCII code, mapping "1" to 0, "2" to 1, etc.
   $7B13 Validate the pressed key by making sure that none of the bits older than the first three are set, effectively allowing values 0 through 7.
   $7B17 Repeat if a valid key was not pressed.
 @ $7B1A isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
@@ -2824,12 +2916,14 @@ c $7B07 Wait until the user chooses a valid game mode.
 @ $7B30 label=instructions_print
 N $7B30 Print instructions and wait for Enter key.
   $7B30 Print instructions text (#R$7882, 168 bytes) via ROM PR_STRING.
+@ $7B39 isub=LD A,CHAR_SPACE
   $7B39 Initialize LAST_K to space character.
 @ $7B3E label=instructions_input
 N $7B3E Wait for user to press Enter.
   $7B3E Read last key pressed from LAST_K.
   $7B41 Scan keyboard via ROM routine.
-  $7B45 Loop until Enter ($0D) is pressed.
+@ $7B48 isub=CP CHAR_ENTER
+  $7B45 Loop until Enter is pressed.
   $7B4A Exit loop when Enter detected.
   $7B4D,5 Clear overview mode flag (start game).
 @ $7B57 label=switch_to_overview_mode
@@ -3087,11 +3181,13 @@ c $8A02 Generate firing sound effect.
 D $8A02 Produces the "pew" sound when the player fires a missile by toggling the speaker port rapidly.
   $8A02 Loop 8 times for sound duration.
 @ $8A04 label=do_fire_pulse_loop
-  $8A04 Turn speaker ON (cyan border flash).
+@ $8A04 isub=LD A,ULA_SPEAKER_ON
+  $8A04 Speaker ON (cyan border flash).
   $8A08 Initialize delay counter for sound frequency.
 @ $8A0A label=do_fire_delay_loop
   $8A0A Delay loop for sound frequency.
-  $8A0D Turn speaker OFF.
+@ $8A0D isub=LD A,ULA_SPEAKER_OFF
+  $8A0D Speaker OFF.
   $8A11,9 Delay and loop for next sound pulse.
 @ $8A1B label=scroll_attribute_row
 c $8A1B Scroll the bottom attribute row left by 1 pixel.
@@ -3296,6 +3392,7 @@ R $90E0 I:A Number of points to add divided by 10.
 @ $9109 label=add_life
 c $9109 Add a life to the current player.
 D $9109 Increments the current player's life count and triggers the bonus life sound effect.
+@ $9119 isub=SET CONTROLS_BIT_BONUS_LIFE,(HL)
   $9119,2 Set CONTROLS_BIT_BONUS_LIFE to trigger bonus sound.
 @ $9122 label=update_score
 c $9122 Update and print score for current player.
@@ -3314,7 +3411,8 @@ R $913B I:C Offset of the digit to increase (0=leftmost, 5=rightmost).
 R $913B O:D Offset of the digit (passed to print routine).
   $913B Load #R$90BC (player 1 score), add offset C to get digit pointer.
   $9140 Save offset to D, load digit, increment it.
-  $9144 If digit > '9' ($3A), jump to #R$9191 for carry.
+@ $9145 isub=CP CHAR_0+10
+  $9144 If digit overflows past '9', jump to #R$9191 for carry.
   $914A Store incremented digit, fall through to print.
 @ $914B label=print_player_1_score_digit
 @ $914B isub=LD A,EXT_ATTR_INK
@@ -3339,7 +3437,8 @@ R $9169 I:C Offset of the digit to increase (0=leftmost, 5=rightmost).
 R $9169 O:D Offset of the digit (passed to print routine).
   $9169 Load #R$90C2 (player 2 score), add offset C to get digit pointer.
   $916E Save offset to D, load digit, increment it.
-  $9172 If digit > '9' ($3A), jump to #R$91A9 for carry.
+@ $9173 isub=CP CHAR_0+10
+  $9172 If digit overflows past '9', jump to #R$91A9 for carry.
   $9178 Store incremented digit, fall through to print.
 @ $9179 label=print_player_2_score_digit
 @ $9179 isub=LD A,EXT_ATTR_INK
@@ -3355,23 +3454,29 @@ R $9179 I:HL Pointer to the digit character.
   $9189 Load digit from score buffer and print it.
   $918B Switch to channel 2 (main screen) and return.
 @ $9191 label=carry_player_1_score_digit
+@ $9191 isub=LD (HL),CHAR_0
 c $9191 Handle carry for player 1's score digit.
 D $9191 When a digit overflows past '9', this routine sets it to '0' and propagates the carry to the next higher digit by recursively calling update_score.
 R $9191 I:D Offset of the overflowed digit.
 R $9191 I:HL Pointer to the overflowed digit.
   $9191 Write '0' to the overflowed digit.
-  $9193 Check if this is the leftmost digit (offset 0): A = 6-D+1, if A == 7 then return.
+@ $9193 isub=LD A,SCORE_DIGIT_COUNT
+@ $9197 isub=CP SCORE_DIGIT_COUNT+1
+  $9193 Check if this is the leftmost digit (offset 0): A = SCORE_DIGIT_COUNT - D + 1.
   $9199 Return if leftmost digit (no more digits to carry into).
   $919A Save HL/DE, call #R$9122 to increment next higher digit.
   $919F Open channel 1 (upper screen) for printing.
   $91A4 Restore HL/DE, jump to #R$914B to print the '0' digit.
 @ $91A9 label=carry_player_2_score_digit
+@ $91A9 isub=LD (HL),CHAR_0
 c $91A9 Handle carry for player 2's score digit.
 D $91A9 When a digit overflows past '9', this routine sets it to '0' and propagates the carry to the next higher digit by recursively calling update_score.
 R $91A9 I:D Offset of the overflowed digit.
 R $91A9 I:HL Pointer to the overflowed digit.
   $91A9 Write '0' to the overflowed digit.
-  $91AB Check if this is the leftmost digit (offset 0): A = 6-D+1, if A == 7 then return.
+@ $91AB isub=LD A,SCORE_DIGIT_COUNT
+@ $91AF isub=CP SCORE_DIGIT_COUNT+1
+  $91AB Check if this is the leftmost digit (offset 0): A = SCORE_DIGIT_COUNT - D + 1.
   $91B1 Return if leftmost digit (no more digits to carry into).
   $91B2 Save HL/DE, call #R$9122 to increment next higher digit.
   $91B7 Open channel 1 (upper screen) for printing.
@@ -3384,6 +3489,7 @@ D $91C1 Displays player 2's full score area including "P2" label and leading zer
 @ $91C4 isub=LD A,COLOR_PLAYER_2
 @ $91C7 isub=LD BC,high_score_bridge_1 - state_score_player_2_low
   $91C7 Print 6-digit score from #R$90C2 via ROM PR_STRING.
+@ $91D0 isub=LD A,CHAR_0
   $91D0 Print trailing '0' after score.
 @ $91D3 isub=LD A,EXT_ATTR_AT
   $91D3 AT 1,18
@@ -3400,6 +3506,7 @@ D $91E8 In 2-player mode, prints player 2's score. In 1-player mode, prints the 
 @ $91FE isub=LD A,EXT_ATTR_INK
   $91FE INK WHITE
 @ $9201 isub=LD A,COLOR_WHITE
+@ $9222 isub=LD A,CHAR_0
   $9204 Calculate high score address: base (#R$90C8) + ((game_mode AND $FE) * 3). Print 6-digit high score with leading '0'.
 @ $9225 isub=LD A,EXT_ATTR_AT
   $9225 AT 1,18
@@ -3436,9 +3543,15 @@ R $924F I:A Number of lives.
 @ $925F label=print_lives_loop
   $925F Print ✈ UDG symbol, loop B times.
 @ $9264 label=print_lives_padding
+@ $9264 isub=LD A,CHAR_SPACE
 c $9264 Print six spaces to clear old lives display.
 D $9264 Ensures any previously displayed lives that no longer exist are erased.
   $9264,18 Print 6 space characters.
+@ $9267 isub=LD A,CHAR_SPACE
+@ $926A isub=LD A,CHAR_SPACE
+@ $926D isub=LD A,CHAR_SPACE
+@ $9270 isub=LD A,CHAR_SPACE
+@ $9273 isub=LD A,CHAR_SPACE
 @ $9277 label=print_lives_player_2
 @ $9277 isub=LD A,EXT_ATTR_INK
 c $9277 Player 2 branch of #R$923E.
@@ -3522,12 +3635,13 @@ D $9388 Same wrap handling as #R$936F but for new position.
   $938E Inner loop: write attribute A to HL, increment HL, decrement C, repeat for row width.
   $9393 After row: restore BC, add stride DE, decrement B, re-save BC. Subtract $03DF from HL to maintain wrap. Jump back to #R$9348 for next row.
 @ $93A1 label=compare_scores
+@ $93A1 isub=LD C,SCORE_DIGIT_COUNT
 c $93A1 Compare two 6-digit scores.
 D $93A1 Compares score at HL with score at DE, digit by digit.
 R $93A1 I:HL Pointer to first score (6 ASCII digits)
 R $93A1 I:DE Pointer to second score (6 ASCII digits)
 R $93A1 O:A Result: 0 if equal, 1 if HL < DE, $FF if HL > DE
-  $93A1 Initialize digit counter to 6.
+  $93A1 Initialize digit counter to SCORE_DIGIT_COUNT.
 @ $93A3 label=compare_scores_loop
   $93A3 Compare digits, return if different, advance pointers, loop.
   $93B7,1 Return 0 (scores equal).
