@@ -1609,6 +1609,7 @@ g $6C30 Bonus life sound progress counter (0-64). Incremented each frame during 
 c $6C31 Play bonus life sound effect
 D $6C31 Generates a rising pitch sound effect when player earns an extra life. Called once per frame while CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 frames.
 D $6C31 #LIST { Counter increments from 0 to 64 over successive frames } { Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases } { Lower pitch values = higher frequency, so sound rises in pitch } { Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001 } LIST#
+N $6C31 #IF({html})(#AUDIO(bonus-life.wav)(305,[8303]*3,[44908,[8303]*3]*7,[47980,[7279]*3]*8,[51052,[6255]*3]*8,[54124,[5231]*3]*8,[57196,[4207]*3]*8,[60268,[3183]*3]*8,[63340,[2159]*3]*8,[66412,[1135]*3]*7))
   $6C31 Increment counter and check if reached $40 (64). If so, sound is complete.
 @ $6C38 isub=CP BONUS_LIFE_SOUND_FRAMES
   $6C38 Check if counter reached BONUS_LIFE_SOUND_FRAMES. If done, finish sound sequence.
@@ -1648,7 +1649,7 @@ g $6C7A Explosion sound frame counter. Counts down from $18 (24) to 0. Value als
 c $6C7B Play explosion sound effect
 D $6C7B Generates an explosion sound that plays over 24 frames ($18). Called once per frame while CONTROLS_BIT_EXPLODING is set. The ON delay is derived from (DE)&7, but DE is not set up by the caller - it retains whatever value the interrupted main loop code had, making the pitch vary semi-randomly between frames and giving the explosion its noisy character.
 D $6C7B #LIST { Counter decrements from $18 (24) to 0 over successive frames } { ON delay = ((DE) AND $07) << 3 + $10, range $10-$48 (16-72) } { OFF delay = counter value, decreasing each frame (sound speeds up) } { 4 cycles of waveform per frame } { As counter decreases, OFF delay shortens, making sound more rapid/urgent } LIST#
-N $6C7B #IF({html})(#AUDIO(explosion.wav)(121,657,412,657,412,657,412,657,67000,1169,396,1169,396,1169,396,1169,67000,401,380,401,380,401,380,401,67000,913,364,913,364,913,364,913,67000,657,348,657,348,657,348,657,67000,1041,332,1041,332,1041,332,1041,67000,785,316,785,316,785,316,785,67000,785,300,785,300,785,300,785,67000,785,284,785,284,785,284,785,67000,1041,268,1041,268,1041,268,1041,67000,1169,252,1169,252,1169,252,1169,67000,657,236,657,236,657,236,657,67000,657,220,657,220,657,220,657,67000,1041,204,1041,204,1041,204,1041,67000,529,188,529,188,529,188,529,67000,657,172,657,172,657,172,657,67000,401,156,401,156,401,156,401,67000,1169,140,1169,140,1169,140,1169,67000,273,124,273,124,273,124,273,67000,1169,108,1169,108,1169,108,1169,67000,913,92,913,92,913,92,913,67000,529,76,529,76,529,76,529,67000,657,60,657,60,657,60,657))
+N $6C7B #IF({html})(#AUDIO(explosion.wav)(121,[657,412]*3,657,67000,[1169,396]*3,1169,67000,[401,380]*3,401,67000,[913,364]*3,913,67000,[657,348]*3,657,67000,[1041,332]*3,1041,67000,[785,316]*3,785,67000,[785,300]*3,785,67000,[785,284]*3,785,67000,[1041,268]*3,1041,67000,[1169,252]*3,1169,67000,[657,236]*3,657,67000,[657,220]*3,657,67000,[1041,204]*3,1041,67000,[529,188]*3,529,67000,[657,172]*3,657,67000,[401,156]*3,401,67000,[1169,140]*3,1169,67000,[273,124]*3,273,67000,[1169,108]*3,1169,67000,[913,92]*3,913,67000,[529,76]*3,529,67000,[657,60]*3,657))
 R $6C7B I:DE Not intentionally set - residual value from interrupted code, read as (DE)&7 to derive ON delay
   $6C7B,4 Decrement explosion counter.
   $6C82 If counter reached 0, jump to #R$6CAD to finish.
@@ -1833,7 +1834,8 @@ D $6E8C Clears CONTROLS_BIT_LOW_FUEL in #R$6BB0 to stop the low fuel warning sou
 @ $6E8F isub=RES CONTROLS_BIT_LOW_FUEL,(HL)
 @ $6E92 label=signal_fuel_level_excessive
 c $6E92 Play tank full sound
-D $6E92 Plays a different beep when fuel tank is already full and cannot accept more fuel.
+D $6E92 Plays a short beep (~1450 Hz, ~6ms) when fuel tank is already full and cannot accept more fuel.
+N $6E92 #IF({html})(#AUDIO(fuel-full.wav)(218,[1207]*17))
   $6E92,9 Play tank full sound: BEEPER with DE=$0008, HL=$0111.
 @ $6E9C label=explode_fragment
 c $6E9C Create explosion at fragment position

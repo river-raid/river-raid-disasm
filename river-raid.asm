@@ -3787,6 +3787,7 @@ bonus_life_sound_counter:
 ; * Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases
 ; * Lower pitch values = higher frequency, so sound rises in pitch
 ; * Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001
+;
 do_bonus_life:
   LD A,(bonus_life_sound_counter)      ; Increment counter and check if reached $40 (64). If so, sound is complete.
   INC A                                ;
@@ -4243,7 +4244,8 @@ register_sufficient_fuel:
 
 ; Play tank full sound
 ;
-; Plays a different beep when fuel tank is already full and cannot accept more fuel.
+; Plays a short beep (~1450 Hz, ~6ms) when fuel tank is already full and cannot accept more fuel.
+;
 signal_fuel_level_excessive:
   LD DE,$0008                          ; Play tank full sound: BEEPER with DE=$0008, HL=$0111.
   LD HL,$0111                          ;
