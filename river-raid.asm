@@ -3787,7 +3787,6 @@ bonus_life_sound_counter:
 ; * Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases
 ; * Lower pitch values = higher frequency, so sound rises in pitch
 ; * Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001
-;
 do_bonus_life:
   LD A,(bonus_life_sound_counter)      ; Increment counter and check if reached $40 (64). If so, sound is complete.
   INC A                                ;
@@ -3827,7 +3826,6 @@ bonus_life_sound_done:
 ; * Loops 8 cycles then returns
 ;
 ; I:HL Pointer to state_controls (controls state byte)
-;
 beep_engine_normal:
   LD A,(HL)                            ; Extract period from low 4 bits of controls byte. Higher value = lower pitch.
   AND $0F                              ;
@@ -3869,7 +3867,6 @@ explosion_counter:
 ; * As counter decreases, OFF delay shortens, making sound more rapid/urgent
 ;
 ; I:DE Not intentionally set - residual value from interrupted code, read as (DE)&7 to derive ON delay
-;
 beep_explosion:
   LD A,(explosion_counter)             ; Decrement explosion counter.
   DEC A                                ;
@@ -3922,7 +3919,6 @@ explosion_render_finish:
 ; * Asymmetric wave gives a higher-pitched timbre than normal speed
 ;
 ; I:HL Pointer to state_controls (controls state byte)
-;
 beep_engine_fast:
   LD A,(HL)                            ; Extract period from low 3 bits of controls byte.
   AND $07                              ;
@@ -3955,7 +3951,6 @@ beep_engine_fast_delay_off:
 ; * Lower-pitched timbre than normal and fast speeds
 ;
 ; I:HL Pointer to state_controls (controls state byte)
-;
 beep_engine_slow:
   LD A,(HL)                            ; Extract period from bits 0-2 and bit 4 of controls byte.
   AND $17                              ;
@@ -3987,7 +3982,6 @@ beep_engine_slow_delay_off:
 ; * Uses this value as period for symmetric square wave
 ; * 3 cycles of waveform per invocation
 ; * As period decrements, pitch rises then resets, creating warble
-;
 do_low_fuel:
   LD C,$03                             ; Loop counter: 3 cycles of waveform.
 do_low_fuel_loop:
@@ -4245,7 +4239,6 @@ register_sufficient_fuel:
 ; Play tank full sound
 ;
 ; Plays a short beep (~1450 Hz, ~6ms) when fuel tank is already full and cannot accept more fuel.
-;
 signal_fuel_level_excessive:
   LD DE,$0008                          ; Play tank full sound: BEEPER with DE=$0008, HL=$0111.
   LD HL,$0111                          ;
@@ -7233,7 +7226,6 @@ terrain_edge_right:
 ; Generate firing sound effect.
 ;
 ; Produces the "pew" sound when the player fires a missile by toggling the speaker port rapidly.
-;
 do_fire:
   LD C,$08                             ; Loop 8 pulses for sound duration.
 do_fire_pulse_loop:

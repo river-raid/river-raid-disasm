@@ -1,0 +1,21 @@
+[Config]
+RefFiles=sound.ref
+GameDir=river-raid
+
+[Game]
+Game=River Raid
+
+[Index:Graphics:Graphics and sound]
+Sound
+
+[Paths]
+Sound=sound/sound.html
+
+[Links]
+Sound=Sound effects
+
+[Titles]
+Sound=Sound effects
+
+[Page:Sound]
+SectionPrefix=Audio

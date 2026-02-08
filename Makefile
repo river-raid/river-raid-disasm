@@ -4,6 +4,7 @@ GAME = river-raid
 CTL = $(GAME).ctl
 T2S = $(GAME).t2s
 INI = skoolkit.ini
+REF = $(GAME).ref
 
 # Generated files
 SKOOL = $(GAME).skool
@@ -84,8 +85,8 @@ $(ASM_NON_FIXED): $(SKOOL)
 # Generate HTML documentation
 html: html/.stamp
 
-html/.stamp: $(SKOOL)
-	skool2html.py -d html -H -o $(SKOOL)
+html/.stamp: $(SKOOL) $(REF) sound.ref
+	skool2html.py -d html -H -o $(SKOOL) $(REF)
 	touch $@
 
 clean:
