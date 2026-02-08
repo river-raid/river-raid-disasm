@@ -1626,6 +1626,7 @@ D $6C52 Resets the sound counter and clears the CONTROLS_BIT_BONUS_LIFE flag to 
 c $6C5D Play normal speed engine sound
 D $6C5D Generates the engine sound for normal speed. Called when only CONTROLS_BIT_SPEED_NOT_FAST is set (player not pressing up or down). HL points to the controls byte on entry.
 D $6C5D #LIST { Period = (controls_byte AND $0F), used for both on and off delays } { Symmetric square wave: same delay for high and low phases } { Loops 8 cycles then returns } LIST#
+N $6C5D #IF({html})(#AUDIO(engine-normal.wav)(43,[177,191]*7,177,[67135,[177,191]*7,177]*49))
 R $6C5D I:HL Pointer to #R$6BB0 (controls state byte)
   $6C5D Extract period from low 4 bits of controls byte. Higher value = lower pitch.
   $6C61 Loop counter: 8 cycles of the waveform.
@@ -1647,6 +1648,7 @@ g $6C7A Explosion sound frame counter. Counts down from $18 (24) to 0. Value als
 c $6C7B Play explosion sound effect
 D $6C7B Generates an explosion sound that plays over 24 frames ($18). Called once per frame while CONTROLS_BIT_EXPLODING is set. DE points to some game state byte that affects pitch.
 D $6C7B #LIST { Counter decrements from $18 (24) to 0 over successive frames } { ON delay = ((DE) AND $07) << 3 + $10, range $10-$48 (16-72) } { OFF delay = counter value, decreasing each frame (sound speeds up) } { 4 cycles of waveform per frame } { As counter decreases, OFF delay shortens, making sound more rapid/urgent } LIST#
+N $6C7B #IF({html})(#AUDIO(explosion.wav)(121,657,412,657,412,657,412,657,67000,657,396,657,396,657,396,657,67000,657,380,657,380,657,380,657,67000,657,364,657,364,657,364,657,67000,657,348,657,348,657,348,657,67000,657,332,657,332,657,332,657,67000,657,316,657,316,657,316,657,67000,657,300,657,300,657,300,657,67000,657,284,657,284,657,284,657,67000,657,268,657,268,657,268,657,67000,657,252,657,252,657,252,657,67000,657,236,657,236,657,236,657,67000,657,220,657,220,657,220,657,67000,657,204,657,204,657,204,657,67000,657,188,657,188,657,188,657,67000,657,172,657,172,657,172,657,67000,657,156,657,156,657,156,657,67000,657,140,657,140,657,140,657,67000,657,124,657,124,657,124,657,67000,657,108,657,108,657,108,657,67000,657,92,657,92,657,92,657,67000,657,76,657,76,657,76,657,67000,657,60,657,60,657,60,657))
 R $6C7B I:DE Pointer to game state byte affecting pitch
   $6C7B,4 Decrement explosion counter.
   $6C82 If counter reached 0, jump to #R$6CAD to finish.
@@ -1675,6 +1677,7 @@ D $6CAD Resets the explosion counter and clears CONTROLS_BIT_EXPLODING flag.
 c $6CB8 Play fast speed engine sound
 D $6CB8 Generates the engine sound for fast speed. Called when only CONTROLS_BIT_SPEED_CHANGED is set (player holding up). HL points to the controls byte on entry.
 D $6CB8 #LIST { Period = (controls_byte AND $07), used for speaker ON delay } { Fixed OFF delay of 4 iterations (shorter than ON = asymmetric wave) } { Asymmetric wave gives a higher-pitched timbre than normal speed } LIST#
+N $6CB8 #IF({html})(#AUDIO(engine-fast.wav)(43,[113,98]*7,113,[68298,[113,98]*7,113]*49))
 R $6CB8 I:HL Pointer to #R$6BB0 (controls state byte)
   $6CB8 Extract period from low 3 bits of controls byte.
   $6CBC Loop counter: 8 cycles of the waveform.
@@ -1694,6 +1697,7 @@ R $6CB8 I:HL Pointer to #R$6BB0 (controls state byte)
 c $6CD6 Play slow speed engine sound
 D $6CD6 Generates the engine sound for slow speed. Called when both CONTROLS_BIT_SPEED_NOT_FAST and CONTROLS_BIT_SPEED_CHANGED are set (player holding down). HL points to the controls byte on entry.
 D $6CD6 #LIST { Period = (controls_byte AND $17), uses bits 0-2 and bit 4 } { Fixed OFF delay of $0C (12) iterations (longer than fast speed sound) } { Lower-pitched timbre than normal and fast speeds } LIST#
+N $6CD6 #IF({html})(#AUDIO(engine-slow.wav)(43,[113,226]*7,113,[67402,[113,226]*7,113]*49))
 R $6CD6 I:HL Pointer to #R$6BB0 (controls state byte)
   $6CD6 Extract period from bits 0-2 and bit 4 of controls byte.
   $6CDA Loop counter: 8 cycles of the waveform.
@@ -1713,6 +1717,7 @@ R $6CD6 I:HL Pointer to #R$6BB0 (controls state byte)
 c $6CF4 Play low fuel warning sound
 D $6CF4 Generates a warbling warning sound when fuel is low. Called once per frame while CONTROLS_BIT_LOW_FUEL is set. The sound pitch varies each frame creating an urgent warbling effect.
 D $6CF4 #LIST { Decrements #R$5F65 each frame, wrapping at $7F (0-127 range) } { Uses this value as period for symmetric square wave } { 3 cycles of waveform per invocation } { As period decrements, pitch rises then resets, creating warble } LIST#
+N $6CF4 #IF({html})(#AUDIO(low-fuel.wav)(66,2033,2088,2017,2072,2001,67000,1985,2040,1969,2024,1953,67000,1937,1992,1921,1976,1905,67000,1889,1944,1873,1928,1857,67000,1841,1896,1825,1880,1809,67000,1793,1848,1777,1832,1761,67000,1745,1800,1729,1784,1713,67000,1697,1752,1681,1736,1665,67000,1649,1704,1633,1688,1617,67000,1601,1656,1585,1640,1569,67000,1553,1608,1537,1592,1521,67000,1505,1560,1489,1544,1473,67000,1457,1512,1441,1496,1425,67000,1409,1464,1393,1448,1377,67000,1361,1416,1345,1400,1329,67000,1313,1368,1297,1352,1281,67000,1265,1320,1249,1304,1233,67000,1217,1272,1201,1256,1185,67000,1169,1224,1153,1208,1137,67000,1121,1176,1105,1160,1089,67000,1073,1128,1057,1112,1041,67000,1025,1080,1009,1064,993,67000,977,1032,961,1016,945,67000,929,984,913,968,897,67000,881,936,865,920,849,67000,833,888,817,872,801,67000,785,840,769,824,753,67000,737,792,721,776,705,67000,689,744,673,728,657,67000,641,696,625,680,609,67000,593,648,577,632,561,67000,545,600,529,584,513,67000,497,552,481,536,465,67000,449,504,433,488,417,67000,401,456,385,440,369,67000,353,408,337,392,321,67000,305,360,289,344,273,67000,257,312,241,296,225,67000,209,264,193,248,177,67000,161,216,145,200,129,67000,113,168,97,152,81,67000,65,120,49,104,33,67000,4113,4168,2049,2104,2033,67000,2017,2072,2001,2056,1985,67000,1969,2024,1953,2008,1937,67000,1921,1976,1905,1960,1889,67000,1873,1928,1857,1912,1841,67000,1825,1880,1809,1864,1793,67000,1777,1832,1761,1816,1745,67000,1729,1784,1713,1768,1697,67000,1681,1736,1665,1720,1649,67000,1633,1688,1617,1672,1601,67000,1585,1640,1569,1624,1553,67000,1537,1592,1521,1576,1505,67000,1489,1544,1473,1528,1457,67000,1441,1496,1425,1480,1409,67000,1393,1448,1377,1432,1361,67000,1345,1400,1329,1384,1313,67000,1297,1352,1281,1336,1265,67000,1249,1304,1233,1288,1217,67000,1201,1256,1185,1240,1169,67000,1153,1208,1137,1192,1121,67000,1105,1160,1089,1144,1073,67000,1057,1112,1041,1096,1025,67000,1009,1064,993,1048,977,67000,961,1016,945,1000,929,67000,913,968,897,952,881,67000,865,920,849,904,833,67000,817,872,801,856,785,67000,769,824,753,808,737,67000,721,776,705,760,689,67000,673,728,657,712,641,67000,625,680,609,664,593,67000,577,632,561,616,545,67000,529,584,513,568,497,67000,481,536,465,520,449,67000,433,488,417,472,401,67000,385,440,369,424,353,67000,337,392,321,376,305,67000,289,344,273,328,257,67000,241,296,225,280,209,67000,193,248,177,232,161,67000,145,200,129,184,113,67000,97,152,81,136,65,67000,49,104,33,88,4113,67000,2049,2104,2033,2088,2017))
   $6CF4 Loop counter: 3 cycles of waveform.
 @ $6CF6 label=do_low_fuel_loop
   $6CF6 Decrement period (#R$5F65), wrap at $7F. Store new period in E.
@@ -3044,6 +3049,7 @@ b $89FA
 @ $8A02 label=do_fire
 c $8A02 Generate firing sound effect.
 D $8A02 Produces the "pew" sound when the player fires a missile by toggling the speaker port rapidly.
+N $8A02 #IF({html})(#AUDIO(fire.wav)(25,[532,50]*7,532))
   $8A02 Loop 8 pulses for sound duration.
 @ $8A04 label=do_fire_pulse_loop
 @ $8A04 isub=LD A,ULA_SPEAKER_ON
