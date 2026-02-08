@@ -1,0 +1,57 @@
+; Bugs and quirks in the original River Raid code.
+
+[Bug:planeSprite:Plane sprite has misplaced pixels]
+Two bytes in the player's plane sprite data contain incorrect pixel values.
+The errors are at $83BB (frame 1) and $83CB (frame 2), corrected via
+<code>ofix</code> directives. The visual effect is subtle — a few pixels are
+misplaced in the plane's wing area.
+
+[Bug:fighterSprite:Fighter sprite has wrong pixels in multiple frames]
+Six bytes across both left-facing and right-facing fighter sprite frames
+contain incorrect pixel data:
+
+#LIST
+{ Left-facing: $8736 and $8739 (frame 1) }
+{ Right-facing: $8916 and $8919 (frame 1), $891F (frame 1), $893A (frame 2) }
+LIST#
+
+All corrected via <code>ofix</code> directives. The errors affect the
+fighter's wing and fuselage outline in certain animation frames.
+
+[Bug:screenCollision:Collision detection works on raw screen pixels]
+The game detects collisions during the sprite rendering phase by checking
+whether OR-ing a new sprite's pixels onto the screen encounters any non-zero
+existing pixels (see #R$8B3C and #R$8C45). There is no separate collision
+map — the framebuffer itself serves as the collision surface.
+
+This means that anything drawn on screen is collidable, including data
+written via POKE during a pause. If you pause the game and POKE non-zero
+bytes into screen memory at the plane's position, the plane will collide
+with them when the game resumes.
+
+[Bug:fuelDepotSelfDestruct:Shooting a fuel depot while refueling can kill you]
+While refueling (GAMEPLAY_MODE_REFUEL), the plane's collision detection
+remains active with COLLISION_MODE_FUEL_DEPOT set. If the player fires a
+missile at the fuel depot being used for refueling, the resulting explosion
+fragments are rendered via OR blending. If an explosion fragment's pixels
+happen to overlap the plane's pixel position on screen, the rendering
+pipeline detects the overlap and triggers a player death.
+
+This bug is intermittent because the explosion fragments must land at exactly
+the right pixel position to overlap with the plane sprite. Most of the time,
+the fragments fly past harmlessly.
+
+See #R$6478 (fuel depot collision handler), #R$6256 (fuel depot collision
+mode setup), #R$8B3C (render with collision detection).
+
+[Bug:islandLoop:Off-by-one in island element lookup]
+The island element search loop at #R$6978 has an incorrect branch condition,
+corrected by the <code>ofix</code> at $697A (JR NZ with corrected target).
+The original code can skip past the intended island entry under certain
+conditions.
+
+[Bug:statusLineCopy:Wrong addresses in Player 2 status line]
+When displaying the Player 2 status line, the code at $65A1 uses incorrect
+source address and byte count parameters for the memory copy. The
+<code>ofix</code> directives at $65A1 (LD DE) and $65A4 (LD BC) correct
+these values to properly copy the status line text.

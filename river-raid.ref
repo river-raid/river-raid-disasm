@@ -1,5 +1,5 @@
 [Config]
-RefFiles=sound.ref
+RefFiles=sound.ref;facts.ref;bugs.ref;notes.ref
 GameDir=river-raid
 
 [Game]
@@ -8,14 +8,25 @@ Game=River Raid
 [Index:Graphics:Graphics and sound]
 Sound
 
+[Index:Reference:Reference]
+Facts
+Bugs
+Notes
+
 [Paths]
 Sound=sound/sound.html
+Notes=reference/notes.html
 
 [Links]
 Sound=Sound effects
+Notes=Implementation notes
 
 [Titles]
-Sound=Sound effects
+Facts=Trivia
+Notes=Implementation notes
 
 [Page:Sound]
 SectionPrefix=Audio
+
+[Page:Notes]
+SectionPrefix=Note
