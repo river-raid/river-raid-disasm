@@ -3857,7 +3857,9 @@ explosion_counter:
 ; Play explosion sound effect
 ;
 ; Generates an explosion sound that plays over 24 frames ($18). Called once per frame while CONTROLS_BIT_EXPLODING is
-; set. DE points to some game state byte that affects pitch.
+; set. The ON delay is derived from (DE)&7, but DE is not set up by the caller - it retains whatever value the
+; interrupted main loop code had, making the pitch vary semi-randomly between frames and giving the explosion its noisy
+; character.
 ;
 ; * Counter decrements from $18 (24) to 0 over successive frames
 ; * ON delay = ((DE) AND $07) << 3 + $10, range $10-$48 (16-72)
@@ -3865,7 +3867,7 @@ explosion_counter:
 ; * 4 cycles of waveform per frame
 ; * As counter decreases, OFF delay shortens, making sound more rapid/urgent
 ;
-; I:DE Pointer to game state byte affecting pitch
+; I:DE Not intentionally set - residual value from interrupted code, read as (DE)&7 to derive ON delay
 ;
 beep_explosion:
   LD A,(explosion_counter)             ; Decrement explosion counter.
