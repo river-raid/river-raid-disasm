@@ -50,6 +50,14 @@ corrected by the <code>ofix</code> at $697A (JR NZ with corrected target).
 The original code can skip past the intended island entry under certain
 conditions.
 
+[Bug:planeYInconsistency:Speed-dependent plane Y coordinate is dead code]
+The terrain rendering routine (#R$60C9) computes the plane's Y position as
+$88 minus the current speed setting, which would place the plane 1-3 pixels
+lower at higher speeds. However, all three movement handlers — handle_right
+(#R$65F3), handle_left (#R$6642), and render_plane (#R$6682) — immediately
+overwrite this with the fixed PLANE_COORDINATE_Y ($80), making the
+speed-dependent calculation dead code with no visible effect.
+
 [Bug:statusLineCopy:Wrong addresses in Player 2 status line]
 When displaying the Player 2 status line, the code at $65A1 uses incorrect
 source address and byte count parameters for the memory copy. The

@@ -95,8 +95,7 @@ The game has three speed settings that control how fast the terrain scrolls:
 { Fast      | 4 pixels/frame       | 4 }
 TABLE#
 
-The plane's vertical position on screen remains essentially fixed regardless
-of speed. Horizontal movement is always 2 pixels per input.
+Horizontal movement is always 2 pixels per input.
 
 See #R$5F64 (speed state), #R$670A (accelerate), #R$6717 (decelerate),
 #R$66D0 (scroll update).
