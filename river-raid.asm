@@ -6549,7 +6549,7 @@ sprite_plane:
   DEFB $38,$00                         ;
   DEFB $7C,$00                         ;
   DEFB $D6,$00                         ;
-  DEFB $92,$00                         ;
+  DEFB $82,$00                         ;
   DEFB $38,$00                         ;
   DEFB $54,$00                         ;
   DEFB $04,$00                         ; Frame 2
@@ -6557,7 +6557,7 @@ sprite_plane:
   DEFB $0E,$00                         ;
   DEFB $1F,$00                         ;
   DEFB $35,$80                         ;
-  DEFB $24,$80                         ;
+  DEFB $04,$80                         ;
   DEFB $0E,$00                         ;
   DEFB $15,$00                         ;
   DEFB $01,$00                         ; Frame 3
@@ -6939,8 +6939,8 @@ sprite_enemies_left:
   DEFB $00,$54,$00                     ;
 ; Array [4] of fighter headed left sprites (each element is 3×1 tiles = 24 bytes).
   DEFB $00,$00,$00                     ; Frame 1
-  DEFB $00,$40,$00                     ;
-  DEFB $70,$C0,$00                     ;
+  DEFB $70,$40,$00                     ;
+  DEFB $00,$C0,$00                     ;
   DEFB $FF,$C0,$00                     ;
   DEFB $FC,$80,$00                     ;
   DEFB $07,$00,$00                     ;
@@ -7108,10 +7108,10 @@ sprite_enemies_right:
   DEFB $01,$54,$00                     ;
 ; Array [4] of fighter headed right sprites (each element is 3×1 tiles = 24 bytes).
   DEFB $00,$00,$00                     ; Frame 1
-  DEFB $80,$00,$00                     ;
-  DEFB $C3,$80,$00                     ;
+  DEFB $80,$80,$00                     ;
+  DEFB $C3,$C0,$00                     ;
   DEFB $FF,$C0,$00                     ;
-  DEFB $4F,$C0,$00                     ;
+  DEFB $4F,$00,$00                     ;
   DEFB $38,$00,$00                     ;
   DEFB $70,$00,$00                     ;
   DEFB $00,$00,$00                     ;
@@ -7120,7 +7120,7 @@ sprite_enemies_right:
   DEFB $30,$E0,$00                     ;
   DEFB $3F,$F0,$00                     ;
   DEFB $13,$F0,$00                     ;
-  DEFB $0F,$00,$00                     ;
+  DEFB $07,$00,$00                     ;
   DEFB $1C,$00,$00                     ;
   DEFB $00,$00,$00                     ;
   DEFB $00,$00,$00                     ; Frame 3
@@ -7138,7 +7138,7 @@ sprite_enemies_right:
   DEFB $01,$3F,$00                     ;
   DEFB $00,$E0,$00                     ;
   DEFB $01,$C0,$00                     ;
-  DEFB $00,$00
+  DEFB $00,$00                         ;
 
 ; Array [4] of balloon sprites (2×2 tiles, 32 bytes).
 ;

@@ -7,17 +7,9 @@ the plane turns left or right.
 
 #UDGTABLE
 { =h Centered (straight flight) }
-{ #UDGARRAY2,14,4,2;$83B1-$83B2-1-16(*plane-f1) |
-  #UDGARRAY2,14,4,2;$83C1-$83C2-1-16(*plane-f2) |
-  #UDGARRAY2,14,4,2;$83D1-$83D2-1-16(*plane-f3) |
-  #UDGARRAY2,14,4,2;$83E1-$83E2-1-16(*plane-f4) }
+{ #UDGARRAY*plane-f1,50;plane-f2;plane-f3;plane-f4;plane-f3;plane-f2(plane) }
 { =h Banked (turning left/right) }
-{ #UDGARRAY2,14,4,2;$83F1-$83F2-1-16(*plane-banked-f1) |
-  #UDGARRAY2,14,4,2;$8401-$8402-1-16(*plane-banked-f2) |
-  #UDGARRAY2,14,4,2;$8411-$8412-1-16(*plane-banked-f3) |
-  #UDGARRAY2,14,4,2;$8421-$8422-1-16(*plane-banked-f4) }
-{ =h Animation }
-{ #UDGARRAY*plane-f1,50;plane-banked-f1;plane-banked-f2;plane-banked-f3;plane-banked-f4;plane-f4;plane-banked-f4;plane-banked-f3;plane-banked-f2;plane-banked-f1(plane) }
+{ #UDGARRAY*plane-banked-f1,50;plane-banked-f2;plane-banked-f3;plane-banked-f4;plane-banked-f3;plane-banked-f2(plane-banked) }
 TABLE#
 
 Sprite data: #R$83B1 (centered), #R$83F1 (banked).
@@ -27,26 +19,27 @@ Regular and advanced helicopters share the same 3x1 tile (24x8 pixel) sprite
 format with 4 pre-shifted frames per direction. The advanced variant fires
 missiles at the player.
 
+#UDGARRAY3,14,4,3;$8793-$8796-1-16{0,0,64,32}(*helicopter-reg-right-f1)
+#UDGARRAY3,14,4,3;$87AB-$87AE-1-16{0,0,64,32}(*helicopter-reg-right-f2)
+#UDGARRAY3,14,4,3;$87C3-$87C6-1-16{0,0,64,32}(*helicopter-reg-right-f3)
+#UDGARRAY3,14,4,3;$87DB-$87DE-1-16{0,0,64,32}(*helicopter-reg-right-f4)
+#UDGARRAY3,14,4,3;$85B3-$85B6-1-16{0,0,64,32}(*helicopter-reg-left-f1)
+#UDGARRAY3,14,4,3;$85CB-$85CF-1-16{0,0,64,32}(*helicopter-reg-left-f2)
+#UDGARRAY3,14,4,3;$85E3-$85E6-1-16{0,0,64,32}(*helicopter-reg-left-f3)
+#UDGARRAY3,14,4,3;$85FB-$85FE-1-16{0,0,64,32}(*helicopter-reg-left-f4)
+#UDGARRAY3,14,4,3;$8853-$8856-1-16{0,0,64,32}(*helicopter-adv-right-f1)
+#UDGARRAY3,14,4,3;$886B-$886E-1-16{0,0,64,32}(*helicopter-adv-right-f2)
+#UDGARRAY3,14,4,3;$8883-$8886-1-16{0,0,64,32}(*helicopter-adv-right-f3)
+#UDGARRAY3,14,4,3;$889B-$889E-1-16{0,0,64,32}(*helicopter-adv-right-f4)
+#UDGARRAY3,14,4,3;$8673-$8676-1-16{0,0,64,32}(*helicopter-adv-left-f1)
+#UDGARRAY3,14,4,3;$868B-$868F-1-16{0,0,64,32}(*helicopter-adv-left-f2)
+#UDGARRAY3,14,4,3;$86A3-$86A6-1-16{0,0,64,32}(*helicopter-adv-left-f3)
+#UDGARRAY3,14,4,3;$86BB-$86BE-1-16{0,0,64,32}(*helicopter-adv-left-f4)
+
 #UDGTABLE
 { =h Regular helicopter }
-{ #UDGARRAY3,14,4,3;$85B3-$85B6-1-16(*helicopter-reg-left-f1) |
-  #UDGARRAY3,14,4,3;$85CB-$85CF-1-16(*helicopter-reg-left-f2) |
-  #UDGARRAY3,14,4,3;$85E3-$85E6-1-16(*helicopter-reg-left-f3) |
-  #UDGARRAY3,14,4,3;$85FB-$85FE-1-16(*helicopter-reg-left-f4) }
-{ #UDGARRAY3,14,4,3;$8793-$8796-1-16(*helicopter-reg-right-f1) |
-  #UDGARRAY3,14,4,3;$87AB-$87AE-1-16(*helicopter-reg-right-f2) |
-  #UDGARRAY3,14,4,3;$87C3-$87C6-1-16(*helicopter-reg-right-f3) |
-  #UDGARRAY3,14,4,3;$87DB-$87DE-1-16(*helicopter-reg-right-f4) }
 { #UDGARRAY*helicopter-reg-right-f1,50;helicopter-reg-right-f2;helicopter-reg-right-f3;helicopter-reg-right-f4;helicopter-reg-left-f4;helicopter-reg-left-f3;helicopter-reg-left-f2;helicopter-reg-left-f1(helicopter-reg) }
 { =h Advanced helicopter }
-{ #UDGARRAY3,14,4,3;$8673-$8676-1-16(*helicopter-adv-left-f1) |
-  #UDGARRAY3,14,4,3;$868B-$868F-1-16(*helicopter-adv-left-f2) |
-  #UDGARRAY3,14,4,3;$86A3-$86A6-1-16(*helicopter-adv-left-f3) |
-  #UDGARRAY3,14,4,3;$86BB-$86BE-1-16(*helicopter-adv-left-f4) }
-{ #UDGARRAY3,14,4,3;$8853-$8856-1-16(*helicopter-adv-right-f1) |
-  #UDGARRAY3,14,4,3;$886B-$886E-1-16(*helicopter-adv-right-f2) |
-  #UDGARRAY3,14,4,3;$8883-$8886-1-16(*helicopter-adv-right-f3) |
-  #UDGARRAY3,14,4,3;$889B-$889E-1-16(*helicopter-adv-right-f4) }
 { #UDGARRAY*helicopter-adv-right-f1,50;helicopter-adv-right-f2;helicopter-adv-right-f3;helicopter-adv-right-f4;helicopter-adv-left-f4;helicopter-adv-left-f3;helicopter-adv-left-f2;helicopter-adv-left-f1(helicopter-adv) }
 TABLE#
 
@@ -59,18 +52,15 @@ helicopter body.
 Ships are 3x1 tile (24x8 pixel) sprites with 4 pre-shifted frames per
 direction.
 
+#UDGARRAY3,13,4,3;$8613-$8616-1-16(*ship-left-f1)
+#UDGARRAY3,13,4,3;$862B-$862E-1-16(*ship-left-f2)
+#UDGARRAY3,13,4,3;$8643-$8646-1-16(*ship-left-f3)
+#UDGARRAY3,13,4,3;$865B-$865E-1-16(*ship-left-f4)
+#UDGARRAY3,13,4,3;$87F3-$87F6-1-16(*ship-right-f1)
+#UDGARRAY3,13,4,3;$880B-$880E-1-16(*ship-right-f2)
+#UDGARRAY3,13,4,3;$8823-$8826-1-16(*ship-right-f3)
+#UDGARRAY3,13,4,3;$883B-$883E-1-16(*ship-right-f4)
 #UDGTABLE
-{ =h Left-facing }
-{ #UDGARRAY3,13,4,3;$8613-$8616-1-16(*ship-left-f1) |
-  #UDGARRAY3,13,4,3;$862B-$862E-1-16(*ship-left-f2) |
-  #UDGARRAY3,13,4,3;$8643-$8646-1-16(*ship-left-f3) |
-  #UDGARRAY3,13,4,3;$865B-$865E-1-16(*ship-left-f4) }
-{ =h Right-facing }
-{ #UDGARRAY3,13,4,3;$87F3-$87F6-1-16(*ship-right-f1) |
-  #UDGARRAY3,13,4,3;$880B-$880E-1-16(*ship-right-f2) |
-  #UDGARRAY3,13,4,3;$8823-$8826-1-16(*ship-right-f3) |
-  #UDGARRAY3,13,4,3;$883B-$883E-1-16(*ship-right-f4) }
-{ =h Animation }
 { #UDGARRAY*ship-right-f1,50;ship-right-f2;ship-right-f3;ship-right-f4;ship-left-f4;ship-left-f3;ship-left-f2;ship-left-f1(ship) }
 TABLE#
 
@@ -80,18 +70,15 @@ Sprite data: #R$8613 (left), #R$87F3 (right).
 Tanks are 3x1 tile (24x8 pixel) sprites with 4 pre-shifted frames per
 direction. They move along river banks and fire parabolic shells.
 
+#UDGARRAY3,60,4,3;$86D3-$86D6-1-16{0,0,64,32}(*tank-left-f1)
+#UDGARRAY3,60,4,3;$86EB-$86EE-1-16{0,0,64,32}(*tank-left-f2)
+#UDGARRAY3,60,4,3;$8703-$8706-1-16{0,0,64,32}(*tank-left-f3)
+#UDGARRAY3,60,4,3;$871B-$871E-1-16{0,0,64,32}(*tank-left-f4)
+#UDGARRAY3,60,4,3;$88B3-$88B6-1-16{0,0,64,32}(*tank-right-f1)
+#UDGARRAY3,60,4,3;$88CB-$88CE-1-16{0,0,64,32}(*tank-right-f2)
+#UDGARRAY3,60,4,3;$88E3-$88E6-1-16{0,0,64,32}(*tank-right-f3)
+#UDGARRAY3,60,4,3;$88FB-$88FE-1-16{0,0,64,32}(*tank-right-f4)
 #UDGTABLE
-{ =h Left-facing }
-{ #UDGARRAY3,60,4,3;$86D3-$86D6-1-16(*tank-left-f1) |
-  #UDGARRAY3,60,4,3;$86EB-$86EE-1-16(*tank-left-f2) |
-  #UDGARRAY3,60,4,3;$8703-$8706-1-16(*tank-left-f3) |
-  #UDGARRAY3,60,4,3;$871B-$871E-1-16(*tank-left-f4) }
-{ =h Right-facing }
-{ #UDGARRAY3,60,4,3;$88B3-$88B6-1-16(*tank-right-f1) |
-  #UDGARRAY3,60,4,3;$88CB-$88CE-1-16(*tank-right-f2) |
-  #UDGARRAY3,60,4,3;$88E3-$88E6-1-16(*tank-right-f3) |
-  #UDGARRAY3,60,4,3;$88FB-$88FE-1-16(*tank-right-f4) }
-{ =h Animation }
 { #UDGARRAY*tank-right-f1,50;tank-right-f2;tank-right-f3;tank-right-f4;tank-left-f4;tank-left-f3;tank-left-f2;tank-left-f1(tank) }
 TABLE#
 
@@ -103,18 +90,15 @@ direction. They are the fastest enemy at 4 pixels/frame, which means they
 always move in full character cell increments — so at most 1-2 of the 4
 pre-shifted frames are ever displayed.
 
+#UDGARRAY3,12,4,3;$8733-$8736-1-16{0,0,64,32}(*fighter-left-f1)
+#UDGARRAY3,12,4,3;$874B-$874E-1-16{0,0,64,32}(*fighter-left-f2)
+#UDGARRAY3,12,4,3;$8763-$8766-1-16{0,0,64,32}(*fighter-left-f3)
+#UDGARRAY3,12,4,3;$877B-$877E-1-16{0,0,64,32}(*fighter-left-f4)
+#UDGARRAY3,12,4,3;$8913-$8916-1-16{0,0,64,32}(*fighter-right-f1)
+#UDGARRAY3,12,4,3;$892B-$892E-1-16{0,0,64,32}(*fighter-right-f2)
+#UDGARRAY3,12,4,3;$8943-$8946-1-16{0,0,64,32}(*fighter-right-f3)
+#UDGARRAY3,12,4,3;$895B-$895E-1-16{0,0,64,32}(*fighter-right-f4)
 #UDGTABLE
-{ =h Left-facing }
-{ #UDGARRAY3,12,4,3;$8733-$8736-1-16(*fighter-left-f1) |
-  #UDGARRAY3,12,4,3;$874B-$874E-1-16(*fighter-left-f2) |
-  #UDGARRAY3,12,4,3;$8763-$8766-1-16(*fighter-left-f3) |
-  #UDGARRAY3,12,4,3;$877B-$877E-1-16(*fighter-left-f4) }
-{ =h Right-facing }
-{ #UDGARRAY3,12,4,3;$8913-$8916-1-16(*fighter-right-f1) |
-  #UDGARRAY3,12,4,3;$892B-$892E-1-16(*fighter-right-f2) |
-  #UDGARRAY3,12,4,3;$8943-$8946-1-16(*fighter-right-f3) |
-  #UDGARRAY3,12,4,3;$895B-$895E-1-16(*fighter-right-f4) }
-{ =h Animation }
 { #UDGARRAY*fighter-right-f1,50;fighter-right-f2;fighter-right-f3;fighter-right-f4;fighter-left-f4;fighter-left-f3;fighter-left-f2;fighter-left-f1(fighter) }
 TABLE#
 
@@ -125,11 +109,11 @@ Balloons are 2x2 tile (16x16 pixel) sprites with 4 pre-shifted frames. Unlike
 other enemies, balloons have no separate left/right variants — they float
 vertically.
 
+#UDGARRAY2,14,4,2;$8972-$898A-1-16(*balloon-f1)
+#UDGARRAY2,14,4,2;$8992-$89AA-1-16(*balloon-f2)
+#UDGARRAY2,14,4,2;$89B2-$89CA-1-16(*balloon-f3)
+#UDGARRAY2,14,4,2;$89D2-$89EA-1-16(*balloon-f4)
 #UDGTABLE
-{ #UDGARRAY2,14,4,2;$8972-$898A-1-16(*balloon-f1) |
-  #UDGARRAY2,14,4,2;$8992-$89AA-1-16(*balloon-f2) |
-  #UDGARRAY2,14,4,2;$89B2-$89CA-1-16(*balloon-f3) |
-  #UDGARRAY2,14,4,2;$89D2-$89EA-1-16(*balloon-f4) }
 { #UDGARRAY*balloon-f1,50;balloon-f2;balloon-f3;balloon-f4;balloon-f3;balloon-f2(balloon) }
 TABLE#
 
