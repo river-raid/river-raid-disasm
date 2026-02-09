@@ -554,7 +554,7 @@ W $5F62
 @ $5F64 label=state_speed
 g $5F64 Current scroll speed in pixels per frame.
 D $5F64 #TABLE(default) { =h Speed | =h Value | =h Terrain scroll } { SLOW | $01 | 1 pixel/frame } { NORMAL | $02 | 2 pixels/frame } { FAST | $04 | 4 pixels/frame } TABLE#
-D $5F64 Also determines plane Y position (Y = $80 + speed) and sprite animation frame. Horizontal movement is fixed at 2 pixels per input regardless of scroll speed.
+D $5F64 Also determines sprite animation frame and number of terrain fragments rendered per frame. Horizontal movement is fixed at 2 pixels per input regardless of scroll speed.
 @ $5F65 label=low_fuel_sound_period
 g $5F65 Low fuel warning sound period (0-127). Used as delay loop iteration count for speaker ON/OFF phases. Lower values = higher pitch. Decremented each frame, creating a rising-then-resetting warble effect.
 @ $5F66 label=state_fuel
@@ -688,14 +688,14 @@ N $60A5 Render sequence:
 N $60A5 .
 N $60A5 #LIST { Player plane sprite (GAMEPLAY_MODE_NORMAL only) } { Screen scroll system } { Terrain fragments (count = current speed) } { Attribute scroll (every 8 fragments) } LIST#
 N $60A5 .
-N $60A5 Speed affects both plane Y position (Y = $80 + speed) and number of terrain fragments rendered. Higher speed = lower plane position and more fragments.
+N $60A5 Speed affects the number of terrain fragments rendered per frame and the sprite animation frame selection.
   $60A5 Skip plane rendering if not GAMEPLAY_MODE_NORMAL.
 @ $60A8 isub=CP GAMEPLAY_MODE_NORMAL
 @ $60AD isub=LD A,COLLISION_MODE_NONE
   $60AD Set collision mode to NONE for plane (no collision during render).
   $60B2 Calculate plane sprite frame: offset = (8 - speed) * 2.
   $60C2 Apply offset to sprite pointer.
-  $60C9 Calculate plane Y: Y = $80 + speed (lower at higher speeds).
+  $60C9 Calculate plane Y: Y = $88 - speed (varies by 3 pixels across speeds).
   $60D0 Set plane coordinates for rendering.
   $60D8 Render plane: width=2, size=$10, attrs=$00.
 @ $60E5 label=render_terrain_fragments

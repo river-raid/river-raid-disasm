@@ -85,20 +85,18 @@ LIST#
 See #R$6DFF (consumption), #R$6E40 (refueling), #R$5F66 (fuel state
 variable).
 
-[Fact:speedMechanics:Three speeds affect everything]
-The game has three speed settings that affect both terrain scrolling and
-the plane's vertical position:
+[Fact:speedMechanics:Three scroll speeds]
+The game has three speed settings that control how fast the terrain scrolls:
 
 #TABLE(default)
-{ =h Speed  | =h Value | =h Terrain scroll | =h Plane Y position }
-{ Slow      | $01      | 1 pixel/frame     | $81 (129) }
-{ Normal    | $02      | 2 pixels/frame    | $82 (130) }
-{ Fast      | $04      | 4 pixels/frame    | $84 (132) }
+{ =h Speed  | =h Terrain scroll    | =h Fragments per frame }
+{ Slow      | 1 pixel/frame        | 1 }
+{ Normal    | 2 pixels/frame       | 2 }
+{ Fast      | 4 pixels/frame       | 4 }
 TABLE#
 
-Higher speed pushes the plane lower on screen (Y = $80 + speed) and renders
-more terrain fragments per frame. Horizontal movement is always fixed at 2
-pixels per input, regardless of speed.
+The plane's vertical position on screen remains essentially fixed regardless
+of speed. Horizontal movement is always 2 pixels per input.
 
 See #R$5F64 (speed state), #R$670A (accelerate), #R$6717 (decelerate),
 #R$66D0 (scroll update).
