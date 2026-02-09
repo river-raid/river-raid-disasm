@@ -109,9 +109,9 @@ FIGHTER_POSITION_RIGHT_LIMIT EQU $E8
 ; +---------------+------+--------+------------+----------------------+
 ; | Helicopter    | $01  | 60     | 2 px/frame | Patrols, no missiles |
 ; | Ship          | $02  | 30     | 2 px/frame | Patrols river        |
-; | Helicopter+   | $03  | 210    | 2 px/frame | Patrols, FIRES       |
+; | Helicopter+   | $03  | 150    | 2 px/frame | Patrols, FIRES       |
 ; | Tank          | $04  | 250    | 2 px/frame | Fires parabolic      |
-; | Fighter       | $05  | 160    | 4 px/frame | Fast, wraps screen   |
+; | Fighter       | $05  | 100    | 4 px/frame | Fast, wraps screen   |
 ; | Balloon       | $06  | 60     | 2 px/frame | Floats, bounces      |
 ; | Fuel Depot    | $07  | 80     | 0 (static) | Refuels plane        |
 ; | Bridge        | --   | 500    | 0 (static) | Increases activation |
@@ -1397,9 +1397,9 @@ g$5F62 DEFW $0000
 ; { FAST | $04 | 4 pixels/frame }
 ; TABLE#
 ; .
-; Also determines plane Y position (Y = $80 + speed) and sprite animation
-; frame. Horizontal movement is fixed at 2 pixels per input regardless of
-; scroll speed.
+; Also determines sprite animation frame and number of terrain fragments
+; rendered per frame. Horizontal movement is fixed at 2 pixels per input
+; regardless of scroll speed.
 @label=state_speed
 g$5F64 DEFB $02
 
@@ -1762,8 +1762,8 @@ c$6068 LD A,$DF      ; {Scan "P" (RIGHT)
 ; .
 ; .
 ; .
-; Speed affects both plane Y position (Y = $80 + speed) and number of terrain
-; fragments rendered. Higher speed = lower plane position and more fragments.
+; Speed affects the number of terrain fragments rendered per frame and the
+; sprite animation frame selection.
 @label=render_plane_and_terrain
 c$60A5 LD A,($5F68)  ; {Skip plane rendering if not GAMEPLAY_MODE_NORMAL.
 @isub=CP GAMEPLAY_MODE_NORMAL
@@ -1784,10 +1784,10 @@ c$60A5 LD A,($5F68)  ; {Skip plane rendering if not GAMEPLAY_MODE_NORMAL.
  $60C2 LD HL,($5EF7) ; {Apply offset to sprite pointer.
  $60C5 ADD HL,DE     ;
  $60C6 LD ($8B0E),HL ; }
- $60C9 ADD A,$80     ; {Calculate plane Y: Y = $80 + speed (lower at higher
- $60CB LD B,A        ; speeds).
- $60CC LD A,($5F64)  ;
- $60CF LD D,A        ; }
+ $60C9 ADD A,$80     ; {Calculate plane Y: Y = $88 - speed. However, movement
+ $60CB LD B,A        ; handlers (#R$65F3, #R$6642, #R$6682) always use the
+ $60CC LD A,($5F64)  ; fixed PLANE_COORDINATE_Y ($80), so this speed-dependent
+ $60CF LD D,A        ; value has no visible effect.}
  $60D0 LD ($8B0A),BC ; {Set plane coordinates for rendering.
  $60D4 LD ($8B0C),BC ; }
  $60D8 LD E,$00      ; {Render plane: width=2, size=$10, attrs=$00.
@@ -9083,10 +9083,10 @@ t$90CE DEFM "000000000000000000"
 ; Adds points to the current player's score. The value in A is BCD-encoded as
 ; score/10: high nibble increments the 10s digit (×100 displayed points), low
 ; nibble increments the 1s digit (×10 displayed points). The trailing zero in
-; the score display provides the ×10 factor. E.g. POINTS_TANK=$25 → 2×100 +
-; 5×10 = 250 points.
+; the score display provides the ×10 factor. E.g. POINTS_TANK = BCD 25 → 2×100
+; + 5×10 = 250 points.
 ;
-; I:A Points to add in BCD/10 format (e.g. $25 = 250 points).
+; I:A Points to add in BCD/10 format (e.g. BCD 25 = 250 points).
 @label=add_points
 c$90E0 PUSH AF       ; {Extract high nibble (hundreds digit), skip if zero.
  $90E1 SRL A         ;

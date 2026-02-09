@@ -1,12 +1,17 @@
 [Config]
-RefFiles=sound.ref;facts.ref;bugs.ref;notes.ref
+RefFiles=sound.ref;graphics.ref;levels.ref;facts.ref;bugs.ref;notes.ref
 GameDir=river-raid
 
 [Game]
 Game=River Raid
 
 [Index:Graphics:Graphics and sound]
+Graphics
 Sound
+
+[Index:DataTables:Data tables and buffers]
+Levels
+GameStatusBuffer
 
 [Index:Reference:Reference]
 Facts
@@ -14,19 +19,31 @@ Bugs
 Notes
 
 [Paths]
+Graphics=graphics/graphics.html
 Sound=sound/sound.html
+Levels=data/levels.html
 Notes=reference/notes.html
 
 [Links]
+Graphics=Sprite graphics
 Sound=Sound effects
+Levels=Level data
 Notes=Implementation notes
 
 [Titles]
+Graphics=Sprite graphics
+Levels=Level data
 Facts=Trivia
 Notes=Implementation notes
 
+[Page:Graphics]
+SectionPrefix=Graphic
+
 [Page:Sound]
 SectionPrefix=Audio
+
+[Page:Levels]
+SectionPrefix=Level
 
 [Page:Notes]
 SectionPrefix=Note

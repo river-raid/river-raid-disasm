@@ -1,0 +1,66 @@
+; Level data tables.
+
+[Level:terrainProfiles:Terrain profiles]
+The game defines 15 river bank shape profiles, each 16 bytes long (one byte
+per scanline within a terrain fragment). Each byte is the X offset for the
+left bank edge at that line. The right bank is computed as a mirror.
+
+Profiles 1-2 have bit 7 set, which triggers special bridge/road rendering
+in #R$6AA3.
+
+#TABLE(default)
+{ =h Profile | =h Type | =h Description }
+{ 0          | Normal  | Standard river section }
+{ 1          | Special | Pre-bridge approach (bit 7 set) }
+{ 2          | Special | Bridge structure (bit 7 set) }
+{ 3          | Normal  | Post-bridge transition }
+{ 4-10       | Normal  | Various river widths }
+{ 11         | Narrow  | River narrows significantly }
+{ 12         | Wide    | River widens significantly }
+{ 13-14      | Normal  | Additional variations }
+TABLE#
+
+Profile data: #R$8063 (240 bytes total).
+
+[Level:islands:Island shapes]
+36 island shape definitions, each 3 bytes. Islands appear as terrain features
+within the river, splitting it into channels.
+
+#TABLE(default)
+{ =h Byte | =h Contents }
+{ 0       | Profile index (0-14): selects shape from #R$8063 }
+{ 1       | Width offset: shifts edge position }
+{ 2       | Edge mode: 0=direct, 1=mirror (right = 120 - left), 2=fixed-width (right = 60 + left) }
+TABLE#
+
+Island data: #R$C600 (108 bytes total). Referenced from terrain fragment
+byte 3 (upper 6 bits = island index x 4). Initialized by #R$696B.
+
+[Level:terrainFragments:Terrain fragments]
+Each of the 48 game levels (bridge sections) is defined by 64 terrain
+fragments, stored as 4 bytes each (256 bytes per level). Fragments are loaded
+sequentially by #R$6A4F as the terrain scrolls.
+
+#TABLE(default)
+{ =h Byte | =h Contents }
+{ 0       | Profile (0-14): index into terrain profiles at #R$8063. Values 1-3 mark bridge approach, bridge, and post-bridge }
+{ 1-2     | Row offset (16-bit): shifts bank position horizontally }
+{ 3       | Bits 0-1: edge mode. Bits 2-7: island index (divide by 4 for #R$C600 lookup) }
+TABLE#
+
+Terrain data: #R$9500 (48 levels x 256 bytes = 12,288 bytes).
+
+[Level:objectSpawns:Object spawn tables]
+Each level has 128 spawn slots (2 bytes each, 256 bytes per level) that define
+which objects appear at each scroll position. Read by #R$6F80 during scroll.
+
+#TABLE(default)
+{ =h Byte | =h Contents }
+{ 0       | Object definition: bits 0-2 = type (OBJECT_* constants), bit 3 = rock flag (SLOT_BIT_ROCK) }
+{ 1       | X position ($00 = empty slot, $01-$FF = spawn coordinate) }
+TABLE#
+
+When the rock flag is set, bits 0-1 select rock variant (0-3). Most slots are
+empty (X = $00), making this a sparse encoding.
+
+Object data: #R$C800 (48 levels x 256 bytes = 12,288 bytes).

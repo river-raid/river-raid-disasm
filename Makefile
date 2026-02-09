@@ -85,7 +85,7 @@ $(ASM_NON_FIXED): $(SKOOL)
 # Generate HTML documentation
 html: html/.stamp
 
-html/.stamp: $(SKOOL) $(REF) sound.ref facts.ref bugs.ref notes.ref
+html/.stamp: $(SKOOL) $(REF) sound.ref graphics.ref levels.ref facts.ref bugs.ref notes.ref
 	skool2html.py -d html -H -o $(SKOOL) $(REF)
 	touch $@
 
