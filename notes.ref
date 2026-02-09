@@ -132,9 +132,12 @@ anywhere in the game. The tradeoff: single-digit updates are fast, but adding
 multi-digit values requires repeated single-digit increments with carry
 propagation.
 
-[Note:multiplyByShift:Multiplication via shifts and adds]
-The Z80 has no multiply instruction. River Raid implements multiplication
-using shift-and-add chains:
+[Note:multiplyAndDivide:Multiplication and division without hardware support]
+The Z80 has no multiply or divide instructions. River Raid implements these
+operations using shift-and-add chains for multiplication and repeated
+subtraction for division.
+
+Multiplication by powers of 2 uses left-shift chains:
 
 #TABLE(default)
 { =h Operation | =h Implementation | =h Example }
@@ -146,8 +149,14 @@ using shift-and-add chains:
 { x7  | x8 - original                                           | }
 TABLE#
 
-Division by powers of 2 uses <code>SRL</code> chains. For example, dividing
-by 8 requires three <code>SRL A</code> instructions, as seen at #R$7373.
+Division by powers of 2 uses right-shift chains (<code>SRL</code>). For
+example, dividing by 8 requires three <code>SRL A</code> instructions, as
+seen at #R$7373.
+
+For non-power-of-2 division, the code uses repeated subtraction. For example,
+at $7387 the operation <code>C = C - E*4</code> is performed as four
+consecutive <code>SUB E</code> instructions rather than using a
+shift-and-subtract algorithm.
 
 [Note:incrementThenCorrect:Increment-then-correct for bidirectional movement]
 When a tank on a river bank moves (#R$72F8, #R$7302), the code always
@@ -174,12 +183,6 @@ to point at #R$7810, a table of return addresses. Each subsequent RET
 instruction pops an address from this table and jumps to it, creating a chain
 of computed GOTOs. The original stack pointer is saved at #R$5F83 and
 restored after the menu sequence completes.
-
-[Note:divisionBySubtraction:Division by repeated subtraction]
-Without a DIV instruction, small divisions are implemented by repeated
-subtraction. For example, at $7387 the operation <code>C = C - E*4</code> is
-performed as four consecutive <code>SUB E</code> instructions rather than
-using a shift-and-subtract algorithm.
 
 ; Dead and unused code
 ; --------------------
