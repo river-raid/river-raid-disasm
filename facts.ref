@@ -1,19 +1,27 @@
 ; Facts (trivia) about River Raid game mechanics.
 
-[Fact:scoringTable:Scoring table]
-Every target in the game awards points when destroyed by a missile hit:
+[Fact:targets:Targets]
+The player's plane can hit eight types of targets with its missile. Six are
+mobile enemies, one is a static facility, and one is a terrain structure:
 
 #TABLE(default)
-{ =h Object     | =h Points }
-{ Ship          | 30  }
-{ Helicopter    | 60  }
-{ Balloon       | 60  }
-{ Fuel Depot    | 80  }
-{ Fighter       | 100 }
-{ Helicopter+   | 150 }
-{ Tank          | 250 }
-{ Bridge        | 500 }
+{ =h Target       | =h Points | =h Speed       | =h Behaviour }
+{ Ship            | 30        | 2 px/frame     | Patrols river, reverses at banks }
+{ Helicopter      | 60        | 2 px/frame     | Patrols river, reverses at banks }
+{ Balloon         | 60        | 2 px/frame     | Floats above river, bounces off banks }
+{ Fuel Depot      | 80        | Static         | Refuels plane on flyover }
+{ Fighter         | 100       | 4 px/frame     | Flies across screen, wraps at edges }
+{ Helicopter+     | 150       | 2 px/frame     | Patrols river, fires missiles at player }
+{ Tank            | 250       | 2 px/frame     | Moves along bank, fires parabolic shells }
+{ Bridge          | 500       | Static         | Marks section boundary }
 TABLE#
+
+Ships, helicopters, and balloons share basic patrol movement: they advance 2
+pixels per frame toward the opposite river bank and reverse direction when
+they get within 16 pixels of the edge (see #R$7104, #R$75A2, #R$75D0).
+Fighters are the fastest enemy at 4 pixels per frame and wrap around the
+screen edges instead of reversing (#R$7158). Tanks on river banks check
+terrain ahead and fire shells when the path is clear (#R$7302).
 
 All displayed scores are multiples of 10. Internally, point values are stored
 as BCD divided by 10: each nibble encodes a decimal digit, with the low

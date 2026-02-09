@@ -109,9 +109,9 @@
 > $4000 ; +---------------+------+--------+------------+----------------------+
 > $4000 ; | Helicopter    | $01  | 60     | 2 px/frame | Patrols, no missiles |
 > $4000 ; | Ship          | $02  | 30     | 2 px/frame | Patrols river        |
-> $4000 ; | Helicopter+   | $03  | 210    | 2 px/frame | Patrols, FIRES       |
+> $4000 ; | Helicopter+   | $03  | 150    | 2 px/frame | Patrols, FIRES       |
 > $4000 ; | Tank          | $04  | 250    | 2 px/frame | Fires parabolic      |
-> $4000 ; | Fighter       | $05  | 160    | 4 px/frame | Fast, wraps screen   |
+> $4000 ; | Fighter       | $05  | 100    | 4 px/frame | Fast, wraps screen   |
 > $4000 ; | Balloon       | $06  | 60     | 2 px/frame | Floats, bounces      |
 > $4000 ; | Fuel Depot    | $07  | 80     | 0 (static) | Refuels plane        |
 > $4000 ; | Bridge        | --   | 500    | 0 (static) | Increases activation |
@@ -3246,8 +3246,8 @@ t $90C8 High score storage for bridge 1 (6 ASCII digits).
 t $90CE High score storage for bridges 2-4 (18 ASCII digits, 6 per bridge).
 @ $90E0 label=add_points
 c $90E0 Add score points for a hit target
-D $90E0 Adds points to the current player's score. The value in A is BCD-encoded as score/10: high nibble increments the 10s digit (×100 displayed points), low nibble increments the 1s digit (×10 displayed points). The trailing zero in the score display provides the ×10 factor. E.g. POINTS_TANK=$25 → 2×100 + 5×10 = 250 points.
-R $90E0 I:A Points to add in BCD/10 format (e.g. $25 = 250 points).
+D $90E0 Adds points to the current player's score. The value in A is BCD-encoded as score/10: high nibble increments the 10s digit (×100 displayed points), low nibble increments the 1s digit (×10 displayed points). The trailing zero in the score display provides the ×10 factor. E.g. POINTS_TANK = BCD 25 → 2×100 + 5×10 = 250 points.
+R $90E0 I:A Points to add in BCD/10 format (e.g. BCD 25 = 250 points).
   $90E0,11 Extract high nibble (hundreds digit), skip if zero.
 @ $90EE label=add_points_tens_loop
   $90EE,8 Increment 10s score digit once per high-nibble unit.
