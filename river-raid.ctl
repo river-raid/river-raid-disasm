@@ -695,7 +695,7 @@ N $60A5 Speed affects the number of terrain fragments rendered per frame and the
   $60AD Set collision mode to NONE for plane (no collision during render).
   $60B2 Calculate plane sprite frame: offset = (8 - speed) * 2.
   $60C2 Apply offset to sprite pointer.
-  $60C9 Calculate plane Y: Y = $88 - speed (varies by 3 pixels across speeds).
+  $60C9 Calculate plane Y: Y = $88 - speed. However, movement handlers (#R$65F3, #R$6642, #R$6682) always use the fixed PLANE_COORDINATE_Y ($80), so this speed-dependent value has no visible effect.
   $60D0 Set plane coordinates for rendering.
   $60D8 Render plane: width=2, size=$10, attrs=$00.
 @ $60E5 label=render_terrain_fragments
