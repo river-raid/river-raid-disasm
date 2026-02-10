@@ -7419,10 +7419,7 @@ u$8391 DEFB $3F,$3F,$3F,$3F,$3F,$3F,$3F,$3F
 ; #POKES33723,146;33739,36
 ; .
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$83B1-$83B2-1-16(*plane-f1) |
-; #UDGARRAY2,14,4,2;$83C1-$83C2-1-16(*plane-f2) |
-; #UDGARRAY2,14,4,2;$83D1-$83D2-1-16(*plane-f3) |
-; #UDGARRAY2,14,4,2;$83E1-$83E2-1-16(*plane-f4) }
+; { #UDGARRAY2,14,4,2;$83B1-$83B2-1-16(plane-f1) }
 ; TABLE#
 @label=sprite_plane
 b$83B1 DEFB $10,$00  ; {Frame 1
@@ -7433,6 +7430,9 @@ b$83B1 DEFB $10,$00  ; {Frame 1
  $83BB DEFB $82,$00  ;
  $83BD DEFB $38,$00  ;
  $83BF DEFB $54,$00  ; }
+; #UDGTABLE
+; { #UDGARRAY2,14,4,2;$83C1-$83C2-1-16(plane-f2) }
+; TABLE#
  $83C1 DEFB $04,$00  ; {Frame 2
  $83C3 DEFB $04,$00  ;
  $83C5 DEFB $0E,$00  ;
@@ -7441,6 +7441,9 @@ b$83B1 DEFB $10,$00  ; {Frame 1
  $83CB DEFB $04,$80  ;
  $83CD DEFB $0E,$00  ;
  $83CF DEFB $15,$00  ; }
+; #UDGTABLE
+; { #UDGARRAY2,14,4,2;$83D1-$83D2-1-16(plane-f3) }
+; TABLE#
  $83D1 DEFB $01,$00  ; {Frame 3
  $83D3 DEFB $01,$00  ;
  $83D5 DEFB $03,$80  ;
@@ -7449,6 +7452,9 @@ b$83B1 DEFB $10,$00  ; {Frame 1
  $83DB DEFB $09,$20  ;
  $83DD DEFB $03,$80  ;
  $83DF DEFB $05,$40  ; }
+; #UDGTABLE
+; { #UDGARRAY2,14,4,2;$83E1-$83E2-1-16(plane-f4) }
+; TABLE#
  $83E1 DEFB $00,$40  ; {Frame 4
  $83E3 DEFB $00,$40  ;
  $83E5 DEFB $00,$E0  ;
@@ -7465,10 +7471,7 @@ b$83B1 DEFB $10,$00  ; {Frame 1
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$83F1-$83F2-1-16(*plane-banked-f1) |
-; #UDGARRAY2,14,4,2;$8401-$8402-1-16(*plane-banked-f2) |
-; #UDGARRAY2,14,4,2;$8411-$8412-1-16(*plane-banked-f3) |
-; #UDGARRAY2,14,4,2;$8421-$8422-1-16(*plane-banked-f4) }
+; { #UDGARRAY2,14,4,2;$83F1-$83F2-1-16(plane-banked-f1) }
 ; TABLE#
 @label=sprite_plane_banked
 b$83F1 DEFB $10,$00  ; {Frame 1
@@ -7479,6 +7482,9 @@ b$83F1 DEFB $10,$00  ; {Frame 1
  $83FB DEFB $10,$00  ;
  $83FD DEFB $38,$00  ;
  $83FF DEFB $28,$00  ; }
+; #UDGTABLE
+; { #UDGARRAY2,14,4,2;$8401-$8402-1-16(plane-banked-f2) }
+; TABLE#
  $8401 DEFB $04,$00  ; {Frame 2
  $8403 DEFB $04,$00  ;
  $8405 DEFB $0E,$00  ;
@@ -7487,6 +7493,9 @@ b$83F1 DEFB $10,$00  ; {Frame 1
  $840B DEFB $04,$00  ;
  $840D DEFB $0E,$00  ;
  $840F DEFB $0A,$00  ; }
+; #UDGTABLE
+; { #UDGARRAY2,14,4,2;$8411-$8412-1-16(plane-banked-f3) }
+; TABLE#
  $8411 DEFB $01,$00  ; {Frame 3
  $8413 DEFB $01,$00  ;
  $8415 DEFB $03,$80  ;
@@ -7495,6 +7504,9 @@ b$83F1 DEFB $10,$00  ; {Frame 1
  $841B DEFB $01,$00  ;
  $841D DEFB $03,$80  ;
  $841F DEFB $02,$80  ; }
+; #UDGTABLE
+; { #UDGARRAY2,14,4,2;$8421-$8422-1-16(plane-banked-f4) }
+; TABLE#
  $8421 DEFB $00,$40  ; {Frame 4
  $8423 DEFB $00,$40  ;
  $8425 DEFB $00,$E0  ;
@@ -7505,6 +7517,14 @@ b$83F1 DEFB $10,$00  ; {Frame 1
  $842F DEFB $00,$A0  ; }
 
 ; Player missile sprite (4 frames × 8 bytes).
+;
+; .
+;
+; .
+;
+; #UDGTABLE
+; { #UDG$8431,14,4(missile-f1) }
+; TABLE#
 @label=sprite_missile
 b$8431 DEFB $C0      ; {Frame 1
  $8432 DEFB $C0      ;
@@ -7514,6 +7534,9 @@ b$8431 DEFB $C0      ; {Frame 1
  $8436 DEFB $C0      ;
  $8437 DEFB $00      ;
  $8438 DEFB $00      ; }
+; #UDGTABLE
+; { #UDG$8439,14,4(missile-f2) }
+; TABLE#
  $8439 DEFB $30      ; {Frame 2
  $843A DEFB $30      ;
  $843B DEFB $30      ;
@@ -7522,6 +7545,9 @@ b$8431 DEFB $C0      ; {Frame 1
  $843E DEFB $30      ;
  $843F DEFB $00      ;
  $8440 DEFB $00      ; }
+; #UDGTABLE
+; { #UDG$8441,14,4(missile-f3) }
+; TABLE#
  $8441 DEFB $0C      ; {Frame 3
  $8442 DEFB $0C      ;
  $8443 DEFB $0C      ;
@@ -7530,6 +7556,9 @@ b$8431 DEFB $C0      ; {Frame 1
  $8446 DEFB $0C      ;
  $8447 DEFB $00      ;
  $8448 DEFB $00      ; }
+; #UDGTABLE
+; { #UDG$8449,14,4(missile-f4) }
+; TABLE#
  $8449 DEFB $03      ; {Frame 4
  $844A DEFB $03      ;
  $844B DEFB $03      ;
@@ -7540,6 +7569,14 @@ b$8431 DEFB $C0      ; {Frame 1
  $8450 DEFB $00      ; }
 
 ; Missile trail sprite (4 frames × 8 bytes).
+;
+; .
+;
+; .
+;
+; #UDGTABLE
+; { #UDG$8451,14,4(missile-trail-f1) }
+; TABLE#
 @label=sprite_missile_trail
 b$8451 DEFB $C0      ; {Frame 1
  $8452 DEFB $C0      ;
@@ -7549,6 +7586,9 @@ b$8451 DEFB $C0      ; {Frame 1
  $8456 DEFB $C0      ;
  $8457 DEFB $C0      ;
  $8458 DEFB $C0      ; }
+; #UDGTABLE
+; { #UDG$8459,14,4(missile-trail-f2) }
+; TABLE#
  $8459 DEFB $30      ; {Frame 2
  $845A DEFB $30      ;
  $845B DEFB $30      ;
@@ -7557,6 +7597,9 @@ b$8451 DEFB $C0      ; {Frame 1
  $845E DEFB $30      ;
  $845F DEFB $30      ;
  $8460 DEFB $30      ; }
+; #UDGTABLE
+; { #UDG$8461,14,4(missile-trail-f3) }
+; TABLE#
  $8461 DEFB $0C      ; {Frame 3
  $8462 DEFB $0C      ;
  $8463 DEFB $0C      ;
@@ -7565,6 +7608,9 @@ b$8451 DEFB $C0      ; {Frame 1
  $8466 DEFB $0C      ;
  $8467 DEFB $0C      ;
  $8468 DEFB $0C      ; }
+; #UDGTABLE
+; { #UDG$8469,14,4(missile-trail-f4) }
+; TABLE#
  $8469 DEFB $03      ; {Frame 4
  $846A DEFB $03      ;
  $846B DEFB $03      ;

@@ -5,6 +5,14 @@ The player's plane is a 2x1 tile (16x8 pixel) sprite with 4 pre-shifted
 frames for smooth horizontal movement. A separate banked variant is used when
 the plane turns left or right.
 
+#UDGARRAY2,14,4,2;$83B1-$83B2-1-16(*plane-f1)
+#UDGARRAY2,14,4,2;$83C1-$83C2-1-16(*plane-f2)
+#UDGARRAY2,14,4,2;$83D1-$83D2-1-16(*plane-f3)
+#UDGARRAY2,14,4,2;$83E1-$83E2-1-16(*plane-f4)
+#UDGARRAY2,14,4,2;$83F1-$83F2-1-16(*plane-banked-f1)
+#UDGARRAY2,14,4,2;$8401-$8402-1-16(*plane-banked-f2)
+#UDGARRAY2,14,4,2;$8411-$8412-1-16(*plane-banked-f3)
+#UDGARRAY2,14,4,2;$8421-$8422-1-16(*plane-banked-f4)
 #UDGTABLE
 { =h Centered (straight flight) }
 { #UDGARRAY*plane-f1,50;plane-f2;plane-f3;plane-f4;plane-f3;plane-f2(plane) }
@@ -157,6 +165,21 @@ Sprite data: #R$8471 (frame 1), #R$8481 (frame 2), #R$8491 (frame 3).
 [Graphic:missile:Missile and shell]
 The player's missile is a 1x1 tile (8x8 pixel) sprite with 4 pre-shifted
 frames and a separate trail sprite drawn below it.
+
+#UDG$8431,14,4(*missile-f1)
+#UDG$8439,14,4(*missile-f2)
+#UDG$8441,14,4(*missile-f3)
+#UDG$8449,14,4(*missile-f4)
+#UDG$8451,14,4(*missile-trail-f1)
+#UDG$8459,14,4(*missile-trail-f2)
+#UDG$8461,14,4(*missile-trail-f3)
+#UDG$8469,14,4(*missile-trail-f4)
+#UDGTABLE
+{ =h Missile }
+{ #UDGARRAY*missile-f1,50;missile-f2;missile-f3;missile-f4;missile-f3;missile-f2(missile) }
+{ =h Trail }
+{ #UDGARRAY*missile-trail-f1,50;missile-trail-f2;missile-trail-f3;missile-trail-f4;missile-trail-f3;missile-trail-f2(missile-trail) }
+TABLE#
 
 Sprite data: #R$8431 (missile), #R$8451 (trail).
 

@@ -6614,6 +6614,7 @@ sprite_plane_banked:
   DEFB $00,$A0                         ;
 
 ; Player missile sprite (4 frames × 8 bytes).
+;
 sprite_missile:
   DEFB $C0                             ; Frame 1
   DEFB $C0                             ;
@@ -6649,6 +6650,7 @@ sprite_missile:
   DEFB $00                             ;
 
 ; Missile trail sprite (4 frames × 8 bytes).
+;
 sprite_missile_trail:
   DEFB $C0                             ; Frame 1
   DEFB $C0                             ;

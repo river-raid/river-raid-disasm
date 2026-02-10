@@ -2891,29 +2891,43 @@ D $8391 32 bytes with the same structure as #R$8371 but different values: $3F (w
 @ $83B1 label=sprite_plane
 b $83B1 Player plane sprite (4 frames × 16 bytes).
 N $83B1 #POKES33723,146;33739,36
-N $83B1 #UDGTABLE { #UDGARRAY2,14,4,2;$83B1-$83B2-1-16(*plane-f1) | #UDGARRAY2,14,4,2;$83C1-$83C2-1-16(*plane-f2) | #UDGARRAY2,14,4,2;$83D1-$83D2-1-16(*plane-f3) | #UDGARRAY2,14,4,2;$83E1-$83E2-1-16(*plane-f4) } TABLE#
+N $83B1 #UDGTABLE { #UDGARRAY2,14,4,2;$83B1-$83B2-1-16(plane-f1) } TABLE#
   $83B1,16,2 Frame 1
+N $83C1 #UDGTABLE { #UDGARRAY2,14,4,2;$83C1-$83C2-1-16(plane-f2) } TABLE#
   $83C1,16,2 Frame 2
+N $83D1 #UDGTABLE { #UDGARRAY2,14,4,2;$83D1-$83D2-1-16(plane-f3) } TABLE#
   $83D1,16,2 Frame 3
+N $83E1 #UDGTABLE { #UDGARRAY2,14,4,2;$83E1-$83E2-1-16(plane-f4) } TABLE#
   $83E1,16,2 Frame 4
 @ $83F1 label=sprite_plane_banked
 b $83F1 Player plane banked sprite (4 frames × 16 bytes).
-N $83F1 #UDGTABLE { #UDGARRAY2,14,4,2;$83F1-$83F2-1-16(*plane-banked-f1) | #UDGARRAY2,14,4,2;$8401-$8402-1-16(*plane-banked-f2) | #UDGARRAY2,14,4,2;$8411-$8412-1-16(*plane-banked-f3) | #UDGARRAY2,14,4,2;$8421-$8422-1-16(*plane-banked-f4) } TABLE#
+N $83F1 #UDGTABLE { #UDGARRAY2,14,4,2;$83F1-$83F2-1-16(plane-banked-f1) } TABLE#
   $83F1,16,2 Frame 1
+N $8401 #UDGTABLE { #UDGARRAY2,14,4,2;$8401-$8402-1-16(plane-banked-f2) } TABLE#
   $8401,16,2 Frame 2
+N $8411 #UDGTABLE { #UDGARRAY2,14,4,2;$8411-$8412-1-16(plane-banked-f3) } TABLE#
   $8411,16,2 Frame 3
+N $8421 #UDGTABLE { #UDGARRAY2,14,4,2;$8421-$8422-1-16(plane-banked-f4) } TABLE#
   $8421,16,2 Frame 4
 @ $8431 label=sprite_missile
 b $8431 Player missile sprite (4 frames × 8 bytes).
+N $8431 #UDGTABLE { #UDG$8431,14,4(missile-f1) } TABLE#
   $8431,8,1 Frame 1
+N $8439 #UDGTABLE { #UDG$8439,14,4(missile-f2) } TABLE#
   $8439,8,1 Frame 2
+N $8441 #UDGTABLE { #UDG$8441,14,4(missile-f3) } TABLE#
   $8441,8,1 Frame 3
+N $8449 #UDGTABLE { #UDG$8449,14,4(missile-f4) } TABLE#
   $8449,8,1 Frame 4
 @ $8451 label=sprite_missile_trail
 b $8451 Missile trail sprite (4 frames × 8 bytes).
+N $8451 #UDGTABLE { #UDG$8451,14,4(missile-trail-f1) } TABLE#
   $8451,8,1 Frame 1
+N $8459 #UDGTABLE { #UDG$8459,14,4(missile-trail-f2) } TABLE#
   $8459,8,1 Frame 2
+N $8461 #UDGTABLE { #UDG$8461,14,4(missile-trail-f3) } TABLE#
   $8461,8,1 Frame 3
+N $8469 #UDGTABLE { #UDG$8469,14,4(missile-trail-f4) } TABLE#
   $8469,8,1 Frame 4
 @ $8471 label=sprite_explosion_f1
 b $8471 Explosion sprite frame 1 (2×1 tiles).
