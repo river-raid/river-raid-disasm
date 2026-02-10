@@ -33,12 +33,6 @@
 > $4000
 > $4000 ; ASCII character codes
 > $4000 CHAR_ENTER   EQU $0D
-> $4000 CHAR_SPACE   EQU $20
-> $4000 CHAR_0       EQU $30
-> $4000 CHAR_1       EQU $31
-> $4000 CHAR_H_UPPER EQU $48
-> $4000 CHAR_I_UPPER EQU $49
-> $4000 CHAR_H       EQU $68
 > $4000
 > $4000 ; Z80 opcodes used in self-modifying code
 > $4000 OPCODE_NOP   EQU $00
@@ -399,8 +393,10 @@ N $5D44 This routine sets up the initial game state used by the overview (attrac
   $5D6A Initialize terrain profile, gameplay mode, and speed to $02 (GAMEPLAY_MODE_OVERVIEW / SPEED_NORMAL).
 @ $5D75 isub=LD (state_bridge_destroyed),A
   $5D75 Store $02 to #R$5F6D (unclear why $02 is used here).
-@ $5D78 isub=LD HL,CHAR_0<<8|CHAR_0
-  $5D78 Initialize all player scores to zero (ASCII "00").
+@ $5D78 isub=LD HL,"00"
+M $5D78,18 Initialize all player scores to zero.
+C $5D78,c3
+C $5D7B,h
   $5D8D Set level fragment number and terrain position to 1.
 @ $5D95 isub=LD HL,LIVES_INITIAL<<8|LIVES_INITIAL
   $5D95 Set both players' lives to 4.
@@ -449,14 +445,14 @@ D $5DA6 This routine prepares the game for play and is called when starting a ne
   $5E38 Open channel 2.
 @ $5E40 isub=LD BC,status_line_4_end - status_line_4
   $5E3D Print status line 4.
-@ $5E49 isub=ADD A,CHAR_1
+@ $5E49 isub=ADD A,"1"
   $5E46 Print game mode digit (1 or 2 player).
   $5E4C Open channel 1.
   $5E51 Set terrain position to $FF (forces terrain regeneration).
   $5E56 Initialize terrain profile number.
   $5E5B Open channel 2.
   $5E5E,8 Initialize level fragment number, gameplay mode, and bridge destroyed flag.
-@ $5E69 isub=LD A,CHAR_H
+@ $5E69 isub=LD A,"h"
   $5E69 Set last key to 'h' (suppress H-key pause on first frame).
   $5E6E Clear control state and tank shell state.
 @ $5E76 isub=LD A,SPEED_FAST
@@ -1033,9 +1029,9 @@ N $64F1 Shared code for printing Player 2's bridge number. Called directly when 
   $64F7 (continued) If so, print leading space.
   $64FC,9 Print bridge count from #R$5F6B.
 @ $6506 label=print_space
-@ $6506 isub=LD A,CHAR_SPACE
+@ $6506 isub=LD A," "
 c $6506 Print a space character
-  $6506,3 Output space via RST $10.
+C $6506,c2 Output space via RST $10.
 @ $650A label=handle_no_fuel
 c $650A Handle the no fuel situation
 D $650A This routine is called when the player runs out of fuel. It stops the plane, creates two explosion fragments at the plane's position, animates the explosions over 16 frames, waits for a delay, then determines the next game state based on the current player and remaining lives in single or two-player mode.
@@ -1741,9 +1737,9 @@ D $6D17 #LIST { Initializes screen with PAPER RIVER, INK BANK } { Prints status 
   $6D3D Initialize terrain rendering.
   $6D40,11 Print "GAME" text (#R$805A, length 5) using ROM PR_STRING.
 @ $6D48 isub=LD BC,status_line_4_end - status_line_4
-@ $6D51 isub=ADD A,CHAR_1
-  $6D4E Print game number: load game mode from #R$923A, add CHAR_1 for ASCII digit, output via RST $10.
-@ $6D54 isub=LD A,CHAR_H
+@ $6D51 isub=ADD A,"1"
+  $6D4E Print game number: load game mode from #R$923A, add "1" for ASCII digit, output via RST $10.
+@ $6D54 isub=LD A,"h"
   $6D54,13 Initialize state: store 'h' in last key (suppress H-key pause), clear #R$5F7D, save initial scroll value to #R$5D43.
 @ $6D64 label=overview_loop
   $6D64 Check Enter key (row 6, bit 0). Handle Enter if pressed.
@@ -2749,8 +2745,8 @@ c $7ACD Wait until the user chooses a valid control type or switch to the overvi
   $7ACD Decrease timer
   $7AD4,5 Check if the time is up
   $7ADC Scan keyboard
-@ $7AE0 isub=SUB CHAR_1
-  $7AE0,2 Subtract CHAR_1 from the pressed key ASCII code, mapping "1" to 0, "2" to 1, etc.
+@ $7AE0 isub=SUB "1"
+  $7AE0,2 Subtract "1" from the pressed key ASCII code, mapping "1" to 0, "2" to 1, etc.
   $7AE5 Validate the pressed key by making sure that none of the bits older than the first two are set, effectively allowing values 0 through 3.
   $7AE9,2 Repeat if a valid key was not pressed.
 @ $7AED label=game_mode_print
@@ -2764,8 +2760,8 @@ c $7ACD Wait until the user chooses a valid control type or switch to the overvi
 @ $7B07 label=game_mode_input
 c $7B07 Wait until the user chooses a valid game mode.
   $7B0A Scan keyboard
-@ $7B0E isub=SUB CHAR_1
-  $7B0E,2 Subtract CHAR_1 from the pressed key ASCII code, mapping "1" to 0, "2" to 1, etc.
+@ $7B0E isub=SUB "1"
+  $7B0E,2 Subtract "1" from the pressed key ASCII code, mapping "1" to 0, "2" to 1, etc.
   $7B13 Validate the pressed key by making sure that none of the bits older than the first three are set, effectively allowing values 0 through 7.
   $7B17 Repeat if a valid key was not pressed.
 @ $7B1A isub=LD D,COLOR_BLACK<<3|COLOR_WHITE
@@ -2774,8 +2770,8 @@ c $7B07 Wait until the user chooses a valid game mode.
 @ $7B30 label=instructions_print
 N $7B30 Print instructions and wait for Enter key.
   $7B30 Print instructions text (#R$7882, 168 bytes) via ROM PR_STRING.
-@ $7B39 isub=LD A,CHAR_SPACE
-  $7B39 Initialize LAST_K to space character.
+@ $7B39 isub=LD A," "
+C $7B39,c2 Initialize LAST_K to space character.
 @ $7B3E label=instructions_input
 N $7B3E Wait for user to press Enter.
   $7B3E Read last key pressed from LAST_K.
@@ -3322,8 +3318,8 @@ R $913B I:C Offset of the digit to increase (0=leftmost, 5=rightmost).
 R $913B O:D Offset of the digit (passed to print routine).
   $913B Point HL at the target digit in player 1's score.
   $9140 Save offset to D, load digit, increment it.
-@ $9145 isub=CP CHAR_0+10
-  $9144 If digit overflows past '9', jump to #R$9191 for carry.
+@ $9145 isub=CP "9"+1
+C $9145,c2 If digit overflows past '9', jump to #R$9191 for carry.
   $914A Store incremented digit, fall through to print.
 @ $914B label=print_player_1_score_digit
 @ $914B isub=LD A,EXT_ATTR_INK
@@ -3348,8 +3344,8 @@ R $9169 I:C Offset of the digit to increase (0=leftmost, 5=rightmost).
 R $9169 O:D Offset of the digit (passed to print routine).
   $9169 Point HL at the target digit in player 2's score.
   $916E Save offset to D, load digit, increment it.
-@ $9173 isub=CP CHAR_0+10
-  $9172 If digit overflows past '9', jump to #R$91A9 for carry.
+@ $9173 isub=CP "9"+1
+C $9173,c2 If digit overflows past '9', jump to #R$91A9 for carry.
   $9178 Store incremented digit, fall through to print.
 @ $9179 label=print_player_2_score_digit
 @ $9179 isub=LD A,EXT_ATTR_INK
@@ -3365,7 +3361,7 @@ R $9179 I:HL Pointer to the digit character.
   $9189 Load digit from score buffer and print it.
   $918B Switch to channel 2 (main screen) and return.
 @ $9191 label=carry_player_1_score_digit
-@ $9191 isub=LD (HL),CHAR_0
+@ $9191 isub=LD (HL),"0"
 c $9191 Handle carry for player 1's score digit.
 D $9191 When a digit overflows past '9', this routine sets it to '0' and propagates the carry to the next higher digit by recursively calling update_score.
 R $9191 I:D Offset of the overflowed digit.
@@ -3379,7 +3375,7 @@ R $9191 I:HL Pointer to the overflowed digit.
   $919F Open channel 1 (upper screen) for printing.
   $91A4 Restore HL/DE, jump to #R$914B to print the '0' digit.
 @ $91A9 label=carry_player_2_score_digit
-@ $91A9 isub=LD (HL),CHAR_0
+@ $91A9 isub=LD (HL),"0"
 c $91A9 Handle carry for player 2's score digit.
 D $91A9 When a digit overflows past '9', this routine sets it to '0' and propagates the carry to the next higher digit by recursively calling update_score.
 R $91A9 I:D Offset of the overflowed digit.
@@ -3400,11 +3396,12 @@ D $91C1 Displays player 2's full score area including "P2" label and leading zer
 @ $91C4 isub=LD A,COLOR_PLAYER_2
 @ $91C7 isub=LD BC,high_score_bridge_1 - state_score_player_2_low
   $91C7 Print 6-digit score from #R$90C2 via ROM PR_STRING.
-@ $91D0 isub=LD A,CHAR_0
-  $91D0 Print trailing '0' after score.
+@ $91D0 isub=LD A,"0"
+C $91D0,c2 Print trailing '0' after score.
 @ $91D3 isub=LD A,EXT_ATTR_AT
   $91D3 AT 1,18
-  $91DC Print "P2" label.
+C $91DC,c2 Print "P2" label.
+C $91DF,c2
   $91E2 Switch to channel 2 (main screen) and return.
 @ $91E8 label=print_player_2_score_area
 c $91E8 Print player 2 score area or high score on status line.
@@ -3417,13 +3414,16 @@ D $91E8 In 2-player mode, prints player 2's score. In 1-player mode, prints the 
 @ $91FE isub=LD A,EXT_ATTR_INK
   $91FE INK WHITE
 @ $9201 isub=LD A,COLOR_WHITE
-@ $9222 isub=LD A,CHAR_0
-  $9204 Select high score for current bridge: offset = (game_mode AND $FE) * 3 = bridge_index * 6 (6 bytes per entry). Print 6-digit score with trailing '0'.
+@ $9222 isub=LD A,"0"
+  $9204 Select high score for current bridge: offset = (game_mode AND $FE) * 3 = bridge_index * 6 (6 bytes per entry). Print 6-digit score.
+C $9222,c2 Print trailing '0' after score.
 @ $9225 isub=LD A,EXT_ATTR_AT
   $9225 AT 1,18
-@ $922E isub=LD A,CHAR_H_UPPER
-  $922E,11 Print "HI" label, switch to channel 2 (main screen).
-@ $9231 isub=LD A,CHAR_I_UPPER
+@ $922E isub=LD A,"H"
+C $922E,c2 Print "HI" label.
+@ $9231 isub=LD A,"I"
+C $9231,c2
+  $9234 Switch to channel 2 (main screen).
 @ $923A label=state_game_mode
 b $923A Game mode configuration byte
 D $923A #TABLE(default) { =h Bit(s) | =h Meaning | =h Values } { 0 | Player count | 0=1 player, 1=2 players } { 1-2 | Starting bridge | 0=Bridge 1, 1=Bridge 5, 2=Bridge 9, 3=Bridge 15 } { 3-7 | Unused | Always 0 } TABLE#
@@ -3456,15 +3456,20 @@ R $924F I:A Number of lives.
 @ $925F label=print_lives_loop
   $925F Print ✈ UDG symbol, loop B times.
 @ $9264 label=print_lives_padding
-@ $9264 isub=LD A,CHAR_SPACE
+@ $9264 isub=LD A," "
 c $9264 Print six spaces to clear old lives display.
 D $9264 Erases previously displayed lives symbols that no longer apply.
-  $9264,18 Print 6 spaces to clear the old lives display.
-@ $9267 isub=LD A,CHAR_SPACE
-@ $926A isub=LD A,CHAR_SPACE
-@ $926D isub=LD A,CHAR_SPACE
-@ $9270 isub=LD A,CHAR_SPACE
-@ $9273 isub=LD A,CHAR_SPACE
+C $9264,c2 Print space 1.
+@ $9267 isub=LD A," "
+C $9267,c2 Print space 2.
+@ $926A isub=LD A," "
+C $926A,c2 Print space 3.
+@ $926D isub=LD A," "
+C $926D,c2 Print space 4.
+@ $9270 isub=LD A," "
+C $9270,c2 Print space 5.
+@ $9273 isub=LD A," "
+C $9273,c2 Print space 6.
 @ $9277 label=print_lives_player_2
 @ $9277 isub=LD A,EXT_ATTR_INK
 c $9277 Player 2 branch of #R$923E.

@@ -33,12 +33,6 @@ EXT_ATTR_AT    EQU $16
 
 ; ASCII character codes
 CHAR_ENTER   EQU $0D
-CHAR_SPACE   EQU $20
-CHAR_0       EQU $30
-CHAR_1       EQU $31
-CHAR_H_UPPER EQU $48
-CHAR_I_UPPER EQU $49
-CHAR_H       EQU $68
 
 ; Z80 opcodes used in self-modifying code
 OPCODE_NOP   EQU $00
@@ -1038,8 +1032,8 @@ c$5D44 LD A,$78      ; {Initialize plane X position to $78. Why isn't it $80?
  $5D72 LD ($5F64),A  ; }
 @isub=LD (state_bridge_destroyed),A
  $5D75 LD ($5F6D),A  ; Store $02 to #R$5F6D (unclear why $02 is used here).
-@isub=LD HL,CHAR_0<<8|CHAR_0
- $5D78 LD HL,$3030   ; {Initialize all player scores to zero (ASCII "00").
+@isub=LD HL,"00"
+ $5D78 LD HL,"0"     ; {Initialize all player scores to zero.
  $5D7B LD ($90BC),HL ;
  $5D7E LD ($90BE),HL ;
  $5D81 LD ($90C0),HL ;
@@ -1142,7 +1136,7 @@ c$5DA6 LD A,$10      ; {Initialize island line index (starting line for island
  $5E40 LD BC,$0005   ;
  $5E43 CALL $203C    ; }
  $5E46 LD A,($923A)  ; {Print game mode digit (1 or 2 player).
-@isub=ADD A,CHAR_1
+@isub=ADD A,"1"
  $5E49 ADD A,$31     ;
  $5E4B RST $10       ; }
  $5E4C LD A,$01      ; {Open channel 1.
@@ -1156,7 +1150,7 @@ c$5DA6 LD A,$10      ; {Initialize island line index (starting line for island
  $5E60 LD ($5F76),A  ; bridge destroyed flag.
  $5E63 LD ($5F68),A  ; }
  $5E66 LD ($5F6D),A  ;
-@isub=LD A,CHAR_H
+@isub=LD A,"h"
  $5E69 LD A,$68      ; {Set last key to 'h' (suppress H-key pause on first
  $5E6B LD ($5C08),A  ; frame).}
  $5E6E LD A,$00      ; {Clear control state and tank shell state.
@@ -2668,9 +2662,9 @@ c$64F1 CALL $203C    ; {Print status line text and check if bridge < 10.
 ;
 ; Used by the routines at #R$64BC and #R$64F1.
 @label=print_space
-@isub=LD A,CHAR_SPACE
-c$6506 LD A,$20      ; {Output space via RST $10.
- $6508 RST $10       ; }
+@isub=LD A," "
+c$6506 LD A," "      ; Output space via RST $10.
+ $6508 RST $10       ;
  $6509 RET           ;
 
 ; Handle the no fuel situation
@@ -4538,11 +4532,11 @@ c$6D17 LD BC,$0010   ; {Initialize scroll position (#R$5F70 = $0010) and scroll
 @isub=LD BC,status_line_4_end - status_line_4
  $6D48 LD BC,$0005   ; }
  $6D4B CALL $203C    ;
- $6D4E LD A,($923A)  ; {Print game number: load game mode from #R$923A, add
-@isub=ADD A,CHAR_1
- $6D51 ADD A,$31     ; CHAR_1 for ASCII digit, output via RST $10.
+ $6D4E LD A,($923A)  ; {Print game number: load game mode from #R$923A, add "1"
+@isub=ADD A,"1"
+ $6D51 ADD A,$31     ; for ASCII digit, output via RST $10.
  $6D53 RST $10       ; }
-@isub=LD A,CHAR_H
+@isub=LD A,"h"
  $6D54 LD A,$68      ; {Initialize state: store 'h' in last key (suppress H-key
  $6D56 LD ($5C08),A  ; pause), clear #R$5F7D, save initial scroll value to
  $6D59 LD A,$00      ; #R$5D43.
@@ -6984,8 +6978,8 @@ c$7ACD LD HL,($7802) ; {Decrease timer
  $7AD9 LD A,($5C08)  ;
  $7ADC CALL $02BF    ; {Scan keyboard
  $7ADF EI            ; }
-@isub=SUB CHAR_1
- $7AE0 SUB $31       ; Subtract CHAR_1 from the pressed key ASCII code, mapping
+@isub=SUB "1"
+ $7AE0 SUB $31       ; Subtract "1" from the pressed key ASCII code, mapping
                      ; "1" to 0, "2" to 1, etc.
  $7AE2 LD ($7800),A  ;
  $7AE5 AND $FC       ; {Validate the pressed key by making sure that none of
@@ -7014,8 +7008,8 @@ c$7ACD LD HL,($7802) ; {Decrease timer
 c$7B07 LD A,($5C08)  ;
  $7B0A CALL $02BF    ; {Scan keyboard
  $7B0D EI            ; }
-@isub=SUB CHAR_1
- $7B0E SUB $31       ; Subtract CHAR_1 from the pressed key ASCII code, mapping
+@isub=SUB "1"
+ $7B0E SUB $31       ; Subtract "1" from the pressed key ASCII code, mapping
                      ; "1" to 0, "2" to 1, etc.
  $7B10 LD ($923A),A  ;
  $7B13 AND $F8       ; {Validate the pressed key by making sure that none of
@@ -7036,9 +7030,9 @@ c$7B07 LD A,($5C08)  ;
 *$7B30 LD DE,$7882   ; {Print instructions text (#R$7882, 168 bytes) via ROM
  $7B33 LD BC,$00A8   ; PR_STRING.
  $7B36 CALL $203C    ; }
-@isub=LD A,CHAR_SPACE
- $7B39 LD A,$20      ; {Initialize LAST_K to space character.
- $7B3B LD ($5C08),A  ; }
+@isub=LD A," "
+ $7B39 LD A," "      ; Initialize LAST_K to space character.
+ $7B3B LD ($5C08),A  ;
 ; Wait for user to press Enter.
 @label=instructions_input
 *$7B3E LD A,($5C08)  ; Read last key pressed from LAST_K.
@@ -9270,11 +9264,11 @@ c$913B LD HL,$90BC   ; {Point HL at the target digit in player 1's score.
  $9140 LD A,C        ; {Save offset to D, load digit, increment it.
  $9141 ADD HL,BC     ;
  $9142 LD D,A        ;
- $9143 LD A,(HL)     ; }
- $9144 INC A         ; {If digit overflows past '9', jump to #R$9191 for carry.
-@isub=CP CHAR_0+10
- $9145 CP $3A        ;
- $9147 JP Z,$9191    ; }
+ $9143 LD A,(HL)     ;
+ $9144 INC A         ; }
+@isub=CP "9"+1
+ $9145 CP ":"        ; If digit overflows past '9', jump to #R$9191 for carry.
+ $9147 JP Z,$9191    ;
  $914A LD (HL),A     ; Store incremented digit, fall through to print.
 
 ; Print a digit from player 1's score.
@@ -9325,11 +9319,11 @@ c$9169 LD HL,$90C2   ; {Point HL at the target digit in player 2's score.
  $916E LD A,C        ; {Save offset to D, load digit, increment it.
  $916F ADD HL,BC     ;
  $9170 LD D,A        ;
- $9171 LD A,(HL)     ; }
- $9172 INC A         ; {If digit overflows past '9', jump to #R$91A9 for carry.
-@isub=CP CHAR_0+10
- $9173 CP $3A        ;
- $9175 JP Z,$91A9    ; }
+ $9171 LD A,(HL)     ;
+ $9172 INC A         ; }
+@isub=CP "9"+1
+ $9173 CP ":"        ; If digit overflows past '9', jump to #R$91A9 for carry.
+ $9175 JP Z,$91A9    ;
  $9178 LD (HL),A     ; Store incremented digit, fall through to print.
 
 ; Print a digit from player 2's score.
@@ -9368,7 +9362,7 @@ c$9179 LD A,$10      ; {INK PLAYER_2
 ; I:D Offset of the overflowed digit.
 ; I:HL Pointer to the overflowed digit.
 @label=carry_player_1_score_digit
-@isub=LD (HL),CHAR_0
+@isub=LD (HL),"0"
 c$9191 LD (HL),$30   ; Write '0' to the overflowed digit.
 @isub=LD A,SCORE_DIGIT_COUNT
  $9193 LD A,$06      ; {Check if this is the leftmost digit (offset 0): A =
@@ -9394,7 +9388,7 @@ c$9191 LD (HL),$30   ; Write '0' to the overflowed digit.
 ; I:D Offset of the overflowed digit.
 ; I:HL Pointer to the overflowed digit.
 @label=carry_player_2_score_digit
-@isub=LD (HL),CHAR_0
+@isub=LD (HL),"0"
 c$91A9 LD (HL),$30   ; Write '0' to the overflowed digit.
 @isub=LD A,SCORE_DIGIT_COUNT
  $91AB LD A,$06      ; {Check if this is the leftmost digit (offset 0): A =
@@ -9426,9 +9420,9 @@ c$91C1 LD A,$10      ; {INK PLAYER_2
  $91C7 LD BC,$0006   ; {Print 6-digit score from #R$90C2 via ROM PR_STRING.
  $91CA LD DE,$90C2   ;
  $91CD CALL $203C    ; }
-@isub=LD A,CHAR_0
- $91D0 LD A,$30      ; {Print trailing '0' after score.
- $91D2 RST $10       ; }
+@isub=LD A,"0"
+ $91D0 LD A,"0"      ; Print trailing '0' after score.
+ $91D2 RST $10       ;
 @isub=LD A,EXT_ATTR_AT
  $91D3 LD A,$16      ; {AT 1,18
  $91D5 RST $10       ;
@@ -9436,10 +9430,10 @@ c$91C1 LD A,$10      ; {INK PLAYER_2
  $91D8 RST $10       ;
  $91D9 LD A,$12      ;
  $91DB RST $10       ; }
- $91DC LD A,$50      ; {Print "P2" label.
+ $91DC LD A,"P"      ; Print "P2" label.
  $91DE RST $10       ;
- $91DF LD A,$32      ;
- $91E1 RST $10       ; }
+ $91DF LD A,"2"      ;
+ $91E1 RST $10       ;
  $91E2 LD A,$02      ; {Switch to channel 2 (main screen) and return.
  $91E4 CALL $1601    ;
  $91E7 RET           ; }
@@ -9470,7 +9464,7 @@ c$91E8 LD A,$01      ; {Open channel 1 (upper screen).
  $9203 RST $10       ; }
  $9204 LD BC,$0006   ; {Select high score for current bridge: offset =
  $9207 LD HL,$90C8   ; (game_mode AND $FE) * 3 = bridge_index * 6 (6 bytes per
- $920A LD A,($923A)  ; entry). Print 6-digit score with trailing '0'.
+ $920A LD A,($923A)  ; entry). Print 6-digit score.
  $920D AND $FE       ;
  $920F LD E,A        ;
  $9210 LD A,($923A)  ;
@@ -9482,10 +9476,10 @@ c$91E8 LD A,$01      ; {Open channel 1 (upper screen).
  $921C LD E,A        ;
  $921D ADD HL,DE     ;
  $921E EX DE,HL      ;
- $921F CALL $203C    ;
-@isub=LD A,CHAR_0
- $9222 LD A,$30      ;
- $9224 RST $10       ; }
+ $921F CALL $203C    ; }
+@isub=LD A,"0"
+ $9222 LD A,"0"      ; Print trailing '0' after score.
+ $9224 RST $10       ;
 @isub=LD A,EXT_ATTR_AT
  $9225 LD A,$16      ; {AT 1,18
  $9227 RST $10       ;
@@ -9493,15 +9487,15 @@ c$91E8 LD A,$01      ; {Open channel 1 (upper screen).
  $922A RST $10       ;
  $922B LD A,$12      ;
  $922D RST $10       ; }
-@isub=LD A,CHAR_H_UPPER
- $922E LD A,$48      ; {Print "HI" label, switch to channel 2 (main screen).
+@isub=LD A,"H"
+ $922E LD A,"H"      ; Print "HI" label.
  $9230 RST $10       ;
-@isub=LD A,CHAR_I_UPPER
- $9231 LD A,$49      ;
+@isub=LD A,"I"
+ $9231 LD A,"I"      ;
  $9233 RST $10       ;
- $9234 LD A,$02      ;
- $9236 CALL $1601    ; }
- $9239 RET           ;
+ $9234 LD A,$02      ; {Switch to channel 2 (main screen).
+ $9236 CALL $1601    ;
+ $9239 RET           ; }
 
 ; Game mode configuration byte
 ;
@@ -9580,24 +9574,24 @@ c$924F LD B,A        ; Store lives count in B for loop counter.
 ;
 ; Erases previously displayed lives symbols that no longer apply.
 @label=print_lives_padding
-@isub=LD A,CHAR_SPACE
-c$9264 LD A,$20      ; {Print 6 spaces to clear the old lives display.
+@isub=LD A," "
+c$9264 LD A," "      ; Print space 1.
  $9266 RST $10       ;
-@isub=LD A,CHAR_SPACE
- $9267 LD A,$20      ;
+@isub=LD A," "
+ $9267 LD A," "      ; Print space 2.
  $9269 RST $10       ;
-@isub=LD A,CHAR_SPACE
- $926A LD A,$20      ;
+@isub=LD A," "
+ $926A LD A," "      ; Print space 3.
  $926C RST $10       ;
-@isub=LD A,CHAR_SPACE
- $926D LD A,$20      ;
+@isub=LD A," "
+ $926D LD A," "      ; Print space 4.
  $926F RST $10       ;
-@isub=LD A,CHAR_SPACE
- $9270 LD A,$20      ;
+@isub=LD A," "
+ $9270 LD A," "      ; Print space 5.
  $9272 RST $10       ;
-@isub=LD A,CHAR_SPACE
- $9273 LD A,$20      ;
- $9275 RST $10       ; }
+@isub=LD A," "
+ $9273 LD A," "      ; Print space 6.
+ $9275 RST $10       ;
  $9276 RET           ;
 
 ; Player 2 branch of #R$923E.

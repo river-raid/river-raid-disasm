@@ -31,12 +31,6 @@ EXT_ATTR_AT    EQU $16
 
 ; ASCII character codes
 CHAR_ENTER   EQU $0D
-CHAR_SPACE   EQU $20
-CHAR_0       EQU $30
-CHAR_1       EQU $31
-CHAR_H_UPPER EQU $48
-CHAR_I_UPPER EQU $49
-CHAR_H       EQU $68
 
 ; Z80 opcodes used in self-modifying code
 OPCODE_NOP   EQU $00
@@ -984,7 +978,7 @@ init_state:
   LD (state_gameplay_mode),A           ;
   LD (state_speed),A                   ;
   LD (state_bridge_destroyed),A        ; Store $02 to state_bridge_destroyed (unclear why $02 is used here).
-  LD HL,CHAR_0<<8|CHAR_0               ; Initialize all player scores to zero (ASCII "00").
+  LD HL,"00"                           ; Initialize all player scores to zero.
   LD (state_score_player_1_low),HL     ;
   LD (state_score_player_1_mid),HL     ;
   LD (state_score_player_1_high),HL    ;
@@ -1074,7 +1068,7 @@ play:
   LD BC,status_line_4_end - status_line_4 ;
   CALL PR_STRING                          ;
   LD A,(state_game_mode)               ; Print game mode digit (1 or 2 player).
-  ADD A,CHAR_1                         ;
+  ADD A,"1"                            ;
   RST $10                              ;
   LD A,$01                             ; Open channel 1.
   CALL CHAN_OPEN                       ;
@@ -1087,7 +1081,7 @@ play:
   LD (state_level_fragment_number),A   ;
   LD (state_gameplay_mode),A           ;
   LD (state_bridge_destroyed),A
-  LD A,CHAR_H                          ; Set last key to 'h' (suppress H-key pause on first frame).
+  LD A,"h"                             ; Set last key to 'h' (suppress H-key pause on first frame).
   LD (LAST_K),A                        ;
   LD A,$00                             ; Clear control state and tank shell state.
   LD (state_controls),A                ;
@@ -2416,8 +2410,8 @@ print_bridge_player_2_common:
 ;
 ; Used by the routines at print_bridge and print_bridge_player_2_common.
 print_space:
-  LD A,CHAR_SPACE                      ; Output space via RST $10.
-  RST $10                              ;
+  LD A," "                             ; Output space via RST $10.
+  RST $10
   RET
 
 ; Handle the no fuel situation
@@ -4034,10 +4028,10 @@ overview:
   LD DE,status_line_4                     ;
   LD BC,status_line_4_end - status_line_4 ;
   CALL PR_STRING
-  LD A,(state_game_mode)               ; Print game number: load game mode from state_game_mode, add CHAR_1 for ASCII
-  ADD A,CHAR_1                         ; digit, output via RST $10.
+  LD A,(state_game_mode)               ; Print game number: load game mode from state_game_mode, add "1" for ASCII
+  ADD A,"1"                            ; digit, output via RST $10.
   RST $10                              ;
-  LD A,CHAR_H                          ; Initialize state: store 'h' in last key (suppress H-key pause), clear
+  LD A,"h"                             ; Initialize state: store 'h' in last key (suppress H-key pause), clear
   LD (LAST_K),A                        ; state_terrain_position, save initial scroll value to
   LD A,$00                             ; state_overview_start_scroll.
   LD (state_terrain_position),A        ;
@@ -6146,8 +6140,7 @@ controls_input:
   LD A,(LAST_K)
   CALL KEYBOARD                        ; Scan keyboard
   EI                                   ;
-  SUB CHAR_1                           ; Subtract CHAR_1 from the pressed key ASCII code, mapping "1" to 0, "2" to 1,
-                                       ; etc.
+  SUB "1"                              ; Subtract "1" from the pressed key ASCII code, mapping "1" to 0, "2" to 1, etc.
   LD (tmp_control_type),A
   AND $FC                              ; Validate the pressed key by making sure that none of the bits older than the
   CP $00                               ; first two are set, effectively allowing values 0 through 3.
@@ -6172,8 +6165,7 @@ game_mode_input:
   LD A,(LAST_K)
   CALL KEYBOARD                        ; Scan keyboard
   EI                                   ;
-  SUB CHAR_1                           ; Subtract CHAR_1 from the pressed key ASCII code, mapping "1" to 0, "2" to 1,
-                                       ; etc.
+  SUB "1"                              ; Subtract "1" from the pressed key ASCII code, mapping "1" to 0, "2" to 1, etc.
   LD (state_game_mode),A
   AND $F8                              ; Validate the pressed key by making sure that none of the bits older than the
   CP $00                               ; first three are set, effectively allowing values 0 through 7.
@@ -6191,8 +6183,8 @@ instructions_print:
   LD DE,msg_instructions               ; Print instructions text (msg_instructions, 168 bytes) via ROM PR_STRING.
   LD BC,$00A8                          ;
   CALL PR_STRING                       ;
-  LD A,CHAR_SPACE                      ; Initialize LAST_K to space character.
-  LD (LAST_K),A                        ;
+  LD A," "                             ; Initialize LAST_K to space character.
+  LD (LAST_K),A
 ; Wait for user to press Enter.
 instructions_input:
   LD A,(LAST_K)                        ; Read last key pressed from LAST_K.
@@ -8065,9 +8057,9 @@ inc_player_1_score_digit:
   ADD HL,BC                            ;
   LD D,A                               ;
   LD A,(HL)                            ;
-  INC A                                ; If digit overflows past '9', jump to carry_player_1_score_digit for carry.
-  CP CHAR_0+10                         ;
-  JP Z,carry_player_1_score_digit      ;
+  INC A                                ;
+  CP "9"+1                             ; If digit overflows past '9', jump to carry_player_1_score_digit for carry.
+  JP Z,carry_player_1_score_digit
   LD (HL),A                            ; Store incremented digit, fall through to print.
 
 ; Print a digit from player 1's score.
@@ -8112,9 +8104,9 @@ inc_player_2_score_digit:
   ADD HL,BC                            ;
   LD D,A                               ;
   LD A,(HL)                            ;
-  INC A                                ; If digit overflows past '9', jump to carry_player_2_score_digit for carry.
-  CP CHAR_0+10                         ;
-  JP Z,carry_player_2_score_digit      ;
+  INC A                                ;
+  CP "9"+1                             ; If digit overflows past '9', jump to carry_player_2_score_digit for carry.
+  JP Z,carry_player_2_score_digit
   LD (HL),A                            ; Store incremented digit, fall through to print.
 
 ; Print a digit from player 2's score.
@@ -8149,7 +8141,7 @@ print_player_2_score_digit:
 ; I:D Offset of the overflowed digit.
 ; I:HL Pointer to the overflowed digit.
 carry_player_1_score_digit:
-  LD (HL),CHAR_0                       ; Write '0' to the overflowed digit.
+  LD (HL),"0"                          ; Write '0' to the overflowed digit.
   LD A,SCORE_DIGIT_COUNT               ; Check if this is the leftmost digit (offset 0): A = SCORE_DIGIT_COUNT - D + 1.
   SUB D                                ;
   INC A                                ;
@@ -8172,7 +8164,7 @@ carry_player_1_score_digit:
 ; I:D Offset of the overflowed digit.
 ; I:HL Pointer to the overflowed digit.
 carry_player_2_score_digit:
-  LD (HL),CHAR_0                       ; Write '0' to the overflowed digit.
+  LD (HL),"0"                          ; Write '0' to the overflowed digit.
   LD A,SCORE_DIGIT_COUNT               ; Check if this is the leftmost digit (offset 0): A = SCORE_DIGIT_COUNT - D + 1.
   SUB D                                ;
   INC A                                ;
@@ -8198,18 +8190,18 @@ print_score_player_2:
   LD BC,high_score_bridge_1 - state_score_player_2_low ; Print 6-digit score from state_score_player_2_low via ROM
   LD DE,state_score_player_2_low                       ; PR_STRING.
   CALL PR_STRING                                       ;
-  LD A,CHAR_0                          ; Print trailing '0' after score.
-  RST $10                              ;
+  LD A,"0"                             ; Print trailing '0' after score.
+  RST $10
   LD A,EXT_ATTR_AT                     ; AT 1,18
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
   LD A,$12                             ;
   RST $10                              ;
-  LD A,$50                             ; Print "P2" label.
-  RST $10                              ;
-  LD A,$32                             ;
-  RST $10                              ;
+  LD A,"P"                             ; Print "P2" label.
+  RST $10
+  LD A,"2"
+  RST $10
   LD A,$02                             ; Switch to channel 2 (main screen) and return.
   CALL CHAN_OPEN                       ;
   RET                                  ;
@@ -8234,7 +8226,7 @@ print_player_2_score_area:
   LD A,COLOR_WHITE                     ;
   RST $10                              ;
   LD BC,$0006                          ; Select high score for current bridge: offset = (game_mode AND $FE) * 3 =
-  LD HL,high_score_bridge_1            ; bridge_index * 6 (6 bytes per entry). Print 6-digit score with trailing '0'.
+  LD HL,high_score_bridge_1            ; bridge_index * 6 (6 bytes per entry). Print 6-digit score.
   LD A,(state_game_mode)               ;
   AND $FE                              ;
   LD E,A                               ;
@@ -8248,21 +8240,21 @@ print_player_2_score_area:
   ADD HL,DE                            ;
   EX DE,HL                             ;
   CALL PR_STRING                       ;
-  LD A,CHAR_0                          ;
-  RST $10                              ;
+  LD A,"0"                             ; Print trailing '0' after score.
+  RST $10
   LD A,EXT_ATTR_AT                     ; AT 1,18
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
   LD A,$12                             ;
   RST $10                              ;
-  LD A,CHAR_H_UPPER                    ; Print "HI" label, switch to channel 2 (main screen).
-  RST $10                              ;
-  LD A,CHAR_I_UPPER                    ;
-  RST $10                              ;
-  LD A,$02                             ;
+  LD A,"H"                             ; Print "HI" label.
+  RST $10
+  LD A,"I"
+  RST $10
+  LD A,$02                             ; Switch to channel 2 (main screen).
   CALL CHAN_OPEN                       ;
-  RET
+  RET                                  ;
 
 ; Game mode configuration byte
 ;
@@ -8334,18 +8326,18 @@ print_lives_loop:
 ;
 ; Erases previously displayed lives symbols that no longer apply.
 print_lives_padding:
-  LD A,CHAR_SPACE                      ; Print 6 spaces to clear the old lives display.
-  RST $10                              ;
-  LD A,CHAR_SPACE                      ;
-  RST $10                              ;
-  LD A,CHAR_SPACE                      ;
-  RST $10                              ;
-  LD A,CHAR_SPACE                      ;
-  RST $10                              ;
-  LD A,CHAR_SPACE                      ;
-  RST $10                              ;
-  LD A,CHAR_SPACE                      ;
-  RST $10                              ;
+  LD A," "                             ; Print space 1.
+  RST $10
+  LD A," "                             ; Print space 2.
+  RST $10
+  LD A," "                             ; Print space 3.
+  RST $10
+  LD A," "                             ; Print space 4.
+  RST $10
+  LD A," "                             ; Print space 5.
+  RST $10
+  LD A," "                             ; Print space 6.
+  RST $10
   RET
 
 ; Player 2 branch of print_lives.
