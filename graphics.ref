@@ -145,10 +145,10 @@ Sprite data: #R$84A1.
 The explosion animation uses 3 frames of 2x1 tile (16x8 pixel) sprites,
 played back in a 1-2-3-2 loop.
 
+#UDGARRAY2,14,4,2;$8471-$8472-1-16(*explosion-f1)
+#UDGARRAY2,14,4,2;$8481-$8482-1-16(*explosion-f2)
+#UDGARRAY2,14,4,2;$8491-$8492-1-16(*explosion-f3)
 #UDGTABLE
-{ #UDGARRAY2,14,4,2;$8471-$8472-1-16(*explosion-f1) |
-  #UDGARRAY2,14,4,2;$8481-$8482-1-16(*explosion-f2) |
-  #UDGARRAY2,14,4,2;$8491-$8492-1-16(*explosion-f3) }
 { #UDGARRAY*explosion-f1,50;explosion-f2;explosion-f3;explosion-f2(explosion) }
 TABLE#
 

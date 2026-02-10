@@ -2917,15 +2917,15 @@ b $8451 Missile trail sprite (4 frames × 8 bytes).
   $8469,8,1 Frame 4
 @ $8471 label=sprite_explosion_f1
 b $8471 Explosion sprite frame 1 (2×1 tiles).
-N $8471 #UDGTABLE { #UDGARRAY2,14,4,2;$8471-$8472-1-16(*explosion-f1) } TABLE#
+N $8471 #UDGTABLE { #UDGARRAY2,14,4,2;$8471-$8472-1-16(explosion-f1) } TABLE#
   $8471,16,2
 @ $8481 label=sprite_explosion_f2
 b $8481 Explosion sprite frame 2 (2×1 tiles).
-N $8481 #UDGTABLE { #UDGARRAY2,14,4,2;$8481-$8482-1-16(*explosion-f2) } TABLE#
+N $8481 #UDGTABLE { #UDGARRAY2,14,4,2;$8481-$8482-1-16(explosion-f2) } TABLE#
   $8481,16,2
 @ $8491 label=sprite_explosion_f3
 b $8491 Explosion sprite frame 3 (2×1 tiles).
-N $8491 #UDGTABLE { #UDGARRAY2,14,4,2;$8491-$8492-1-16(*explosion-f3) | #UDGARRAY*explosion-f1,50;explosion-f2;explosion-f3;explosion-f2(explosion) } TABLE#
+N $8491 #UDGTABLE { #UDGARRAY2,14,4,2;$8491-$8492-1-16(explosion-f3) } TABLE#
   $8491,16,2
 @ $84A1 label=sprite_rock
 b $84A1 Array [4] of rock sprites (3×2 tiles, 48 bytes).

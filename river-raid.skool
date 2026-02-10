@@ -7581,7 +7581,7 @@ b$8451 DEFB $C0      ; {Frame 1
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$8471-$8472-1-16(*explosion-f1) }
+; { #UDGARRAY2,14,4,2;$8471-$8472-1-16(explosion-f1) }
 ; TABLE#
 @label=sprite_explosion_f1
 b$8471 DEFB $02,$40
@@ -7600,7 +7600,7 @@ b$8471 DEFB $02,$40
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$8481-$8482-1-16(*explosion-f2) }
+; { #UDGARRAY2,14,4,2;$8481-$8482-1-16(explosion-f2) }
 ; TABLE#
 @label=sprite_explosion_f2
 b$8481 DEFB $22,$20
@@ -7619,8 +7619,7 @@ b$8481 DEFB $22,$20
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$8491-$8492-1-16(*explosion-f3) |
-; #UDGARRAY*explosion-f1,50;explosion-f2;explosion-f3;explosion-f2(explosion) }
+; { #UDGARRAY2,14,4,2;$8491-$8492-1-16(explosion-f3) }
 ; TABLE#
 @label=sprite_explosion_f3
 b$8491 DEFB $01,$90
