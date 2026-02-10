@@ -3075,16 +3075,16 @@ N $89D2 #UDGTABLE { #UDGARRAY2,14,4,2;$89D2-$89EA-1-16(balloon-f4) } TABLE#
   $89D2,32,2 Frame 4
 @ $89F2 label=terrain_edge_left
 b $89F2 Left terrain edge masks (4 widths: 10, 12, 14, 16 pixels).
-  $89F2,2,2 10 pixels
-  $89F4,2,2 12 pixels
-  $89F6,2,2 14 pixels
-  $89F8,2,2 16 pixels
+  $89F2,2,b2 10 pixels
+  $89F4,2,b2 12 pixels
+  $89F6,2,b2 14 pixels
+  $89F8,2,b2 16 pixels
 @ $89FA label=terrain_edge_right
 b $89FA Right terrain edge masks (4 widths: 16, 14, 12, 10 pixels).
-  $89FA,2,2 16 pixels
-  $89FC,2,2 14 pixels
-  $89FE,2,2 12 pixels
-  $8A00,2,2 10 pixels
+  $89FA,2,b2 16 pixels
+  $89FC,2,b2 14 pixels
+  $89FE,2,b2 12 pixels
+  $8A00,2,b2 10 pixels
 @ $8A02 label=do_fire
 c $8A02 Generate firing sound effect.
 D $8A02 Produces the "pew" sound when the player fires a missile by toggling the speaker port rapidly.

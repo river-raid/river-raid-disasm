@@ -7212,17 +7212,17 @@ sprite_balloon:
 
 ; Left terrain edge masks (4 widths: 10, 12, 14, 16 pixels).
 terrain_edge_left:
-  DEFB $FF,$C0                         ; 10 pixels
-  DEFB $FF,$F0                         ; 12 pixels
-  DEFB $FF,$FC                         ; 14 pixels
-  DEFB $FF,$FF                         ; 16 pixels
+  DEFB %11111111,%11000000             ; 10 pixels
+  DEFB %11111111,%11110000             ; 12 pixels
+  DEFB %11111111,%11111100             ; 14 pixels
+  DEFB %11111111,%11111111             ; 16 pixels
 
 ; Right terrain edge masks (4 widths: 16, 14, 12, 10 pixels).
 terrain_edge_right:
-  DEFB $FF,$FF                         ; 16 pixels
-  DEFB $3F,$FF                         ; 14 pixels
-  DEFB $0F,$FF                         ; 12 pixels
-  DEFB $03,$FF                         ; 10 pixels
+  DEFB %11111111,%11111111             ; 16 pixels
+  DEFB %00111111,%11111111             ; 14 pixels
+  DEFB %00001111,%11111111             ; 12 pixels
+  DEFB %00000011,%11111111             ; 10 pixels
 
 ; Generate firing sound effect.
 ;
