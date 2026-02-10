@@ -6366,7 +6366,7 @@ data_unused_7B61:
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00
 
-; Message at 8000
+; Status line 1: fuel gauge and lives display.
 status_line_1:
   DEFM EXT_ATTR_PAPER,COLOR_BLACK      ; PAPER BLACK
   DEFM EXT_ATTR_INK,COLOR_WHITE        ; INK WHITE
@@ -6382,7 +6382,7 @@ status_line_1:
   DEFB $8F,$8F,$8F,$8F,$8F,$8F,$8F,$8F ; Fuel gauge reading UDG
   DEFM EXT_ATTR_INK,COLOR_PLAYER_1     ; INK PLAYER_1
 
-; Message at 8031
+; Status line 2: player scores header.
 status_line_2:
   DEFM EXT_ATTR_AT,$01,$02             ; AT 1,2
   DEFM EXT_ATTR_INK,COLOR_PLAYER_1     ; INK PLAYER_1
@@ -6391,15 +6391,15 @@ status_line_2:
   DEFM EXT_ATTR_AT,$01,$12             ; AT 1,18
   DEFM "HI 0000000"
 
-; Message at 804F
+; Status line 3: bridge number position.
 status_line_3:
   DEFM EXT_ATTR_AT,$13,$12             ; AT 19,18
 
-; Message at 8052
+; Status line 3 text: "BRIDGE" label.
 status_line_3_text:
   DEFM "BRIDGE  "
 
-; Message at 805A
+; Status line 4: "FUEL" label.
 status_line_4:
   DEFM EXT_ATTR_AT,$14,$04             ; AT 20,4
   DEFM EXT_ATTR_INK,COLOR_WHITE        ; INK WHITE
@@ -6466,7 +6466,7 @@ data_terrain_profiles:
 msg_game_over:
   DEFM " .....GAME OVER.....                           "
 
-; Message at 8182
+; Credits message with copyright and Activision logo.
 msg_credits:
   DEFM " RIVER RAID"
   DEFM $94                             ; Trademark UDG symbol
@@ -6480,7 +6480,7 @@ msg_credits:
   DEFM "l or S to select game                              "
   DEFB $FF
 
-; Data block at 825D
+; User-defined graphics data (13 characters).
 udg_data:
   DEFB $00,$00,$00,$80,$80,$AA,$AA,$FF
   DEFB $80,$80,$80,$80,$80,$AA,$AA,$FF
@@ -6496,7 +6496,7 @@ udg_data:
   DEFB $00,$00,$00,$20,$20,$E0,$60,$20
   DEFB $10,$10,$38,$7C,$D6,$92,$38,$54
 
-; Data block at 82C5
+; Solid fill pattern (48 bytes of $FF).
 all_ff:
   DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
   DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
@@ -6505,7 +6505,7 @@ all_ff:
   DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
   DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
 
-; Data block at 82F5
+; Sprite erasure pattern (60 bytes of $00).
 sprite_erasure:
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
@@ -6516,17 +6516,17 @@ sprite_erasure:
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00
 
-; Data block at 8331
+; Terrain pixels for pre/post bridge sections (2×16 bytes).
 sprite_terrain_pre_post_bridge:
   DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$00
   DEFB $00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
 
-; Data block at 8351
+; Road and bridge pixel patterns (2×16 bytes).
 sprite_road_and_bridge_pixels:
   DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$FF,$FF
   DEFB $FF,$FF,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 
-; Data block at 8371
+; Road and bridge color attributes (2×16 bytes).
 sprite_road_attributes:
   DEFB $3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$0E,$0E
   DEFB $0E,$0E,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C
@@ -6541,7 +6541,7 @@ data_unused_8391:
   DEFB $C0,$C0,$3F,$3F,$3F,$3F,$3F,$3F
   DEFB $3F,$3F,$3F,$3F,$3F,$3F,$3F,$3F
 
-; Data block at 83B1
+; Player plane sprite (4 frames × 16 bytes).
 ;
 sprite_plane:
   DEFB $10,$00                         ; Frame 1
@@ -6577,7 +6577,7 @@ sprite_plane:
   DEFB $00,$E0                         ;
   DEFB $01,$50                         ;
 
-; Data block at 83F1
+; Player plane banked sprite (4 frames × 16 bytes).
 ;
 sprite_plane_banked:
   DEFB $10,$00                         ; Frame 1
@@ -6613,7 +6613,7 @@ sprite_plane_banked:
   DEFB $00,$E0                         ;
   DEFB $00,$A0                         ;
 
-; Data block at 8431
+; Player missile sprite (4 frames × 8 bytes).
 sprite_missile:
   DEFB $C0                             ; Frame 1
   DEFB $C0                             ;
@@ -6648,7 +6648,7 @@ sprite_missile:
   DEFB $00                             ;
   DEFB $00                             ;
 
-; Data block at 8451
+; Missile trail sprite (4 frames × 8 bytes).
 sprite_missile_trail:
   DEFB $C0                             ; Frame 1
   DEFB $C0                             ;
@@ -6683,7 +6683,7 @@ sprite_missile_trail:
   DEFB $03                             ;
   DEFB $03                             ;
 
-; Data block at 8471
+; Explosion sprite frame 1 (2×1 tiles).
 ;
 sprite_explosion_f1:
   DEFB $02,$40
@@ -6695,7 +6695,7 @@ sprite_explosion_f1:
   DEFB $02,$40
   DEFB $00,$00
 
-; Data block at 8481
+; Explosion sprite frame 2 (2×1 tiles).
 ;
 sprite_explosion_f2:
   DEFB $22,$20
@@ -6707,7 +6707,7 @@ sprite_explosion_f2:
   DEFB $11,$88
   DEFB $00,$00
 
-; Data block at 8491
+; Explosion sprite frame 3 (2×1 tiles).
 ;
 sprite_explosion_f3:
   DEFB $01,$90
@@ -7208,14 +7208,14 @@ sprite_balloon:
   DEFB $00,$78                         ;
   DEFB $00,$78                         ;
 
-; Data block at 89F2
+; Left terrain edge masks (4 widths: 10, 12, 14, 16 pixels).
 terrain_edge_left:
   DEFB $FF,$C0                         ; 10 pixels
   DEFB $FF,$F0                         ; 12 pixels
   DEFB $FF,$FC                         ; 14 pixels
   DEFB $FF,$FF                         ; 16 pixels
 
-; Data block at 89FA
+; Right terrain edge masks (4 widths: 16, 14, 12, 10 pixels).
 terrain_edge_right:
   DEFB $FF,$FF                         ; 16 pixels
   DEFB $3F,$FF                         ; 14 pixels
@@ -7838,7 +7838,7 @@ data_unused_8C4A:
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00
 
-; Data block at 8FFC
+; Tank shell explosion sprite (6 frames × 32 bytes).
 sprite_tank_shell_explosion:
   DEFB $00,$00                         ; Frame 1
   DEFB $00,$00                         ;

@@ -2793,7 +2793,7 @@ D $7B57 Called when the control selection timer expires without user input.
 u $7B61
 @ $8000 label=status_line_1
 @ $8000 isub=DEFM EXT_ATTR_PAPER,COLOR_BLACK
-t $8000
+t $8000 Status line 1: fuel gauge and lives display.
 T $8000 PAPER BLACK
 @ $8002 isub=DEFM EXT_ATTR_INK,COLOR_WHITE
 T $8002 INK WHITE
@@ -2814,7 +2814,7 @@ B $8027 Fuel gauge reading UDG
 T $802F INK PLAYER_1
 @ $8031 label=status_line_2
 @ $8031 isub=DEFM EXT_ATTR_AT,$01,$02
-t $8031
+t $8031 Status line 2: player scores header.
 T $8031 AT 1,2
 @ $8034 isub=DEFM EXT_ATTR_INK,COLOR_PLAYER_1
 T $8034 INK PLAYER_1
@@ -2826,14 +2826,14 @@ T $8042 AT 1,18
 T $8045
 @ $804F label=status_line_3
 @ $804F isub=DEFM EXT_ATTR_AT,$13,$12
-t $804F
+t $804F Status line 3: bridge number position.
 T $804F AT 19,18
 @ $8052 label=status_line_3_text
-t $8052
+t $8052 Status line 3 text: "BRIDGE" label.
 T $8052
 @ $805A label=status_line_4
 @ $805A isub=DEFM EXT_ATTR_AT,$14,$04
-t $805A
+t $805A Status line 4: "FUEL" label.
 T $805A AT 20,4
 @ $805D isub=DEFM EXT_ATTR_INK,COLOR_WHITE
 T $805D INK WHITE
@@ -2862,7 +2862,7 @@ D $8063 When bit 7 of a profile byte is set, #R$6AA3 jumps to special bridge/roa
 @ $8153 label=msg_game_over
 t $8153 Game Over message.
 @ $8182 label=msg_credits
-t $8182
+t $8182 Credits message with copyright and Activision logo.
   $818D,1 Trademark UDG symbol
   $81A8,1 Copyright symbol
   $81AF,7 Activision logo UDG symbols
@@ -2870,26 +2870,26 @@ B $81E4
 T $81E8
 B $825C
 @ $825D label=udg_data
-b $825D
+b $825D User-defined graphics data (13 characters).
 D $825D #UDGTABLE { #FONT$825D,13 } TABLE#
 @ $82C5 label=all_ff
-b $82C5
+b $82C5 Solid fill pattern (48 bytes of $FF).
 @ $82F5 label=sprite_erasure
-b $82F5
+b $82F5 Sprite erasure pattern (60 bytes of $00).
 @ $8331 label=sprite_terrain_pre_post_bridge
-b $8331
+b $8331 Terrain pixels for pre/post bridge sections (2×16 bytes).
   $8331,32,16
 @ $8351 label=sprite_road_and_bridge_pixels
-b $8351
+b $8351 Road and bridge pixel patterns (2×16 bytes).
   $8351,32,16
 @ $8371 label=sprite_road_attributes
-b $8371
+b $8371 Road and bridge color attributes (2×16 bytes).
   $8371,32,16
 @ $8391 label=data_unused_8391
 u $8391 Unused alternate road attributes.
 D $8391 32 bytes with the same structure as #R$8371 but different values: $3F (white-on-white, invisible) and $C0 (flash, black). Possibly an early version or debug variant of road attributes.
 @ $83B1 label=sprite_plane
-b $83B1
+b $83B1 Player plane sprite (4 frames × 16 bytes).
 N $83B1 #POKES33723,146;33739,36
 N $83B1 #UDGTABLE { #UDGARRAY2,14,4,2;$83B1-$83B2-1-16(*plane-f1) | #UDGARRAY2,14,4,2;$83C1-$83C2-1-16(*plane-f2) | #UDGARRAY2,14,4,2;$83D1-$83D2-1-16(*plane-f3) | #UDGARRAY2,14,4,2;$83E1-$83E2-1-16(*plane-f4) } TABLE#
   $83B1,16,2 Frame 1
@@ -2897,34 +2897,34 @@ N $83B1 #UDGTABLE { #UDGARRAY2,14,4,2;$83B1-$83B2-1-16(*plane-f1) | #UDGARRAY2,1
   $83D1,16,2 Frame 3
   $83E1,16,2 Frame 4
 @ $83F1 label=sprite_plane_banked
-b $83F1
+b $83F1 Player plane banked sprite (4 frames × 16 bytes).
 N $83F1 #UDGTABLE { #UDGARRAY2,14,4,2;$83F1-$83F2-1-16(*plane-banked-f1) | #UDGARRAY2,14,4,2;$8401-$8402-1-16(*plane-banked-f2) | #UDGARRAY2,14,4,2;$8411-$8412-1-16(*plane-banked-f3) | #UDGARRAY2,14,4,2;$8421-$8422-1-16(*plane-banked-f4) } TABLE#
   $83F1,16,2 Frame 1
   $8401,16,2 Frame 2
   $8411,16,2 Frame 3
   $8421,16,2 Frame 4
 @ $8431 label=sprite_missile
-b $8431
+b $8431 Player missile sprite (4 frames × 8 bytes).
   $8431,8,1 Frame 1
   $8439,8,1 Frame 2
   $8441,8,1 Frame 3
   $8449,8,1 Frame 4
 @ $8451 label=sprite_missile_trail
-b $8451
+b $8451 Missile trail sprite (4 frames × 8 bytes).
   $8451,8,1 Frame 1
   $8459,8,1 Frame 2
   $8461,8,1 Frame 3
   $8469,8,1 Frame 4
 @ $8471 label=sprite_explosion_f1
-b $8471
+b $8471 Explosion sprite frame 1 (2×1 tiles).
 N $8471 #UDGTABLE { #UDGARRAY2,14,4,2;$8471-$8472-1-16(*explosion-f1) } TABLE#
   $8471,16,2
 @ $8481 label=sprite_explosion_f2
-b $8481
+b $8481 Explosion sprite frame 2 (2×1 tiles).
 N $8481 #UDGTABLE { #UDGARRAY2,14,4,2;$8481-$8482-1-16(*explosion-f2) } TABLE#
   $8481,16,2
 @ $8491 label=sprite_explosion_f3
-b $8491
+b $8491 Explosion sprite frame 3 (2×1 tiles).
 N $8491 #UDGTABLE { #UDGARRAY2,14,4,2;$8491-$8492-1-16(*explosion-f3) | #UDGARRAY*explosion-f1,50;explosion-f2;explosion-f3;explosion-f2(explosion) } TABLE#
   $8491,16,2
 @ $84A1 label=sprite_rock
@@ -3060,13 +3060,13 @@ N $89B2 #UDGTABLE { #UDGARRAY2,14,4,2;$89B2-$89CA-1-16(balloon-f3) } TABLE#
 N $89D2 #UDGTABLE { #UDGARRAY2,14,4,2;$89D2-$89EA-1-16(balloon-f4) } TABLE#
   $89D2,32,2 Frame 4
 @ $89F2 label=terrain_edge_left
-b $89F2
+b $89F2 Left terrain edge masks (4 widths: 10, 12, 14, 16 pixels).
   $89F2,2,2 10 pixels
   $89F4,2,2 12 pixels
   $89F6,2,2 14 pixels
   $89F8,2,2 16 pixels
 @ $89FA label=terrain_edge_right
-b $89FA
+b $89FA Right terrain edge masks (4 widths: 16, 14, 12, 10 pixels).
   $89FA,2,2 16 pixels
   $89FC,2,2 14 pixels
   $89FE,2,2 12 pixels
@@ -3250,7 +3250,7 @@ D $8C45 This routine is called during sprite rendering to invoke the collision d
 @ $8C4A label=data_unused_8C4A
 u $8C4A
 @ $8FFC label=sprite_tank_shell_explosion
-b $8FFC
+b $8FFC Tank shell explosion sprite (6 frames × 32 bytes).
   $8FFC,32,2 Frame 1
   $901C,32,2 Frame 2
   $903C,32,2 Frame 3
