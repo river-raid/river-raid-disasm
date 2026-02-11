@@ -8566,9 +8566,7 @@ b$8AC8 DEFB $1E,$00
 ; .
 ;
 ; #UDGTABLE
-; { #UDG$8AD8,4,4(unused-exp-f1) | #UDG$8AE0,4,4(unused-exp-f2) |
-; #UDG$8AE8,4,4(unused-exp-f3) | #UDG$8AF0,4,4(unused-exp-f4) |
-; #UDG$8AF8,4,4(unused-exp-f5) | #UDG$8B00,4,4(unused-exp-f6) }
+; { #UDG$8AD8,4,4(unused-exp-f1) }
 ; TABLE#
 @label=sprite_unused_explosion
 u$8AD8 DEFB $00      ; {Frame 1
@@ -8579,6 +8577,9 @@ u$8AD8 DEFB $00      ; {Frame 1
  $8ADD DEFB $00      ;
  $8ADE DEFB $00      ;
  $8ADF DEFB $00      ; }
+; #UDGTABLE
+; { #UDG$8AE0,4,4(unused-exp-f2) }
+; TABLE#
  $8AE0 DEFB $00      ; {Frame 2
  $8AE1 DEFB $00      ;
  $8AE2 DEFB $00      ;
@@ -8587,6 +8588,9 @@ u$8AD8 DEFB $00      ; {Frame 1
  $8AE5 DEFB $00      ;
  $8AE6 DEFB $00      ;
  $8AE7 DEFB $00      ; }
+; #UDGTABLE
+; { #UDG$8AE8,4,4(unused-exp-f3) }
+; TABLE#
  $8AE8 DEFB $00      ; {Frame 3
  $8AE9 DEFB $00      ;
  $8AEA DEFB $38      ;
@@ -8595,6 +8599,9 @@ u$8AD8 DEFB $00      ; {Frame 1
  $8AED DEFB $00      ;
  $8AEE DEFB $00      ;
  $8AEF DEFB $00      ; }
+; #UDGTABLE
+; { #UDG$8AF0,4,4(unused-exp-f4) }
+; TABLE#
  $8AF0 DEFB $00      ; {Frame 4
  $8AF1 DEFB $10      ;
  $8AF2 DEFB $38      ;
@@ -8603,6 +8610,9 @@ u$8AD8 DEFB $00      ; {Frame 1
  $8AF5 DEFB $10      ;
  $8AF6 DEFB $00      ;
  $8AF7 DEFB $00      ; }
+; #UDGTABLE
+; { #UDG$8AF8,4,4(unused-exp-f5) }
+; TABLE#
  $8AF8 DEFB $10      ; {Frame 5
  $8AF9 DEFB $38      ;
  $8AFA DEFB $7C      ;
@@ -8611,6 +8621,9 @@ u$8AD8 DEFB $00      ; {Frame 1
  $8AFD DEFB $38      ;
  $8AFE DEFB $10      ;
  $8AFF DEFB $00      ; }
+; #UDGTABLE
+; { #UDG$8B00,4,4(unused-exp-f6) }
+; TABLE#
  $8B00 DEFB $18      ; {Frame 6
  $8B01 DEFB $3C      ;
  $8B02 DEFB $7E      ;

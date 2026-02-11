@@ -203,3 +203,22 @@ or player.
 TABLE#
 
 Sprite data: #R$8FFC.
+
+[Graphic:unusedExplosion:Unused explosion (prototype)]
+An unused 6-frame animation at #R$8AD8 showing a diamond shape expanding from
+a single pixel to a full diamond. Each frame is 1x1 tile (8x8 pixels) — half
+the size of the tank shell explosion at #R$8FFC. This appears to be an early
+prototype that was replaced with the larger 16x16 pixel version for better
+visibility.
+
+#UDG$8AD8,4,4(*unused-exp-f1)
+#UDG$8AE0,4,4(*unused-exp-f2)
+#UDG$8AE8,4,4(*unused-exp-f3)
+#UDG$8AF0,4,4(*unused-exp-f4)
+#UDG$8AF8,4,4(*unused-exp-f5)
+#UDG$8B00,4,4(*unused-exp-f6)
+#UDGTABLE
+{ #UDGARRAY*unused-exp-f1,50;unused-exp-f2;unused-exp-f3;unused-exp-f4;unused-exp-f5;unused-exp-f6;unused-exp-f5;unused-exp-f4;unused-exp-f3;unused-exp-f2(unused-explosion) }
+TABLE#
+
+Sprite data: #R$8AD8.
