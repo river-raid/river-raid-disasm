@@ -130,7 +130,7 @@
 > $4000 OBJECT_BALLOON        EQU $06
 > $4000 OBJECT_FUEL           EQU $07
 > $4000
-> $4000 ; Object definition byte bit fields (byte 2 of viewport_objects entries)
+> $4000 ; Object definition byte bit fields (byte 2 of viewport_slots entries)
 > $4000 ; +-------+--------------------------------------------------+
 > $4000 ; | Bit   | Meaning                                          |
 > $4000 ; +-------+--------------------------------------------------+
@@ -280,7 +280,7 @@
 > $4000 ; Bit 6 defines object orientation: left (unset) or right (set).
 > $4000 ; OBJECT_DEFINITION_BIT_TANK_ORIENTATION  = 6,
 > $4000 ;
-> $4000 ; Bit 7 is an activation flag used by operate_viewport_objects to track
+> $4000 ; Bit 7 is an activation flag used by operate_viewport_slots to track
 > $4000 ; whether an object has been activated on its first frame.
 @ $4000 org
 @ $4000 equ=KEYBOARD=$02BF
@@ -428,7 +428,7 @@ D $5DA6 This routine prepares the game for play and is called when starting a ne
   $5DF6 Initialize scroll offset.
   $5DFD
   $5E00 Initialize X position (horizontal center).
-  $5E05 Initialize viewport_objects list.
+  $5E05 Initialize viewport_slots list.
 @ $5E0B isub=LD (HL),SET_MARKER_END_OF_SET
   $5E0B Mark viewport objects list as empty.
   $5E0D Initialize exploding_fragments list.
@@ -525,11 +525,11 @@ g $5EFC Island definition byte 3. Third byte from island data at #R$C600, contro
 g $5EFD Island starting line index. Screen line (0-23) where island rendering begins. Initialized to $10 (16).
 @ $5EFE label=data_unused_5EFE
 u $5EFE
-@ $5F00 label=viewport_objects
-g $5F00 Active objects array (enemies, fuel depots on screen).
-D $5F00 Array of up to 15 active game objects. Each entry is 3 bytes. Iterated by #R$708E (operate) and #R$62E8 (collision). New objects added via #R$6EAB.
-D $5F00 #TABLE(default) { =h Byte | =h Contents } { 0 | X position (0-255 pixels) } { 1 | Y position (0-255 pixels, increases as object scrolls down) } { 2 | Object definition byte (see below) } TABLE#
-D $5F00 #TABLE(default) { =h Marker | =h Value | =h Meaning } { SET_MARKER_EMPTY_SLOT | $00 | Unused slot (skip during iteration) } { SET_MARKER_END_OF_SET | $FF | End of active objects (reset to start) } TABLE#
+@ $5F00 label=viewport_slots
+g $5F00 Viewport slots array (15 slots for active game objects).
+D $5F00 Each slot is a 3-byte entry that can hold one game object (enemy, fuel depot, etc.). Iterated by #R$708E (operate) and #R$62E8 (collision). New objects added via #R$6EAB. See Glossary for terminology.
+D $5F00 #TABLE(default) { =h Byte | =h Contents } { 0 | X position (0-255 pixels), or slot marker } { 1 | Y position (0-255 pixels, increases as object scrolls down) } { 2 | Object definition byte (type, orientation, activation) } TABLE#
+D $5F00 #TABLE(default) { =h Marker | =h Value | =h Meaning } { SET_MARKER_EMPTY_SLOT | $00 | Unused slot (skip during iteration) } { SET_MARKER_END_OF_SET | $FF | End of active slots (reset iterator) } TABLE#
 B $5F00,46,3
 @ $5F2E label=exploding_fragments
 g $5F2E Explosion animation fragments array.
@@ -539,10 +539,10 @@ D $5F2E Explosion frames: 1,5=#R$8471 (small), 2,4=#R$8481 (medium), 3=#R$8491 (
 B $5F2E,49,3
 @ $5F5F label=state_activation_interval
 g $5F5F Object activation interval bitmask
-D $5F5F Controls when newly spawned objects become active (start moving/shooting). Objects spawn inactive (bit 7 clear in viewport_objects) and activate when (interrupt_counter AND mask) == 0. Checked in #R$708E.
+D $5F5F Controls when newly spawned objects become active (start moving/shooting). Objects spawn inactive (bit 7 clear in slot definition) and activate when (interrupt_counter AND mask) == 0. Checked in #R$708E.
 D $5F5F #TABLE(default) { =h Value | =h Meaning | =h When Set } { $1F | Every 32 frames | Normal gameplay } { $0F | Every 16 frames | After bridge destruction } TABLE#
-@ $5F60 label=viewport_ptr
-g $5F60 Pointer to a slot from #R$5F00
+@ $5F60 label=current_slot_ptr
+g $5F60 Current slot pointer. Iterator for traversing #R$5F00 during object processing.
 W $5F60
 @ $5F62 label=exploding_fragments_ptr
 g $5F62 Pointer to a slot from #R$5F2E
@@ -584,7 +584,7 @@ g $5F70 Vertical scroll offset (16-bit, little-endian). Accumulated distance tra
 @ $5F72 label=state_plane_x
 g $5F72 Player plane X coordinate in pixels (0-255). $78 (120) is horizontal center. Changes by 2 pixels per left/right input.
 @ $5F73 label=helicopter_missile_coordinates_ptr
-g $5F73 Pointer to helicopter missile coordinates in viewport_objects array. Updated when advanced helicopter fires.
+g $5F73 Pointer to helicopter missile coordinates in viewport_slots array. Updated when advanced helicopter fires.
 @ $5F75 label=helicopter_missile_state
 g $5F75 Helicopter missile state. Bit 7 set when missile active. Lower bits track missile animation/position.
 @ $5F76 label=state_level_fragment_number
@@ -854,7 +854,7 @@ R $62E0 O:B New Y coordinate (B - scroll_delta)
   $62E0,7 Load scroll delta from #R$5F64 and subtract from B.
 @ $62E8 label=check_missile_vs_objects
 c $62E8 Check missile collision against viewport objects
-N $62E8 Iterates through #R$5F00 (viewport_objects) checking if the player's missile collides with any object. Each object slot is 3 bytes: X, Y, and type/state.
+N $62E8 Iterates through #R$5F00 (viewport_slots) checking if the player's missile collides with any object. Each slot is 3 bytes: X, Y, and definition.
 N $62E8 .
 N $62E8 Collision detection uses type-specific bounding boxes. Most objects are 10x8 pixels, but balloons and fuel depots are taller (17-25 pixels), and ships are wider (19 pixels).
 N $62E8 .
@@ -2042,10 +2042,10 @@ R $706C I:E X position of balloon
   $7082,11 Render sprite: frame size=$20, width=2, height=16px, attributes=$0E.
 @ $7085 isub=LD A,SPRITE_BALLOON_WIDTH_TILES
 @ $7087 isub=LD DE,SPRITE_BALLOON_HEIGHT_PIXELS<<8|SPRITE_BALLOON_ATTRIBUTES
-@ $708E label=operate_viewport_objects
+@ $708E label=operate_viewport_slots
 @ $708E isub=LD A,COLLISION_MODE_NONE
-c $708E Main viewport object processing loop.
-N $708E Iterates through the viewport_objects array, processing each active object. Each object slot is a 3-byte structure: [X position, Y position, OBJECT_DEFINITION byte].
+c $708E Main viewport slot processing loop.
+N $708E Iterates through the viewport_slots array (#R$5F00), processing each active object. Each slot is a 3-byte structure: [X position, Y position, object definition byte].
 N $708E .
 N $708E The routine performs the following steps for each object:
 N $708E 1. Skip empty slots (SET_MARKER_EMPTY_SLOT) and reset to the beginning when reaching the end marker (SET_MARKER_END_OF_SET).
@@ -2056,7 +2056,7 @@ N $708E 5. Skip further processing if in GAMEPLAY_MODE_SCROLL_IN.
 N $708E 6. Activate objects on their first frame using an interrupt counter and activation mask (sets bit 7 of the OBJECT_DEFINITION byte).
 N $708E 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHTER, OBJECT_BALLOON, OBJECT_FUEL, OBJECT_TANK, or ships/helicopters (other types).
   $708E Reset state_collision_mode to COLLISION_MODE_NONE.
-  $7093 Load object slot [X, Y, definition] into C, B, D; advance viewport_ptr to next slot.
+  $7093 Load slot [X, Y, definition] into C, B, D; advance current_slot_ptr to next slot.
 @ $70A0 isub=CP SET_MARKER_EMPTY_SLOT
   $709F Skip empty slots; reset to beginning on end-of-set marker.
 @ $70A5 isub=CP SET_MARKER_END_OF_SET
@@ -2107,7 +2107,7 @@ R $7113 I:D Object definition
 @ $7128 label=operate_ship_or_helicopter_continue
 c $7128 Continue ship/helicopter rendering
 D $7128 Updates the object's position in the viewport array and renders the sprite.
-  $7128 Load viewport_ptr, navigate back to current slot, update [X, Y, D] values.
+  $7128 Load current_slot_ptr, navigate back to current slot, update [X, Y, D] values.
   $7131,10 Store position to #R$8B0C, sprite address #R$82C5 to #R$8B0E. Get sprite pointer.
 @ $713E isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
   $713E Set frame size=$18, default attributes=$0E.
@@ -2139,7 +2139,7 @@ R $7158 I:D Object definition byte
 @ $716B label=operate_fighter_continue
 c $716B Continue fighter operation
 D $716B Updates fighter position in viewport array and renders the sprite with XOR blending.
-  $716B Load viewport_ptr, navigate to current slot, update [X, Y, D] values.
+  $716B Load current_slot_ptr, navigate to current slot, update [X, Y, D] values.
   $7174 Store position to #R$8B0C, get sprite pointer.
 @ $717B isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
   $717B Set frame size=$18, call #R$72E6 to set XOR blending mode.
@@ -2225,7 +2225,7 @@ R $724C I:D Object definition byte
 @ $7259 label=animate_helicopter
 c $7259 Animate helicopter rotor
 D $7259 Renders the helicopter rotor sprite based on orientation. Uses left-facing (#R$8AB8) or right-facing (#R$8AC8) rotor sprite.
-  $7259 Load viewport_ptr, extract [D, B, C] from current slot.
+  $7259 Load current_slot_ptr, extract [D, B, C] from current slot.
   $7262 Load left rotor sprite #R$8AB8. If right-facing (bit 6 clear), load #R$8AC8.
 @ $7265 isub=BIT SLOT_BIT_ORIENTATION,D
   $726A Store positions to #R$8B0C and #R$8B0A. Push rotor sprite, get main sprite pointer.
@@ -2411,7 +2411,7 @@ D $73DD #LIST { Returns immediately during GAMEPLAY_MODE_SCROLL_IN } { Returns i
 @ $73E0 isub=CP GAMEPLAY_MODE_SCROLL_IN
   $73E3,7 Load missile coords from #R$5F73. Return if missile active (B != 0).
   $73EB Play missile launch sound: BEEPER with DE=$0001, HL=$2800.
-  $73F4 Load viewport_ptr, extract [D, B, C] from helicopter's slot.
+  $73F4 Load current_slot_ptr, extract [D, B, C] from helicopter's slot.
   $73FD Align X to 8-pixel boundary (AND $F8), extract orientation bit.
 @ $7402 isub=AND 1<<SLOT_BIT_ORIENTATION
   $7404 Store orientation to #R$5F75. If right-facing, add offset via #R$73D8.
@@ -2477,14 +2477,14 @@ D $74E4 Clears all tank shell state variables to remove it from the game.
 @ $74EE label=handle_tank_at_boundary
 c $74EE Handle tank reaching river boundary
 D $74EE Called when a tank on the river reaches the viewport boundary. Checks if tank is within valid X range, creates explosion and awards points if tank destroyed.
-  $74EE Load viewport_ptr, navigate to X position in current slot.
+  $74EE Load current_slot_ptr, navigate to X position in current slot.
   $74F5 If X+10 < $70 (112): tank still on left bank, reverse direction.
   $7502 If X > $90 (144): tank still on right bank, reverse direction.
   $750F Tank destroyed: clear X position, set D=$80 (explosion marker).
   $7517,9 Add explosion and award POINTS_TANK.
 @ $7520 isub=LD A,POINTS_TANK
 @ $7525 label=tank_reverse_direction
-  $7525,6 Reload viewport_ptr, set bits 4 and 5 (direction change flags).
+  $7525,6 Reload current_slot_ptr, set bits 4 and 5 (direction change flags).
 @ $752B isub=SET CONTROLS_BIT_EXPLODING,(HL)
   $752D Check difficulty level at #R$923D. If level 1, use alternate speed.
   $7534 Load speed from #R$5F6B.
@@ -2548,7 +2548,7 @@ c $75D0 Reverse enemy direction at river bank
 D $75D0 Reverses the direction of a ship or helicopter when it approaches a river bank. Inverts the orientation bit and re-renders with new facing. Ignores objects in top half of screen (Y >= $80).
 R $75D0 I:BC Object coordinates
   $75D4 Return if Y >= $80 (object in top half, might be player).
-  $75D8 Reload position, pop return address, load viewport_ptr, get object definition.
+  $75D8 Reload position, pop return address, load current_slot_ptr, get object definition.
   $75E2 Get sprite pointer, reload position.
   $75E9 Calculate animation frame offset from X position.
 @ $75EC isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
@@ -2565,10 +2565,10 @@ R $75D0 I:BC Object coordinates
 @ $761A isub=LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
 @ $761C isub=LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
 @ $761E isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
-@ $7627 label=init_viewport_ptr
-c $7627 Point #R$5F60 to the head of #R$5F00.
-D $7627 Resets the viewport pointer to the beginning of the viewport array.
-  $7627,6 Set viewport_ptr to start of viewport array.
+@ $7627 label=reset_slot_ptr
+c $7627 Reset #R$5F60 to the start of #R$5F00.
+D $7627 Resets the current slot pointer to the beginning of the viewport slots array.
+  $7627,6 Set current_slot_ptr to start of viewport_slots.
 @ $762E label=remove_object_from_viewport
 c $762E Remove an object from the viewport array.
 D $762E Clears the object's slot marker and handles tank shell cleanup if the object was a tank.
@@ -2606,8 +2606,8 @@ N $7685 Shared entry point for balloon rendering (also used by right-facing ball
 @ $76A2 isub=LD E,SPRITE_BALLOON_ATTRIBUTES
 @ $76A4 isub=LD D,SPRITE_BALLOON_HEIGHT_PIXELS
   $76A6,6 Render balloon, return to main loop.
-@ $76AC label=jp_operate_viewport_objects
-c $76AC A useless procedure that unconcditionally jumps to #R$708E.
+@ $76AC label=jp_operate_viewport_slots
+c $76AC A useless procedure that unconditionally jumps to #R$708E.
 @ $76AF label=operate_balloon_right
 c $76AF Right-facing balloon movement.
 D $76AF Handles terrain collision checks and movement for a right-facing balloon.

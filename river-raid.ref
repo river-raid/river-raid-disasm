@@ -1,5 +1,5 @@
 [Config]
-RefFiles=sound.ref;graphics.ref;levels.ref;facts.ref;bugs.ref;notes.ref
+RefFiles=sound.ref;graphics.ref;levels.ref;facts.ref;bugs.ref;notes.ref;glossary.ref
 GameDir=river-raid
 
 [Game]
@@ -17,24 +17,28 @@ GameStatusBuffer
 Facts
 Bugs
 Notes
+Glossary
 
 [Paths]
 Graphics=graphics/graphics.html
 Sound=sound/sound.html
 Levels=data/levels.html
 Notes=reference/notes.html
+Glossary=reference/glossary.html
 
 [Links]
 Graphics=Sprite graphics
 Sound=Sound effects
 Levels=Level data
 Notes=Implementation notes
+Glossary=Glossary
 
 [Titles]
 Graphics=Sprite graphics
 Levels=Level data
 Facts=Trivia
 Notes=Implementation notes
+Glossary=Glossary
 
 [Page:Graphics]
 SectionPrefix=Graphic
@@ -47,3 +51,6 @@ SectionPrefix=Level
 
 [Page:Notes]
 SectionPrefix=Note
+
+[Page:Glossary]
+SectionPrefix=Glossary

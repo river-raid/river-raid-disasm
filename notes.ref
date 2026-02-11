@@ -188,7 +188,7 @@ restored after the menu sequence completes.
 ; --------------------
 
 [Note:uselessTrampoline:Useless trampoline at $76AC]
-The routine at #R$76AC (<code>jp_operate_viewport_objects</code>) is a single
+The routine at #R$76AC (<code>jp_operate_viewport_slots</code>) is a single
 unconditional <code>JP #R$708E</code> instruction. It adds no logic —
 callers could jump to #R$708E directly. This is likely a remnant of
 refactoring where an intermediate routine was removed but its entry point was

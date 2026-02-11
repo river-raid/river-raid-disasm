@@ -130,7 +130,7 @@ OBJECT_FIGHTER        EQU $05
 OBJECT_BALLOON        EQU $06
 OBJECT_FUEL           EQU $07
 
-; Object definition byte bit fields (byte 2 of viewport_objects entries)
+; Object definition byte bit fields (byte 2 of viewport_slots entries)
 ; +-------+--------------------------------------------------+
 ; | Bit   | Meaning                                          |
 ; +-------+--------------------------------------------------+
@@ -280,7 +280,7 @@ IM1_VECTOR_TABLE_HI EQU $3F
 ; Bit 6 defines object orientation: left (unset) or right (set).
 ; OBJECT_DEFINITION_BIT_TANK_ORIENTATION  = 6,
 ;
-; Bit 7 is an activation flag used by operate_viewport_objects to track
+; Bit 7 is an activation flag used by operate_viewport_slots to track
 ; whether an object has been activated on its first frame.
 
 @org
@@ -1101,7 +1101,7 @@ c$5DA6 LD A,$10      ; {Initialize island line index (starting line for island
  $5DFD CALL $68E9    ;
  $5E00 LD A,$78      ; {Initialize X position (horizontal center).
  $5E02 LD ($5F72),A  ; }
- $5E05 LD HL,$5F00   ; {Initialize viewport_objects list.
+ $5E05 LD HL,$5F00   ; {Initialize viewport_slots list.
  $5E08 LD ($5F60),HL ; }
 @isub=LD (HL),SET_MARKER_END_OF_SET
  $5E0B LD (HL),$FF   ; Mark viewport objects list as empty.
@@ -1292,24 +1292,25 @@ g$5EFD DEFB $10
 @label=data_unused_5EFE
 u$5EFE DEFB $FF,$FF
 
-; Active objects array (enemies, fuel depots on screen).
+; Viewport slots array (15 slots for active game objects).
 ;
-; Array of up to 15 active game objects. Each entry is 3 bytes. Iterated by
-; #R$708E (operate) and #R$62E8 (collision). New objects added via #R$6EAB.
+; Each slot is a 3-byte entry that can hold one game object (enemy, fuel depot,
+; etc.). Iterated by #R$708E (operate) and #R$62E8 (collision). New objects
+; added via #R$6EAB. See Glossary for terminology.
 ; .
 ; #TABLE(default)
 ; { =h Byte | =h Contents }
-; { 0 | X position (0-255 pixels) }
+; { 0 | X position (0-255 pixels), or slot marker }
 ; { 1 | Y position (0-255 pixels, increases as object scrolls down) }
-; { 2 | Object definition byte (see below) }
+; { 2 | Object definition byte (type, orientation, activation) }
 ; TABLE#
 ; .
 ; #TABLE(default)
 ; { =h Marker | =h Value | =h Meaning }
 ; { SET_MARKER_EMPTY_SLOT | $00 | Unused slot (skip during iteration) }
-; { SET_MARKER_END_OF_SET | $FF | End of active objects (reset to start) }
+; { SET_MARKER_END_OF_SET | $FF | End of active slots (reset iterator) }
 ; TABLE#
-@label=viewport_objects
+@label=viewport_slots
 g$5F00 DEFB $20,$20,$20
  $5F03 DEFB $20,$20,$20
  $5F06 DEFB $20,$20,$20
@@ -1363,7 +1364,7 @@ g$5F2E DEFB $20,$20,$20
 ; Object activation interval bitmask
 ;
 ; Controls when newly spawned objects become active (start moving/shooting).
-; Objects spawn inactive (bit 7 clear in viewport_objects) and activate when
+; Objects spawn inactive (bit 7 clear in slot definition) and activate when
 ; (interrupt_counter AND mask) == 0. Checked in #R$708E.
 ; .
 ; #TABLE(default)
@@ -1374,8 +1375,9 @@ g$5F2E DEFB $20,$20,$20
 @label=state_activation_interval
 g$5F5F DEFB $04
 
-; Pointer to a slot from #R$5F00
-@label=viewport_ptr
+; Current slot pointer. Iterator for traversing #R$5F00 during object
+; processing.
+@label=current_slot_ptr
 g$5F60 DEFW $0000
 
 ; Pointer to a slot from #R$5F2E
@@ -1485,7 +1487,7 @@ g$5F70 DEFB $00,$00
 @label=state_plane_x
 g$5F72 DEFB $00
 
-; Pointer to helicopter missile coordinates in viewport_objects array. Updated
+; Pointer to helicopter missile coordinates in viewport_slots array. Updated
 ; when advanced helicopter fires.
 @label=helicopter_missile_coordinates_ptr
 g$5F73 DEFB $00,$00
@@ -2232,8 +2234,8 @@ c$62E0 LD A,($5F64)  ; {Load scroll delta from #R$5F64 and subtract from B.
 ;
 ; .
 ;
-; Iterates through #R$5F00 (viewport_objects) checking if the player's missile
-; collides with any object. Each object slot is 3 bytes: X, Y, and type/state.
+; Iterates through #R$5F00 (viewport_slots) checking if the player's missile
+; collides with any object. Each slot is 3 bytes: X, Y, and definition.
 ; .
 ; .
 ; .
@@ -5297,7 +5299,7 @@ c$706C LD B,$00      ; {BC = (0, E): set X position in BC for object entry.
  $708A CALL $8B1E    ; }
  $708D RET           ;
 
-; Main viewport object processing loop.
+; Main viewport slot processing loop.
 ;
 ; Used by the routines at #R$5DA6, #R$5F91, #R$6D17, #R$7128, #R$716B, #R$71A2,
 ; #R$7224, #R$724C, #R$7259, #R$7296, #R$7302, #R$7358, #R$74EE, #R$754C,
@@ -5305,9 +5307,9 @@ c$706C LD B,$00      ; {BC = (0, E): set X position in BC for object entry.
 ;
 ; .
 ;
-; Iterates through the viewport_objects array, processing each active object.
-; Each object slot is a 3-byte structure: [X position, Y position,
-; OBJECT_DEFINITION byte].
+; Iterates through the viewport_slots array (#R$5F00), processing each active
+; object. Each slot is a 3-byte structure: [X position, Y position, object
+; definition byte].
 ; .
 ; .
 ; .
@@ -5330,12 +5332,12 @@ c$706C LD B,$00      ; {BC = (0, E): set X position in BC for object entry.
 ; .
 ; 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHTER,
 ; OBJECT_BALLOON, OBJECT_FUEL, OBJECT_TANK, or ships/helicopters (other types).
-@label=operate_viewport_objects
+@label=operate_viewport_slots
 @isub=LD A,COLLISION_MODE_NONE
 c$708E LD A,$00      ; {Reset state_collision_mode to COLLISION_MODE_NONE.
  $7090 LD ($5EF5),A  ; }
- $7093 LD HL,($5F60) ; {Load object slot [X, Y, definition] into C, B, D;
- $7096 LD C,(HL)     ; advance viewport_ptr to next slot.
+ $7093 LD HL,($5F60) ; {Load slot [X, Y, definition] into C, B, D; advance
+ $7096 LD C,(HL)     ; current_slot_ptr to next slot.
  $7097 INC HL        ;
  $7098 LD B,(HL)     ;
  $7099 INC HL        ;
@@ -5463,7 +5465,7 @@ c$7113 PUSH BC       ; {Save BC, calculate terrain check position: C -= 16
 ;
 ; Updates the object's position in the viewport array and renders the sprite.
 @label=operate_ship_or_helicopter_continue
-c$7128 LD HL,($5F60) ; {Load viewport_ptr, navigate back to current slot,
+c$7128 LD HL,($5F60) ; {Load current_slot_ptr, navigate back to current slot,
  $712B DEC HL        ; update [X, Y, D] values.
  $712C LD D,(HL)     ;
  $712D DEC HL        ;
@@ -5536,8 +5538,8 @@ c$7158 LD ($8B0A),BC ; Store current position to #R$8B0A for rendering.
 ; Updates fighter position in viewport array and renders the sprite with XOR
 ; blending.
 @label=operate_fighter_continue
-c$716B LD HL,($5F60) ; {Load viewport_ptr, navigate to current slot, update [X,
- $716E DEC HL        ; Y, D] values.
+c$716B LD HL,($5F60) ; {Load current_slot_ptr, navigate to current slot, update
+ $716E DEC HL        ; [X, Y, D] values.
  $716F LD D,(HL)     ;
  $7170 DEC HL        ;
  $7171 LD (HL),B     ;
@@ -5737,8 +5739,8 @@ c$724C LD A,D        ; {If helicopter (REG or ADV), animate rotor via #R$7259.
 ; Renders the helicopter rotor sprite based on orientation. Uses left-facing
 ; (#R$8AB8) or right-facing (#R$8AC8) rotor sprite.
 @label=animate_helicopter
-c$7259 LD HL,($5F60) ; {Load viewport_ptr, extract [D, B, C] from current slot.
- $725C DEC HL        ;
+c$7259 LD HL,($5F60) ; {Load current_slot_ptr, extract [D, B, C] from current
+ $725C DEC HL        ; slot.
  $725D LD D,(HL)     ;
  $725E DEC HL        ;
  $725F LD B,(HL)     ;
@@ -6162,8 +6164,8 @@ c$73DD LD A,($5F68)  ; {Return if in GAMEPLAY_MODE_SCROLL_IN.
  $73EB LD DE,$0001   ; {Play missile launch sound: BEEPER with DE=$0001,
  $73EE LD HL,$2800   ; HL=$2800.
  $73F1 CALL $03B5    ; }
- $73F4 LD HL,($5F60) ; {Load viewport_ptr, extract [D, B, C] from helicopter's
- $73F7 DEC HL        ; slot.
+ $73F4 LD HL,($5F60) ; {Load current_slot_ptr, extract [D, B, C] from
+ $73F7 DEC HL        ; helicopter's slot.
  $73F8 LD D,(HL)     ;
  $73F9 DEC HL        ;
  $73FA LD B,(HL)     ;
@@ -6342,8 +6344,8 @@ c$74E4 LD HL,$0000   ; {Clear #R$7383 (state) and #R$7385 (coordinates) to
 ; is within valid X range, creates explosion and awards points if tank
 ; destroyed.
 @label=handle_tank_at_boundary
-c$74EE LD HL,($5F60) ; {Load viewport_ptr, navigate to X position in current
- $74F1 DEC HL        ; slot.
+c$74EE LD HL,($5F60) ; {Load current_slot_ptr, navigate to X position in
+ $74F1 DEC HL        ; current slot.
  $74F2 DEC HL        ;
  $74F3 DEC HL        ;
  $74F4 LD C,(HL)     ; }
@@ -6375,8 +6377,8 @@ c$74EE LD HL,($5F60) ; {Load viewport_ptr, navigate to X position in current
  $7520 LD A,$25      ;
  $7522 CALL $90E0    ;
 @label=tank_reverse_direction
-*$7525 LD HL,($5F60) ; {Reload viewport_ptr, set bits 4 and 5 (direction change
- $7528 DEC HL        ; flags).
+*$7525 LD HL,($5F60) ; {Reload current_slot_ptr, set bits 4 and 5 (direction
+ $7528 DEC HL        ; change flags).
  $7529 SET 4,(HL)    ; }
 @isub=SET CONTROLS_BIT_EXPLODING,(HL)
  $752B SET 5,(HL)    ;
@@ -6539,8 +6541,8 @@ c$75D0 LD ($8B0A),BC ;
  $75D4 LD A,B        ; {Return if Y >= $80 (object in top half, might be
  $75D5 SUB $80       ; player).
  $75D7 RET P         ; }
- $75D8 LD BC,($8B0A) ; {Reload position, pop return address, load viewport_ptr,
- $75DC POP HL        ; get object definition.
+ $75D8 LD BC,($8B0A) ; {Reload position, pop return address, load
+ $75DC POP HL        ; current_slot_ptr, get object definition.
  $75DD LD HL,($5F60) ;
  $75E0 DEC HL        ;
  $75E1 LD D,(HL)     ; }
@@ -6585,11 +6587,11 @@ c$75D0 LD ($8B0A),BC ;
  $7621 CALL $8B3C    ;
  $7624 JP $708E      ;
 
-; Point #R$5F60 to the head of #R$5F00.
+; Reset #R$5F60 to the start of #R$5F00.
 ;
-; Resets the viewport pointer to the beginning of the viewport array.
-@label=init_viewport_ptr
-c$7627 LD HL,$5F00   ; {Set viewport_ptr to start of viewport array.
+; Resets the current slot pointer to the beginning of the viewport slots array.
+@label=reset_slot_ptr
+c$7627 LD HL,$5F00   ; {Set current_slot_ptr to start of viewport_slots.
  $762A LD ($5F60),HL ; }
  $762D RET           ;
 
@@ -6687,10 +6689,10 @@ c$7649 BIT 7,B       ; {If balloon is off-screen (Y bit 7 set), skip to main
  $76A6 CALL $8B1E    ; {Render balloon, return to main loop.
  $76A9 JP $708E      ; }
 
-; A useless procedure that unconcditionally jumps to #R$708E.
+; A useless procedure that unconditionally jumps to #R$708E.
 ;
 ; Used by the routines at #R$7224 and #R$7649.
-@label=jp_operate_viewport_objects
+@label=jp_operate_viewport_slots
 c$76AC JP $708E      ;
 
 ; Right-facing balloon movement.

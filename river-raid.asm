@@ -128,7 +128,7 @@ OBJECT_FIGHTER        EQU $05
 OBJECT_BALLOON        EQU $06
 OBJECT_FUEL           EQU $07
 
-; Object definition byte bit fields (byte 2 of viewport_objects entries)
+; Object definition byte bit fields (byte 2 of viewport_slots entries)
 ; +-------+--------------------------------------------------+
 ; | Bit   | Meaning                                          |
 ; +-------+--------------------------------------------------+
@@ -277,7 +277,7 @@ IM1_VECTOR_TABLE_HI EQU $3F
 ; Bit 6 defines object orientation: left (unset) or right (set).
 ; OBJECT_DEFINITION_BIT_TANK_ORIENTATION  = 6,
 ;
-; Bit 7 is an activation flag used by operate_viewport_objects to track
+; Bit 7 is an activation flag used by operate_viewport_slots to track
 ; whether an object has been activated on its first frame.
 
 KEYBOARD EQU $02BF
@@ -962,8 +962,8 @@ init_state:
   LD A,$78                             ; Initialize plane X position to $78. Why isn't it $80?
   LD (state_plane_x),A                 ;
   CALL init_starting_bridge            ; Set starting bridges for both players based on game mode.
-  LD HL,viewport_objects               ; Initialize viewport objects list (set pointer, mark as empty).
-  LD (viewport_ptr),HL                 ;
+  LD HL,viewport_slots                 ; Initialize viewport objects list (set pointer, mark as empty).
+  LD (current_slot_ptr),HL             ;
   LD (HL),SET_MARKER_END_OF_SET        ;
   LD A,ACTIVATION_INTERVAL_NORMAL      ; Set normal activation timing (every 32 frames).
   LD (state_activation_interval),A     ;
@@ -1039,8 +1039,8 @@ play:
   CALL init_current_bridge
   LD A,$78                             ; Initialize X position (horizontal center).
   LD (state_plane_x),A                 ;
-  LD HL,viewport_objects               ; Initialize viewport_objects list.
-  LD (viewport_ptr),HL                 ;
+  LD HL,viewport_slots                 ; Initialize viewport_slots list.
+  LD (current_slot_ptr),HL             ;
   LD (HL),SET_MARKER_END_OF_SET        ; Mark viewport objects list as empty.
   LD HL,exploding_fragments            ; Initialize exploding_fragments list.
   LD (exploding_fragments_ptr),HL      ;
@@ -1098,7 +1098,7 @@ scroll_in_loop:
   LD HL,state_tick                     ; Increment tick counter.
   INC (HL)                             ;
   CALL render_plane_and_terrain
-  CALL operate_viewport_objects
+  CALL operate_viewport_slots
   CALL advance_scroll
   LD A,SPEED_FAST                      ; Maintain speed during scroll-in.
   LD (state_speed),A                   ;
@@ -1206,26 +1206,27 @@ state_island_line_idx:
 data_unused_5EFE:
   DEFB $FF,$FF
 
-; Active objects array (enemies, fuel depots on screen).
+; Viewport slots array (15 slots for active game objects).
 ;
-; Array of up to 15 active game objects. Each entry is 3 bytes. Iterated by operate_viewport_objects (operate) and
-; check_missile_vs_objects (collision). New objects added via add_object_to_set.
+; Each slot is a 3-byte entry that can hold one game object (enemy, fuel depot, etc.). Iterated by
+; operate_viewport_slots (operate) and check_missile_vs_objects (collision). New objects added via add_object_to_set.
+; See Glossary for terminology.
 ;
 ; +------+-------------------------------------------------------------+
 ; | Byte | Contents                                                    |
 ; +------+-------------------------------------------------------------+
-; | 0    | X position (0-255 pixels)                                   |
+; | 0    | X position (0-255 pixels), or slot marker                   |
 ; | 1    | Y position (0-255 pixels, increases as object scrolls down) |
-; | 2    | Object definition byte (see below)                          |
+; | 2    | Object definition byte (type, orientation, activation)      |
 ; +------+-------------------------------------------------------------+
 ;
-; +-----------------------+-------+----------------------------------------+
-; | Marker                | Value | Meaning                                |
-; +-----------------------+-------+----------------------------------------+
-; | SET_MARKER_EMPTY_SLOT | $00   | Unused slot (skip during iteration)    |
-; | SET_MARKER_END_OF_SET | $FF   | End of active objects (reset to start) |
-; +-----------------------+-------+----------------------------------------+
-viewport_objects:
+; +-----------------------+-------+--------------------------------------+
+; | Marker                | Value | Meaning                              |
+; +-----------------------+-------+--------------------------------------+
+; | SET_MARKER_EMPTY_SLOT | $00   | Unused slot (skip during iteration)  |
+; | SET_MARKER_END_OF_SET | $FF   | End of active slots (reset iterator) |
+; +-----------------------+-------+--------------------------------------+
+viewport_slots:
   DEFB $20,$20,$20
   DEFB $20,$20,$20
   DEFB $20,$20,$20
@@ -1279,8 +1280,8 @@ exploding_fragments:
 
 ; Object activation interval bitmask
 ;
-; Controls when newly spawned objects become active (start moving/shooting). Objects spawn inactive (bit 7 clear in
-; viewport_objects) and activate when (interrupt_counter AND mask) == 0. Checked in operate_viewport_objects.
+; Controls when newly spawned objects become active (start moving/shooting). Objects spawn inactive (bit 7 clear in slot
+; definition) and activate when (interrupt_counter AND mask) == 0. Checked in operate_viewport_slots.
 ;
 ; +-------+-----------------+--------------------------+
 ; | Value | Meaning         | When Set                 |
@@ -1291,8 +1292,8 @@ exploding_fragments:
 state_activation_interval:
   DEFB $04
 
-; Pointer to a slot from viewport_objects
-viewport_ptr:
+; Current slot pointer. Iterator for traversing viewport_slots during object processing.
+current_slot_ptr:
   DEFW $0000
 
 ; Pointer to a slot from exploding_fragments
@@ -1394,7 +1395,7 @@ state_scroll_offset:
 state_plane_x:
   DEFB $00
 
-; Pointer to helicopter missile coordinates in viewport_objects array. Updated when advanced helicopter fires.
+; Pointer to helicopter missile coordinates in viewport_slots array. Updated when advanced helicopter fires.
 helicopter_missile_coordinates_ptr:
   DEFB $00,$00
 
@@ -1499,7 +1500,7 @@ main_loop:
   INC (HL)                             ;
   CALL render_explosions
   CALL render_plane_and_terrain
-  CALL operate_viewport_objects
+  CALL operate_viewport_slots
   LD A,$01                             ; Player missile pass 1: erase at old position.
   LD (missile_pass_selector),A         ;
   CALL animate_plane_missile           ;
@@ -1803,7 +1804,7 @@ handle_collision_mode_fighter:
   POP DE                               ;
   LD A,D                               ; Store fighter Y coordinate to state_collision_y.
   LD (state_collision_y),A             ;
-  LD HL,(viewport_ptr)                 ; Get object coordinates from viewport and mark slot as empty.
+  LD HL,(current_slot_ptr)             ; Get object coordinates from viewport and mark slot as empty.
   DEC HL                               ;
   DEC HL                               ;
   LD B,(HL)                            ;
@@ -2056,8 +2057,8 @@ retract_object:
 ;
 ; Used by the routine at check_collision.
 ;
-; Iterates through viewport_objects (viewport_objects) checking if the player's missile collides with any object. Each
-; object slot is 3 bytes: X, Y, and type/state.
+; Iterates through viewport_slots (viewport_slots) checking if the player's missile collides with any object. Each slot
+; is 3 bytes: X, Y, and definition.
 ;
 ; Collision detection uses type-specific bounding boxes. Most objects are 10x8 pixels, but balloons and fuel depots are
 ; taller (17-25 pixels), and ships are wider (19 pixels).
@@ -2068,13 +2069,13 @@ retract_object:
 ;
 ; During GAMEPLAY_MODE_REFUEL, object Y coordinates are adjusted for scrolling before and after collision checks.
 check_missile_vs_objects:
-  LD HL,(viewport_ptr)                 ; Load object coordinates (C=X, B=Y) from list pointer viewport_ptr and advance
-  LD C,(HL)                            ; by 3.
+  LD HL,(current_slot_ptr)             ; Load object coordinates (C=X, B=Y) from list pointer current_slot_ptr and
+  LD C,(HL)                            ; advance by 3.
   INC HL                               ;
   LD B,(HL)                            ;
   INC HL                               ;
   INC HL                               ;
-  LD (viewport_ptr),HL                 ; Store updated pointer; copy X to A for marker check.
+  LD (current_slot_ptr),HL             ; Store updated pointer; copy X to A for marker check.
   LD A,C                               ;
   CP SET_MARKER_EMPTY_SLOT             ; If empty slot, skip to next object.
   JP Z,check_missile_vs_objects        ;
@@ -2098,7 +2099,7 @@ check_missile_vs_objects:
   ADD A,$08                            ;
   LD D,A                               ;
   LD E,$00                             ;
-  LD HL,(viewport_ptr)                 ; Load object type from viewport pointer.
+  LD HL,(current_slot_ptr)             ; Load object type from viewport pointer.
   DEC HL                               ;
   LD A,(HL)                            ;
   AND SLOT_MASK_OBJECT_TYPE            ; If balloon, call get_offset_balloon (E = 9, taller).
@@ -2132,7 +2133,7 @@ check_missile_vs_objects:
   ADD A,$0A                            ;
   LD D,A                               ;
   LD E,$00                             ;
-  LD HL,(viewport_ptr)                 ; Load object type from viewport pointer.
+  LD HL,(current_slot_ptr)             ; Load object type from viewport pointer.
   DEC HL                               ;
   LD A,(HL)                            ;
   AND SLOT_MASK_OBJECT_TYPE            ; If ship, call get_offset_balloon (E = 9, wider).
@@ -2153,7 +2154,7 @@ check_missile_vs_objects:
   CP GAMEPLAY_MODE_REFUEL              ;
   CALL Z,retract_object                ;
   LD (collision_result),BC             ; Store object coordinates to collision_result.
-  LD HL,(viewport_ptr)                 ; Load object type from viewport pointer.
+  LD HL,(current_slot_ptr)             ; Load object type from viewport pointer.
   DEC HL                               ;
   LD A,(HL)                            ;
   AND SLOT_MASK_OBJECT_TYPE            ; If type is 0, jump to process_collision_hit to process collision.
@@ -2177,9 +2178,9 @@ check_missile_vs_objects:
   JP Z,hit_fuel                        ;
 ; End of object list - check fragment collision and tank shell.
 check_missile_vs_objects_end:
-  CALL check_fragment_collision        ; Reset viewport_ptr/exploding_fragments_ptr to list starts.
-  LD HL,viewport_objects               ;
-  LD (viewport_ptr),HL                 ;
+  CALL check_fragment_collision        ; Reset current_slot_ptr/exploding_fragments_ptr to list starts.
+  LD HL,viewport_slots                 ;
+  LD (current_slot_ptr),HL             ;
   LD HL,exploding_fragments            ;
   LD (exploding_fragments_ptr),HL      ;
   LD A,(collision_result)              ; If fragment collision detected ($02), jump to reset_gameplay_mode.
@@ -2198,10 +2199,10 @@ process_collision_hit:
   POP BC                               ;
   LD A,D                               ; Store hit Y coordinate to state_collision_y.
   LD (state_collision_y),A             ;
-  LD HL,exploding_fragments            ; Reset exploding_fragments_ptr and viewport_ptr to list starts.
+  LD HL,exploding_fragments            ; Reset exploding_fragments_ptr and current_slot_ptr to list starts.
   LD (exploding_fragments_ptr),HL      ;
-  LD HL,viewport_objects               ;
-  LD (viewport_ptr),HL                 ;
+  LD HL,viewport_slots                 ;
+  LD (current_slot_ptr),HL             ;
   LD BC,(state_saved_object_coords)    ; Load saved coordinates from state_saved_object_coords.
   LD (state_plane_missile_coordinates),BC ; Store to state_plane_missile_coordinates.
   JP finalize_collision                ; Finalize collision.
@@ -2337,8 +2338,8 @@ hit_fuel_done:
 ; Called when the plane touches a fuel depot during REFUEL mode. Marks the depot slot as empty and adds fuel.
 refuel_from_depot:
   LD (HL),C                            ; Mark depot slot as empty.
-  LD HL,viewport_objects               ; Reset viewport_ptr and exploding_fragments_ptr to list starts.
-  LD (viewport_ptr),HL                 ;
+  LD HL,viewport_slots                 ; Reset current_slot_ptr and exploding_fragments_ptr to list starts.
+  LD (current_slot_ptr),HL             ;
   LD HL,exploding_fragments            ;
   LD (exploding_fragments_ptr),HL      ;
   CALL add_fuel                        ; Add fuel and jump to reset_gameplay_mode to reset gameplay mode.
@@ -4053,7 +4054,7 @@ overview_loop:
   CALL render_plane_and_terrain        ;
   LD HL,state_tick                     ;
   INC (HL)                             ;
-  CALL operate_viewport_objects        ;
+  CALL operate_viewport_slots          ;
   CALL operate_tank_shell              ;
   CALL operate_helicopter_missile      ;
   CALL advance_scroll                  ; Advance scroll and render terrain.
@@ -4553,7 +4554,7 @@ setup_object_position:
 ;
 ; * Balloon (type 6) uses separate routine render_balloon
 ; * Fighter/Tank (types 4,5) need XOR blending mode setup
-; * Adds enemy to active objects set at viewport_objects
+; * Adds enemy to active objects set at viewport_slots
 ; * Sprite size: 3 tiles wide, 8 pixels high ($18 bytes per frame)
 ;
 ; I:A Object type (from D AND $07)
@@ -4568,9 +4569,9 @@ render_enemy:
   CALL Z,blending_mode_xor_nop         ;
   CALL ld_enemy_sprites                ; Get sprite pointer based on enemy direction.
   LD B,$00                             ; Add enemy to active objects set: BC = (0, X_pos), call add_object_to_set with
-  LD C,E                               ; HL = viewport_objects.
+  LD C,E                               ; HL = viewport_slots.
   PUSH HL                              ;
-  LD HL,viewport_objects               ;
+  LD HL,viewport_slots                 ;
   CALL add_object_to_set               ;
   POP HL
   CALL setup_object_position           ; Set up screen position.
@@ -4637,7 +4638,7 @@ blending_mode_xor_nop:
 ; Renders a fuel station sprite at the specified X position. Fuel stations are static 2-tile wide (16 pixels) objects
 ; that the player can fly over to refuel.
 ;
-; * Adds fuel station to viewport_objects active objects set
+; * Adds fuel station to viewport_slots active objects set
 ; * Sprite located at sprite_fuel (single frame, no animation)
 ; * Dimensions: 2 tiles wide (16px) × 25 pixels tall
 ; * Attributes: $0B (PAPER RIVER, INK FUEL)
@@ -4646,7 +4647,7 @@ blending_mode_xor_nop:
 render_fuel:
   LD B,$00                             ; BC = (0, E): set X position in BC for object entry.
   LD C,E                               ;
-  LD HL,viewport_objects               ; Add fuel station to active objects set.
+  LD HL,viewport_slots                 ; Add fuel station to active objects set.
   CALL add_object_to_set               ;
   LD HL,sprite_fuel                    ; Load fuel sprite address sprite_fuel and call setup_object_position to set up
   CALL setup_object_position           ; screen position.
@@ -4673,8 +4674,8 @@ render_balloon:
   LD HL,sprite_balloon                 ; Load balloon sprite sprite_balloon, set COLLISION_MODE_NONE to
   LD A,COLLISION_MODE_NONE             ; state_collision_mode.
   LD (state_collision_mode),A          ;
-  PUSH HL                              ; Push sprite addr, add balloon to viewport_objects objects set, pop and call
-  LD HL,viewport_objects               ; setup_object_position.
+  PUSH HL                              ; Push sprite addr, add balloon to viewport_slots objects set, pop and call
+  LD HL,viewport_slots                 ; setup_object_position.
   CALL add_object_to_set               ;
   POP HL                               ;
   CALL setup_object_position           ;
@@ -4684,15 +4685,15 @@ render_balloon:
   CALL render_sprite                                              ;
   RET
 
-; Main viewport object processing loop.
+; Main viewport slot processing loop.
 ;
 ; Used by the routines at play, main_loop, overview, operate_ship_or_helicopter_continue, operate_fighter_continue,
 ; operate_tank_shell_explosion, handle_inactive_object, animate_object, animate_helicopter, operate_tank,
 ; operate_tank_on_bank, cancel_and_remove_shell, handle_tank_at_boundary, operate_fuel, reverse_enemy_direction,
-; remove_object_from_viewport, operate_balloon, jp_operate_viewport_objects and reverse_balloon_direction.
+; remove_object_from_viewport, operate_balloon, jp_operate_viewport_slots and reverse_balloon_direction.
 ;
-; Iterates through the viewport_objects array, processing each active object. Each object slot is a 3-byte structure: [X
-; position, Y position, OBJECT_DEFINITION byte].
+; Iterates through the viewport_slots array (viewport_slots), processing each active object. Each slot is a 3-byte
+; structure: [X position, Y position, object definition byte].
 ;
 ; The routine performs the following steps for each object:
 ;
@@ -4712,22 +4713,22 @@ render_balloon:
 ;
 ; 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHTER, OBJECT_BALLOON, OBJECT_FUEL, OBJECT_TANK,
 ; or ships/helicopters (other types).
-operate_viewport_objects:
+operate_viewport_slots:
   LD A,COLLISION_MODE_NONE             ; Reset state_collision_mode to COLLISION_MODE_NONE.
   LD (state_collision_mode),A          ;
-  LD HL,(viewport_ptr)                 ; Load object slot [X, Y, definition] into C, B, D; advance viewport_ptr to next
+  LD HL,(current_slot_ptr)             ; Load slot [X, Y, definition] into C, B, D; advance current_slot_ptr to next
   LD C,(HL)                            ; slot.
   INC HL                               ;
   LD B,(HL)                            ;
   INC HL                               ;
   LD D,(HL)                            ;
   INC HL                               ;
-  LD (viewport_ptr),HL                 ;
+  LD (current_slot_ptr),HL             ;
   LD A,C                               ; Skip empty slots; reset to beginning on end-of-set marker.
   CP SET_MARKER_EMPTY_SLOT             ;
-  JP Z,operate_viewport_objects        ;
+  JP Z,operate_viewport_slots          ;
   CP SET_MARKER_END_OF_SET             ;
-  JP Z,init_viewport_ptr               ;
+  JP Z,reset_slot_ptr                  ;
   CALL advance_object                  ; Advance object Y position and write back to slot.
   DEC HL                               ;
   DEC HL                               ;
@@ -4748,7 +4749,7 @@ operate_viewport_objects:
   POP DE                               ;
   LD A,(state_gameplay_mode)           ; Skip further processing during GAMEPLAY_MODE_SCROLL_IN.
   CP GAMEPLAY_MODE_SCROLL_IN           ;
-  JP Z,operate_viewport_objects        ;
+  JP Z,operate_viewport_slots          ;
   BIT SLOT_BIT_ACTIVATION,D            ; If already activated (bit 7 set), skip to type dispatch.
   JP NZ,dispatch_object_type           ;
   LD A,(state_activation_interval)     ; Check if interrupt counter matches activation interval; skip to
@@ -4822,7 +4823,7 @@ ship_or_helicopter_left_advance:
 ;
 ; Updates the object's position in the viewport array and renders the sprite.
 operate_ship_or_helicopter_continue:
-  LD HL,(viewport_ptr)                 ; Load viewport_ptr, navigate back to current slot, update [X, Y, D] values.
+  LD HL,(current_slot_ptr)             ; Load current_slot_ptr, navigate back to current slot, update [X, Y, D] values.
   DEC HL                               ;
   LD D,(HL)                            ;
   DEC HL                               ;
@@ -4842,7 +4843,7 @@ operate_ship_or_helicopter_continue:
   LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES   ; Render sprite: width=3 tiles, height=8 pixels.
   LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS ;
   CALL render_object                   ;
-  JP operate_viewport_objects
+  JP operate_viewport_slots
 
 ; Reset left-moving fighter position
 ;
@@ -4881,7 +4882,7 @@ fighter_left_advance:
 ;
 ; Updates fighter position in viewport array and renders the sprite with XOR blending.
 operate_fighter_continue:
-  LD HL,(viewport_ptr)                 ; Load viewport_ptr, navigate to current slot, update [X, Y, D] values.
+  LD HL,(current_slot_ptr)             ; Load current_slot_ptr, navigate to current slot, update [X, Y, D] values.
   DEC HL                               ;
   LD D,(HL)                            ;
   DEC HL                               ;
@@ -4897,7 +4898,7 @@ operate_fighter_continue:
   LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_FIGHTER_ATTRIBUTES ; Render sprite: height=8px, attributes=$00.
   CALL render_sprite                                                 ; Restore blending.
   CALL blending_mode_or_or                                           ;
-  JP operate_viewport_objects          ; Return to main viewport loop.
+  JP operate_viewport_slots            ; Return to main viewport loop.
 
 ; Advance right-facing fighter
 ;
@@ -4936,7 +4937,7 @@ operate_tank_shell_explosion:
   LD A,(state_tick)                    ; Skip if even tick (explosions animate on odd ticks).
   AND TICK_MASK_FRAME_PARITY           ;
   CP TICK_PARITY_ODD                   ;
-  JP NZ,operate_viewport_objects       ; Store position to previous_object_coordinates and object_coordinates for
+  JP NZ,operate_viewport_slots         ; Store position to previous_object_coordinates and object_coordinates for
   LD (previous_object_coordinates),BC  ; rendering.
   LD (object_coordinates),BC           ; Check Y position: if bit 7 set (off-screen), finish explosion.
   LD A,B                               ;
@@ -4958,7 +4959,7 @@ operate_tank_shell_explosion:
   LD A,D                               ;
   AND $C7                              ;
   OR E                                 ;
-  LD HL,(viewport_ptr)                 ;
+  LD HL,(current_slot_ptr)             ;
   DEC HL                               ;
   LD (HL),A                            ;
   LD HL,sprite_tank_shell_explosion    ; Load sprite base sprite_tank_shell_explosion, calculate frame offset: HL -=
@@ -4986,13 +4987,13 @@ tank_shell_render_entry:
   LD D,SPRITE_SHELL_EXPLOSION_HEIGHT_PIXELS     ;
   LD A,SPRITE_SHELL_EXPLOSION_WIDTH_TILES       ;
   CALL render_object                   ; Render and return to main loop.
-  JP operate_viewport_objects          ;
+  JP operate_viewport_slots            ;
 
 ; Finish tank shell explosion animation
 ;
 ; Clears the explosion object from the viewport and resets the tank shell state.
 finish_tank_shell_explosion:
-  LD HL,(viewport_ptr)                 ; Navigate to object slot, clear X position to remove from viewport.
+  LD HL,(current_slot_ptr)             ; Navigate to object slot, clear X position to remove from viewport.
   DEC HL                               ;
   DEC HL                               ;
   DEC HL                               ;
@@ -5005,16 +5006,16 @@ finish_tank_shell_explosion:
 
 ; Handle non-activated object
 ;
-; Processes objects that haven't been activated yet. Routes balloons to jp_operate_viewport_objects, checks animation
+; Processes objects that haven't been activated yet. Routes balloons to jp_operate_viewport_slots, checks animation
 ; timing for helicopter rotor animation.
 ;
 ; I:B Y position
 ; I:C X position
 ; I:D Object definition byte
 handle_inactive_object:
-  LD A,D                               ; If object is OBJECT_BALLOON, jump to jp_operate_viewport_objects.
+  LD A,D                               ; If object is OBJECT_BALLOON, jump to jp_operate_viewport_slots.
   CP OBJECT_BALLOON                    ;
-  JP Z,jp_operate_viewport_objects     ;
+  JP Z,jp_operate_viewport_slots       ;
   LD A,(state_tick)                    ; Animate on odd ticks only.
   AND TICK_MASK_FRAME_PARITY           ;
   CP TICK_PARITY_ODD                   ;
@@ -5024,7 +5025,7 @@ handle_inactive_object:
   CP OBJECT_HELICOPTER_REG             ;
   JP Z,store_and_continue_ship         ;
   CP OBJECT_HELICOPTER_ADV             ;
-  JP NZ,operate_viewport_objects       ; Not a helicopter: return to main loop.
+  JP NZ,operate_viewport_slots         ; Not a helicopter: return to main loop.
 store_and_continue_ship:
   LD (previous_object_coordinates),BC    ; Helicopters store position and jump to operate_ship_or_helicopter_continue.
   JP operate_ship_or_helicopter_continue ;
@@ -5049,14 +5050,14 @@ animate_object:
   CP OBJECT_HELICOPTER_REG             ;
   JP Z,animate_helicopter              ;
   CP OBJECT_HELICOPTER_ADV             ;
-  JP NZ,operate_viewport_objects
+  JP NZ,operate_viewport_slots
 
 ; Animate helicopter rotor
 ;
 ; Renders the helicopter rotor sprite based on orientation. Uses left-facing (sprite_helicopter_rotor_left) or
 ; right-facing (sprite_helicopter_rotor_right) rotor sprite.
 animate_helicopter:
-  LD HL,(viewport_ptr)                 ; Load viewport_ptr, extract [D, B, C] from current slot.
+  LD HL,(current_slot_ptr)             ; Load current_slot_ptr, extract [D, B, C] from current slot.
   DEC HL                               ;
   LD D,(HL)                            ;
   DEC HL                               ;
@@ -5077,7 +5078,7 @@ animate_helicopter:
   LD BC,SPRITE_ROTOR_FRAME_SIZE                               ; width=2.
   LD A,SPRITE_ROTOR_WIDTH_TILES                               ;
   CALL render_object                                          ;
-  JP operate_viewport_objects
+  JP operate_viewport_slots
 
 ; Advance tank right by 4 pixels
 ;
@@ -5114,7 +5115,7 @@ operate_tank:
   LD A,(state_tick)                    ; Skip if odd tick (tanks move on even ticks).
   AND TICK_MASK_FRAME_PARITY           ;
   CP TICK_PARITY_ODD                   ;
-  JP Z,operate_viewport_objects        ; Store position, check bank bit, handle terrain check.
+  JP Z,operate_viewport_slots          ; Store position, check bank bit, handle terrain check.
   LD (previous_object_coordinates),BC  ;
   PUSH DE                              ;
   PUSH BC
@@ -5134,7 +5135,7 @@ tank_move_entry:
   LD A,C                               ; If X == $80 (center), set tank shell active via set_tank_shell_active.
   CP $80                               ;
   CALL Z,set_tank_shell_active
-  LD HL,(viewport_ptr)                 ; Update position in viewport array, store to object_coordinates, get sprite
+  LD HL,(current_slot_ptr)             ; Update position in viewport array, store to object_coordinates, get sprite
   DEC HL                               ; pointer.
   LD D,(HL)                            ;
   DEC HL                               ;
@@ -5149,7 +5150,7 @@ tank_move_entry:
   LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_TANK_ATTRIBUTES ; Restore blending.
   CALL render_sprite                                              ;
   CALL blending_mode_or_or                                        ;
-  JP operate_viewport_objects
+  JP operate_viewport_slots
 
 ; Set XOR/XOR blending mode
 ;
@@ -5216,9 +5217,9 @@ operate_tank_on_bank:
   JP Z,tank_move_entry                 ; Pop BC/DE, jump to tank_move_entry if terrain clear.
   LD A,(tank_shell_state)              ; Check shell state: if already flying, return to main loop.
   BIT TANK_SHELL_BIT_FLYING,A          ;
-  JP NZ,operate_viewport_objects
+  JP NZ,operate_viewport_slots
   BIT TANK_SHELL_BIT_EXPLODING,A       ; If shell exploding, return to main loop.
-  JP NZ,operate_viewport_objects       ;
+  JP NZ,operate_viewport_slots         ;
   CP TANK_SHELL_STATE_UNITIALIZED      ; If shell uninitialized, initialize via init_tank_shell_state.
   JP Z,init_tank_shell_state           ;
   RES TANK_SHELL_BIT_EXPLODING,A       ; Clear exploding bit.
@@ -5232,7 +5233,7 @@ tank_fire_shell_entry:
   BIT SLOT_BIT_ORIENTATION,D           ; If right-facing, add offset via add_tank_offset_delta. Store shell coordinates.
   CALL Z,add_tank_offset_delta         ;
   LD (tank_shell_coordinates),BC       ;
-  JP operate_viewport_objects
+  JP operate_viewport_slots
 
 ; Initialize tank shell state
 ;
@@ -5259,7 +5260,7 @@ init_tank_shell_state:
 ; Removes the tank shell and returns to main loop.
 cancel_and_remove_shell:
   CALL remove_tank_shell               ; Remove shell, return to main loop.
-  JP operate_viewport_objects          ;
+  JP operate_viewport_slots            ;
 
 ; Check shell initialization condition
 ;
@@ -5428,7 +5429,7 @@ render_helicopter_missile:
   LD DE,$0001                          ; Play missile launch sound: BEEPER with DE=$0001, HL=$2800.
   LD HL,$2800                          ;
   CALL BEEPER                          ;
-  LD HL,(viewport_ptr)                 ; Load viewport_ptr, extract [D, B, C] from helicopter's slot.
+  LD HL,(current_slot_ptr)             ; Load current_slot_ptr, extract [D, B, C] from helicopter's slot.
   DEC HL                               ;
   LD D,(HL)                            ;
   DEC HL                               ;
@@ -5567,8 +5568,8 @@ render_tank_shell_explosion:
   LD A,(tank_shell_state)              ; Load shell state, clear FLYING bit, set EXPLODING bit.
   RES TANK_SHELL_BIT_FLYING,A          ;
   SET TANK_SHELL_BIT_EXPLODING,A       ;
-  LD (tank_shell_state),A              ; Store updated state, add explosion to viewport_objects objects set.
-  LD HL,viewport_objects               ;
+  LD (tank_shell_state),A              ; Store updated state, add explosion to viewport_slots objects set.
+  LD HL,viewport_slots                 ;
   CALL add_object_to_set               ;
   LD A,$00                             ; Reset trajectory step to 0.
   LD (tank_shell_trajectory_step),A    ;
@@ -5588,7 +5589,7 @@ remove_tank_shell:
 ; Called when a tank on the river reaches the viewport boundary. Checks if tank is within valid X range, creates
 ; explosion and awards points if tank destroyed.
 handle_tank_at_boundary:
-  LD HL,(viewport_ptr)                 ; Load viewport_ptr, navigate to X position in current slot.
+  LD HL,(current_slot_ptr)             ; Load current_slot_ptr, navigate to X position in current slot.
   DEC HL                               ;
   DEC HL                               ;
   DEC HL                               ;
@@ -5609,7 +5610,7 @@ handle_tank_at_boundary:
   OR A                                 ;
   SBC HL,DE                            ;
   JP M,tank_reverse_direction          ; Tank destroyed: clear X position, set D=$80 (explosion marker).
-  LD HL,(viewport_ptr)                 ;
+  LD HL,(current_slot_ptr)             ;
   DEC HL                               ;
   DEC HL                               ;
   LD B,(HL)                            ; Add explosion and award POINTS_TANK.
@@ -5620,7 +5621,7 @@ handle_tank_at_boundary:
   LD A,POINTS_TANK
   CALL add_points
 tank_reverse_direction:
-  LD HL,(viewport_ptr)                 ; Reload viewport_ptr, set bits 4 and 5 (direction change flags).
+  LD HL,(current_slot_ptr)             ; Reload current_slot_ptr, set bits 4 and 5 (direction change flags).
   DEC HL                               ;
   SET 4,(HL)                           ;
   SET CONTROLS_BIT_EXPLODING,(HL)
@@ -5635,9 +5636,9 @@ tank_speed_check:
   LD B,A                               ; Check if 7-speed < 0, clear slot if needed.
   LD A,$07                             ;
   SUB B                                ;
-  JP M,operate_viewport_objects        ;
+  JP M,operate_viewport_slots          ;
   LD (HL),$00                          ;
-  JP operate_viewport_objects
+  JP operate_viewport_slots
 
 ; Get tank speed for level 1
 ;
@@ -5668,11 +5669,11 @@ operate_fuel:
   LD A,B                               ;
   AND VIEWPORT_HEIGHT                  ;
   CP VIEWPORT_HEIGHT                   ;
-  JP Z,operate_viewport_objects        ; Load fuel sprite sprite_fuel, get sprite pointer.
+  JP Z,operate_viewport_slots          ; Load fuel sprite sprite_fuel, get sprite pointer.
   LD A,B                               ;
   AND $87                              ;
   CP $87                               ;
-  JP Z,operate_viewport_objects        ;
+  JP Z,operate_viewport_slots          ;
   LD HL,sprite_fuel
   LD BC,SPRITE_FUEL_STATION_FRAME_SIZE ; Set frame size=0, calculate animated attributes from tick.
   LD A,(state_tick)                    ;
@@ -5681,7 +5682,7 @@ operate_fuel:
   LD E,A                               ;
   LD A,SPRITE_FUEL_STATION_WIDTH_TILES ; Render fuel station: width=2.
   CALL render_sprite                   ;
-  JP operate_viewport_objects          ;
+  JP operate_viewport_slots            ;
 
 ; Clip fuel station height to viewport
 ;
@@ -5767,9 +5768,9 @@ reverse_enemy_direction:
   LD A,B                               ; Return if Y >= $80 (object in top half, might be player).
   SUB $80                              ;
   RET P                                ;
-  LD BC,(previous_object_coordinates)  ; Reload position, pop return address, load viewport_ptr, get object definition.
-  POP HL                               ;
-  LD HL,(viewport_ptr)                 ;
+  LD BC,(previous_object_coordinates)  ; Reload position, pop return address, load current_slot_ptr, get object
+  POP HL                               ; definition.
+  LD HL,(current_slot_ptr)             ;
   DEC HL                               ;
   LD D,(HL)                            ;
   CALL ld_enemy_sprites                ; Get sprite pointer, reload position.
@@ -5791,7 +5792,7 @@ reverse_enemy_direction_frame_loop:
   LD A,D                               ; Invert object orientation.
   XOR 1<<SLOT_BIT_ORIENTATION          ;
   LD D,A                               ;
-  LD HL,(viewport_ptr)                 ; Update orientation in viewport array, get new sprite pointer.
+  LD HL,(current_slot_ptr)             ; Update orientation in viewport array, get new sprite pointer.
   DEC HL                               ;
   LD (HL),A                            ;
   CALL ld_enemy_sprites                ;
@@ -5804,14 +5805,14 @@ reverse_enemy_direction_frame_loop:
   LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
   LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
   CALL render_object
-  JP operate_viewport_objects
+  JP operate_viewport_slots
 
-; Point viewport_ptr to the head of viewport_objects.
+; Reset current_slot_ptr to the start of viewport_slots.
 ;
-; Resets the viewport pointer to the beginning of the viewport array.
-init_viewport_ptr:
-  LD HL,viewport_objects               ; Set viewport_ptr to start of viewport array.
-  LD (viewport_ptr),HL                 ;
+; Resets the current slot pointer to the beginning of the viewport slots array.
+reset_slot_ptr:
+  LD HL,viewport_slots                 ; Set current_slot_ptr to start of viewport_slots.
+  LD (current_slot_ptr),HL             ;
   RET
 
 ; Remove an object from the viewport array.
@@ -5826,13 +5827,13 @@ remove_object_from_viewport:
   LD A,D                               ; Extract object type. If not OBJECT_TANK, continue main loop.
   AND SLOT_MASK_OBJECT_TYPE            ;
   CP OBJECT_TANK                       ;
-  JP NZ,operate_viewport_objects
+  JP NZ,operate_viewport_slots
   LD A,TANK_SHELL_INACTIVE             ; Mark tank shell as inactive.
   LD (state_tank_shell),A              ;
   BIT SLOT_BIT_TANK_ON_BANK,D          ; Check if tank was on right bank.
-  JP Z,operate_viewport_objects        ;
+  JP Z,operate_viewport_slots          ;
   CALL remove_tank_shell               ; If so, call remove_tank_shell for right-bank tank shell removal.
-  JP operate_viewport_objects          ;
+  JP operate_viewport_slots            ;
 
 ; Operate balloon movement and rendering.
 ;
@@ -5843,11 +5844,11 @@ remove_object_from_viewport:
 ; I:D Object definition (bit 6 = orientation: 0=right, 1=left)
 operate_balloon:
   BIT 7,B                              ; If balloon is off-screen (Y bit 7 set), skip to main loop.
-  JP NZ,jp_operate_viewport_objects    ;
+  JP NZ,jp_operate_viewport_slots      ;
   LD A,(state_tick)                    ; Only operate every 4th frame (frame counter AND 3 == 1). Check orientation.
   AND $03                              ;
   CP $01                               ;
-  JP NZ,jp_operate_viewport_objects    ;
+  JP NZ,jp_operate_viewport_slots      ;
   BIT SLOT_BIT_ORIENTATION,D
   JP Z,operate_balloon_right
   PUSH BC                              ; Left-facing: Check terrain 16 pixels left of sprite origin (top row). Reverse
@@ -5876,7 +5877,7 @@ operate_balloon:
   DEC C                                ;
 ; Shared entry point for balloon rendering (also used by right-facing balloon).
 operate_balloon_shared:
-  LD HL,(viewport_ptr)                 ; Read object definition from viewport, write updated position back.
+  LD HL,(current_slot_ptr)             ; Read object definition from viewport, write updated position back.
   DEC HL                               ;
   LD D,(HL)                            ;
   DEC HL                               ;
@@ -5894,13 +5895,13 @@ operate_balloon_shared:
   LD E,SPRITE_BALLOON_ATTRIBUTES
   LD D,SPRITE_BALLOON_HEIGHT_PIXELS
   CALL render_sprite                   ; Render balloon, return to main loop.
-  JP operate_viewport_objects          ;
+  JP operate_viewport_slots            ;
 
-; A useless procedure that unconcditionally jumps to operate_viewport_objects.
+; A useless procedure that unconditionally jumps to operate_viewport_slots.
 ;
 ; Used by the routines at handle_inactive_object and operate_balloon.
-jp_operate_viewport_objects:
-  JP operate_viewport_objects
+jp_operate_viewport_slots:
+  JP operate_viewport_slots
 
 ; Right-facing balloon movement.
 ;
@@ -5949,7 +5950,7 @@ reverse_balloon_direction:
   RET P                                ;
   LD BC,(previous_object_coordinates)  ; Reload position, get object definition from viewport.
   POP HL                               ;
-  LD HL,(viewport_ptr)                 ;
+  LD HL,(current_slot_ptr)             ;
   DEC HL                               ;
   LD D,(HL)                            ;
   LD HL,sprite_balloon                 ; Calculate sprite frame offset from X position bits 1-2.
@@ -5971,7 +5972,7 @@ reverse_balloon_direction_0:
   LD (object_coordinates),BC           ;
   LD A,D                               ; Flip orientation bit and update in viewport array.
   XOR $40                              ;
-  LD HL,(viewport_ptr)                 ;
+  LD HL,(current_slot_ptr)             ;
   DEC HL                               ;
   LD (HL),A                            ;
   LD HL,sprite_balloon                 ; Load sprite parameters, render balloon with new orientation, return to main
@@ -5979,7 +5980,7 @@ reverse_balloon_direction_0:
   LD A,$02                             ;
   LD BC,$0020                          ;
   CALL render_object                   ;
-  JP operate_viewport_objects          ;
+  JP operate_viewport_slots            ;
 
 ; Unused
 data_unused_7727:
