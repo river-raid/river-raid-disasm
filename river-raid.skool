@@ -8519,43 +8519,63 @@ b$8A86 DEFB $0F,$F0
  $8AB4 DEFB $0C,$30
  $8AB6 DEFB $0F,$F0
 
-; Helicopter rotor sprite (left-facing)
+; Helicopter rotor sprite (left-facing, 4 frames × 4 bytes).
 ;
-; .
+; The rotor is rendered above the helicopter body at 2 pixels height. Each
+; frame is 2 tiles wide × 2 pixels tall, pre-shifted for smooth animation.
 ;
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY2,6,4;$8AB8;$8AC0(rotor-left) }
+; { #UDGARRAY2,6,4,2;$8AB8-$8ABB-1-16{0,0,64,8}(rotor-left-f1) }
 ; TABLE#
 @label=sprite_helicopter_rotor_left
-b$8AB8 DEFB $1E,$00
- $8ABA DEFB $F0,$00
- $8ABC DEFB $07,$80
- $8ABE DEFB $3C,$00
- $8AC0 DEFB $01,$E0
- $8AC2 DEFB $0F,$00
- $8AC4 DEFB $00,$78
- $8AC6 DEFB $03,$C0
+b$8AB8 DEFB $1E,$00  ; {Frame 1
+ $8ABA DEFB $F0,$00  ; }
+; #UDGTABLE
+; { #UDGARRAY2,6,4,2;$8ABC-$8ABF-1-16{0,0,64,8}(rotor-left-f2) }
+; TABLE#
+ $8ABC DEFB $07,$80  ; {Frame 2
+ $8ABE DEFB $3C,$00  ; }
+; #UDGTABLE
+; { #UDGARRAY2,6,4,2;$8AC0-$8AC3-1-16{0,0,64,8}(rotor-left-f3) }
+; TABLE#
+ $8AC0 DEFB $01,$E0  ; {Frame 3
+ $8AC2 DEFB $0F,$00  ; }
+; #UDGTABLE
+; { #UDGARRAY2,6,4,2;$8AC4-$8AC7-1-16{0,0,64,8}(rotor-left-f4) }
+; TABLE#
+ $8AC4 DEFB $00,$78  ; {Frame 4
+ $8AC6 DEFB $03,$C0  ; }
 
-; Helicopter rotor sprite (right-facing)
+; Helicopter rotor sprite (right-facing, 4 frames × 4 bytes).
 ;
-; .
+; The rotor is rendered above the helicopter body at 2 pixels height. Each
+; frame is 2 tiles wide × 2 pixels tall, pre-shifted for smooth animation.
 ;
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY2,6,4;$8AC8;$8AD0(rotor-right) }
+; { #UDGARRAY2,6,4,2;$8AC8-$8ACB-1-16{0,0,64,8}(rotor-right-f1) }
 ; TABLE#
 @label=sprite_helicopter_rotor_right
-b$8AC8 DEFB $1E,$00
- $8ACA DEFB $03,$C0
- $8ACC DEFB $07,$80
- $8ACE DEFB $00,$F0
- $8AD0 DEFB $01,$E0
- $8AD2 DEFB $00,$3C
- $8AD4 DEFB $00,$78
- $8AD6 DEFB $00,$0F
+b$8AC8 DEFB $1E,$00  ; {Frame 1
+ $8ACA DEFB $03,$C0  ; }
+; #UDGTABLE
+; { #UDGARRAY2,6,4,2;$8ACC-$8ACF-1-16{0,0,64,8}(rotor-right-f2) }
+; TABLE#
+ $8ACC DEFB $07,$80  ; {Frame 2
+ $8ACE DEFB $00,$F0  ; }
+; #UDGTABLE
+; { #UDGARRAY2,6,4,2;$8AD0-$8AD3-1-16{0,0,64,8}(rotor-right-f3) }
+; TABLE#
+ $8AD0 DEFB $01,$E0  ; {Frame 3
+ $8AD2 DEFB $00,$3C  ; }
+; #UDGTABLE
+; { #UDGARRAY2,6,4,2;$8AD4-$8AD7-1-16{0,0,64,8}(rotor-right-f4) }
+; TABLE#
+ $8AD4 DEFB $00,$78  ; {Frame 4
+ $8AD6 DEFB $00,$0F  ; }
 
 ; Unused explosion animation sprite (6 frames × 8 bytes).
 ;

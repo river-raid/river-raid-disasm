@@ -7357,29 +7357,35 @@ sprite_fuel:
   DEFB $0C,$30
   DEFB $0F,$F0
 
-; Helicopter rotor sprite (left-facing)
+; Helicopter rotor sprite (left-facing, 4 frames × 4 bytes).
+;
+; The rotor is rendered above the helicopter body at 2 pixels height. Each frame is 2 tiles wide × 2 pixels tall,
+; pre-shifted for smooth animation.
 ;
 sprite_helicopter_rotor_left:
-  DEFB $1E,$00
-  DEFB $F0,$00
-  DEFB $07,$80
-  DEFB $3C,$00
-  DEFB $01,$E0
-  DEFB $0F,$00
-  DEFB $00,$78
-  DEFB $03,$C0
+  DEFB $1E,$00                         ; Frame 1
+  DEFB $F0,$00                         ;
+  DEFB $07,$80                         ; Frame 2
+  DEFB $3C,$00                         ;
+  DEFB $01,$E0                         ; Frame 3
+  DEFB $0F,$00                         ;
+  DEFB $00,$78                         ; Frame 4
+  DEFB $03,$C0                         ;
 
-; Helicopter rotor sprite (right-facing)
+; Helicopter rotor sprite (right-facing, 4 frames × 4 bytes).
+;
+; The rotor is rendered above the helicopter body at 2 pixels height. Each frame is 2 tiles wide × 2 pixels tall,
+; pre-shifted for smooth animation.
 ;
 sprite_helicopter_rotor_right:
-  DEFB $1E,$00
-  DEFB $03,$C0
-  DEFB $07,$80
-  DEFB $00,$F0
-  DEFB $01,$E0
-  DEFB $00,$3C
-  DEFB $00,$78
-  DEFB $00,$0F
+  DEFB $1E,$00                         ; Frame 1
+  DEFB $03,$C0                         ;
+  DEFB $07,$80                         ; Frame 2
+  DEFB $00,$F0                         ;
+  DEFB $01,$E0                         ; Frame 3
+  DEFB $00,$3C                         ;
+  DEFB $00,$78                         ; Frame 4
+  DEFB $00,$0F                         ;
 
 ; Unused explosion animation sprite (6 frames × 8 bytes).
 ;

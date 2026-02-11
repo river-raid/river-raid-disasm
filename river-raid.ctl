@@ -3132,13 +3132,27 @@ b $8A86 Fuel sprite
 N $8A86 #UDGTABLE { #UDGARRAY2,11,4,2;$8A86-$8AB8-1-16{0,0,64,100}(sprite-fuel) } TABLE#
   $8A86,50,2
 @ $8AB8 label=sprite_helicopter_rotor_left
-b $8AB8 Helicopter rotor sprite (left-facing)
-N $8AB8 #UDGTABLE { #UDGARRAY2,6,4;$8AB8;$8AC0(rotor-left) } TABLE#
-  $8AB8,16,2
+b $8AB8 Helicopter rotor sprite (left-facing, 4 frames × 4 bytes).
+D $8AB8 The rotor is rendered above the helicopter body at 2 pixels height. Each frame is 2 tiles wide × 2 pixels tall, pre-shifted for smooth animation.
+N $8AB8 #UDGTABLE { #UDGARRAY2,6,4,2;$8AB8-$8ABB-1-16{0,0,64,8}(rotor-left-f1) } TABLE#
+  $8AB8,4,2 Frame 1
+N $8ABC #UDGTABLE { #UDGARRAY2,6,4,2;$8ABC-$8ABF-1-16{0,0,64,8}(rotor-left-f2) } TABLE#
+  $8ABC,4,2 Frame 2
+N $8AC0 #UDGTABLE { #UDGARRAY2,6,4,2;$8AC0-$8AC3-1-16{0,0,64,8}(rotor-left-f3) } TABLE#
+  $8AC0,4,2 Frame 3
+N $8AC4 #UDGTABLE { #UDGARRAY2,6,4,2;$8AC4-$8AC7-1-16{0,0,64,8}(rotor-left-f4) } TABLE#
+  $8AC4,4,2 Frame 4
 @ $8AC8 label=sprite_helicopter_rotor_right
-b $8AC8 Helicopter rotor sprite (right-facing)
-N $8AC8 #UDGTABLE { #UDGARRAY2,6,4;$8AC8;$8AD0(rotor-right) } TABLE#
-  $8AC8,16,2
+b $8AC8 Helicopter rotor sprite (right-facing, 4 frames × 4 bytes).
+D $8AC8 The rotor is rendered above the helicopter body at 2 pixels height. Each frame is 2 tiles wide × 2 pixels tall, pre-shifted for smooth animation.
+N $8AC8 #UDGTABLE { #UDGARRAY2,6,4,2;$8AC8-$8ACB-1-16{0,0,64,8}(rotor-right-f1) } TABLE#
+  $8AC8,4,2 Frame 1
+N $8ACC #UDGTABLE { #UDGARRAY2,6,4,2;$8ACC-$8ACF-1-16{0,0,64,8}(rotor-right-f2) } TABLE#
+  $8ACC,4,2 Frame 2
+N $8AD0 #UDGTABLE { #UDGARRAY2,6,4,2;$8AD0-$8AD3-1-16{0,0,64,8}(rotor-right-f3) } TABLE#
+  $8AD0,4,2 Frame 3
+N $8AD4 #UDGTABLE { #UDGARRAY2,6,4,2;$8AD4-$8AD7-1-16{0,0,64,8}(rotor-right-f4) } TABLE#
+  $8AD4,4,2 Frame 4
 @ $8AD8 label=sprite_unused_explosion
 u $8AD8 Unused explosion animation sprite (6 frames × 8 bytes).
 D $8AD8 A 6-frame animation showing a diamond shape expanding from a single pixel to a full diamond. Each frame is 8×8 pixels (1 tile). This appears to be an unused or early explosion effect that was not included in the final game.

@@ -53,8 +53,27 @@ TABLE#
 
 Sprite data: #R$85B3 (left-facing), #R$8793 (right-facing).
 
-Rotor sprites (#R$8AB8 left, #R$8AC8 right) are rendered separately above the
-helicopter body.
+[Graphic:rotor:Helicopter rotor]
+The helicopter rotor is a 2-tile wide × 2-pixel tall sprite rendered separately
+above the helicopter body. Each direction has 4 pre-shifted frames for smooth
+animation as the helicopter moves horizontally.
+
+#UDGARRAY2,6,4,2;$8AB8-$8ABB-1-16{0,0,64,8}(*rotor-left-f1)
+#UDGARRAY2,6,4,2;$8ABC-$8ABF-1-16{0,0,64,8}(*rotor-left-f2)
+#UDGARRAY2,6,4,2;$8AC0-$8AC3-1-16{0,0,64,8}(*rotor-left-f3)
+#UDGARRAY2,6,4,2;$8AC4-$8AC7-1-16{0,0,64,8}(*rotor-left-f4)
+#UDGARRAY2,6,4,2;$8AC8-$8ACB-1-16{0,0,64,8}(*rotor-right-f1)
+#UDGARRAY2,6,4,2;$8ACC-$8ACF-1-16{0,0,64,8}(*rotor-right-f2)
+#UDGARRAY2,6,4,2;$8AD0-$8AD3-1-16{0,0,64,8}(*rotor-right-f3)
+#UDGARRAY2,6,4,2;$8AD4-$8AD7-1-16{0,0,64,8}(*rotor-right-f4)
+#UDGTABLE
+{ =h Left-facing rotor }
+{ #UDGARRAY*rotor-left-f1,50;rotor-left-f2;rotor-left-f3;rotor-left-f4;rotor-left-f3;rotor-left-f2(rotor-left) }
+{ =h Right-facing rotor }
+{ #UDGARRAY*rotor-right-f1,50;rotor-right-f2;rotor-right-f3;rotor-right-f4;rotor-right-f3;rotor-right-f2(rotor-right) }
+TABLE#
+
+Sprite data: #R$8AB8 (left), #R$8AC8 (right).
 
 [Graphic:ship:Ship]
 Ships are 3x1 tile (24x8 pixel) sprites with 4 pre-shifted frames per
