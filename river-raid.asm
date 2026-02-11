@@ -7833,6 +7833,7 @@ data_unused_8C4A:
   DEFB $00,$00
 
 ; Tank shell explosion sprite (6 frames × 32 bytes).
+;
 sprite_tank_shell_explosion:
   DEFB $00,$00                         ; Frame 1
   DEFB $00,$00                         ;

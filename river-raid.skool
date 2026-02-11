@@ -9031,6 +9031,14 @@ u$8C4A DEFB $C3,$90,$EA,$0E,$8B,$E9,$C3,$90
  $8FFA DEFB $00,$00
 
 ; Tank shell explosion sprite (6 frames × 32 bytes).
+;
+; .
+;
+; .
+;
+; #UDGTABLE
+; { #UDGARRAY2,4,4,2;$8FFC-$901A-1-16(tank-shell-exp-f1) }
+; TABLE#
 @label=sprite_tank_shell_explosion
 b$8FFC DEFB $00,$00  ; {Frame 1
  $8FFE DEFB $00,$00  ;
@@ -9048,6 +9056,9 @@ b$8FFC DEFB $00,$00  ; {Frame 1
  $9016 DEFB $00,$00  ;
  $9018 DEFB $00,$00  ;
  $901A DEFB $00,$00  ; }
+; #UDGTABLE
+; { #UDGARRAY2,4,4,2;$901C-$903A-1-16(tank-shell-exp-f2) }
+; TABLE#
  $901C DEFB $00,$00  ; {Frame 2
  $901E DEFB $00,$00  ;
  $9020 DEFB $00,$00  ;
@@ -9064,6 +9075,9 @@ b$8FFC DEFB $00,$00  ; {Frame 1
  $9036 DEFB $00,$00  ;
  $9038 DEFB $00,$00  ;
  $903A DEFB $00,$00  ; }
+; #UDGTABLE
+; { #UDGARRAY2,4,4,2;$903C-$905A-1-16(tank-shell-exp-f3) }
+; TABLE#
  $903C DEFB $00,$00  ; {Frame 3
  $903E DEFB $00,$00  ;
  $9040 DEFB $00,$00  ;
@@ -9080,6 +9094,9 @@ b$8FFC DEFB $00,$00  ; {Frame 1
  $9056 DEFB $00,$00  ;
  $9058 DEFB $00,$00  ;
  $905A DEFB $00,$00  ; }
+; #UDGTABLE
+; { #UDGARRAY2,4,4,2;$905C-$907A-1-16(tank-shell-exp-f4) }
+; TABLE#
  $905C DEFB $00,$00  ; {Frame 4
  $905E DEFB $00,$00  ;
  $9060 DEFB $00,$00  ;
@@ -9096,6 +9113,9 @@ b$8FFC DEFB $00,$00  ; {Frame 1
  $9076 DEFB $00,$00  ;
  $9078 DEFB $00,$00  ;
  $907A DEFB $00,$00  ; }
+; #UDGTABLE
+; { #UDGARRAY2,4,4,2;$907C-$909A-1-16(tank-shell-exp-f5) }
+; TABLE#
  $907C DEFB $00,$00  ; {Frame 5
  $907E DEFB $00,$00  ;
  $9080 DEFB $01,$00  ;
@@ -9112,6 +9132,9 @@ b$8FFC DEFB $00,$00  ; {Frame 1
  $9096 DEFB $00,$00  ;
  $9098 DEFB $00,$00  ;
  $909A DEFB $00,$00  ; }
+; #UDGTABLE
+; { #UDGARRAY2,4,4,2;$909C-$90BA-1-16(tank-shell-exp-f6) }
+; TABLE#
  $909C DEFB $00,$00  ; {Frame 6
  $909E DEFB $01,$00  ;
  $90A0 DEFB $07,$C0  ;

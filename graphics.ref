@@ -186,3 +186,20 @@ Sprite data: #R$8431 (missile), #R$8451 (trail).
 Tank shells reuse the missile sprite data but render only 1 pixel height
 (SPRITE_SHELL_HEIGHT_PIXELS). The shell explosion is a 2x2 tile (16x16 pixel)
 sprite at #R$8FFC.
+
+[Graphic:tankShellExplosion:Tank shell explosion]
+The tank shell explosion is a 2x2 tile (16x16 pixel) sprite with 6 frames
+showing an expanding diamond pattern. Used when tank shells hit the ground
+or player.
+
+#UDGARRAY2,4,4,2;$8FFC-$901A-1-16(*tank-shell-exp-f1)
+#UDGARRAY2,4,4,2;$901C-$903A-1-16(*tank-shell-exp-f2)
+#UDGARRAY2,4,4,2;$903C-$905A-1-16(*tank-shell-exp-f3)
+#UDGARRAY2,4,4,2;$905C-$907A-1-16(*tank-shell-exp-f4)
+#UDGARRAY2,4,4,2;$907C-$909A-1-16(*tank-shell-exp-f5)
+#UDGARRAY2,4,4,2;$909C-$90BA-1-16(*tank-shell-exp-f6)
+#UDGTABLE
+{ #UDGARRAY*tank-shell-exp-f1,50;tank-shell-exp-f2;tank-shell-exp-f3;tank-shell-exp-f4;tank-shell-exp-f5;tank-shell-exp-f6;tank-shell-exp-f5;tank-shell-exp-f4;tank-shell-exp-f3;tank-shell-exp-f2(tank-shell-explosion) }
+TABLE#
+
+Sprite data: #R$8FFC.

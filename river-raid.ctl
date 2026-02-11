@@ -3261,11 +3261,17 @@ D $8C45 This routine is called during sprite rendering to invoke the collision d
 u $8C4A
 @ $8FFC label=sprite_tank_shell_explosion
 b $8FFC Tank shell explosion sprite (6 frames × 32 bytes).
+N $8FFC #UDGTABLE { #UDGARRAY2,4,4,2;$8FFC-$901A-1-16(tank-shell-exp-f1) } TABLE#
   $8FFC,32,2 Frame 1
+N $901C #UDGTABLE { #UDGARRAY2,4,4,2;$901C-$903A-1-16(tank-shell-exp-f2) } TABLE#
   $901C,32,2 Frame 2
+N $903C #UDGTABLE { #UDGARRAY2,4,4,2;$903C-$905A-1-16(tank-shell-exp-f3) } TABLE#
   $903C,32,2 Frame 3
+N $905C #UDGTABLE { #UDGARRAY2,4,4,2;$905C-$907A-1-16(tank-shell-exp-f4) } TABLE#
   $905C,32,2 Frame 4
+N $907C #UDGTABLE { #UDGARRAY2,4,4,2;$907C-$909A-1-16(tank-shell-exp-f5) } TABLE#
   $907C,32,2 Frame 5
+N $909C #UDGTABLE { #UDGARRAY2,4,4,2;$909C-$90BA-1-16(tank-shell-exp-f6) } TABLE#
   $909C,32,2 Frame 6
 @ $90BC label=state_score_player_1_low
 t $90BC Player 1 score ones and tens digits (2 ASCII chars)
