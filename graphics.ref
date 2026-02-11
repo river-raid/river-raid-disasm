@@ -157,7 +157,7 @@ TABLE#
 Sprite data: #R$8A86.
 
 [Graphic:rock:Rock]
-Rocks are 3x2 tile (24x16 pixel) static obstacles with 4 variants.
+Rocks are 3x2 tile (24x16 pixel) static decorations with 4 variants.
 
 #UDGTABLE
 { #UDGARRAY3,34,4,3;$84A1-$84D0-1-24(rock-1) |

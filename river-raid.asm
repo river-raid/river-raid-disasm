@@ -133,7 +133,7 @@ OBJECT_FUEL           EQU $07
 ; | Bit   | Meaning                                          |
 ; +-------+--------------------------------------------------+
 ; | 0-2   | Object type (OBJECT_* constants, 0-7)            |
-; | 3     | Rock flag (1=rock obstacle, 0=interactive)       |
+; | 3     | Rock flag (1=rock decoration, 0=interactive)     |
 ; | 4     | Unused                                           |
 ; | 5     | Tank location (1=river bank, 0=bridge)           |
 ; | 6     | Orientation (1=right-facing, 0=left-facing)      |
@@ -4494,7 +4494,7 @@ locate_level:
 
 ; Render rock sprite
 ;
-; Renders a rock obstacle at the specified position. Rocks use 3x2 tile sprites (24x16 pixels) stored sequentially at
+; Renders a rock decoration at the specified position. Uses 3x2 tile sprites (24x16 pixels) stored sequentially at
 ; sprite_rock with $30 bytes per frame.
 ;
 ; * Sprite address = sprite_rock + (frame_index * $30)

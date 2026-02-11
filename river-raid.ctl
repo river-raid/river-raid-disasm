@@ -135,7 +135,7 @@
 > $4000 ; | Bit   | Meaning                                          |
 > $4000 ; +-------+--------------------------------------------------+
 > $4000 ; | 0-2   | Object type (OBJECT_* constants, 0-7)            |
-> $4000 ; | 3     | Rock flag (1=rock obstacle, 0=interactive)       |
+> $4000 ; | 3     | Rock flag (1=rock decoration, 0=interactive)     |
 > $4000 ; | 4     | Unused                                           |
 > $4000 ; | 5     | Tank location (1=river bank, 0=bridge)           |
 > $4000 ; | 6     | Orientation (1=right-facing, 0=left-facing)      |
@@ -1936,7 +1936,7 @@ D $6F80 #LIST { Level data starts at #R$C800, with SIZE_LEVEL_SLOTS ($100) bytes
   $6FB5 Otherwise render enemy.
 @ $6FBB label=render_rock
 c $6FBB Render rock sprite
-D $6FBB Renders a rock obstacle at the specified position. Rocks use 3x2 tile sprites (24x16 pixels) stored sequentially at #R$84A1 with $30 bytes per frame.
+D $6FBB Renders a rock decoration at the specified position. Uses 3x2 tile sprites (24x16 pixels) stored sequentially at #R$84A1 with $30 bytes per frame.
 D $6FBB #LIST { Sprite address = #R$84A1 + (frame_index * $30) } { Frame index from bits 0-2 of D (0-7 rock variants) } { Sprite stored at #R$8B0E, position at #R$8B0A and #R$8B0C } { Width=3 tiles, height=16 pixels } LIST#
 R $6FBB I:D Object type byte (bits 0-2 = rock frame index)
 R $6FBB I:E X position

@@ -43,7 +43,7 @@ and state using bit fields:
 #TABLE(default)
 { =h Bit(s) | =h Meaning }
 { 0-2 | Object type (OBJECT_* constants: helicopter, ship, tank, etc.) }
-{ 3 | Rock flag (1=rock obstacle, 0=interactive object) }
+{ 3 | Rock flag (1=rock decoration on land, 0=interactive object) }
 { 4 | Unused }
 { 5 | Tank location (1=river bank, 0=bridge) }
 { 6 | Orientation (1=left-facing, 0=right-facing) }
