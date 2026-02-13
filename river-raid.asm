@@ -62,7 +62,7 @@ SPEED_SLOW   EQU $01
 SPEED_NORMAL EQU $02
 SPEED_FAST   EQU $04
 
-CONTROLS_BIT_FIRE            EQU 0
+CONTROLS_BIT_FIRE_SOUND      EQU 0
 CONTROLS_BIT_SPEED_NOT_FAST  EQU 1
 CONTROLS_BIT_SPEED_CHANGED   EQU 2
 CONTROLS_BIT_LOW_FUEL        EQU 3
@@ -2803,7 +2803,7 @@ handle_down:
 ; Used by the routines at scan_cursor, scan_kempston, scan_sinclair and scan_keyboard.
 ;
 ; Creates a new missile if none is currently active. Positions missile at plane X + 4, Y = $7E (just above plane). Sets
-; CONTROLS_BIT_FIRE flag.
+; CONTROLS_BIT_FIRE_SOUND to trigger the fire sound effect.
 handle_fire:
   LD A,(state_plane_missile_coordinates) ; Return if missile already active (Y != 0).
   CP $00                                 ;
@@ -2813,8 +2813,8 @@ handle_fire:
   LD B,$7E                                ;
   LD C,A                                  ;
   LD (state_plane_missile_coordinates),BC ;
-  LD HL,state_controls                 ; Set CONTROLS_BIT_FIRE in state_controls.
-  SET CONTROLS_BIT_FIRE,(HL)           ;
+  LD HL,state_controls                 ; Set CONTROLS_BIT_FIRE_SOUND in state_controls.
+  SET CONTROLS_BIT_FIRE_SOUND,(HL)     ;
   RET
 
 ; Missile animation pass selector. $01=first pass (erase at old position), $00=second pass (draw at new position).
@@ -2830,7 +2830,7 @@ missile_pass_selector:
 ; missile up by 6 pixels.
 ;
 ; If missile reaches top of screen (Y AND $F8 == 0), jumps to finalize_collision to finalize collision. Clears
-; CONTROLS_BIT_FIRE when missile is in lower screen area ($70 - Y >= 0).
+; CONTROLS_BIT_FIRE_SOUND when missile is in lower screen area ($70 - Y >= 0).
 ;
 ; Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions.
 animate_plane_missile:
@@ -2867,14 +2867,15 @@ animate_plane_missile:
   CALL render_sprite                                              ;
   RET
 
-; Clear CONTROLS_BIT_FIRE flag
+; Clear CONTROLS_BIT_FIRE_SOUND flag
 ;
 ; Used by the routine at animate_plane_missile.
 ;
-; Called when missile has moved past the plane's Y position, indicating the fire button can trigger a new missile.
+; Called when missile Y <= $70 (112), stopping the fire sound effect. Does not affect firing — a new missile is gated by
+; missile Y being 0.
 clear_fire_bit:
-  LD HL,state_controls                 ; Clear CONTROLS_BIT_FIRE in state_controls.
-  RES CONTROLS_BIT_FIRE,(HL)           ;
+  LD HL,state_controls                 ; Clear CONTROLS_BIT_FIRE_SOUND in state_controls.
+  RES CONTROLS_BIT_FIRE_SOUND,(HL)     ;
   RET
 
 ; Finalize collision and erase missile sprite
@@ -3718,7 +3719,7 @@ int_handler:
 ; +-----+-----------------+-----------------------------------+
 ; | Bit | Flag            | Sound Handler                     |
 ; +-----+-----------------+-----------------------------------+
-; | 0   | FIRE            | do_fire (fire)                    |
+; | 0   | FIRE_SOUND      | do_fire (fire)                    |
 ; | 1   | SPEED_NOT_FAST  | beep_engine_normal (normal speed) |
 ; | 2   | SPEED_CHANGED   | beep_engine_fast (fast speed)     |
 ; | 1+2 | Both speed bits | beep_engine_slow (slow speed)     |
@@ -3732,8 +3733,8 @@ handle_controls:
   LD A,(LAST_K)                        ; Skip if paused (H key).
   CP $68                               ;
   JP Z,int_return                      ;
-  LD HL,state_controls                 ; Check FIRE → do_fire.
-  BIT CONTROLS_BIT_FIRE,(HL)           ;
+  LD HL,state_controls                 ; Check FIRE_SOUND → do_fire.
+  BIT CONTROLS_BIT_FIRE_SOUND,(HL)     ;
   CALL NZ,do_fire                      ;
   BIT CONTROLS_BIT_BONUS_LIFE,(HL)     ; Check BONUS_LIFE → do_bonus_life.
   CALL NZ,do_bonus_life                ;
@@ -4245,7 +4246,7 @@ signal_fuel_level_excessive:
 ; explosions set at exploding_fragments.
 ;
 ; * Sets CONTROLS_BIT_EXPLODING to trigger explosion sound
-; * Clears CONTROLS_BIT_FIRE to prevent firing during explosion
+; * Clears CONTROLS_BIT_FIRE_SOUND to stop the fire sound during explosion
 ; * Resets explosion_counter (explosion counter) to EXPLOSION_SOUND_FRAMES
 ; * Falls through to add_object_to_set to add explosion to set
 ;
@@ -4254,7 +4255,7 @@ signal_fuel_level_excessive:
 explode_fragment:
   LD HL,state_controls                 ; Set CONTROLS_BIT_EXPLODING in state_controls.
   SET CONTROLS_BIT_EXPLODING,(HL)      ;
-  RES CONTROLS_BIT_FIRE,(HL)           ; Clear CONTROLS_BIT_FIRE.
+  RES CONTROLS_BIT_FIRE_SOUND,(HL)     ; Clear CONTROLS_BIT_FIRE_SOUND.
   LD A,EXPLOSION_SOUND_FRAMES          ; Reset explosion counter.
   LD (explosion_counter),A             ;
   LD HL,exploding_fragments            ; Point HL to explosions set at exploding_fragments, fall through to

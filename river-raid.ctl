@@ -64,7 +64,7 @@
 > $4000 SPEED_NORMAL EQU $02
 > $4000 SPEED_FAST   EQU $04
 > $4000
-> $4000 CONTROLS_BIT_FIRE            EQU 0
+> $4000 CONTROLS_BIT_FIRE_SOUND      EQU 0
 > $4000 CONTROLS_BIT_SPEED_NOT_FAST  EQU 1
 > $4000 CONTROLS_BIT_SPEED_CHANGED   EQU 2
 > $4000 CONTROLS_BIT_LOW_FUEL        EQU 3
@@ -1237,11 +1237,11 @@ N $6717 Sets speed to SPEED_SLOW and updates control flags. Called when player p
 @ $6721 isub=SET CONTROLS_BIT_SPEED_NOT_FAST,(HL)
 @ $6724 label=handle_fire
 c $6724 Handle fire button input
-N $6724 Creates a new missile if none is currently active. Positions missile at plane X + 4, Y = $7E (just above plane). Sets CONTROLS_BIT_FIRE flag.
+N $6724 Creates a new missile if none is currently active. Positions missile at plane X + 4, Y = $7E (just above plane). Sets CONTROLS_BIT_FIRE_SOUND to trigger the fire sound effect.
   $6724 Return if missile already active (Y != 0).
   $672A Create missile at (plane_X + 4, $7E).
-  $6736,5 Set CONTROLS_BIT_FIRE in #R$6BB0.
-@ $6739 isub=SET CONTROLS_BIT_FIRE,(HL)
+  $6736,5 Set CONTROLS_BIT_FIRE_SOUND in #R$6BB0.
+@ $6739 isub=SET CONTROLS_BIT_FIRE_SOUND,(HL)
 @ $673C label=missile_pass_selector
 g $673C Missile animation pass selector. $01=first pass (erase at old position), $00=second pass (draw at new position). Two-pass rendering prevents flicker.
 @ $673D label=animate_plane_missile
@@ -1249,7 +1249,7 @@ c $673D Animate and render player missile
 D $673D Missile speed: 6 pixels upward per frame. Called twice per frame for two-pass rendering (erase then draw).
 N $673D On the first pass (#R$673C = $01), adjusts missile position for screen scrolling. On both passes, moves missile up by 6 pixels.
 N $673D .
-N $673D If missile reaches top of screen (Y AND $F8 == 0), jumps to #R$6794 to finalize collision. Clears CONTROLS_BIT_FIRE when missile is in lower screen area ($70 - Y >= 0).
+N $673D If missile reaches top of screen (Y AND $F8 == 0), jumps to #R$6794 to finalize collision. Clears CONTROLS_BIT_FIRE_SOUND when missile is in lower screen area ($70 - Y >= 0).
 N $673D .
 N $673D Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions.
   $673D Return if no missile active (Y == 0).
@@ -1267,10 +1267,10 @@ N $673D Sets COLLISION_MODE_MISSILE so the rendering system checks for object co
 @ $6785 isub=LD BC,SPRITE_MISSILE_FRAME_SIZE_BYTES
 @ $6788 isub=LD A,SPRITE_MISSILE_WIDTH_TILES
 @ $678E label=clear_fire_bit
-c $678E Clear CONTROLS_BIT_FIRE flag
-N $678E Called when missile has moved past the plane's Y position, indicating the fire button can trigger a new missile.
-  $678E,5 Clear CONTROLS_BIT_FIRE in #R$6BB0.
-@ $6791 isub=RES CONTROLS_BIT_FIRE,(HL)
+c $678E Clear CONTROLS_BIT_FIRE_SOUND flag
+N $678E Called when missile Y <= $70 (112), stopping the fire sound effect. Does not affect firing — a new missile is gated by missile Y being 0.
+  $678E,5 Clear CONTROLS_BIT_FIRE_SOUND in #R$6BB0.
+@ $6791 isub=RES CONTROLS_BIT_FIRE_SOUND,(HL)
 @ $6794 label=finalize_collision
 c $6794 Finalize collision and erase missile sprite
 N $6794 Called after a successful collision to clean up the game state. Erases the missile sprite from the screen, resets the collision mode to COLLISION_MODE_NONE, clears the missile coordinates, and resets CONTROLS_BIT_SPEED_NOT_FAST.
@@ -1573,11 +1573,11 @@ N $6BDB Note: The game tick counter (#R$5EEF) is incremented in the main loop (#
 @ $6BED label=handle_controls
 c $6BED Process control state flags and trigger sound effects
 D $6BED Sound processing dispatcher called from interrupt handler. Reads #R$6BB0 control flags and calls appropriate sound routines. Multiple sounds can trigger simultaneously (e.g., fire + low fuel).
-D $6BED #TABLE(default) { =h Bit | =h Flag | =h Sound Handler } { 0 | FIRE | #R$8A02 (fire) } { 1 | SPEED_NOT_FAST | #R$6C5D (normal speed) } { 2 | SPEED_CHANGED | #R$6CB8 (fast speed) } { 1+2 | Both speed bits | #R$6CD6 (slow speed) } { 3 | LOW_FUEL | #R$6CF4 (warning) } { 4 | BONUS_LIFE | #R$6C31 (jingle) } { 5 | EXPLODING | #R$6C7B (explosion) } TABLE#
+D $6BED #TABLE(default) { =h Bit | =h Flag | =h Sound Handler } { 0 | FIRE_SOUND | #R$8A02 (fire) } { 1 | SPEED_NOT_FAST | #R$6C5D (normal speed) } { 2 | SPEED_CHANGED | #R$6CB8 (fast speed) } { 1+2 | Both speed bits | #R$6CD6 (slow speed) } { 3 | LOW_FUEL | #R$6CF4 (warning) } { 4 | BONUS_LIFE | #R$6C31 (jingle) } { 5 | EXPLODING | #R$6C7B (explosion) } TABLE#
 N $6BED Flags are set by game logic (input handlers, collision, fuel system) and cleared by sound routines when complete.
   $6BED Skip if paused (H key).
-  $6BF5 Check FIRE → #R$8A02.
-@ $6BF8 isub=BIT CONTROLS_BIT_FIRE,(HL)
+  $6BF5 Check FIRE_SOUND → #R$8A02.
+@ $6BF8 isub=BIT CONTROLS_BIT_FIRE_SOUND,(HL)
 @ $6BFD isub=BIT CONTROLS_BIT_BONUS_LIFE,(HL)
   $6BFD Check BONUS_LIFE → #R$6C31.
 @ $6C05 isub=BIT CONTROLS_BIT_EXPLODING,(HL)
@@ -1829,13 +1829,13 @@ D $6E92 Plays a short beep (~1450 Hz, ~6ms) when fuel tank is already full and c
 @ $6E9C label=explode_fragment
 c $6E9C Create explosion at fragment position
 D $6E9C Called when an enemy is destroyed or the player collides. Sets up explosion state and adds an explosion entry to the explosions set at #R$5F2E.
-D $6E9C #LIST { Sets CONTROLS_BIT_EXPLODING to trigger explosion sound } { Clears CONTROLS_BIT_FIRE to prevent firing during explosion } { Resets #R$6C7A (explosion counter) to EXPLOSION_SOUND_FRAMES } { Falls through to #R$6EAB to add explosion to set } LIST#
+D $6E9C #LIST { Sets CONTROLS_BIT_EXPLODING to trigger explosion sound } { Clears CONTROLS_BIT_FIRE_SOUND to stop the fire sound during explosion } { Resets #R$6C7A (explosion counter) to EXPLOSION_SOUND_FRAMES } { Falls through to #R$6EAB to add explosion to set } LIST#
 R $6E9C I:BC BC contains fragment position: B=Y offset, C=X position
 R $6E9C I:D Object type/definition byte
   $6E9C Set CONTROLS_BIT_EXPLODING in #R$6BB0.
 @ $6E9F isub=SET CONTROLS_BIT_EXPLODING,(HL)
-@ $6EA1 isub=RES CONTROLS_BIT_FIRE,(HL)
-  $6EA1 Clear CONTROLS_BIT_FIRE.
+@ $6EA1 isub=RES CONTROLS_BIT_FIRE_SOUND,(HL)
+  $6EA1 Clear CONTROLS_BIT_FIRE_SOUND.
 @ $6EA3 isub=LD A,EXPLOSION_SOUND_FRAMES
   $6EA3 Reset explosion counter.
   $6EA8 Point HL to explosions set at #R$5F2E, fall through to add_object_to_set.

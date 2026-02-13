@@ -64,7 +64,7 @@ SPEED_SLOW   EQU $01
 SPEED_NORMAL EQU $02
 SPEED_FAST   EQU $04
 
-CONTROLS_BIT_FIRE            EQU 0
+CONTROLS_BIT_FIRE_SOUND      EQU 0
 CONTROLS_BIT_SPEED_NOT_FAST  EQU 1
 CONTROLS_BIT_SPEED_CHANGED   EQU 2
 CONTROLS_BIT_LOW_FUEL        EQU 3
@@ -3149,7 +3149,8 @@ c$6717 LD A,$01      ; {Set speed to SPEED_SLOW.
 ; .
 ;
 ; Creates a new missile if none is currently active. Positions missile at plane
-; X + 4, Y = $7E (just above plane). Sets CONTROLS_BIT_FIRE flag.
+; X + 4, Y = $7E (just above plane). Sets CONTROLS_BIT_FIRE_SOUND to trigger
+; the fire sound effect.
 @label=handle_fire
 c$6724 LD A,($5EF3)  ; {Return if missile already active (Y != 0).
  $6727 CP $00        ;
@@ -3159,8 +3160,8 @@ c$6724 LD A,($5EF3)  ; {Return if missile already active (Y != 0).
  $672F LD B,$7E      ;
  $6731 LD C,A        ;
  $6732 LD ($5EF3),BC ; }
- $6736 LD HL,$6BB0   ; {Set CONTROLS_BIT_FIRE in #R$6BB0.
-@isub=SET CONTROLS_BIT_FIRE,(HL)
+ $6736 LD HL,$6BB0   ; {Set CONTROLS_BIT_FIRE_SOUND in #R$6BB0.
+@isub=SET CONTROLS_BIT_FIRE_SOUND,(HL)
  $6739 SET 0,(HL)    ; }
  $673B RET           ;
 
@@ -3182,8 +3183,8 @@ g$673C DEFB $00
 ; .
 ; .
 ; If missile reaches top of screen (Y AND $F8 == 0), jumps to #R$6794 to
-; finalize collision. Clears CONTROLS_BIT_FIRE when missile is in lower screen
-; area ($70 - Y >= 0).
+; finalize collision. Clears CONTROLS_BIT_FIRE_SOUND when missile is in lower
+; screen area ($70 - Y >= 0).
 ; .
 ; .
 ; .
@@ -3227,17 +3228,17 @@ c$673D LD A,($5EF3)  ; {Return if no missile active (Y == 0).
  $678A CALL $8B1E    ; }
  $678D RET           ;
 
-; Clear CONTROLS_BIT_FIRE flag
+; Clear CONTROLS_BIT_FIRE_SOUND flag
 ;
 ; Used by the routine at #R$673D.
 ;
 ; .
 ;
-; Called when missile has moved past the plane's Y position, indicating the
-; fire button can trigger a new missile.
+; Called when missile Y <= $70 (112), stopping the fire sound effect. Does not
+; affect firing — a new missile is gated by missile Y being 0.
 @label=clear_fire_bit
-c$678E LD HL,$6BB0   ; {Clear CONTROLS_BIT_FIRE in #R$6BB0.
-@isub=RES CONTROLS_BIT_FIRE,(HL)
+c$678E LD HL,$6BB0   ; {Clear CONTROLS_BIT_FIRE_SOUND in #R$6BB0.
+@isub=RES CONTROLS_BIT_FIRE_SOUND,(HL)
  $6791 RES 0,(HL)    ; }
  $6793 RET           ;
 
@@ -4169,7 +4170,7 @@ c$6BDB DI            ; {Disable interrupts and save registers.
 ; .
 ; #TABLE(default)
 ; { =h Bit | =h Flag | =h Sound Handler }
-; { 0 | FIRE | #R$8A02 (fire) }
+; { 0 | FIRE_SOUND | #R$8A02 (fire) }
 ; { 1 | SPEED_NOT_FAST | #R$6C5D (normal speed) }
 ; { 2 | SPEED_CHANGED | #R$6CB8 (fast speed) }
 ; { 1+2 | Both speed bits | #R$6CD6 (slow speed) }
@@ -4186,8 +4187,8 @@ c$6BDB DI            ; {Disable interrupts and save registers.
 c$6BED LD A,($5C08)  ; {Skip if paused (H key).
  $6BF0 CP $68        ;
  $6BF2 JP Z,$6C24    ; }
- $6BF5 LD HL,$6BB0   ; {Check FIRE → #R$8A02.
-@isub=BIT CONTROLS_BIT_FIRE,(HL)
+ $6BF5 LD HL,$6BB0   ; {Check FIRE_SOUND → #R$8A02.
+@isub=BIT CONTROLS_BIT_FIRE_SOUND,(HL)
  $6BF8 BIT 0,(HL)    ;
  $6BFA CALL NZ,$8A02 ; }
 @isub=BIT CONTROLS_BIT_BONUS_LIFE,(HL)
@@ -4781,7 +4782,7 @@ c$6E92 LD DE,$0008   ; {Play tank full sound: BEEPER with DE=$0008, HL=$0111.
 ; .
 ; #LIST
 ; { Sets CONTROLS_BIT_EXPLODING to trigger explosion sound }
-; { Clears CONTROLS_BIT_FIRE to prevent firing during explosion }
+; { Clears CONTROLS_BIT_FIRE_SOUND to stop the fire sound during explosion }
 ; { Resets #R$6C7A (explosion counter) to EXPLOSION_SOUND_FRAMES }
 ; { Falls through to #R$6EAB to add explosion to set }
 ; LIST#
@@ -4792,8 +4793,8 @@ c$6E92 LD DE,$0008   ; {Play tank full sound: BEEPER with DE=$0008, HL=$0111.
 c$6E9C LD HL,$6BB0   ; {Set CONTROLS_BIT_EXPLODING in #R$6BB0.
 @isub=SET CONTROLS_BIT_EXPLODING,(HL)
  $6E9F SET 5,(HL)    ; }
-@isub=RES CONTROLS_BIT_FIRE,(HL)
- $6EA1 RES 0,(HL)    ; Clear CONTROLS_BIT_FIRE.
+@isub=RES CONTROLS_BIT_FIRE_SOUND,(HL)
+ $6EA1 RES 0,(HL)    ; Clear CONTROLS_BIT_FIRE_SOUND.
 @isub=LD A,EXPLOSION_SOUND_FRAMES
  $6EA3 LD A,$18      ; {Reset explosion counter.
  $6EA5 LD ($6C7A),A  ; }
