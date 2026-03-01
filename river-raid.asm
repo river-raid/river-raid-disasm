@@ -3079,12 +3079,12 @@ scroll_attributes:
   LDDR                                 ;
   LD HL,$5BDF                          ; Point HL at the bottom attribute row.
 
-; Update bottom attribute row after scrolling
+; Copy bottom attribute row to row 1 and refill bottom
 ;
-; Copies the bottom attribute row to the top of the screen, then fills the bottom row with either river (green) or
-; bridge attributes depending on state_bridge_section.
-update_bottom_row:
-  LD DE,screen_attributes_row_1        ; Copy bottom attribute row to top of screen.
+; Copies the bottom attribute row to row 1, then fills the bottom row with either river (green) or bridge attributes
+; depending on state_bridge_section. This leaves attribute row 0 unchanged, creating an 8-pixel blank zone at the top.
+update_top_visible_row_and_refill_bottom:
+  LD DE,screen_attributes_row_1        ; Copy bottom attribute row to row 1 (screen_attributes_row_1).
   LD BC,$0020                          ;
   LDIR                                 ;
   LD A,(state_bridge_section)          ; If bridge section 1 or 2, jump to render bridge attributes.
@@ -3101,7 +3101,7 @@ fill_attribute_loop:
   LD (DE),A                            ; Store attribute, advance pointer, loop 32 times.
   INC DE                               ;
   DJNZ fill_attribute_loop             ;
-  CALL next_row                        ; Process objects for new row.
+  CALL spawn_objects_from_level_slot   ; Process objects for new row.
   RET
 
 ; Initialize bridge state for current player
@@ -3158,7 +3158,7 @@ render_bridge_attributes:
   LDIR                                 ;
   LD A,$00                             ; Clear bridge section flag and spawn objects for new row.
   LD (state_bridge_section),A          ;
-  CALL next_row                        ;
+  CALL spawn_objects_from_level_slot   ;
   RET
 
 ; Terrain edge rendering counter
@@ -4452,15 +4452,15 @@ remove_explosion_entry:
   LD (HL),SET_MARKER_EMPTY_SLOT        ;
   JP render_explosions                 ; Continue processing remaining explosions.
 
-; Process objects for newly scrolled row
+; Spawn objects from level data slot
 ;
-; Called when screen scrolls by one fragment. Reads the level data slot for the current scroll position and spawns the
-; appropriate object (rock, fuel depot, or enemy).
+; Called when a new attribute row scrolls into view (every 8 terrain fragments). Reads the level data slot for the
+; current scroll position and spawns the appropriate object (rock, fuel depot, or enemy).
 ;
 ; * Level data starts at level_objects, with SIZE_LEVEL_SLOTS ($100) bytes per level
 ; * Slot format: 2 bytes [D, E] where E = X position (0 = empty), D = type/flags
 ; * D bit 3: rock flag, D bits 0-2: object type (7 = fuel depot)
-next_row:
+spawn_objects_from_level_slot:
   LD A,COLLISION_MODE_NONE             ; Clear collision mode (state_collision_mode).
   LD (state_collision_mode),A          ;
   LD HL,level_objects                  ; Calculate level base address: HL = level_objects + (state_bridge_index *
@@ -8550,9 +8550,10 @@ attr_new_exit_early:
 
 ; Handle old position attributes when sprite is at screen top (row 0).
 ;
-; When Y AND $F8 = 0, the sprite is in the top character row. The attribute address calculation would underflow, so this
-; routine adds $03DF (31 rows × 32 bytes - 1 = 991) to wrap the address to the bottom of the viewport attribute area,
-; then subtracts $03DF after each row to maintain the wrap.
+; When Y AND $F8 = 0, the sprite is in attribute row 0 (pixel rows 0-7). Instead of writing attributes to row 0, this
+; routine wraps around and writes to the bottom of the viewport. This preserves row 0 as black, creating an 8-pixel
+; blank zone where sprites are invisible. Adds $03DF (31 rows × 32 bytes - 1 = 991) to wrap the address, then subtracts
+; $03DF after each row to maintain the wrap.
 set_attr_wrap_old:
   LD BC,$03DF                          ; Add $03DF to HL to correct wrapped address. Restore and re-save BC.
   ADD HL,BC                            ;
@@ -8575,7 +8576,8 @@ set_attr_wrap_old_loop:
 
 ; Handle new position attributes when sprite is at screen top (row 0).
 ;
-; Same $03DF wrap handling as set_attr_wrap_old but for new position.
+; Same $03DF wrap handling as set_attr_wrap_old but for new position. Wraps attribute writes to bottom of viewport to
+; preserve row 0 as black.
 set_attr_wrap_new:
   LD BC,$03DF                          ; Add $03DF to HL to correct wrapped address. Restore and re-save BC.
   ADD HL,BC                            ;
@@ -11978,7 +11980,7 @@ data_islands:
 ; Level object spawn data (48 levels × 256 bytes = 12,288 bytes total).
 ;
 ; Defines what objects spawn at each scroll position for all 48 game levels (bridges). Each level has 128 spawn slots
-; (256 bytes, 2 bytes per slot). Read by next_row during scroll.
+; (256 bytes, 2 bytes per slot). Read by spawn_objects_from_level_slot during scroll.
 ;
 ; +-------+-------------------------------------------------------------+
 ; | Byte  | Contents                                                    |

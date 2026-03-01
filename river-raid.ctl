@@ -1348,10 +1348,10 @@ D $68B7 This routine is called every 8 terrain fragments to scroll the screen at
 @ $68BA ignoreua=$5A3F
 @ $68C2 ignoreua=$5BDF
   $68C2 Point HL at the bottom attribute row.
-@ $68C5 label=update_bottom_row
-c $68C5 Update bottom attribute row after scrolling
-D $68C5 Copies the bottom attribute row to the top of the screen, then fills the bottom row with either river (green) or bridge attributes depending on state_bridge_section.
-  $68C5 Copy bottom attribute row to top of screen.
+@ $68C5 label=update_top_visible_row_and_refill_bottom
+c $68C5 Copy bottom attribute row to row 1 and refill bottom
+D $68C5 Copies the bottom attribute row to row 1, then fills the bottom row with either river (green) or bridge attributes depending on state_bridge_section. This leaves attribute row 0 unchanged, creating an 8-pixel blank zone at the top.
+  $68C5 Copy bottom attribute row to row 1 (#R$5820).
   $68CD If bridge section 1 or 2, jump to render bridge attributes.
 @ $68DA label=fill_river_attributes
   $68DA Initialize bottom row fill with river attribute (green).
@@ -1917,9 +1917,9 @@ R $6F7A I:HL Pointer past the current explosion entry's frame counter byte
 @ $6F7B isub=LD (HL),SET_MARKER_EMPTY_SLOT
   $6F7D Continue processing remaining explosions.
 @ $6F80 isub=LD A,COLLISION_MODE_NONE
-@ $6F80 label=next_row
-c $6F80 Process objects for newly scrolled row
-D $6F80 Called when screen scrolls by one fragment. Reads the level data slot for the current scroll position and spawns the appropriate object (rock, fuel depot, or enemy).
+@ $6F80 label=spawn_objects_from_level_slot
+c $6F80 Spawn objects from level data slot
+D $6F80 Called when a new attribute row scrolls into view (every 8 terrain fragments). Reads the level data slot for the current scroll position and spawns the appropriate object (rock, fuel depot, or enemy).
 D $6F80 #LIST { Level data starts at #R$C800, with SIZE_LEVEL_SLOTS ($100) bytes per level } { Slot format: 2 bytes [D, E] where E = X position (0 = empty), D = type/flags } { D bit 3: rock flag, D bits 0-2: object type (7 = fuel depot) } LIST#
   $6F80 Clear collision mode (#R$5EF5).
   $6F85,9 Calculate level base address: HL = #R$C800 + (#R$5EF0 * SIZE_LEVEL_SLOTS).
@@ -3565,14 +3565,14 @@ D $936B Called when new position boundary check detects HL >= #R$5A20.
   $936B,1 Pop BC and jump to #R$935D to restore registers and return.
 @ $936F label=set_attr_wrap_old
 c $936F Handle old position attributes when sprite is at screen top (row 0).
-D $936F When Y AND $F8 = 0, the sprite is in the top character row. The attribute address calculation would underflow, so this routine adds $03DF (31 rows × 32 bytes - 1 = 991) to wrap the address to the bottom of the viewport attribute area, then subtracts $03DF after each row to maintain the wrap.
+D $936F When Y AND $F8 = 0, the sprite is in attribute row 0 (pixel rows 0-7). Instead of writing attributes to row 0, this routine wraps around and writes to the bottom of the viewport. This preserves row 0 as black, creating an 8-pixel blank zone where sprites are invisible. Adds $03DF (31 rows × 32 bytes - 1 = 991) to wrap the address, then subtracts $03DF after each row to maintain the wrap.
   $936F Add $03DF to HL to correct wrapped address. Restore and re-save BC.
 @ $9375 label=set_attr_wrap_old_loop
   $9375 Inner loop: write attribute A to HL, increment HL, decrement C, repeat for row width.
   $937A After row: restore BC, add stride DE, decrement B, re-save BC. Subtract $03DF from HL to maintain wrap. Jump back to #R$92EA for next row.
 @ $9388 label=set_attr_wrap_new
 c $9388 Handle new position attributes when sprite is at screen top (row 0).
-D $9388 Same $03DF wrap handling as #R$936F but for new position.
+D $9388 Same $03DF wrap handling as #R$936F but for new position. Wraps attribute writes to bottom of viewport to preserve row 0 as black.
   $9388 Add $03DF to HL to correct wrapped address. Restore and re-save BC.
 @ $938E label=set_attr_wrap_new_loop
   $938E Inner loop: write attribute A to HL, increment HL, decrement C, repeat for row width.
