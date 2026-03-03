@@ -566,7 +566,7 @@ D $5F68 Controls what actions are allowed and how rendering/collision works.
 D $5F68 #TABLE(default) { =h Mode | =h Value | =h Description } { NORMAL | $00 | Full player control, collision active } { SCROLL_IN | $01 | Terrain preview at game start, no input } { OVERVIEW | $02 | Attract mode demo } { REFUEL | $06 | Over fuel depot, adding fuel } TABLE#
 D $5F68 During SCROLL_IN and OVERVIEW, player input is ignored and no collision occurs. During REFUEL, fuel is added each frame and collisions use plane position instead of missile position.
 @ $5F69 label=state_plane_sprite_bank
-g $5F69 Plane sprite bank offset. $00=centered, $04=banked left/right. Added to sprite pointer for tilted plane animation.
+g $5F69 Plane sprite bank offset. $00=centered, $04=banked left/right. Reset to $00 at the start of each frame, then set to $04 by #R$6630 after the banked sprite is rendered. Read by #R$6E40, but always $00 at that call site — the check is dead code.
 @ $5F6A label=state_bridge_player_1
 g $5F6A Player 1's current bridge number (0-47). Saved when switching players in 2-player mode.
 @ $5F6B label=state_bridge_player_2
@@ -1797,8 +1797,8 @@ D $6DFF #LIST { Gauge updates every 4th decrement (fuel AND 3 == 0) } { Low fuel
 @ $6E40 label=add_fuel
 c $6E40 Add fuel during refueling
 D $6E40 Adds FUEL_INTAKE_AMOUNT (4 units) per frame while plane is over a fuel depot. At 50fps, this equals ~200 units/second. A full refuel from empty takes ~1.3 seconds.
-D $6E40 #LIST { Returns if plane is banking (#R$5F69 == 4) - must be centered to refuel } { Plays high-pitched refuel sound via ROM BEEPER } { If fuel almost full ($FC), plays tank full sound via #R$6E92 } { Clears low fuel warning when fuel becomes sufficient } LIST#
-  $6E40 Check if #R$5F69 == 4 (refuel limit), return if so.
+D $6E40 #LIST { Checks #R$5F69 == 4, but this is always $00 at call time (set to $04 only after render completes) — effectively dead code } { Plays high-pitched refuel sound via ROM BEEPER } { If fuel almost full ($FC), plays tank full sound via #R$6E92 } { Clears low fuel warning when fuel becomes sufficient } LIST#
+  $6E40 Check #R$5F69 == 4 (dead code: always $00 at call time).
   $6E46 Check if fuel almost full (AND $FC == $FC). If so, jump to #R$6E92 for tank full sound.
 @ $6E49 isub=AND FUEL_LEVEL_ALMOST_FULL
 @ $6E4B isub=CP FUEL_LEVEL_ALMOST_FULL
@@ -2300,14 +2300,14 @@ R $72FD O:C X position + $28
   $72FD,4 C = C + $28.
 @ $7302 label=operate_tank_on_bank
 c $7302 Operate tank on river bank
-D $7302 Handles tanks positioned on the river bank. When terrain is detected ahead (i.e. the tank has reached the end of the bank), the tank stops and fires a shell. While the shell is flying or exploding, the tank remains stationary. When terrain is clear, the tank moves normally via #R$72B5. The tank never reverses direction. Shell trajectory depends on tank orientation and uses pseudo-random speed.
+D $7302 Handles tanks positioned on the river bank. While the probe point (16 pixels ahead in the facing direction) reads solid terrain ($FF), the tank moves normally via #R$72B5. When the probe reads anything other than $FF (river edge reached), the tank stops moving and fires a shell. While the shell is flying or exploding, the tank returns to the main loop without updating its position, keeping it stationary. The tank never reverses direction. Shell trajectory depends on tank orientation and uses pseudo-random speed.
 R $7302 I:B Y position (on stack)
 R $7302 I:C X position (on stack)
 R $7302 I:D Object definition byte
   $7302,7 Load stored position, check terrain 16 pixels ahead in facing direction.
 @ $730A isub=BIT SLOT_BIT_ORIENTATION,D
   $730A If left-facing, negate offset via #R$72F8.
-  $730F If terrain is clear ($FF = river), move tank normally.
+  $730F If terrain is solid ($FF), move tank normally.
   $7317 Pop BC/DE, jump to #R$72B5 if terrain clear.
   $731A,5 Check shell state: if already flying, return to main loop.
 @ $731D isub=BIT TANK_SHELL_BIT_FLYING,A

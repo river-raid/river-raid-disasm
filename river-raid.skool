@@ -1237,7 +1237,7 @@ g$5EF0 DEFB $00
 @label=state_input_readings
 g$5EF1 DEFB $00
 
-; Tank shell state ($00 = inactive, $01 = can fire).
+; Road tank center flag ($00 = inactive, $01 = road tank is at center X=$80).
 @label=state_tank_shell
 g$5EF2 DEFB $00
 
@@ -1444,8 +1444,10 @@ g$5F67 DEFB $00
 @isub=DEFB GAMEPLAY_MODE_NORMAL
 g$5F68 DEFB $00
 
-; Plane sprite bank offset. $00=centered, $04=banked left/right. Added to
-; sprite pointer for tilted plane animation.
+; Plane sprite bank offset. $00=centered, $04=banked left/right. Reset to $00
+; at the start of each frame, then set to $04 by #R$6630 after the banked
+; sprite is rendered. Read by #R$6E40, but always $00 at that call site — the
+; check is dead code.
 @label=state_plane_sprite_bank
 g$5F69 DEFB $00
 
@@ -4702,14 +4704,15 @@ c$6DFF LD A,($5EEF)  ; {Skip if odd tick (fuel only consumed on even ticks).
 ; seconds.
 ; .
 ; #LIST
-; { Returns if plane is banking (#R$5F69 == 4) - must be centered to refuel }
+; { Checks #R$5F69 == 4, but this is always $00 at call time (set to $04 only
+; after render completes) — effectively dead code }
 ; { Plays high-pitched refuel sound via ROM BEEPER }
 ; { If fuel almost full ($FC), plays tank full sound via #R$6E92 }
 ; { Clears low fuel warning when fuel becomes sufficient }
 ; LIST#
 @label=add_fuel
-c$6E40 LD A,($5F69)  ; {Check if #R$5F69 == 4 (refuel limit), return if so.
- $6E43 CP $04        ;
+c$6E40 LD A,($5F69)  ; {Check #R$5F69 == 4 (dead code: always $00 at call
+ $6E43 CP $04        ; time).
  $6E45 RET Z         ; }
  $6E46 LD A,($5F66)  ; {Check if fuel almost full (AND $FC == $FC). If so, jump
 @isub=AND FUEL_LEVEL_ALMOST_FULL
@@ -5778,25 +5781,27 @@ c$728B INC C         ; {INC C × 4: move right 4 pixels.
  $728E INC C         ; }
  $728F RET           ;
 
-; Set tank shell state to active
+; Signal road tank at center
 ;
-; Sets #R$5EF2 to TANK_SHELL_ACTIVE, indicating tank is at firing position.
+; Sets #R$5EF2 to TANK_SHELL_ACTIVE when the road tank reaches the center
+; (X=$80). This suppresses the bank tank shell via #R$735E: if a road tank is
+; at center, the bank tank cancels its shell rather than firing.
 @label=set_tank_shell_active
 @isub=LD A,TANK_SHELL_ACTIVE
-c$7290 LD A,$01      ; {Set tank shell state to TANK_SHELL_ACTIVE.
+c$7290 LD A,$01      ; {Set state_tank_shell to TANK_SHELL_ACTIVE.
  $7292 LD ($5EF2),A  ; }
  $7295 RET           ;
 
 ; Tank operation routine
 ;
-; Operates tanks on the river. Tanks move 2 pixels per frame and fire shells
-; when reaching the center position ($80). Tanks on the river bank are handled
-; separately via #R$7302.
+; Operates tanks on the river. Tanks move 2 pixels per frame and signal their
+; center position ($80) to suppress the bank tank shell. Tanks on the river
+; bank are handled separately via #R$7302.
 ; .
 ; #LIST
 ; { Skips processing every other frame (tick check) }
 ; { Tanks on bank (bit 5 set) handled via #R$7302 }
-; { River tanks move left/right, fire at X=$80 }
+; { River tanks move left/right, set TANK_SHELL_ACTIVE at X=$80 }
 ; { Uses XOR blending mode for rendering }
 ; LIST#
 ;
@@ -5828,7 +5833,7 @@ c$7296 LD A,($5EEF)  ; {Skip if odd tick (tanks move on even ticks).
 @isub=BIT SLOT_BIT_ORIENTATION,D
  $72B7 BIT 6,D       ;
  $72B9 CALL Z,$728B  ; }
- $72BC LD A,C        ; {If X == $80 (center), set tank shell active via
+ $72BC LD A,C        ; {If X == $80 (center), signal road tank at center via
  $72BD CP $80        ; #R$7290.}
  $72BF CALL Z,$7290  ;
  $72C2 LD HL,($5F60) ; {Update position in viewport array, store to #R$8B0C,
@@ -5904,9 +5909,13 @@ c$72FD LD A,C        ; {C = C + $28.
 
 ; Operate tank on river bank
 ;
-; Handles tanks positioned on the river bank. These tanks check terrain ahead
-; and fire shells when path is clear. The shell trajectory depends on tank
-; orientation and uses pseudo-random speed.
+; Handles tanks positioned on the river bank. While the probe point (16 pixels
+; ahead in the facing direction) reads solid terrain ($FF), the tank moves
+; normally via #R$72B5. When the probe reads anything other than $FF (river
+; edge reached), the tank stops moving and fires a shell. While the shell is
+; flying or exploding, the tank returns to the main loop without updating its
+; position, keeping it stationary. The tank never reverses direction. Shell
+; trajectory depends on tank orientation and uses pseudo-random speed.
 ;
 ; I:B Y position (on stack)
 ; I:C X position (on stack)
@@ -5919,7 +5928,7 @@ c$7302 LD BC,($8B0A) ; {Load stored position, check terrain 16 pixels ahead in
 @isub=BIT SLOT_BIT_ORIENTATION,D
  $730A BIT 6,D       ; {If left-facing, negate offset via #R$72F8.
  $730C CALL NZ,$72F8 ; }
- $730F CALL $8A4E    ; {If terrain is clear ($FF = river), move tank normally.
+ $730F CALL $8A4E    ; {If terrain is solid ($FF), move tank normally.
  $7312 LD A,(HL)     ;
  $7313 CP $FF        ;
  $7315 POP BC        ;
