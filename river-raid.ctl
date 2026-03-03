@@ -771,13 +771,13 @@ N $61D3 Bridge hit - award points and spawn explosions.
 @ $61D8 isub=LD A,ACTIVATION_INTERVAL_FAST
   $61D8 Increase activation rate (every 16 frames after bridge destruction).
   $61DD Clean up stack and store hit Y to #R$5EF6.
-  $61E5 Set up first explosion row: Y = bridge_Y - 4, X = $70, D = 0.
-  $61EF Spawn explosion 1 (top-left).
-  $61F2 Move to X = $80 and spawn explosion 2 (top-right).
-  $61F7 Move Y + 8 and spawn explosion 3 (middle-right).
+  $61E5 Set up bottom explosion row: Y = bridge_Y - 4, X = $70, D = 0.
+  $61EF Spawn explosion 1 (bottom-left).
+  $61F2 Move to X = $80 and spawn explosion 2 (bottom-right).
+  $61F7 Move Y - 8 and spawn explosion 3 (middle-right).
   $61FE Move to X = $70 and spawn explosion 4 (middle-left).
-  $6203 Move Y + 8 and spawn explosion 5 (bottom-left).
-  $620A Move to X = $80 and spawn explosion 6 (bottom-right).
+  $6203 Move Y - 8 and spawn explosion 5 (top-left).
+  $620A Move to X = $80 and spawn explosion 6 (top-right).
   $620F If bridge section is $02, call #R$6BA4 with screen #R$4000.
   $6217 (continued from above).
 @ $621A ignoreua=$4100
