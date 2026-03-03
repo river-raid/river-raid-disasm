@@ -136,13 +136,14 @@
 > $4000 ; +-------+--------------------------------------------------+
 > $4000 ; | 0-2   | Object type (OBJECT_* constants, 0-7)            |
 > $4000 ; | 3     | Rock flag (1=rock decoration, 0=interactive)     |
-> $4000 ; | 4     | Unused                                           |
+> $4000 ; | 4     | Alt shell init (set on direction reversal, triggers alternate tank shell init) |
 > $4000 ; | 5     | Tank location (1=river bank, 0=bridge)           |
 > $4000 ; | 6     | Orientation (1=right-facing, 0=left-facing)      |
 > $4000 ; | 7     | Activation (1=active/interactive, 0=spawning)    |
 > $4000 ; +-------+--------------------------------------------------+
-> $4000 SLOT_BIT_ROCK         EQU $03
-> $4000 SLOT_BIT_TANK_ON_BANK EQU $05
+> $4000 SLOT_BIT_ROCK              EQU $03
+> $4000 SLOT_BIT_ALT_SHELL_INIT   EQU $04
+> $4000 SLOT_BIT_TANK_ON_BANK     EQU $05
 > $4000 SLOT_BIT_ORIENTATION  EQU $06
 > $4000 SLOT_BIT_ACTIVATION   EQU $07
 > $4000 SLOT_MASK_OBJECT_TYPE EQU $07
@@ -272,7 +273,11 @@
 > $4000 ; or a rock (set).
 > $4000 ; OBJECT_DEFINITION_BIT_ROCK              = 3,
 > $4000 ;
-> $4000 ; Bit 4 is unused.
+> $4000 ; Bit 4 is set when a tank reverses direction (via #R$7525). On the next
+> $4000 ; processing tick, it causes the tank to use the alternate shell
+> $4000 ; initialization path at #R$735E (check_shell_init_condition) instead of
+> $4000 ; the normal path at #R$7343 (init_tank_shell_state).
+> $4000 ; OBJECT_DEFINITION_BIT_ALT_SHELL_INIT           = 4,
 > $4000 ;
 > $4000 ; Bit 5 defines a tank location: bridge (unset) or river bank (set).
 > $4000 ; OBJECT_DEFINITION_BIT_TANK_LOCATION     = 5,
@@ -2323,12 +2328,13 @@ R $7302 I:D Object definition byte
   $7330,6 Store shell state, calculate spawn X position.
 @ $7337 isub=BIT SLOT_BIT_ORIENTATION,D
   $7337,9 If right-facing, add offset via #R$72FD. Store shell coordinates.
+@ $7343 isub=BIT SLOT_BIT_ALT_SHELL_INIT,D
 @ $7343 label=init_tank_shell_state
 c $7343 Initialize tank shell state
 D $7343 Sets up shell with orientation from tank and pseudo-random speed from interrupt counter.
 R $7343 I:D Object definition byte (bit 6 = orientation)
 R $7343 O:A Shell state with orientation and speed bits
-  $7343 If bit 4 of shell state is set, use alternate initialization via #R$735E.
+  $7343 If SLOT_BIT_ALT_SHELL_INIT is set, use alternate initialization via #R$735E.
   $7348 Copy orientation bit from object definition to shell state.
 @ $7349 isub=AND 1<<SLOT_BIT_ORIENTATION
   $734C Derive speed from interrupt counter (pseudo-random 1-4).
@@ -2475,8 +2481,8 @@ c $74E4 Remove tank shell from game
 D $74E4 Clears all tank shell state variables to remove it from the game.
   $74E4,9 Clear #R$7383 (state) and #R$7385 (coordinates) to $0000.
 @ $74EE label=handle_tank_at_boundary
-c $74EE Handle tank reaching river boundary
-D $74EE Called when a tank on the river reaches the viewport boundary. Checks if tank is within valid X range, creates explosion and awards points if tank destroyed.
+c $74EE Handle tank after bridge destruction
+D $74EE Called each frame when a road tank's bridge has been destroyed (#R$5F6D != 0). The tank's X position is frozen (no movement); this routine checks whether that position falls within the river gap ($70-$90). If yes, the tank is destroyed: its slot is cleared, 1 explosion fragment is spawned, and POINTS_TANK are awarded. If the X position is outside the river gap, the slot's direction bits are set and the speed is checked to decide whether to clear the slot or convert it to a bank-tank.
   $74EE Load current_slot_ptr, navigate to X position in current slot.
   $74F5 If X+10 < $70 (112): tank still on left bank, reverse direction.
   $7502 If X > $90 (144): tank still on right bank, reverse direction.
@@ -2485,15 +2491,17 @@ D $74EE Called when a tank on the river reaches the viewport boundary. Checks if
 @ $7520 isub=LD A,POINTS_TANK
 @ $7525 label=tank_reverse_direction
   $7525,6 Reload current_slot_ptr, set bits 4 and 5 (direction change flags).
-@ $752B isub=SET CONTROLS_BIT_EXPLODING,(HL)
-  $752D Check difficulty level at #R$923D. If level 1, use alternate speed.
-  $7534 Load speed from #R$5F6B.
-@ $753A label=tank_speed_check
-  $753A,9 Check if 7-speed < 0, clear slot if needed.
-@ $7546 label=get_tank_speed_level_1
-c $7546 Get tank speed for level 1
-D $7546 Returns tank speed from #R$5F6A instead of #R$5F6B for difficulty level 1.
-  $7546,3 Load speed from #R$5F6A, continue at #R$753A.
+@ $7529 isub=SET SLOT_BIT_ALT_SHELL_INIT,(HL)
+@ $752B isub=SET SLOT_BIT_TANK_ON_BANK,(HL)
+  $752D Check active player at #R$923D. If player 1, use #R$5F6A.
+@ $7532 isub=CP PLAYER_1
+  $7534 Load bridge number from #R$5F6B.
+@ $753A label=tank_bridge_check
+  $753A,9 Check if 7-bridge_number < 0: if bridge > 7, leave slot as bank-tank; else clear slot X byte.
+@ $7546 label=get_bridge_number_player_1
+c $7546 Get bridge number for player 1
+D $7546 Returns bridge number from #R$5F6A instead of #R$5F6B for player 1.
+  $7546,3 Load bridge number from #R$5F6A, continue at #R$753A.
 @ $754C label=operate_fuel
 c $754C Operate fuel station
 D $754C Processes fuel station rendering with animated lights. Blinks every 4 frames by toggling attribute bit 2 (TICK_MASK_FUEL_BLINK).

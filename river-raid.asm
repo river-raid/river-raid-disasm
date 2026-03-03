@@ -134,13 +134,14 @@ OBJECT_FUEL           EQU $07
 ; +-------+--------------------------------------------------+
 ; | 0-2   | Object type (OBJECT_* constants, 0-7)            |
 ; | 3     | Rock flag (1=rock decoration, 0=interactive)     |
-; | 4     | Unused                                           |
+; | 4     | Alt shell init (set on direction reversal, triggers alternate tank shell init) |
 ; | 5     | Tank location (1=river bank, 0=bridge)           |
 ; | 6     | Orientation (1=right-facing, 0=left-facing)      |
 ; | 7     | Activation (1=active/interactive, 0=spawning)    |
 ; +-------+--------------------------------------------------+
-SLOT_BIT_ROCK         EQU $03
-SLOT_BIT_TANK_ON_BANK EQU $05
+SLOT_BIT_ROCK              EQU $03
+SLOT_BIT_ALT_SHELL_INIT   EQU $04
+SLOT_BIT_TANK_ON_BANK     EQU $05
 SLOT_BIT_ORIENTATION  EQU $06
 SLOT_BIT_ACTIVATION   EQU $07
 SLOT_MASK_OBJECT_TYPE EQU $07
@@ -269,7 +270,11 @@ IM1_VECTOR_TABLE_HI EQU $3F
 ; or a rock (set).
 ; OBJECT_DEFINITION_BIT_ROCK              = 3,
 ;
-; Bit 4 is unused.
+; Bit 4 is set when a tank reverses direction (via #R$7525). On the next
+; processing tick, it causes the tank to use the alternate shell
+; initialization path at #R$735E (check_shell_init_condition) instead of
+; the normal path at #R$7343 (init_tank_shell_state).
+; OBJECT_DEFINITION_BIT_ALT_SHELL_INIT           = 4,
 ;
 ; Bit 5 defines a tank location: bridge (unset) or river bank (set).
 ; OBJECT_DEFINITION_BIT_TANK_LOCATION     = 5,
@@ -1864,25 +1869,25 @@ check_collision:
   POP BC                               ;
   LD A,D                               ;
   LD (state_collision_y),A             ;
-  LD A,(state_bridge_y_position)       ; Set up first explosion row: Y = bridge_Y - 4, X = $70, D = 0.
+  LD A,(state_bridge_y_position)       ; Set up bottom explosion row: Y = bridge_Y - 4, X = $70, D = 0.
   SUB $04                              ;
   LD B,A                               ;
   LD C,$70                             ;
   LD D,$00                             ;
-  CALL explode_fragment                ; Spawn explosion 1 (top-left).
-  LD C,$80                             ; Move to X = $80 and spawn explosion 2 (top-right).
+  CALL explode_fragment                ; Spawn explosion 1 (bottom-left).
+  LD C,$80                             ; Move to X = $80 and spawn explosion 2 (bottom-right).
   CALL explode_fragment                ;
-  LD A,B                               ; Move Y + 8 and spawn explosion 3 (middle-right).
+  LD A,B                               ; Move Y - 8 and spawn explosion 3 (middle-right).
   SUB $08                              ;
   LD B,A                               ;
   CALL explode_fragment                ;
   LD C,$70                             ; Move to X = $70 and spawn explosion 4 (middle-left).
   CALL explode_fragment                ;
-  LD A,B                               ; Move Y + 8 and spawn explosion 5 (bottom-left).
+  LD A,B                               ; Move Y - 8 and spawn explosion 5 (top-left).
   SUB $08                              ;
   LD B,A                               ;
   CALL explode_fragment                ;
-  LD C,$80                             ; Move to X = $80 and spawn explosion 6 (bottom-right).
+  LD C,$80                             ; Move to X = $80 and spawn explosion 6 (top-right).
   CALL explode_fragment                ;
   LD A,(state_bridge_section)          ; If bridge section is $02, call clear_destroyed_bridge with screen
   CP $02                               ; screen_pixels.
@@ -5251,7 +5256,7 @@ tank_fire_shell_entry:
 ; I:D Object definition byte (bit 6 = orientation)
 ; O:A Shell state with orientation and speed bits
 init_tank_shell_state:
-  BIT 4,D                              ; If bit 4 of shell state is set, use alternate initialization via
+  BIT SLOT_BIT_ALT_SHELL_INIT,D        ; If SLOT_BIT_ALT_SHELL_INIT is set, use alternate initialization via
   JP NZ,check_shell_init_condition     ; check_shell_init_condition.
   LD A,D                               ; Copy orientation bit from object definition to shell state.
   AND 1<<SLOT_BIT_ORIENTATION          ;
@@ -5593,10 +5598,13 @@ remove_tank_shell:
   LD (tank_shell_coordinates),HL       ;
   RET
 
-; Handle tank reaching river boundary
+; Handle tank after bridge destruction
 ;
-; Called when a tank on the river reaches the viewport boundary. Checks if tank is within valid X range, creates
-; explosion and awards points if tank destroyed.
+; Called each frame when a road tank's bridge has been destroyed (state_bridge_destroyed != 0). The tank's X position is
+; frozen (no movement); this routine checks whether that position falls within the river gap ($70-$90). If yes, the tank
+; is destroyed: its slot is cleared, 1 explosion fragment is spawned, and POINTS_TANK are awarded. If the X position is
+; outside the river gap, the slot's direction bits are set and the speed is checked to decide whether to clear the slot
+; or convert it to a bank-tank.
 handle_tank_at_boundary:
   LD HL,(current_slot_ptr)             ; Load current_slot_ptr, navigate to X position in current slot.
   DEC HL                               ;
@@ -5632,29 +5640,29 @@ handle_tank_at_boundary:
 tank_reverse_direction:
   LD HL,(current_slot_ptr)             ; Reload current_slot_ptr, set bits 4 and 5 (direction change flags).
   DEC HL                               ;
-  SET 4,(HL)                           ;
-  SET CONTROLS_BIT_EXPLODING,(HL)
-  DEC HL                               ; Check difficulty level at state_player. If level 1, use alternate speed.
+  SET SLOT_BIT_ALT_SHELL_INIT,(HL)     ;
+  SET SLOT_BIT_TANK_ON_BANK,(HL)
+  DEC HL                               ; Check active player at state_player. If player 1, use state_bridge_player_1.
   DEC HL                               ;
   LD A,(state_player)                  ;
-  CP $01                               ;
-  JP Z,get_tank_speed_level_1          ; Load speed from state_bridge_player_2.
+  CP PLAYER_1                          ;
+  JP Z,get_bridge_number_player_1      ; Load bridge number from state_bridge_player_2.
   LD A,(state_bridge_player_2)         ;
-; This entry point is used by the routine at get_tank_speed_level_1.
-tank_speed_check:
-  LD B,A                               ; Check if 7-speed < 0, clear slot if needed.
-  LD A,$07                             ;
+; This entry point is used by the routine at get_bridge_number_player_1.
+tank_bridge_check:
+  LD B,A                               ; Check if 7-bridge_number < 0: if bridge > 7, leave slot as bank-tank; else
+  LD A,$07                             ; clear slot X byte.
   SUB B                                ;
   JP M,operate_viewport_slots          ;
   LD (HL),$00                          ;
   JP operate_viewport_slots
 
-; Get tank speed for level 1
+; Get bridge number for player 1
 ;
-; Returns tank speed from state_bridge_player_1 instead of state_bridge_player_2 for difficulty level 1.
-get_tank_speed_level_1:
-  LD A,(state_bridge_player_1)         ; Load speed from state_bridge_player_1, continue at tank_speed_check.
-  JP tank_speed_check
+; Returns bridge number from state_bridge_player_1 instead of state_bridge_player_2 for player 1.
+get_bridge_number_player_1:
+  LD A,(state_bridge_player_1)         ; Load bridge number from state_bridge_player_1, continue at tank_bridge_check.
+  JP tank_bridge_check
 
 ; Operate fuel station
 ;
