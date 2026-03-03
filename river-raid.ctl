@@ -501,7 +501,7 @@ g $5EF0 Current bridge number (0-47).
 @ $5EF1 label=state_input_readings
 g $5EF1 Raw input port value from last keyboard/joystick read. Format depends on input interface type.
 @ $5EF2 label=state_tank_shell
-g $5EF2 Tank shell state ($00 = inactive, $01 = can fire).
+g $5EF2 Road tank center flag ($00 = inactive, $01 = road tank is at center X=$80).
 @ $5EF3 label=state_plane_missile_coordinates
 g $5EF3 Player missile Y coordinate in pixels (0-255). $00 when no missile active.
 @ $5EF4 label=state_plane_missile_x
@@ -2240,13 +2240,13 @@ D $728B Increments X position by 4 pixels for right-moving tank.
   $728B,4 INC C × 4: move right 4 pixels.
 @ $7290 label=set_tank_shell_active
 @ $7290 isub=LD A,TANK_SHELL_ACTIVE
-c $7290 Set tank shell state to active
-D $7290 Sets #R$5EF2 to TANK_SHELL_ACTIVE, indicating tank is at firing position.
-  $7290,5 Set tank shell state to TANK_SHELL_ACTIVE.
+c $7290 Signal road tank at center
+D $7290 Sets #R$5EF2 to TANK_SHELL_ACTIVE when the road tank reaches the center (X=$80). This suppresses the bank tank shell via #R$735E: if a road tank is at center, the bank tank cancels its shell rather than firing.
+  $7290,5 Set state_tank_shell to TANK_SHELL_ACTIVE.
 @ $7296 label=operate_tank
 c $7296 Tank operation routine
-D $7296 Operates tanks on the river. Tanks move 2 pixels per frame and fire shells when reaching the center position ($80). Tanks on the river bank are handled separately via #R$7302.
-D $7296 #LIST { Skips processing every other frame (tick check) } { Tanks on bank (bit 5 set) handled via #R$7302 } { River tanks move left/right, fire at X=$80 } { Uses XOR blending mode for rendering } LIST#
+D $7296 Operates tanks on the river. Tanks move 2 pixels per frame and signal their center position ($80) to suppress the bank tank shell. Tanks on the river bank are handled separately via #R$7302.
+D $7296 #LIST { Skips processing every other frame (tick check) } { Tanks on bank (bit 5 set) handled via #R$7302 } { River tanks move left/right, set TANK_SHELL_ACTIVE at X=$80 } { Uses XOR blending mode for rendering } LIST#
 R $7296 I:B Y position
 R $7296 I:C X position
 R $7296 I:D Object definition byte
@@ -2261,7 +2261,7 @@ R $7296 I:D Object definition byte
   $72B5,10 Move tank: DEC C twice (left), then INC C × 4 if right-facing.
   $72B5 Move tank: DEC C twice (left), then INC C × 4 if right-facing.
 @ $72B7 isub=BIT SLOT_BIT_ORIENTATION,D
-  $72BC If X == $80 (center), set tank shell active via #R$7290.
+  $72BC If X == $80 (center), signal road tank at center via #R$7290.
   $72C2,13 Update position in viewport array, store to #R$8B0C, get sprite pointer.
 @ $72D2 isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
   $72D2 Set frame size=$18, enable XOR blending via #R$72E6.
@@ -2300,7 +2300,7 @@ R $72FD O:C X position + $28
   $72FD,4 C = C + $28.
 @ $7302 label=operate_tank_on_bank
 c $7302 Operate tank on river bank
-D $7302 Handles tanks positioned on the river bank. These tanks check terrain ahead and fire shells when path is clear. The shell trajectory depends on tank orientation and uses pseudo-random speed.
+D $7302 Handles tanks positioned on the river bank. When terrain is detected ahead (i.e. the tank has reached the end of the bank), the tank stops and fires a shell. While the shell is flying or exploding, the tank remains stationary. When terrain is clear, the tank moves normally via #R$72B5. The tank never reverses direction. Shell trajectory depends on tank orientation and uses pseudo-random speed.
 R $7302 I:B Y position (on stack)
 R $7302 I:C X position (on stack)
 R $7302 I:D Object definition byte
