@@ -12,6 +12,7 @@ Z80_PRISTINE = $(GAME).pristine.z80
 Z80_FIXED = $(GAME).fixed.z80
 BIN_PRISTINE = $(GAME).pristine.bin
 BIN_NON_FIXED = $(GAME).non-fixed.bin
+BIN_FIXED = $(GAME).fixed.bin
 ASM_NON_FIXED = $(GAME).non-fixed.asm
 ASM_FIXED = $(GAME).asm
 
@@ -60,10 +61,6 @@ lint-instruction-order: $(CTL)
 lint-lengths: $(CTL)
 	python3 scripts/validate_ctl_lengths.py $(CTL)
 
-# Build snapshot WITH patches applied (for manual testing)
-$(Z80_FIXED): $(SKOOL)
-	skool2bin.py --ofix $< - | bin2sna.py --border 0 --org $(ORG) --start $(PC) --stack $(SP) - $@
-
 # Generate fixed assembly source
 $(ASM_FIXED): $(SKOOL)
 	@skool2asm.py --create-labels -f 1 $(SKOOL) > $@.tmp 2> $@.stderr; \
@@ -72,6 +69,14 @@ $(ASM_FIXED): $(SKOOL)
 	else \
 		rm -f $@.stderr; mv $@.tmp $@; \
 	fi
+
+# Generate fixed object file
+$(BIN_FIXED): $(ASM_FIXED)
+	pasmo --bin $< $@
+
+# Generate fixed snapshot
+$(Z80_FIXED): $(BIN_FIXED)
+	bin2sna.py --border 0 --org $(ORG) --start $(PC) --stack $(SP) $< $@
 
 # Generate non-fixed assembly source
 $(ASM_NON_FIXED): $(SKOOL)
