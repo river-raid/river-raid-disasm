@@ -626,8 +626,8 @@ W $5F87
 @ $5F89 label=collision_saved_bc
 g $5F89 Saved BC register during collision detection. Preserved across collision handler calls.
 W $5F89
-@ $5F8B label=collision_result
-g $5F8B Collision result coordinates (Y in high byte, X in low byte). Set by collision detection when overlap found.
+@ $5F8B label=collision_coordinates
+g $5F8B Collision coordinates (Y in high byte, X in low byte). Set by collision detection when overlap found.
 W $5F8B
 @ $5F8D label=state_saved_object_coords
 g $5F8D Saved object coordinates during rendering. Backup of object position for multi-pass rendering.

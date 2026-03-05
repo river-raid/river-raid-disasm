@@ -1470,8 +1470,8 @@ collision_saved_de:
 collision_saved_bc:
   DEFW $0000
 
-; Collision result coordinates (Y in high byte, X in low byte). Set by collision detection when overlap found.
-collision_result:
+; Collision coordinates (Y in high byte, X in low byte). Set by collision detection when overlap found.
+collision_coordinates:
   DEFW $0000
 
 ; Saved object coordinates during rendering. Backup of object position for multi-pass rendering.
@@ -1949,7 +1949,7 @@ handle_collision_mode_fuel_depot:
 ; Iterates through exploding_fragments (exploding_fragments) to check if the entity collides with any active debris.
 ; Each fragment entry is 3 bytes: X, Y, and type/state.
 ;
-; Collision uses 8x8 bounding box for the entity and 16x8 for fragments. Result stored in collision_result: $02 =
+; Collision uses 8x8 bounding box for the entity and 16x8 for fragments. Result stored in collision_coordinates: $02 =
 ; collision detected, $00 = no collision (end of list reached).
 check_fragment_collision:
   LD HL,(exploding_fragments_ptr)      ; Load fragment coordinates (C=X, B=Y) from list pointer exploding_fragments_ptr
@@ -2006,16 +2006,16 @@ check_fragment_collision:
   SBC HL,DE                               ;
   JP M,check_fragment_collision           ;
 ; Collision detected with fragment.
-  LD A,$02                             ; Store $02 (collision) to collision_result and return.
-  LD (collision_result),A              ;
+  LD A,$02                             ; Store $02 (collision) to collision_coordinates and return.
+  LD (collision_coordinates),A         ;
   RET                                  ;
 
 ; End of fragment list - no collision found
 ;
 ; Used by the routine at check_fragment_collision.
 check_fragment_collision_end:
-  LD A,$00                             ; Store $00 (no collision) to collision_result and return.
-  LD (collision_result),A              ;
+  LD A,$00                             ; Store $00 (no collision) to collision_coordinates and return.
+  LD (collision_coordinates),A         ;
   RET                                  ;
 
 ; Get Y offset for balloon collision
@@ -2146,10 +2146,10 @@ check_missile_vs_objects:
   AND SLOT_MASK_OBJECT_TYPE            ; If ship, call get_offset_balloon (E = 9, wider).
   CP OBJECT_SHIP                       ;
   CALL Z,get_offset_balloon            ;
-  LD A,D                                  ; Store object coordinates to collision_result for hit handlers.
+  LD A,D                                  ; Store object coordinates to collision_coordinates for hit handlers.
   ADD A,E                                 ;
   LD DE,(state_plane_missile_coordinates) ;
-  LD (collision_result),BC             ; (continued).
+  LD (collision_coordinates),BC        ; (continued).
   LD H,$00                             ; Check if object_X + 10 + offset >= entity_X; if not, next object.
   LD L,A                               ;
   OR A                                 ;
@@ -2160,7 +2160,7 @@ check_missile_vs_objects:
   LD A,(state_gameplay_mode)           ; If GAMEPLAY_MODE_REFUEL, call retract_object to undo Y adjustment.
   CP GAMEPLAY_MODE_REFUEL              ;
   CALL Z,retract_object                ;
-  LD (collision_result),BC             ; Store object coordinates to collision_result.
+  LD (collision_coordinates),BC        ; Store object coordinates to collision_coordinates.
   LD HL,(current_slot_ptr)             ; Load object type from viewport pointer.
   DEC HL                               ;
   LD A,(HL)                            ;
@@ -2190,7 +2190,7 @@ check_missile_vs_objects_end:
   LD (current_slot_ptr),HL             ;
   LD HL,exploding_fragments            ;
   LD (exploding_fragments_ptr),HL      ;
-  LD A,(collision_result)              ; If fragment collision detected ($02), jump to reset_gameplay_mode.
+  LD A,(collision_coordinates)         ; If fragment collision detected ($02), jump to reset_gameplay_mode.
   CP $02                               ;
   JP Z,reset_gameplay_mode             ;
   LD BC,(tank_shell_coordinates)       ; Compare missile Y with tank shell Y; if equal, jump to reset_gameplay_mode.
@@ -2237,7 +2237,7 @@ no_collision_exit:
 hit_helicopter_reg:
   LD A,POINTS_HELICOPTER_REG           ; Award POINTS_HELICOPTER_REG to player.
   CALL add_points                      ;
-  LD BC,(collision_result)             ; Spawn explosion at object coordinates from collision_result.
+  LD BC,(collision_coordinates)        ; Spawn explosion at object coordinates from collision_coordinates.
   CALL explode_fragment                ;
   JP process_collision_hit             ; Finalize collision.
 
@@ -2249,7 +2249,7 @@ hit_helicopter_reg:
 hit_ship:
   LD A,POINTS_SHIP                     ; Award POINTS_SHIP to player.
   CALL add_points                      ;
-  LD BC,(collision_result)             ; Load coordinates from collision_result and spawn explosion 1 (left).
+  LD BC,(collision_coordinates)        ; Load coordinates from collision_coordinates and spawn explosion 1 (left).
   CALL explode_fragment                ;
   LD A,C                               ; Move X+8 and spawn explosion 2 (right).
   ADD A,$08                            ;
@@ -2272,7 +2272,7 @@ hit_ship:
 hit_helicopter_adv:
   LD A,POINTS_HELICOPTER_ADV           ; Award POINTS_HELICOPTER_ADV to player.
   CALL add_points                      ;
-  LD BC,(collision_result)             ; Spawn explosion at object coordinates from collision_result.
+  LD BC,(collision_coordinates)        ; Spawn explosion at object coordinates from collision_coordinates.
   CALL explode_fragment                ;
   JP process_collision_hit             ; Finalize collision.
 
@@ -2284,7 +2284,7 @@ hit_helicopter_adv:
 hit_fighter:
   LD A,POINTS_FIGHTER                  ; Award POINTS_FIGHTER to player.
   CALL add_points                      ;
-  LD BC,(collision_result)             ; Spawn explosion at object coordinates from collision_result.
+  LD BC,(collision_coordinates)        ; Spawn explosion at object coordinates from collision_coordinates.
   CALL explode_fragment                ;
   JP process_collision_hit             ; Finalize collision.
 
@@ -2296,7 +2296,7 @@ hit_fighter:
 hit_balloon:
   LD A,POINTS_BALLOON                  ; Award POINTS_BALLOON to player.
   CALL add_points                      ;
-  LD BC,(collision_result)             ; Load coordinates from collision_result and spawn explosion 1 (top).
+  LD BC,(collision_coordinates)        ; Load coordinates from collision_coordinates and spawn explosion 1 (top).
   CALL explode_fragment                ;
   LD A,B                               ; Move Y+8 and spawn explosion 2 (bottom).
   ADD A,$08                            ;
@@ -2321,7 +2321,7 @@ hit_fuel:
 ; Missile hit on fuel depot - destroy it.
   LD A,POINTS_FUEL                     ; Award POINTS_FUEL to player.
   CALL add_points                      ;
-  LD BC,(collision_result)             ; Load coordinates from collision_result and spawn explosion 1.
+  LD BC,(collision_coordinates)        ; Load coordinates from collision_coordinates and spawn explosion 1.
   CALL explode_fragment                ;
   LD A,B                               ; Move Y+8 and spawn explosion 2.
   ADD A,$08                            ;

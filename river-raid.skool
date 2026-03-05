@@ -1570,9 +1570,9 @@ g$5F87 DEFW $0000
 @label=collision_saved_bc
 g$5F89 DEFW $0000
 
-; Collision result coordinates (Y in high byte, X in low byte). Set by
-; collision detection when overlap found.
-@label=collision_result
+; Collision coordinates (Y in high byte, X in low byte). Set by collision
+; detection when overlap found.
+@label=collision_coordinates
 g$5F8B DEFW $0000
 
 ; Saved object coordinates during rendering. Backup of object position for
