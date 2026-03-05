@@ -2422,11 +2422,11 @@ print_space:
   RST $10
   RET
 
-; Handle the no fuel situation
+; Handle player death
 ;
-; This routine is called when the player runs out of fuel. It stops the plane, creates two explosion fragments at the
-; plane's position, animates the explosions over 16 frames, waits for a delay, then determines the next game state based
-; on the current player and remaining lives in single or two-player mode.
+; General player death handler. It stops the plane, creates two explosion fragments at the plane's position, animates
+; the explosions over 16 frames, waits for a delay, then determines the next game state based on the current player and
+; remaining lives in single or two-player mode.
 ;
 ; Two-player mode uses alternating turns. After death, the switching logic is:
 ;
@@ -2444,7 +2444,7 @@ print_space:
 ; +---------+----------+----------+--------------+
 ;
 ; In single-player mode, the game simply restarts P1 if lives remain, otherwise Game Over.
-handle_no_fuel:
+handle_player_death:
   LD A,(state_plane_x)                 ; Load plane X-coordinate
   AND $F8                              ; Align to 8-pixel boundary (clear lower 3 bits)
   LD C,A                               ; Store aligned X-coordinate in C register
@@ -2893,16 +2893,16 @@ clear_fire_bit:
 ; Called after a successful collision to clean up the game state. Erases the missile sprite from the screen, resets the
 ; collision mode to COLLISION_MODE_NONE, clears the missile coordinates, and resets CONTROLS_BIT_SPEED_NOT_FAST.
 ;
-; If in GAMEPLAY_MODE_REFUEL, jumps to handle_no_fuel instead.
+; If in GAMEPLAY_MODE_REFUEL, jumps to handle_player_death instead.
 ;
 ; The sprite frame selection uses the X coordinate's lower 3 bits to choose the correct pixel-aligned erasure frame
 ; (1-4).
 finalize_collision:
   LD BC,(state_plane_missile_coordinates) ; Load missile coordinates from state_plane_missile_coordinates and call
   CALL blending_mode_or_or                ; blending_mode_or_or to set OR blending.
-  LD A,(state_gameplay_mode)           ; If GAMEPLAY_MODE_REFUEL, jump to handle_no_fuel.
+  LD A,(state_gameplay_mode)           ; If GAMEPLAY_MODE_REFUEL, jump to handle_player_death.
   CP GAMEPLAY_MODE_REFUEL              ;
-  JP Z,handle_no_fuel                  ;
+  JP Z,handle_player_death             ;
   LD A,COLLISION_MODE_NONE             ; Reset collision mode in state_collision_mode to NONE.
   LD (state_collision_mode),A          ;
   LD A,$01                             ; Set up sprite parameters: width=1, base=sprite_missile_trail, frame_size=8.
@@ -4138,7 +4138,7 @@ init_starting_bridge:
 ;
 ; * Gauge updates every 4th decrement (fuel AND 3 == 0)
 ; * Low fuel warning when top 2 bits = 0 (fuel < $40)
-; * Empty fuel (fuel = 0) triggers game over via handle_no_fuel
+; * Empty fuel (fuel = 0) triggers game over via handle_player_death
 ; * Gauge position: column = (fuel >> 2) + $40, row = $A8
 consume_fuel:
   LD A,(state_tick)                    ; Skip if odd tick (fuel only consumed on even ticks).
@@ -4151,9 +4151,9 @@ consume_fuel:
   AND FUEL_CHECK_INTERVAL              ; Skip gauge update unless (fuel AND 3) == 0 (every 4th decrement).
   CP $00                               ;
   RET NZ                               ;
-  LD A,(state_fuel)                    ; If fuel == 0, game over (jump to handle_no_fuel).
+  LD A,(state_fuel)                    ; If fuel == 0, game over (jump to handle_player_death).
   CP FUEL_LEVEL_EMPTY                  ;
-  JP Z,handle_no_fuel                  ;
+  JP Z,handle_player_death             ;
   AND FUEL_LEVEL_LOW                   ; If fuel low (top 2 bits = 0), call register_low_fuel to set low fuel warning.
   CP $00                               ;
   CALL Z,register_low_fuel             ;
@@ -5471,7 +5471,7 @@ render_helicopter_missile:
 ; active.
 ;
 ; * Checks missile position against player position
-; * If collision detected, jumps to handle_no_fuel (player hit)
+; * If collision detected, jumps to handle_player_death (player hit)
 ; * Clears missile and pops return addresses to abort collision chain
 handle_collision_mode_helicopter_missile:
   LD BC,(helicopter_missile_coordinates_ptr) ; Load missile coords. If Y bit 7 clear, clear missile and return.
@@ -5484,10 +5484,10 @@ handle_collision_mode_helicopter_missile:
   LD A,(state_plane_x)                    ;
   AND $F8                                 ;
   CP C                                    ;
-  JP Z,handle_no_fuel                     ;
+  JP Z,handle_player_death                ;
   ADD A,$08                            ; Check adjacent X position. If match, player hit.
   CP C                                 ;
-  JP Z,handle_no_fuel                  ;
+  JP Z,handle_player_death             ;
 handle_collision_mode_missile_miss:
   LD BC,$0000                                ; Clear missile coords, pop 4 return addresses, return.
   LD (helicopter_missile_coordinates_ptr),BC ;

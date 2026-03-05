@@ -169,7 +169,7 @@ line comments that explain purpose rather than restating code:
 `handle_collision_mode_fuel_depot`, `check_fragment_collision`, `get_offset_balloon`, `get_offset_fuel`,
 `advance_object`, `retract_object`, `check_missile_vs_objects`, `hit_helicopter_reg`, `hit_ship`,
 `hit_helicopter_adv`, `hit_fighter`, `hit_balloon`, `hit_fuel`, `refuel_from_depot`, `print_bridge`,
-`handle_no_fuel`, `restart_current_player`, `advance_scroll`, `update_bridge_scroll`, `clear_bridge`,
+`handle_player_death`, `restart_current_player`, `advance_scroll`, `update_bridge_scroll`, `clear_bridge`,
 `handle_up`, `handle_down`, `handle_fire`, `animate_plane_missile`, `clear_fire_bit`, `scroll_screen`,
 `init_current_bridge`, `increase_bridge_index`, `handle_island`, `render_island_line`,
 `calc_mirrored_edge`, `calc_offset_edge`, `render_terrain_row`, `render_terrain_fragment`,

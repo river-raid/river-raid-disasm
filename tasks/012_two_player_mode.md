@@ -23,7 +23,7 @@ Updated with detailed description of which state variables it affects:
 - Bridge progress: #R$5F6A (P1) vs #R$5F6B (P2)
 - Colors: P1=yellow ($06), P2=cyan ($05)
 
-### Player Switching Logic (handle_no_fuel $650A)
+### Player Switching Logic (handle_player_death $650A)
 Added comprehensive state machine table showing all combinations:
 
 | Current | P1 Lives | P2 Lives | Action |

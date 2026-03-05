@@ -1037,9 +1037,9 @@ N $64F1 Shared code for printing Player 2's bridge number. Called directly when 
 @ $6506 isub=LD A," "
 c $6506 Print a space character
 C $6506,c2 Output space via RST $10.
-@ $650A label=handle_no_fuel
-c $650A Handle the no fuel situation
-D $650A This routine is called when the player runs out of fuel. It stops the plane, creates two explosion fragments at the plane's position, animates the explosions over 16 frames, waits for a delay, then determines the next game state based on the current player and remaining lives in single or two-player mode.
+@ $650A label=handle_player_death
+c $650A Handle player death
+D $650A General player death handler. It stops the plane, creates two explosion fragments at the plane's position, animates the explosions over 16 frames, waits for a delay, then determines the next game state based on the current player and remaining lives in single or two-player mode.
 N $650A Two-player mode uses alternating turns. After death, the switching logic is:
 N $650A #TABLE(default) { =h Current | =h P1 Lives | =h P2 Lives | =h Action } { P1 | >0 | >0 | Switch to P2 } { P1 | >0 | 0 | Restart P1 } { P1 | 0 | >0 | Switch to P2 } { P1 | 0 | 0 | Game Over } { P2 | >0 | >0 | Switch to P1 } { P2 | >0 | 0 | Restart P2 } { P2 | 0 | >0 | Switch to P1 } { P2 | 0 | 0 | Game Over } TABLE#
 N $650A In single-player mode, the game simply restarts P1 if lives remain, otherwise Game Over.

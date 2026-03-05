@@ -2676,13 +2676,12 @@ c$6506 LD A," "      ; Output space via RST $10.
  $6508 RST $10       ;
  $6509 RET           ;
 
-; Handle the no fuel situation
+; Handle player death
 ;
-; This routine is called when the player runs out of fuel. It stops the plane,
-; creates two explosion fragments at the plane's position, animates the
-; explosions over 16 frames, waits for a delay, then determines the next game
-; state based on the current player and remaining lives in single or two-player
-; mode.
+; General player death handler. It stops the plane, creates two explosion
+; fragments at the plane's position, animates the explosions over 16 frames,
+; waits for a delay, then determines the next game state based on the current
+; player and remaining lives in single or two-player mode.
 ;
 ; .
 ;
@@ -2702,7 +2701,7 @@ c$6506 LD A," "      ; Output space via RST $10.
 ; .
 ; In single-player mode, the game simply restarts P1 if lives remain, otherwise
 ; Game Over.
-@label=handle_no_fuel
+@label=handle_player_death
 c$650A LD A,($5F72)  ; Load plane X-coordinate
  $650D AND $F8       ; Align to 8-pixel boundary (clear lower 3 bits)
  $650F LD C,A        ; Store aligned X-coordinate in C register
