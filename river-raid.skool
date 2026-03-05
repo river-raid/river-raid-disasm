@@ -7435,7 +7435,9 @@ u$8391 DEFB $3F,$3F,$3F,$3F,$3F,$3F,$3F,$3F
 ;
 ; .
 ;
-; #POKES33723,146;33739,36
+; #POKES33723,146
+; .
+; #POKES33739,36
 ; .
 ; #UDGTABLE
 ; { #UDGARRAY2,14,4,2;$83B1-$83B2-1-16(plane-f1) }
@@ -7446,6 +7448,7 @@ b$83B1 DEFB $10,$00  ; {Frame 1
  $83B5 DEFB $38,$00  ;
  $83B7 DEFB $7C,$00  ;
  $83B9 DEFB $D6,$00  ;
+@ofix=DEFB $92,$00
  $83BB DEFB $82,$00  ;
  $83BD DEFB $38,$00  ;
  $83BF DEFB $54,$00  ; }
@@ -7457,6 +7460,7 @@ b$83B1 DEFB $10,$00  ; {Frame 1
  $83C5 DEFB $0E,$00  ;
  $83C7 DEFB $1F,$00  ;
  $83C9 DEFB $35,$80  ;
+@ofix=DEFB $24,$80
  $83CB DEFB $04,$80  ;
  $83CD DEFB $0E,$00  ;
  $83CF DEFB $15,$00  ; }
@@ -7997,7 +8001,9 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
 ; { #UDGARRAY3,12,4,3;$8733-$8736-1-16{0,0,64,32}(fighter-left-f1) }
 ; TABLE#
  $8733 DEFB $00,$00,$00 ; {Frame 1
+@ofix=DEFB $00,$40,$00
  $8736 DEFB $70,$40,$00 ;
+@ofix=DEFB $70,$C0,$00
  $8739 DEFB $00,$C0,$00 ;
  $873C DEFB $FF,$C0,$00 ;
  $873F DEFB $FC,$80,$00 ;
@@ -8177,6 +8183,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $888F DEFB $0F,$84,$00 ;
  $8892 DEFB $08,$F8,$00 ;
  $8895 DEFB $00,$20,$00 ;
+@ofix=DEFB $00,$F8,$00
  $8898 DEFB $08,$F8,$00 ; }
 ; #POKES34992,0
 ; .
@@ -8190,6 +8197,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $88A7 DEFB $03,$E1,$00 ;
  $88AA DEFB $02,$3E,$00 ;
  $88AD DEFB $00,$08,$00 ;
+@ofix=DEFB $00,$3E,$00
  $88B0 DEFB $02,$3E,$00 ; }
 ; #POKES35037,0
 ; .
@@ -8216,6 +8224,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $88D4 DEFB $3F,$E0,$00 ;
  $88D7 DEFB $3F,$F0,$00 ;
  $88DA DEFB $15,$40,$00 ;
+@ofix=DEFB $00,$00,$00
  $88DD DEFB $D0,$00,$00 ;
  $88E0 DEFB $15,$40,$00 ; }
 ; #UDGTABLE
@@ -8249,9 +8258,12 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
 ; { #UDGARRAY3,12,4,3;$8913-$8916-1-16{0,0,64,32}(fighter-right-f1) }
 ; TABLE#
  $8913 DEFB $00,$00,$00 ; {Frame 1
+@ofix=DEFB $80,$00,$00
  $8916 DEFB $80,$80,$00 ;
+@ofix=DEFB $C3,$80,$00
  $8919 DEFB $C3,$C0,$00 ;
  $891C DEFB $FF,$C0,$00 ;
+@ofix=DEFB $4F,$C0,$00
  $891F DEFB $4F,$00,$00 ;
  $8922 DEFB $38,$00,$00 ;
  $8925 DEFB $70,$00,$00 ;
@@ -8264,6 +8276,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $8931 DEFB $30,$E0,$00 ;
  $8934 DEFB $3F,$F0,$00 ;
  $8937 DEFB $13,$F0,$00 ;
+@ofix=DEFB $0F,$00,$00
  $893A DEFB $07,$00,$00 ;
  $893D DEFB $1C,$00,$00 ;
  $8940 DEFB $00,$00,$00 ; }

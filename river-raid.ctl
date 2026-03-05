@@ -2894,11 +2894,14 @@ u $8391 Unused alternate road attributes.
 D $8391 32 bytes with the same structure as #R$8371 but different values: $3F (white-on-white, invisible) and $C0 (flash, black). Possibly an early version or debug variant of road attributes.
 @ $83B1 label=sprite_plane
 b $83B1 Player plane sprite (4 frames × 16 bytes).
-N $83B1 #POKES33723,146;33739,36
+N $83B1 #POKES33723,146
+N $83B1 #POKES33739,36
 N $83B1 #UDGTABLE { #UDGARRAY2,14,4,2;$83B1-$83B2-1-16(plane-f1) } TABLE#
   $83B1,16,2 Frame 1
+@ $83BB ofix=DEFB $92,$00
 N $83C1 #UDGTABLE { #UDGARRAY2,14,4,2;$83C1-$83C2-1-16(plane-f2) } TABLE#
   $83C1,16,2 Frame 2
+@ $83CB ofix=DEFB $24,$80
 N $83D1 #UDGTABLE { #UDGARRAY2,14,4,2;$83D1-$83D2-1-16(plane-f3) } TABLE#
   $83D1,16,2 Frame 3
 N $83E1 #UDGTABLE { #UDGARRAY2,14,4,2;$83E1-$83E2-1-16(plane-f4) } TABLE#
@@ -3010,6 +3013,8 @@ N $8733 #POKES34614,0;34617,112
 N $8733 Array [4] of fighter headed left sprites (each element is 3×1 tiles = 24 bytes).
 N $8733 #UDGTABLE { #UDGARRAY3,12,4,3;$8733-$8736-1-16{0,0,64,32}(fighter-left-f1) } TABLE#
   $8733,24,3 Frame 1
+@ $8736 ofix=DEFB $00,$40,$00
+@ $8739 ofix=DEFB $70,$C0,$00
 N $874B #UDGTABLE { #UDGARRAY3,12,4,3;$874B-$874E-1-16{0,0,64,32}(fighter-left-f2) } TABLE#
   $874B,24,3 Frame 2
 N $8763 #UDGTABLE { #UDGARRAY3,12,4,3;$8763-$8766-1-16{0,0,64,32}(fighter-left-f3) } TABLE#
@@ -3044,15 +3049,18 @@ N $886B #UDGTABLE { #UDGARRAY3,14,4,3;$886B-$886E-1-16{0,0,64,32}(helicopter-adv
 N $8883 #POKES34968,0
 N $8883 #UDGTABLE { #UDGARRAY3,14,4,3;$8883-$8886-1-16{0,0,64,32}(helicopter-adv-right-f3) } TABLE#
   $8883,24,3 Frame 3
+@ $8898 ofix=DEFB $00,$F8,$00
 N $889B #POKES34992,0
 N $889B #UDGTABLE { #UDGARRAY3,14,4,3;$889B-$889E-1-16{0,0,64,32}(helicopter-adv-right-f4) } TABLE#
   $889B,24,3 Frame 4
+@ $88B0 ofix=DEFB $00,$3E,$00
 N $88B3 #POKES35037,0
 N $88B3 Array [4] of tank headed right sprites (each element is 3×1 tiles = 24 bytes).
 N $88B3 #UDGTABLE { #UDGARRAY3,60,4,3;$88B3-$88B6-1-16{0,0,64,32}(tank-right-f1) } TABLE#
   $88B3,24,3 Frame 1
 N $88CB #UDGTABLE { #UDGARRAY3,60,4,3;$88CB-$88CE-1-16{0,0,64,32}(tank-right-f2) } TABLE#
   $88CB,24,3 Frame 2
+@ $88DD ofix=DEFB $00,$00,$00
 N $88E3 #UDGTABLE { #UDGARRAY3,60,4,3;$88E3-$88E6-1-16{0,0,64,32}(tank-right-f3) } TABLE#
   $88E3,24,3 Frame 3
 N $88FB #UDGTABLE { #UDGARRAY3,60,4,3;$88FB-$88FE-1-16{0,0,64,32}(tank-right-f4) } TABLE#
@@ -3061,8 +3069,12 @@ N $8913 #POKES35095,0;35098,128;35104,192;35130,15
 N $8913 Array [4] of fighter headed right sprites (each element is 3×1 tiles = 24 bytes).
 N $8913 #UDGTABLE { #UDGARRAY3,12,4,3;$8913-$8916-1-16{0,0,64,32}(fighter-right-f1) } TABLE#
   $8913,24,3 Frame 1
+@ $8916 ofix=DEFB $80,$00,$00
+@ $8919 ofix=DEFB $C3,$80,$00
+@ $891F ofix=DEFB $4F,$C0,$00
 N $892B #UDGTABLE { #UDGARRAY3,12,4,3;$892B-$892E-1-16{0,0,64,32}(fighter-right-f2) } TABLE#
   $892B,24,3 Frame 2
+@ $893A ofix=DEFB $0F,$00,$00
 N $8943 #UDGTABLE { #UDGARRAY3,12,4,3;$8943-$8946-1-16{0,0,64,32}(fighter-right-f3) } TABLE#
   $8943,24,3 Frame 3
 N $895B #UDGTABLE { #UDGARRAY3,12,4,3;$895B-$895E-1-16{0,0,64,32}(fighter-right-f4) } TABLE#
