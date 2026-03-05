@@ -1831,11 +1831,11 @@ D $6E8C Clears CONTROLS_BIT_LOW_FUEL in #R$6BB0 to stop the low fuel warning sou
 c $6E92 Play tank full sound
 D $6E92 Plays a short beep (~1450 Hz, ~6ms) when fuel tank is already full and cannot accept more fuel.
   $6E92,9 Play tank full sound: BEEPER with DE=$0008, HL=$0111.
-@ $6E9C label=explode_fragment
-c $6E9C Create explosion at fragment position
+@ $6E9C label=spawn_explosion_fragment
+c $6E9C Create explosion fragment at coordinates
 D $6E9C Called when an enemy is destroyed or the player collides. Sets up explosion state and adds an explosion entry to the explosions set at #R$5F2E.
 D $6E9C #LIST { Sets CONTROLS_BIT_EXPLODING to trigger explosion sound } { Clears CONTROLS_BIT_FIRE_SOUND to stop the fire sound during explosion } { Resets #R$6C7A (explosion counter) to EXPLOSION_SOUND_FRAMES } { Falls through to #R$6EAB to add explosion to set } LIST#
-R $6E9C I:BC BC contains fragment position: B=Y offset, C=X position
+R $6E9C I:BC Fragment coordinates: B=Y offset, C=X position
 R $6E9C I:D Object type/definition byte
   $6E9C Set CONTROLS_BIT_EXPLODING in #R$6BB0.
 @ $6E9F isub=SET CONTROLS_BIT_EXPLODING,(HL)

@@ -1819,14 +1819,14 @@ handle_collision_mode_fighter:
   LD C,(HL)                            ;
   LD (HL),SET_MARKER_EMPTY_SLOT        ;
   LD D,$00                             ; Spawn two explosion fragments (second offset by X-6).
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   DEC C                                ;
   DEC C                                ;
   DEC C                                ;
   DEC C                                ;
   DEC C                                ;
   DEC C                                ;
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   LD A,POINTS_FIGHTER                  ; Award POINTS_FIGHTER to player.
   CALL add_points                      ;
   JP finalize_collision                ; Finalize collision.
@@ -1874,21 +1874,21 @@ check_collision:
   LD B,A                               ;
   LD C,$70                             ;
   LD D,$00                             ;
-  CALL explode_fragment                ; Spawn explosion 1 (bottom-left).
+  CALL spawn_explosion_fragment        ; Spawn explosion 1 (bottom-left).
   LD C,$80                             ; Move to X = $80 and spawn explosion 2 (bottom-right).
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   LD A,B                               ; Move Y - 8 and spawn explosion 3 (middle-right).
   SUB $08                              ;
   LD B,A                               ;
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   LD C,$70                             ; Move to X = $70 and spawn explosion 4 (middle-left).
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   LD A,B                               ; Move Y - 8 and spawn explosion 5 (top-left).
   SUB $08                              ;
   LD B,A                               ;
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   LD C,$80                             ; Move to X = $80 and spawn explosion 6 (top-right).
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   LD A,(state_bridge_section)          ; If bridge section is $02, call clear_destroyed_bridge with screen
   CP $02                               ; screen_pixels.
   LD HL,screen_pixels                  ;
@@ -2238,7 +2238,7 @@ hit_helicopter_reg:
   LD A,POINTS_HELICOPTER_REG           ; Award POINTS_HELICOPTER_REG to player.
   CALL add_points                      ;
   LD BC,(collision_coordinates)        ; Spawn explosion at object coordinates from collision_coordinates.
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   JP process_collision_hit             ; Finalize collision.
 
 ; Handle missile hit on ship
@@ -2250,18 +2250,18 @@ hit_ship:
   LD A,POINTS_SHIP                     ; Award POINTS_SHIP to player.
   CALL add_points                      ;
   LD BC,(collision_coordinates)        ; Load coordinates from collision_coordinates and spawn explosion 1 (left).
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   LD A,C                               ; Move X+8 and spawn explosion 2 (right).
   ADD A,$08                            ;
   LD C,A                               ;
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   LD A,C                               ; Move X-8, Y+4 and spawn explosion 3 (center-bottom).
   SUB $08                              ;
   LD C,A                               ;
   LD A,B                               ;
   ADD A,$04                            ;
   LD B,A                               ;
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   JP process_collision_hit             ; Finalize collision.
 
 ; Handle missile hit on advanced helicopter
@@ -2273,7 +2273,7 @@ hit_helicopter_adv:
   LD A,POINTS_HELICOPTER_ADV           ; Award POINTS_HELICOPTER_ADV to player.
   CALL add_points                      ;
   LD BC,(collision_coordinates)        ; Spawn explosion at object coordinates from collision_coordinates.
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   JP process_collision_hit             ; Finalize collision.
 
 ; Handle missile hit on fighter
@@ -2285,7 +2285,7 @@ hit_fighter:
   LD A,POINTS_FIGHTER                  ; Award POINTS_FIGHTER to player.
   CALL add_points                      ;
   LD BC,(collision_coordinates)        ; Spawn explosion at object coordinates from collision_coordinates.
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   JP process_collision_hit             ; Finalize collision.
 
 ; Handle missile hit on balloon
@@ -2297,11 +2297,11 @@ hit_balloon:
   LD A,POINTS_BALLOON                  ; Award POINTS_BALLOON to player.
   CALL add_points                      ;
   LD BC,(collision_coordinates)        ; Load coordinates from collision_coordinates and spawn explosion 1 (top).
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   LD A,B                               ; Move Y+8 and spawn explosion 2 (bottom).
   ADD A,$08                            ;
   LD B,A                               ;
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   JP process_collision_hit             ; Finalize collision.
 
 ; Handle collision with fuel depot
@@ -2322,17 +2322,17 @@ hit_fuel:
   LD A,POINTS_FUEL                     ; Award POINTS_FUEL to player.
   CALL add_points                      ;
   LD BC,(collision_coordinates)        ; Load coordinates from collision_coordinates and spawn explosion 1.
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   LD A,B                               ; Move Y+8 and spawn explosion 2.
   ADD A,$08                            ;
   LD B,A                               ;
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   LD A,B                               ; Move Y+8 and spawn explosion 3.
   ADD A,$08                            ;
   LD B,A                               ;
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   INC B                                ; Move Y+1 and spawn explosion 4.
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
 
 ; Jump to collision finalization
 hit_fuel_done:
@@ -2454,11 +2454,11 @@ handle_no_fuel:
   LD (state_plane_missile_coordinates),A ;
   LD (state_plane_missile_x),A         ; Set explosion sprite type to $00
   LD D,$00                             ; Create first explosion fragment at plane position
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   LD A,B                               ; Offset Y-coordinate by $05 pixels for second explosion
   ADD A,$05                            ;
   LD B,A                               ;
-  CALL explode_fragment                ; Create second explosion fragment
+  CALL spawn_explosion_fragment        ; Create second explosion fragment
   LD A,EXPLOSION_ANIM_FRAMES           ; Set animation frame counter (16 frames).
 animate_explosion_loop:
   PUSH AF                              ; Save frame counter
@@ -4248,7 +4248,7 @@ signal_fuel_level_excessive:
   CALL BEEPER                          ;
   RET
 
-; Create explosion at fragment position
+; Create explosion fragment at coordinates
 ;
 ; Called when an enemy is destroyed or the player collides. Sets up explosion state and adds an explosion entry to the
 ; explosions set at exploding_fragments.
@@ -4258,9 +4258,9 @@ signal_fuel_level_excessive:
 ; * Resets explosion_counter (explosion counter) to EXPLOSION_SOUND_FRAMES
 ; * Falls through to add_object_to_set to add explosion to set
 ;
-; I:BC BC contains fragment position: B=Y offset, C=X position
+; I:BC Fragment coordinates: B=Y offset, C=X position
 ; I:D Object type/definition byte
-explode_fragment:
+spawn_explosion_fragment:
   LD HL,state_controls                 ; Set CONTROLS_BIT_EXPLODING in state_controls.
   SET CONTROLS_BIT_EXPLODING,(HL)      ;
   RES CONTROLS_BIT_FIRE_SOUND,(HL)     ; Clear CONTROLS_BIT_FIRE_SOUND.
@@ -5634,7 +5634,7 @@ handle_tank_at_boundary:
   DEC HL                               ;
   LD (HL),$00                          ;
   LD D,$80                             ;
-  CALL explode_fragment                ;
+  CALL spawn_explosion_fragment        ;
   LD A,POINTS_TANK
   CALL add_points
 tank_reverse_direction:
