@@ -1046,7 +1046,8 @@ N $650A In single-player mode, the game simply restarts P1 if lives remain, othe
   $650A Load plane X-coordinate
   $650D Align to 8-pixel boundary (clear lower 3 bits)
   $650F Store aligned X-coordinate in C register
-  $6510 Set Y-coordinate to $7F (just below visible area)
+@ $6510 isub=LD B,PLANE_COORDINATE_Y-1
+  $6510 Set fragment Y to PLANE_COORDINATE_Y-1.
   $6512,13 Stop plane movement: clear scroll speed, missile Y, and missile X.
   $651D Set explosion frame index to 0.
   $651F Create first explosion fragment at plane position
