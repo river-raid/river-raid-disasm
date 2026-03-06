@@ -507,7 +507,7 @@ g $5EF0 Current bridge number (0-47).
 g $5EF1 Raw input port value from last keyboard/joystick read. Format depends on input interface type.
 @ $5EF2 label=state_tank_shell
 g $5EF2 Road tank center flag ($00 = inactive, $01 = road tank is at center X=$80).
-@ $5EF3 label=state_plane_missile_coordinates
+@ $5EF3 label=state_plane_missile_y
 g $5EF3 Player missile Y coordinate in pixels (0-255). $00 when no missile active.
 @ $5EF4 label=state_plane_missile_x
 g $5EF4 Player missile X coordinate in pixels (0-255).
@@ -632,7 +632,7 @@ W $5F8B
 @ $5F8D label=state_saved_object_coords
 g $5F8D Saved object coordinates during rendering. Backup of object position for multi-pass rendering.
 W $5F8D
-@ $5F8F label=state_plane_missile_coordinates_backup
+@ $5F8F label=state_plane_missile_y_backup
 g $5F8F Backup of plane missile coordinates. Saved before movement, used for collision detection and erasure.
 W $5F8F
 @ $5F91 label=main_loop
@@ -1047,9 +1047,9 @@ N $650A In single-player mode, the game simply restarts P1 if lives remain, othe
   $650D Align to 8-pixel boundary (clear lower 3 bits)
   $650F Store aligned X-coordinate in C register
   $6510 Set Y-coordinate to $7F (just below visible area)
-  $6512 Stop plane movement (clear speed and missile coordinates)
-  $651A Set explosion sprite type to $00
-  $651D Create first explosion fragment at plane position
+  $6512,13 Stop plane movement: clear scroll speed, missile Y, and missile X.
+  $651D Set explosion frame index to 0.
+  $651F Create first explosion fragment at plane position
   $6522 Offset Y-coordinate by $05 pixels for second explosion
   $6526 Create second explosion fragment
 @ $6529 isub=LD A,EXPLOSION_ANIM_FRAMES
@@ -1836,7 +1836,7 @@ c $6E9C Create explosion fragment at coordinates
 D $6E9C Called when an enemy is destroyed or the player collides. Sets up explosion state and adds an explosion entry to the explosions set at #R$5F2E.
 D $6E9C #LIST { Sets CONTROLS_BIT_EXPLODING to trigger explosion sound } { Clears CONTROLS_BIT_FIRE_SOUND to stop the fire sound during explosion } { Resets #R$6C7A (explosion counter) to EXPLOSION_SOUND_FRAMES } { Falls through to #R$6EAB to add explosion to set } LIST#
 R $6E9C I:BC Fragment coordinates: B=Y offset, C=X position
-R $6E9C I:D Object type/definition byte
+R $6E9C I:D Initial explosion frame index (0 = start at frame 1)
   $6E9C Set CONTROLS_BIT_EXPLODING in #R$6BB0.
 @ $6E9F isub=SET CONTROLS_BIT_EXPLODING,(HL)
 @ $6EA1 isub=RES CONTROLS_BIT_FIRE_SOUND,(HL)
