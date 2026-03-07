@@ -2485,9 +2485,9 @@ D $74E4 Clears all tank shell state variables to remove it from the game.
 c $74EE Handle tank after bridge destruction
 D $74EE Called each frame when a road tank's bridge has been destroyed (#R$5F6D != 0). The tank's X position is frozen (no movement); this routine checks whether that position falls within the river gap ($70-$90). If yes, the tank is destroyed: its slot is cleared, 1 explosion fragment is spawned, and POINTS_TANK are awarded. If the X position is outside the river gap, the slot's direction bits are set and the speed is checked to decide whether to clear the slot or convert it to a bank-tank.
   $74EE Load current_slot_ptr, navigate to X position in current slot.
-  $74F5 If X+10 < $70 (112): tank still on left bank, reverse direction.
-  $7502 If X > $90 (144): tank still on right bank, reverse direction.
-  $750F Tank destroyed: clear X position, set D=$80 (explosion marker).
+  $74F5 If X+10 <= $70 (112): tank still on left bank, reverse direction.
+  $7505 If X > $90 (144): tank still on right bank, reverse direction.
+  $7512 Tank destroyed: clear X position, set D=$80 (explosion marker).
   $7517,9 Add explosion and award POINTS_TANK.
 @ $7520 isub=LD A,POINTS_TANK
 @ $7525 label=tank_reverse_direction

@@ -2705,7 +2705,8 @@ c$6506 LD A," "      ; Output space via RST $10.
 c$650A LD A,($5F72)  ; Load plane X-coordinate
  $650D AND $F8       ; Align to 8-pixel boundary (clear lower 3 bits)
  $650F LD C,A        ; Store aligned X-coordinate in C register
- $6510 LD B,$7F      ; Set Y-coordinate to $7F (just below visible area)
+@isub=LD B,PLANE_COORDINATE_Y-1
+ $6510 LD B,$7F      ; Set fragment Y to PLANE_COORDINATE_Y-1.
  $6512 LD A,$00      ; {Stop plane movement: clear scroll speed, missile Y, and
  $6514 LD ($5F64),A  ; missile X.
  $6517 LD ($5EF3),A  ;
@@ -6369,24 +6370,24 @@ c$74EE LD HL,($5F60) ; {Load current_slot_ptr, navigate to X position in
  $74F2 DEC HL        ;
  $74F3 DEC HL        ;
  $74F4 LD C,(HL)     ; }
- $74F5 LD H,$00      ; {If X+10 < $70 (112): tank still on left bank, reverse
+ $74F5 LD H,$00      ; {If X+10 <= $70 (112): tank still on left bank, reverse
  $74F7 LD L,$70      ; direction.
  $74F9 LD D,$00      ;
  $74FB LD A,C        ;
  $74FC ADD A,$0A     ;
  $74FE LD E,A        ;
  $74FF OR A          ;
- $7500 SBC HL,DE     ; }
- $7502 JP P,$7525    ; {If X > $90 (144): tank still on right bank, reverse
- $7505 LD H,$00      ; direction.
- $7507 LD L,$90      ;
+ $7500 SBC HL,DE     ;
+ $7502 JP P,$7525    ; }
+ $7505 LD H,$00      ; {If X > $90 (144): tank still on right bank, reverse
+ $7507 LD L,$90      ; direction.
  $7509 LD D,$00      ;
  $750B LD E,C        ;
  $750C OR A          ;
- $750D SBC HL,DE     ; }
- $750F JP M,$7525    ; {Tank destroyed: clear X position, set D=$80 (explosion
- $7512 LD HL,($5F60) ; marker).
- $7515 DEC HL        ;
+ $750D SBC HL,DE     ;
+ $750F JP M,$7525    ; }
+ $7512 LD HL,($5F60) ; {Tank destroyed: clear X position, set D=$80 (explosion
+ $7515 DEC HL        ; marker).
  $7516 DEC HL        ; }
  $7517 LD B,(HL)     ; {Add explosion and award POINTS_TANK.
  $7518 DEC HL        ;

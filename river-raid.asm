@@ -2448,7 +2448,7 @@ handle_player_death:
   LD A,(state_plane_x)                 ; Load plane X-coordinate
   AND $F8                              ; Align to 8-pixel boundary (clear lower 3 bits)
   LD C,A                               ; Store aligned X-coordinate in C register
-  LD B,$7F                             ; Set Y-coordinate to $7F (just below visible area)
+  LD B,PLANE_COORDINATE_Y-1            ; Set fragment Y to PLANE_COORDINATE_Y-1.
   LD A,$00                             ; Stop plane movement: clear scroll speed, missile Y, and missile X.
   LD (state_speed),A                   ;
   LD (state_plane_missile_y),A         ;
@@ -5611,7 +5611,7 @@ handle_tank_at_boundary:
   DEC HL                               ;
   DEC HL                               ;
   LD C,(HL)                            ;
-  LD H,$00                             ; If X+10 < $70 (112): tank still on left bank, reverse direction.
+  LD H,$00                             ; If X+10 <= $70 (112): tank still on left bank, reverse direction.
   LD L,$70                             ;
   LD D,$00                             ;
   LD A,C                               ;
@@ -5619,15 +5619,15 @@ handle_tank_at_boundary:
   LD E,A                               ;
   OR A                                 ;
   SBC HL,DE                            ;
-  JP P,tank_reverse_direction          ; If X > $90 (144): tank still on right bank, reverse direction.
-  LD H,$00                             ;
+  JP P,tank_reverse_direction          ;
+  LD H,$00                             ; If X > $90 (144): tank still on right bank, reverse direction.
   LD L,$90                             ;
   LD D,$00                             ;
   LD E,C                               ;
   OR A                                 ;
   SBC HL,DE                            ;
-  JP M,tank_reverse_direction          ; Tank destroyed: clear X position, set D=$80 (explosion marker).
-  LD HL,(current_slot_ptr)             ;
+  JP M,tank_reverse_direction          ;
+  LD HL,(current_slot_ptr)             ; Tank destroyed: clear X position, set D=$80 (explosion marker).
   DEC HL                               ;
   DEC HL                               ;
   LD B,(HL)                            ; Add explosion and award POINTS_TANK.
