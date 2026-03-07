@@ -2483,22 +2483,24 @@ D $74E4 Clears all tank shell state variables to remove it from the game.
   $74E4,9 Clear #R$7383 (state) and #R$7385 (coordinates) to $0000.
 @ $74EE label=handle_tank_at_boundary
 c $74EE Handle tank after bridge destruction
-D $74EE Called each frame when a road tank's bridge has been destroyed (#R$5F6D != 0). The tank's X position is frozen (no movement); this routine checks whether that position falls within the river gap ($70-$90). If yes, the tank is destroyed: its slot is cleared, 1 explosion fragment is spawned, and POINTS_TANK are awarded. If the X position is outside the river gap, the slot's direction bits are set and the speed is checked to decide whether to clear the slot or convert it to a bank-tank.
+D $74EE Called each frame when a road tank's bridge has been destroyed (#R$5F6D != 0). Normal movement is skipped (no rendering), so the tank's sprite stays frozen on screen as a ghost image. This routine checks whether the tank's X position overlaps the river gap ($70-$90). If yes, the slot is cleared, 1 explosion fragment is spawned, and POINTS_TANK are awarded. If no overlap, the slot is either cleared (bridge <= 7) or converted to a bank-tank (bridge > 7); in the cleared case the ghost image persists on screen with no explosion.
   $74EE Load current_slot_ptr, navigate to X position in current slot.
-  $74F5 If X+10 <= $70 (112): tank still on left bank, reverse direction.
-  $7505 If X > $90 (144): tank still on right bank, reverse direction.
+  $74F5 If X+10 <= $70 (112): tank is on the left bank, convert to bank-tank.
+  $7505 If X > $90 (144): tank is on the right bank, convert to bank-tank.
   $7512 Tank destroyed: clear X position, set D=$80 (explosion marker).
   $7517,9 Add explosion and award POINTS_TANK.
 @ $7520 isub=LD A,POINTS_TANK
-@ $7525 label=tank_reverse_direction
-  $7525,6 Reload current_slot_ptr, set bits 4 and 5 (direction change flags).
+@ $7525 label=convert_tank_to_bank
+  $7525,6 Reload current_slot_ptr and convert to bank-tank (SLOT_BIT_ALT_SHELL_INIT + SLOT_BIT_TANK_ON_BANK).
 @ $7529 isub=SET SLOT_BIT_ALT_SHELL_INIT,(HL)
 @ $752B isub=SET SLOT_BIT_TANK_ON_BANK,(HL)
   $752D Check active player at #R$923D. If player 1, use #R$5F6A.
 @ $7532 isub=CP PLAYER_1
   $7534 Load bridge number from #R$5F6B.
 @ $753A label=tank_bridge_check
-  $753A,9 Check if 7-bridge_number < 0: if bridge > 7, leave slot as bank-tank; else clear slot X byte.
+  $753A Check if bridge_number > 7.
+  $753E If so, keep the slot (bank-tank bits already set at #R$7525).
+  $7541 Otherwise, clear slot X byte (ghost image remains on screen).
 @ $7546 label=get_bridge_number_player_1
 c $7546 Get bridge number for player 1
 D $7546 Returns bridge number from #R$5F6A instead of #R$5F6B for player 1.

@@ -5600,18 +5600,18 @@ remove_tank_shell:
 
 ; Handle tank after bridge destruction
 ;
-; Called each frame when a road tank's bridge has been destroyed (state_bridge_destroyed != 0). The tank's X position is
-; frozen (no movement); this routine checks whether that position falls within the river gap ($70-$90). If yes, the tank
-; is destroyed: its slot is cleared, 1 explosion fragment is spawned, and POINTS_TANK are awarded. If the X position is
-; outside the river gap, the slot's direction bits are set and the speed is checked to decide whether to clear the slot
-; or convert it to a bank-tank.
+; Called each frame when a road tank's bridge has been destroyed (state_bridge_destroyed != 0). Normal movement is
+; skipped (no rendering), so the tank's sprite stays frozen on screen as a ghost image. This routine checks whether the
+; tank's X position overlaps the river gap ($70-$90). If yes, the slot is cleared, 1 explosion fragment is spawned, and
+; POINTS_TANK are awarded. If no overlap, the slot is either cleared (bridge <= 7) or converted to a bank-tank (bridge >
+; 7); in the cleared case the ghost image persists on screen with no explosion.
 handle_tank_at_boundary:
   LD HL,(current_slot_ptr)             ; Load current_slot_ptr, navigate to X position in current slot.
   DEC HL                               ;
   DEC HL                               ;
   DEC HL                               ;
   LD C,(HL)                            ;
-  LD H,$00                             ; If X+10 <= $70 (112): tank still on left bank, reverse direction.
+  LD H,$00                             ; If X+10 <= $70 (112): tank is on the left bank, convert to bank-tank.
   LD L,$70                             ;
   LD D,$00                             ;
   LD A,C                               ;
@@ -5619,14 +5619,14 @@ handle_tank_at_boundary:
   LD E,A                               ;
   OR A                                 ;
   SBC HL,DE                            ;
-  JP P,tank_reverse_direction          ;
-  LD H,$00                             ; If X > $90 (144): tank still on right bank, reverse direction.
+  JP P,convert_tank_to_bank            ;
+  LD H,$00                             ; If X > $90 (144): tank is on the right bank, convert to bank-tank.
   LD L,$90                             ;
   LD D,$00                             ;
   LD E,C                               ;
   OR A                                 ;
   SBC HL,DE                            ;
-  JP M,tank_reverse_direction          ;
+  JP M,convert_tank_to_bank            ;
   LD HL,(current_slot_ptr)             ; Tank destroyed: clear X position, set D=$80 (explosion marker).
   DEC HL                               ;
   DEC HL                               ;
@@ -5637,9 +5637,9 @@ handle_tank_at_boundary:
   CALL spawn_explosion_fragment        ;
   LD A,POINTS_TANK
   CALL add_points
-tank_reverse_direction:
-  LD HL,(current_slot_ptr)             ; Reload current_slot_ptr, set bits 4 and 5 (direction change flags).
-  DEC HL                               ;
+convert_tank_to_bank:
+  LD HL,(current_slot_ptr)             ; Reload current_slot_ptr and convert to bank-tank (SLOT_BIT_ALT_SHELL_INIT +
+  DEC HL                               ; SLOT_BIT_TANK_ON_BANK).
   SET SLOT_BIT_ALT_SHELL_INIT,(HL)     ;
   SET SLOT_BIT_TANK_ON_BANK,(HL)
   DEC HL                               ; Check active player at state_player. If player 1, use state_bridge_player_1.
@@ -5650,12 +5650,12 @@ tank_reverse_direction:
   LD A,(state_bridge_player_2)         ;
 ; This entry point is used by the routine at get_bridge_number_player_1.
 tank_bridge_check:
-  LD B,A                               ; Check if 7-bridge_number < 0: if bridge > 7, leave slot as bank-tank; else
-  LD A,$07                             ; clear slot X byte.
+  LD B,A                               ; Check if bridge_number > 7.
+  LD A,$07                             ;
   SUB B                                ;
-  JP M,operate_viewport_slots          ;
-  LD (HL),$00                          ;
-  JP operate_viewport_slots
+  JP M,operate_viewport_slots          ; If so, keep the slot (bank-tank bits already set at convert_tank_to_bank).
+  LD (HL),$00                          ; Otherwise, clear slot X byte (ghost image remains on screen).
+  JP operate_viewport_slots            ;
 
 ; Get bridge number for player 1
 ;

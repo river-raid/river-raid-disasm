@@ -6358,20 +6358,21 @@ c$74E4 LD HL,$0000   ; {Clear #R$7383 (state) and #R$7385 (coordinates) to
 ; Handle tank after bridge destruction
 ;
 ; Called each frame when a road tank's bridge has been destroyed (#R$5F6D !=
-; 0). The tank's X position is frozen (no movement); this routine checks
-; whether that position falls within the river gap ($70-$90). If yes, the tank
-; is destroyed: its slot is cleared, 1 explosion fragment is spawned, and
-; POINTS_TANK are awarded. If the X position is outside the river gap, the
-; slot's direction bits are set and the speed is checked to decide whether to
-; clear the slot or convert it to a bank-tank.
+; 0). Normal movement is skipped (no rendering), so the tank's sprite stays
+; frozen on screen as a ghost image. This routine checks whether the tank's X
+; position overlaps the river gap ($70-$90). If yes, the slot is cleared, 1
+; explosion fragment is spawned, and POINTS_TANK are awarded. If no overlap,
+; the slot is either cleared (bridge <= 7) or converted to a bank-tank (bridge
+; > 7); in the cleared case the ghost image persists on screen with no
+; explosion.
 @label=handle_tank_at_boundary
 c$74EE LD HL,($5F60) ; {Load current_slot_ptr, navigate to X position in
  $74F1 DEC HL        ; current slot.
  $74F2 DEC HL        ;
  $74F3 DEC HL        ;
  $74F4 LD C,(HL)     ; }
- $74F5 LD H,$00      ; {If X+10 <= $70 (112): tank still on left bank, reverse
- $74F7 LD L,$70      ; direction.
+ $74F5 LD H,$00      ; {If X+10 <= $70 (112): tank is on the left bank, convert
+ $74F7 LD L,$70      ; to bank-tank.
  $74F9 LD D,$00      ;
  $74FB LD A,C        ;
  $74FC ADD A,$0A     ;
@@ -6379,8 +6380,8 @@ c$74EE LD HL,($5F60) ; {Load current_slot_ptr, navigate to X position in
  $74FF OR A          ;
  $7500 SBC HL,DE     ;
  $7502 JP P,$7525    ; }
- $7505 LD H,$00      ; {If X > $90 (144): tank still on right bank, reverse
- $7507 LD L,$90      ; direction.
+ $7505 LD H,$00      ; {If X > $90 (144): tank is on the right bank, convert to
+ $7507 LD L,$90      ; bank-tank.
  $7509 LD D,$00      ;
  $750B LD E,C        ;
  $750C OR A          ;
@@ -6397,9 +6398,9 @@ c$74EE LD HL,($5F60) ; {Load current_slot_ptr, navigate to X position in
 @isub=LD A,POINTS_TANK
  $7520 LD A,$25      ;
  $7522 CALL $90E0    ;
-@label=tank_reverse_direction
-*$7525 LD HL,($5F60) ; {Reload current_slot_ptr, set bits 4 and 5 (direction
- $7528 DEC HL        ; change flags).
+@label=convert_tank_to_bank
+*$7525 LD HL,($5F60) ; {Reload current_slot_ptr and convert to bank-tank
+ $7528 DEC HL        ; (SLOT_BIT_ALT_SHELL_INIT + SLOT_BIT_TANK_ON_BANK).
 @isub=SET SLOT_BIT_ALT_SHELL_INIT,(HL)
  $7529 SET 4,(HL)    ; }
 @isub=SET SLOT_BIT_TANK_ON_BANK,(HL)
@@ -6413,12 +6414,13 @@ c$74EE LD HL,($5F60) ; {Load current_slot_ptr, navigate to X position in
  $7537 LD A,($5F6B)  ; }
 ; This entry point is used by the routine at #R$7546.
 @label=tank_bridge_check
-*$753A LD B,A        ; {Check if 7-bridge_number < 0: if bridge > 7, leave slot
- $753B LD A,$07      ; as bank-tank; else clear slot X byte.
- $753D SUB B         ;
- $753E JP M,$708E    ;
- $7541 LD (HL),$00   ; }
- $7543 JP $708E      ;
+*$753A LD B,A        ; {Check if bridge_number > 7.
+ $753B LD A,$07      ;
+ $753D SUB B         ; }
+ $753E JP M,$708E    ; If so, keep the slot (bank-tank bits already set at
+                     ; #R$7525).
+ $7541 LD (HL),$00   ; {Otherwise, clear slot X byte (ghost image remains on
+ $7543 JP $708E      ; screen).}
 
 ; Get bridge number for player 1
 ;
