@@ -8295,11 +8295,15 @@ print_player_2_score_area:
 state_game_mode:
   DEFB $00
 
-; Player 1 lives remaining (0-4). Starts at 4, decremented on death. Game over when reaching 0.
+; Player 1 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the
+; end of the first scroll-in (play). Decremented again at the end of each subsequent scroll-in after a death. Game over
+; is triggered when 0 at the time of the player's next death.
 state_lives_player_1:
   DEFB $00
 
-; Player 2 lives remaining (0-4). Starts at 4, decremented on death. Game over when reaching 0.
+; Player 2 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the
+; end of the first scroll-in (play). Decremented again at the end of each subsequent scroll-in after a death. Game over
+; is triggered when 0 at the time of the player's next death.
 state_lives_player_2:
   DEFB $00
 

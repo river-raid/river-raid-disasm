@@ -9607,13 +9607,17 @@ c$91E8 LD A,$01      ; {Open channel 1 (upper screen).
 @label=state_game_mode
 b$923A DEFB $00
 
-; Player 1 lives remaining (0-4). Starts at 4, decremented on death. Game over
-; when reaching 0.
+; Player 1 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game,
+; then immediately decremented to 3 at the end of the first scroll-in
+; (#R$5DA6). Decremented again at the end of each subsequent scroll-in after a
+; death. Game over is triggered when 0 at the time of the player's next death.
 @label=state_lives_player_1
 g$923B DEFB $00
 
-; Player 2 lives remaining (0-4). Starts at 4, decremented on death. Game over
-; when reaching 0.
+; Player 2 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game,
+; then immediately decremented to 3 at the end of the first scroll-in
+; (#R$5DA6). Decremented again at the end of each subsequent scroll-in after a
+; death. Game over is triggered when 0 at the time of the player's next death.
 @label=state_lives_player_2
 g$923C DEFB $00
 

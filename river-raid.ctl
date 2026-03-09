@@ -3478,9 +3478,9 @@ D $923A #TABLE(default) { =h Bit(s) | =h Meaning | =h Values } { 0 | Player coun
 D $923A Set during control selection dialog. Read by various routines to determine player count and initial bridge offset.
   $923A,1
 @ $923B label=state_lives_player_1
-g $923B Player 1 lives remaining (0-4). Starts at 4, decremented on death. Game over when reaching 0.
+g $923B Player 1 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the end of the first scroll-in (#R$5DA6). Decremented again at the end of each subsequent scroll-in after a death. Game over is triggered when 0 at the time of the player's next death.
 @ $923C label=state_lives_player_2
-g $923C Player 2 lives remaining (0-4). Starts at 4, decremented on death. Game over when reaching 0.
+g $923C Player 2 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the end of the first scroll-in (#R$5DA6). Decremented again at the end of each subsequent scroll-in after a death. Game over is triggered when 0 at the time of the player's next death.
 @ $923D label=state_player
 b $923D Current active player ($01=PLAYER_1, $02=PLAYER_2).
 D $923D Determines which player's state to use for: score (#R$90BC vs #R$90C2), lives (#R$923B vs #R$923C), bridge progress (#R$5F6A vs #R$5F6B). Players alternate turns in two-player mode, switching when one dies if the other has lives. Colors: P1=yellow ($06), P2=cyan ($05).
