@@ -1086,7 +1086,7 @@ play:
   LD (state_level_fragment_number),A   ;
   LD (state_gameplay_mode),A           ;
   LD (state_bridge_destroyed),A
-  LD A,"h"                             ; Set last key to 'h' (suppress H-key pause on first frame).
+  LD A,"h"                             ; Set LAST_K to 'h' to start in paused state.
   LD (LAST_K),A                        ;
   LD A,$00                             ; Clear control state and tank shell state.
   LD (state_controls),A                ;
@@ -1487,7 +1487,7 @@ state_plane_missile_y_backup:
 ; Central game loop that runs continuously during active gameplay. Orchestrates all game subsystems in a fixed sequence
 ; each frame.
 ;
-; * Input: Scan Enter key for pause
+; * Input: Check Enter key (Caps+Enter → restart, Symbol+Enter → control select)
 ; * Timing: Increment tick counter (state_tick)
 ; * Render: Explosions, plane/terrain, viewport objects
 ; * Missiles: Two-pass player missile (erase then draw)
@@ -1496,10 +1496,12 @@ state_plane_missile_y_backup:
 ; * Fuel: Consume fuel (consume_fuel)
 ; * Controls: Dispatch to input handler based on state_input_interface
 ;
-; The loop is infinite. It terminates only via: game over (fuel empty, collision), pause (Enter key calls handle_enter),
-; or player death (jumps to death handler).
+; The loop is infinite. It terminates only via: game over (fuel empty, collision) or player death (jumps to death
+; handler). Pressing Enter calls handle_enter (Caps+Enter → start_gameplay; Symbol+Enter → select_controls; Enter alone
+; returns immediately). The H key pause is handled entirely by the interrupt handler (int_handler) and does not exit the
+; loop.
 main_loop:
-  LD A,$BF                             ; Scan Enter key for pause.
+  LD A,$BF                             ; Check Enter key for mode transitions.
   IN A,($FE)                           ;
   BIT 0,A                              ;
   CALL Z,handle_enter                  ;
@@ -3666,7 +3668,7 @@ state_controls:
 pause:
   CALL KEYBOARD
   LD A,(LAST_K)
-  CP $68                               ; Loop until anything else than H is pressed
+  CP "h"                               ; Loop until anything else than H is pressed
   JP Z,pause                           ;
   JP handle_controls
 
@@ -3737,8 +3739,8 @@ int_handler:
 ;
 ; Flags are set by game logic (input handlers, collision, fuel system) and cleared by sound routines when complete.
 handle_controls:
-  LD A,(LAST_K)                        ; Skip if paused (H key).
-  CP $68                               ;
+  LD A,(LAST_K)                        ; Skip if LAST_K is 'h'.
+  CP "h"                               ;
   JP Z,int_return                      ;
   LD HL,state_controls                 ; Check FIRE_SOUND → do_fire.
   BIT CONTROLS_BIT_FIRE_SOUND,(HL)     ;
@@ -4040,7 +4042,7 @@ overview:
   LD A,(state_game_mode)               ; Print game number: load game mode from state_game_mode, add "1" for ASCII
   ADD A,"1"                            ; digit, output via RST $10.
   RST $10                              ;
-  LD A,"h"                             ; Initialize state: store 'h' in last key (suppress H-key pause), clear
+  LD A,"h"                             ; Initialize state: set LAST_K to 'h' (paused state), clear
   LD (LAST_K),A                        ; state_terrain_position, save initial scroll value to
   LD A,$00                             ; state_overview_start_scroll.
   LD (state_terrain_position),A        ;

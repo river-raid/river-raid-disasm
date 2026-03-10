@@ -1156,8 +1156,8 @@ c$5DA6 LD A,$10      ; {Initialize island line index (starting line for island
  $5E63 LD ($5F68),A  ; }
  $5E66 LD ($5F6D),A  ;
 @isub=LD A,"h"
- $5E69 LD A,$68      ; {Set last key to 'h' (suppress H-key pause on first
- $5E6B LD ($5C08),A  ; frame).}
+ $5E69 LD A,$68      ; {Set LAST_K to 'h' to start in paused state.
+ $5E6B LD ($5C08),A  ; }
  $5E6E LD A,$00      ; {Clear control state and tank shell state.
  $5E70 LD ($6BB0),A  ;
  $5E73 LD ($5EF2),A  ; }
@@ -1591,7 +1591,8 @@ g$5F8F DEFW $0000
 ; all game subsystems in a fixed sequence each frame.
 ; .
 ; #LIST
-; { Input: Scan Enter key for pause }
+; { Input: Check Enter key (Caps+Enter → restart, Symbol+Enter → control
+; select) }
 ; { Timing: Increment tick counter (#R$5EEF) }
 ; { Render: Explosions, plane/terrain, viewport objects }
 ; { Missiles: Two-pass player missile (erase then draw) }
@@ -1604,10 +1605,12 @@ g$5F8F DEFW $0000
 ; .
 ;
 ; The loop is infinite. It terminates only via: game over (fuel empty,
-; collision), pause (Enter key calls #R$6BBF), or player death (jumps to death
-; handler).
+; collision) or player death (jumps to death handler). Pressing Enter calls
+; #R$6BBF (Caps+Enter → #R$5D35; Symbol+Enter → #R$6BD2; Enter alone returns
+; immediately). The H key pause is handled entirely by the interrupt handler
+; (#R$6BDB) and does not exit the loop.
 @label=main_loop
-c$5F91 LD A,$BF      ; {Scan Enter key for pause.
+c$5F91 LD A,$BF      ; {Check Enter key for mode transitions.
  $5F93 IN A,($FE)    ;
  $5F95 BIT 0,A       ;
  $5F97 CALL Z,$6BBF  ; }
@@ -4108,6 +4111,7 @@ g$6BB0 DEFB $00
 @label=pause
 c$6BB1 CALL $02BF    ;
  $6BB4 LD A,($5C08)  ;
+@isub=CP "h"
  $6BB7 CP $68        ; {Loop until anything else than H is pressed
  $6BB9 JP Z,$6BB1    ; }
  $6BBC JP $6BED      ;
@@ -4192,7 +4196,8 @@ c$6BDB DI            ; {Disable interrupts and save registers.
 ; Flags are set by game logic (input handlers, collision, fuel system) and
 ; cleared by sound routines when complete.
 @label=handle_controls
-c$6BED LD A,($5C08)  ; {Skip if paused (H key).
+c$6BED LD A,($5C08)  ; {Skip if LAST_K is 'h'.
+@isub=CP "h"
  $6BF0 CP $68        ;
  $6BF2 JP Z,$6C24    ; }
  $6BF5 LD HL,$6BB0   ; {Check FIRE_SOUND → #R$8A02.
@@ -4548,9 +4553,9 @@ c$6D17 LD BC,$0010   ; {Initialize scroll position (#R$5F70 = $0010) and scroll
  $6D51 ADD A,$31     ; for ASCII digit, output via RST $10.
  $6D53 RST $10       ; }
 @isub=LD A,"h"
- $6D54 LD A,$68      ; {Initialize state: store 'h' in last key (suppress H-key
- $6D56 LD ($5C08),A  ; pause), clear #R$5F7D, save initial scroll value to
- $6D59 LD A,$00      ; #R$5D43.
+ $6D54 LD A,$68      ; {Initialize state: set LAST_K to 'h' (paused state),
+ $6D56 LD ($5C08),A  ; clear #R$5F7D, save initial scroll value to #R$5D43.
+ $6D59 LD A,$00      ;
  $6D5B LD ($5F7D),A  ;
  $6D5E LD A,($5EF0)  ; }
  $6D61 LD ($5D43),A  ;

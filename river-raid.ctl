@@ -458,7 +458,7 @@ D $5DA6 This routine prepares the game for play and is called when starting a ne
   $5E5B Open channel 2.
   $5E5E,8 Initialize level fragment number, gameplay mode, and bridge destroyed flag.
 @ $5E69 isub=LD A,"h"
-  $5E69 Set last key to 'h' (suppress H-key pause on first frame).
+  $5E69 Set LAST_K to 'h' to start in paused state.
   $5E6E Clear control state and tank shell state.
 @ $5E76 isub=LD A,SPEED_FAST
   $5E76 Set speed for scroll-in animation.
@@ -638,9 +638,9 @@ W $5F8F
 @ $5F91 label=main_loop
 c $5F91 Main gameplay loop
 D $5F91 Central game loop that runs continuously during active gameplay. Orchestrates all game subsystems in a fixed sequence each frame.
-D $5F91 #LIST { Input: Scan Enter key for pause } { Timing: Increment tick counter (#R$5EEF) } { Render: Explosions, plane/terrain, viewport objects } { Missiles: Two-pass player missile (erase then draw) } { Projectiles: Tank shells, helicopter missiles } { Scroll: Advance game world (#R$66D0) } { Fuel: Consume fuel (#R$6DFF) } { Controls: Dispatch to input handler based on #R$5F67 } LIST#
-N $5F91 The loop is infinite. It terminates only via: game over (fuel empty, collision), pause (Enter key calls #R$6BBF), or player death (jumps to death handler).
-C $5F91,9 Scan Enter key for pause.
+D $5F91 #LIST { Input: Check Enter key (Caps+Enter → restart, Symbol+Enter → control select) } { Timing: Increment tick counter (#R$5EEF) } { Render: Explosions, plane/terrain, viewport objects } { Missiles: Two-pass player missile (erase then draw) } { Projectiles: Tank shells, helicopter missiles } { Scroll: Advance game world (#R$66D0) } { Fuel: Consume fuel (#R$6DFF) } { Controls: Dispatch to input handler based on #R$5F67 } LIST#
+N $5F91 The loop is infinite. It terminates only via: game over (fuel empty, collision) or player death (jumps to death handler). Pressing Enter calls #R$6BBF (Caps+Enter → #R$5D35; Symbol+Enter → #R$6BD2; Enter alone returns immediately). The H key pause is handled entirely by the interrupt handler (#R$6BDB) and does not exit the loop.
+C $5F91,9 Check Enter key for mode transitions.
   $5F9A,4 Increment tick counter at #R$5EEF.
   $5FA7 Player missile pass 1: erase at old position.
   $5FAF,8 Player missile pass 2: draw at new position.
@@ -1555,6 +1555,7 @@ N $6B7B After copying the 32-byte sprite to screen, sets state_bridge_section fo
 g $6BB0 Control state bitmask. Bit 0=FIRE, 1=SPEED_DECREASED, 2=SPEED_ALTERED, 3=LOW_FUEL, 4=BONUS_LIFE, 5=EXPLODING.
 @ $6BB1 label=pause
 c $6BB1 Keep the game paused
+@ $6BB7 isub=CP "h"
   $6BB7,5 Loop until anything else than H is pressed
 @ $6BBF label=handle_enter
 c $6BBF Handle the Enter key pressed
@@ -1581,7 +1582,8 @@ c $6BED Process control state flags and trigger sound effects
 D $6BED Sound processing dispatcher called from interrupt handler. Reads #R$6BB0 control flags and calls appropriate sound routines. Multiple sounds can trigger simultaneously (e.g., fire + low fuel).
 D $6BED #TABLE(default) { =h Bit | =h Flag | =h Sound Handler } { 0 | FIRE_SOUND | #R$8A02 (fire) } { 1 | SPEED_NOT_FAST | #R$6C5D (normal speed) } { 2 | SPEED_CHANGED | #R$6CB8 (fast speed) } { 1+2 | Both speed bits | #R$6CD6 (slow speed) } { 3 | LOW_FUEL | #R$6CF4 (warning) } { 4 | BONUS_LIFE | #R$6C31 (jingle) } { 5 | EXPLODING | #R$6C7B (explosion) } TABLE#
 N $6BED Flags are set by game logic (input handlers, collision, fuel system) and cleared by sound routines when complete.
-  $6BED Skip if paused (H key).
+  $6BED Skip if LAST_K is 'h'.
+@ $6BF0 isub=CP "h"
   $6BF5 Check FIRE_SOUND → #R$8A02.
 @ $6BF8 isub=BIT CONTROLS_BIT_FIRE_SOUND,(HL)
 @ $6BFD isub=BIT CONTROLS_BIT_BONUS_LIFE,(HL)
@@ -1746,7 +1748,7 @@ D $6D17 #LIST { Initializes screen with PAPER RIVER, INK BANK } { Prints status 
 @ $6D51 isub=ADD A,"1"
   $6D4E Print game number: load game mode from #R$923A, add "1" for ASCII digit, output via RST $10.
 @ $6D54 isub=LD A,"h"
-  $6D54,13 Initialize state: store 'h' in last key (suppress H-key pause), clear #R$5F7D, save initial scroll value to #R$5D43.
+  $6D54,13 Initialize state: set LAST_K to 'h' (paused state), clear #R$5F7D, save initial scroll value to #R$5D43.
 @ $6D64 label=overview_loop
   $6D64 Check Enter key (row 6, bit 0). Handle Enter if pressed.
   $6D6D Check if 5 scroll units passed: if (#R$5EF0 - #R$5D43) == 5, jump to #R$5D06 to start game.
