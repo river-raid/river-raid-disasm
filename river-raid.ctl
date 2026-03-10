@@ -639,7 +639,7 @@ W $5F8F
 c $5F91 Main gameplay loop
 D $5F91 Central game loop that runs continuously during active gameplay. Orchestrates all game subsystems in a fixed sequence each frame.
 D $5F91 #LIST { Input: Check Enter key (Caps+Enter → restart, Symbol+Enter → control select) } { Timing: Increment tick counter (#R$5EEF) } { Render: Explosions, plane/terrain, viewport objects } { Missiles: Two-pass player missile (erase then draw) } { Projectiles: Tank shells, helicopter missiles } { Scroll: Advance game world (#R$66D0) } { Fuel: Consume fuel (#R$6DFF) } { Controls: Dispatch to input handler based on #R$5F67 } LIST#
-N $5F91 The loop is infinite. It terminates only via: game over (fuel empty, collision) or player death (jumps to death handler). Pressing Enter calls #R$6BBF (Caps+Enter → #R$5D35; Symbol+Enter → #R$6BD2; Enter alone returns immediately). The H key pause is handled entirely by the interrupt handler (#R$6BDB) and does not exit the loop.
+N $5F91 The loop is infinite. It terminates only via: game over (fuel empty, collision) or player death (jumps to death handler). Pressing Enter calls #R$6BBF (Caps+Enter → #R$5D35 to restart gameplay; Symbol+Enter → #R$6BD2 to return to control selection). The H key pause is handled entirely by the interrupt handler (#R$6BDB) and does not exit the loop.
 C $5F91,9 Check Enter key for mode transitions.
   $5F9A,4 Increment tick counter at #R$5EEF.
   $5FA7 Player missile pass 1: erase at old position.

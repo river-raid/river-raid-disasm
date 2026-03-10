@@ -1497,9 +1497,9 @@ state_plane_missile_y_backup:
 ; * Controls: Dispatch to input handler based on state_input_interface
 ;
 ; The loop is infinite. It terminates only via: game over (fuel empty, collision) or player death (jumps to death
-; handler). Pressing Enter calls handle_enter (Caps+Enter → start_gameplay; Symbol+Enter → select_controls; Enter alone
-; returns immediately). The H key pause is handled entirely by the interrupt handler (int_handler) and does not exit the
-; loop.
+; handler). Pressing Enter calls handle_enter (Caps+Enter → start_gameplay to restart gameplay; Symbol+Enter →
+; select_controls to return to control selection). The H key pause is handled entirely by the interrupt handler
+; (int_handler) and does not exit the loop.
 main_loop:
   LD A,$BF                             ; Check Enter key for mode transitions.
   IN A,($FE)                           ;

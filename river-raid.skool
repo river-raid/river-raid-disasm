@@ -1606,9 +1606,9 @@ g$5F8F DEFW $0000
 ;
 ; The loop is infinite. It terminates only via: game over (fuel empty,
 ; collision) or player death (jumps to death handler). Pressing Enter calls
-; #R$6BBF (Caps+Enter → #R$5D35; Symbol+Enter → #R$6BD2; Enter alone returns
-; immediately). The H key pause is handled entirely by the interrupt handler
-; (#R$6BDB) and does not exit the loop.
+; #R$6BBF (Caps+Enter → #R$5D35 to restart gameplay; Symbol+Enter → #R$6BD2 to
+; return to control selection). The H key pause is handled entirely by the
+; interrupt handler (#R$6BDB) and does not exit the loop.
 @label=main_loop
 c$5F91 LD A,$BF      ; {Check Enter key for mode transitions.
  $5F93 IN A,($FE)    ;
