@@ -1752,13 +1752,15 @@ D $6D17 #LIST { Initializes screen with PAPER RIVER, INK BANK } { Prints status 
 @ $6D64 label=overview_loop
   $6D64 Check Enter key (row 6, bit 0). Handle Enter if pressed.
   $6D6D Check if 5 scroll units passed: if (#R$5EF0 - #R$5D43) == 5, jump to #R$5D06 to start game.
-  $6D7A Render frame: call delay, scroll, increment counter, render terrain/objects.
-  $6D8D Advance scroll and render terrain.
-  $6D90,10 Call delay, increment frame counter #R$5F81, call ROM KEYBOARD ($02BF), enable interrupts.
+  $6D7A Text crawl: 1st of 2 pixel shifts this frame.
+  $6D7D Render plane and terrain, increment tick counter, operate viewport objects and projectiles.
+  $6D8D Advance terrain scroll and render terrain.
+  $6D90 Text crawl: 2nd of 2 pixel shifts this frame.
+  $6D93 Increment frame counter #R$5F81, scan keyboard, enable interrupts.
 @ $6D9E isub=CP CHAR_ENTER
   $6D9B Check if Enter was pressed. If so, jump to #R$5DA6.
   $6DA3,7 Check frame counter AND 3: if not zero, loop back to overview_loop.
-  $6DAD Select upper screen channel via ROM CHAN_OPEN ($1601).
+  $6DAD Open lower screen (K) channel via ROM CHAN_OPEN ($1601) to print next text crawl character.
 @ $6DB2 isub=LD A,EXT_ATTR_INK
   $6DB2 INK BLACK
 @ $6DB5 isub=LD A,COLOR_BLACK
@@ -1766,9 +1768,9 @@ D $6D17 #LIST { Initializes screen with PAPER RIVER, INK BANK } { Prints status 
   $6DB8 PAPER BLACK
 @ $6DBB isub=LD A,COLOR_BLACK
 @ $6DBE isub=LD A,EXT_ATTR_AT
-  $6DBE AT 1,31
-  $6DC7 Advance text pointer (#R$5F7E), get next character.
-  $6DD1,9 If character is $FF (end of text), jump to #R$6DDD to reset. Otherwise print character and continue loop.
+  $6DBE AT 1,31 — bottom-right corner of the lower screen (char row 23, column 31).
+  $6DC7 Advance text pointer (#R$5F7E) and read next character. Every 4 frames = 8 pixels scrolled = 1 character width.
+  $6DD1,9 If $FF (end of text), jump to #R$6DDD to reset pointer. Otherwise print character via RST $10, reopen upper screen (S) channel (A=2), and fall through to loop.
 @ $6DDD label=reset_scroll_text
 c $6DDD Reset scrolling title text
 D $6DDD Resets the scrolling text pointer to the beginning of the title text at #R$8182 and continues the overview loop.
@@ -3116,14 +3118,19 @@ D $8A02 Produces the "pew" sound when the player fires a missile by toggling the
 @ $8A0A label=do_fire_delay_loop
 @ $8A0D isub=LD A,ULA_SPEAKER_OFF
   $8A0D Speaker OFF, same delay. $FD prefix byte adds 4 T-states before DEC C (IY prefix on non-HL instruction = extra delay cycle).
-@ $8A1B label=scroll_attribute_row
-c $8A1B Scroll the bottom attribute row left by 1 pixel.
-D $8A1B Shifts the pixels in the bottom visible row (#R$5800-1 down) left by 1 bit. Used during terrain scrolling.
-  $8A1B Start at rightmost byte of row below attributes, process 8 rows upward.
-@ $8A20 label=scroll_attr_outer_loop
-  $8A20 For each row, rotate 32 bytes left (right-to-left traversal propagates carry between bytes).
-@ $8A23 label=scroll_attr_inner_loop
-  $8A28,10 Step up one row ($E0 = 256 - 32 bytes back to previous row start) and continue.
+@ $8A1B label=scroll_text_crawl
+c $8A1B Scroll the text crawl row left by 1 pixel.
+D $8A1B Shifts all 8 scanlines of character row 23 (the bottom character row) left by 1 pixel. Called twice per overview frame, producing a 2-pixel-per-frame horizontal scroll. New pixels enter as 0 from the right; leftmost pixels fall off the screen.
+  $8A1B Start at the last byte of char row 23's bottom scanline.
+  $8A1E 8 scanlines to process.
+@ $8A20 label=scroll_crawl_outer
+  $8A20 Bytes per scanline
+  $8A22 Clear carry before the first RL
+@ $8A23 label=scroll_crawl_inner
+  $8A28 Load step offset DE=$E0 (= $100 − $20: one scanline period minus one row width).
+  $8A2B Clear carry.
+  $8A2C Step HL back to the last byte of the previous scanline.
+  $8A2E,4 Decrement outer counter and loop until all 8 scanlines are processed.
 @ $8A33 label=init_udg
 c $8A33 Initialize UDG and screen attributes.
 D $8A33 Sets border to black, fills lower screen attributes with white-on-black, and copies UDG graphics to the UDG area.

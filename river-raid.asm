@@ -4060,19 +4060,19 @@ overview_loop:
   SUB B                                ;
   CP $05                               ;
   JP Z,return_to_control_selection     ;
-  CALL scroll_attribute_row            ; Render frame: call delay, scroll, increment counter, render terrain/objects.
-  CALL render_plane_and_terrain        ;
-  LD HL,state_tick                     ;
+  CALL scroll_text_crawl               ; Text crawl: 1st of 2 pixel shifts this frame.
+  CALL render_plane_and_terrain        ; Render plane and terrain, increment tick counter, operate viewport objects and
+  LD HL,state_tick                     ; projectiles.
   INC (HL)                             ;
   CALL operate_viewport_slots          ;
   CALL operate_tank_shell              ;
   CALL operate_helicopter_missile      ;
-  CALL advance_scroll                  ; Advance scroll and render terrain.
-  CALL scroll_attribute_row            ; Call delay, increment frame counter state_overview_frame, call ROM KEYBOARD
-  LD HL,state_overview_frame           ; ($02BF), enable interrupts.
+  CALL advance_scroll                  ; Advance terrain scroll and render terrain.
+  CALL scroll_text_crawl               ; Text crawl: 2nd of 2 pixel shifts this frame.
+  LD HL,state_overview_frame           ; Increment frame counter state_overview_frame, scan keyboard, enable interrupts.
   INC (HL)                             ;
   CALL KEYBOARD                        ;
-  EI
+  EI                                   ;
   LD A,(LAST_K)                        ; Check if Enter was pressed. If so, jump to play.
   CP CHAR_ENTER                        ;
   JP Z,play                            ;
@@ -4080,8 +4080,8 @@ overview_loop:
   AND $03                              ;
   CP $00                               ;
   JP NZ,overview_loop
-  LD A,$01                             ; Select upper screen channel via ROM CHAN_OPEN ($1601).
-  CALL CHAN_OPEN                       ;
+  LD A,$01                             ; Open lower screen (K) channel via ROM CHAN_OPEN ($1601) to print next text
+  CALL CHAN_OPEN                       ; crawl character.
   LD A,EXT_ATTR_INK                    ; INK BLACK
   RST $10                              ;
   LD A,COLOR_BLACK                     ;
@@ -4090,20 +4090,20 @@ overview_loop:
   RST $10                              ;
   LD A,COLOR_BLACK                     ;
   RST $10                              ;
-  LD A,EXT_ATTR_AT                     ; AT 1,31
+  LD A,EXT_ATTR_AT                     ; AT 1,31 — bottom-right corner of the lower screen (char row 23, column 31).
   RST $10                              ;
   LD A,$01                             ;
   RST $10                              ;
   LD A,$1F                             ;
   RST $10                              ;
-  LD HL,(ptr_scroller)                 ; Advance text pointer (ptr_scroller), get next character.
-  INC HL                               ;
+  LD HL,(ptr_scroller)                 ; Advance text pointer (ptr_scroller) and read next character. Every 4 frames = 8
+  INC HL                               ; pixels scrolled = 1 character width.
   LD (ptr_scroller),HL                 ;
   LD A,(HL)                            ;
   CP $FF                               ;
-  JP Z,reset_scroll_text               ; If character is $FF (end of text), jump to reset_scroll_text to reset.
-  RST $10                              ; Otherwise print character and continue loop.
-  LD A,$02                             ;
+  JP Z,reset_scroll_text               ; If $FF (end of text), jump to reset_scroll_text to reset pointer. Otherwise
+  RST $10                              ; print character via RST $10, reopen upper screen (S) channel (A=2), and fall
+  LD A,$02                             ; through to loop.
   CALL CHAN_OPEN                       ;
   JP overview_loop
 
@@ -7257,24 +7257,27 @@ do_fire_delay_loop:
   JP NZ,do_fire_pulse_loop             ;
   RET                                  ;
 
-; Scroll the bottom attribute row left by 1 pixel.
+; Scroll the text crawl row left by 1 pixel.
 ;
-; Shifts the pixels in the bottom visible row (screen_attributes-1 down) left by 1 bit. Used during terrain scrolling.
-scroll_attribute_row:
-  LD HL,$57FF                          ; Start at rightmost byte of row below attributes, process 8 rows upward.
-  LD C,$08                             ;
-scroll_attr_outer_loop:
-  LD B,$20                             ; For each row, rotate 32 bytes left (right-to-left traversal propagates carry
-  OR A                                 ; between bytes).
-scroll_attr_inner_loop:
+; Shifts all 8 scanlines of character row 23 (the bottom character row) left by 1 pixel. Called twice per overview
+; frame, producing a 2-pixel-per-frame horizontal scroll. New pixels enter as 0 from the right; leftmost pixels fall off
+; the screen.
+scroll_text_crawl:
+  LD HL,$57FF                          ; Start at the last byte of char row 23's bottom scanline.
+  LD C,$08                             ; 8 scanlines to process.
+scroll_crawl_outer:
+  LD B,$20                             ; Bytes per scanline
+  OR A                                 ; Clear carry before the first RL
+scroll_crawl_inner:
   RL (HL)                              ;
   DEC HL                               ;
-  DJNZ scroll_attr_inner_loop          ;
-  LD DE,$00E0                          ; Step up one row ($E0 = 256 - 32 bytes back to previous row start) and continue.
-  OR A                                 ;
-  SBC HL,DE                            ;
-  DEC C                                ;
-  JP NZ,scroll_attr_outer_loop         ;
+  DJNZ scroll_crawl_inner              ;
+  LD DE,$00E0                          ; Load step offset DE=$E0 (= $100 − $20: one scanline period minus one row
+                                       ; width).
+  OR A                                 ; Clear carry.
+  SBC HL,DE                            ; Step HL back to the last byte of the previous scanline.
+  DEC C                                ; Decrement outer counter and loop until all 8 scanlines are processed.
+  JP NZ,scroll_crawl_outer             ;
   RET
 
 ; Initialize UDG and screen attributes.

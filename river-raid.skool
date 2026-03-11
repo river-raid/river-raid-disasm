@@ -4571,19 +4571,19 @@ c$6D17 LD BC,$0010   ; {Initialize scroll position (#R$5F70 = $0010) and scroll
  $6D74 SUB B         ;
  $6D75 CP $05        ;
  $6D77 JP Z,$5D06    ; }
- $6D7A CALL $8A1B    ; {Render frame: call delay, scroll, increment counter,
- $6D7D CALL $60A5    ; render terrain/objects.
- $6D80 LD HL,$5EEF   ;
+ $6D7A CALL $8A1B    ; Text crawl: 1st of 2 pixel shifts this frame.
+ $6D7D CALL $60A5    ; {Render plane and terrain, increment tick counter,
+ $6D80 LD HL,$5EEF   ; operate viewport objects and projectiles.
  $6D83 INC (HL)      ;
  $6D84 CALL $708E    ;
  $6D87 CALL $7441    ;
  $6D8A CALL $7393    ; }
- $6D8D CALL $66D0    ; Advance scroll and render terrain.
- $6D90 CALL $8A1B    ; {Call delay, increment frame counter #R$5F81, call ROM
- $6D93 LD HL,$5F81   ; KEYBOARD ($02BF), enable interrupts.
- $6D96 INC (HL)      ;
- $6D97 CALL $02BF    ; }
- $6D9A EI            ;
+ $6D8D CALL $66D0    ; Advance terrain scroll and render terrain.
+ $6D90 CALL $8A1B    ; Text crawl: 2nd of 2 pixel shifts this frame.
+ $6D93 LD HL,$5F81   ; {Increment frame counter #R$5F81, scan keyboard, enable
+ $6D96 INC (HL)      ; interrupts.
+ $6D97 CALL $02BF    ;
+ $6D9A EI            ; }
  $6D9B LD A,($5C08)  ; {Check if Enter was pressed. If so, jump to #R$5DA6.
 @isub=CP CHAR_ENTER
  $6D9E CP $0D        ;
@@ -4592,8 +4592,8 @@ c$6D17 LD BC,$0010   ; {Initialize scroll position (#R$5F70 = $0010) and scroll
  $6DA6 AND $03       ; overview_loop.
  $6DA8 CP $00        ; }
  $6DAA JP NZ,$6D64   ;
- $6DAD LD A,$01      ; {Select upper screen channel via ROM CHAN_OPEN ($1601).
- $6DAF CALL $1601    ; }
+ $6DAD LD A,$01      ; {Open lower screen (K) channel via ROM CHAN_OPEN ($1601)
+ $6DAF CALL $1601    ; to print next text crawl character.}
 @isub=LD A,EXT_ATTR_INK
  $6DB2 LD A,$10      ; {INK BLACK
  $6DB4 RST $10       ;
@@ -4607,20 +4607,20 @@ c$6D17 LD BC,$0010   ; {Initialize scroll position (#R$5F70 = $0010) and scroll
  $6DBB LD A,$00      ;
  $6DBD RST $10       ; }
 @isub=LD A,EXT_ATTR_AT
- $6DBE LD A,$16      ; {AT 1,31
- $6DC0 RST $10       ;
+ $6DBE LD A,$16      ; {AT 1,31 — bottom-right corner of the lower screen (char
+ $6DC0 RST $10       ; row 23, column 31).
  $6DC1 LD A,$01      ;
  $6DC3 RST $10       ;
  $6DC4 LD A,$1F      ;
  $6DC6 RST $10       ; }
- $6DC7 LD HL,($5F7E) ; {Advance text pointer (#R$5F7E), get next character.
- $6DCA INC HL        ;
+ $6DC7 LD HL,($5F7E) ; {Advance text pointer (#R$5F7E) and read next character.
+ $6DCA INC HL        ; Every 4 frames = 8 pixels scrolled = 1 character width.
  $6DCB LD ($5F7E),HL ;
  $6DCE LD A,(HL)     ;
  $6DCF CP $FF        ; }
- $6DD1 JP Z,$6DDD    ; {If character is $FF (end of text), jump to #R$6DDD to
- $6DD4 RST $10       ; reset. Otherwise print character and continue loop.
- $6DD5 LD A,$02      ;
+ $6DD1 JP Z,$6DDD    ; {If $FF (end of text), jump to #R$6DDD to reset pointer.
+ $6DD4 RST $10       ; Otherwise print character via RST $10, reopen upper
+ $6DD5 LD A,$02      ; screen (S) channel (A=2), and fall through to loop.
  $6DD7 CALL $1601    ; }
  $6DDA JP $6D64      ;
 
@@ -8432,25 +8432,28 @@ c$8A02 LD C,$08      ; Loop 8 pulses for sound duration.
  $8A17 JP NZ,$8A04   ;
  $8A1A RET           ; }
 
-; Scroll the bottom attribute row left by 1 pixel.
+; Scroll the text crawl row left by 1 pixel.
 ;
-; Shifts the pixels in the bottom visible row (#R$5800-1 down) left by 1 bit.
-; Used during terrain scrolling.
-@label=scroll_attribute_row
-c$8A1B LD HL,$57FF   ; {Start at rightmost byte of row below attributes,
- $8A1E LD C,$08      ; process 8 rows upward.}
-@label=scroll_attr_outer_loop
-*$8A20 LD B,$20      ; {For each row, rotate 32 bytes left (right-to-left
- $8A22 OR A          ; traversal propagates carry between bytes).
-@label=scroll_attr_inner_loop
+; Shifts all 8 scanlines of character row 23 (the bottom character row) left by
+; 1 pixel. Called twice per overview frame, producing a 2-pixel-per-frame
+; horizontal scroll. New pixels enter as 0 from the right; leftmost pixels fall
+; off the screen.
+@label=scroll_text_crawl
+c$8A1B LD HL,$57FF   ; Start at the last byte of char row 23's bottom scanline.
+ $8A1E LD C,$08      ; 8 scanlines to process.
+@label=scroll_crawl_outer
+*$8A20 LD B,$20      ; Bytes per scanline
+ $8A22 OR A          ; {Clear carry before the first RL
+@label=scroll_crawl_inner
 *$8A23 RL (HL)       ;
  $8A25 DEC HL        ;
  $8A26 DJNZ $8A23    ; }
- $8A28 LD DE,$00E0   ; {Step up one row ($E0 = 256 - 32 bytes back to previous
- $8A2B OR A          ; row start) and continue.
- $8A2C SBC HL,DE     ;
- $8A2E DEC C         ;
- $8A2F JP NZ,$8A20   ; }
+ $8A28 LD DE,$00E0   ; Load step offset DE=$E0 (= $100 − $20: one scanline
+                     ; period minus one row width).
+ $8A2B OR A          ; Clear carry.
+ $8A2C SBC HL,DE     ; Step HL back to the last byte of the previous scanline.
+ $8A2E DEC C         ; {Decrement outer counter and loop until all 8 scanlines
+ $8A2F JP NZ,$8A20   ; are processed.}
  $8A32 RET           ;
 
 ; Initialize UDG and screen attributes.
