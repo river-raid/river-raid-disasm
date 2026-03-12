@@ -58,6 +58,30 @@ lower at higher speeds. However, all three movement handlers — handle_right
 overwrite this with the fixed PLANE_COORDINATE_Y ($80), making the
 speed-dependent calculation dead code with no visible effect.
 
+[Bug:bothDirections:Pressing left and right simultaneously shows banked plane sprite]
+When both left and right are held at the same time, the plane appears banked
+despite no net movement. Both #R$65F3 (handle_right) and #R$6642 (handle_left)
+are called in sequence: handle_right moves the plane +2 pixels and renders the
+banked sprite, then handle_left moves it −2 pixels and renders the banked sprite
+again, leaving the plane at its original position. However, both handlers always
+set #R$5F69 (state_plane_sprite_bank) to $04, which causes the main render pass
+in #R$6682 to select the banked sprite rather than the centered one. Since neither
+handler checks whether the opposing direction is also active, there is no way for
+the net-zero input to produce the level sprite. Contrast with up+down, where the
+last-evaluated key wins outright — see #LINK(Bugs#bothUpDown)(Pressing up and down simultaneously always results in slow speed).
+
+[Bug:bothUpDown:Pressing up and down simultaneously always results in slow speed]
+When both up and down are held at the same time, the plane always slows down.
+#R$6068 (scan_keyboard) evaluates up before down: #R$670A (handle_up) writes
+SPEED_FAST and clears CONTROLS_BIT_SPEED_NOT_FAST, then #R$6717 (handle_down)
+immediately overwrites with SPEED_SLOW and sets both speed control bits. Last
+writer wins unconditionally.
+
+This is inconsistent with the left/right case (see #LINK(Bugs#bothDirections)(Pressing left and right simultaneously shows banked plane sprite)), where
+the two moves cancel each other out and the net position is unchanged. Here there
+is no cancellation — one input simply silently overwrites the other. The outcome
+in both cases is an accident of evaluation order, not a deliberate design choice.
+
 [Bug:statusLineCopy:Wrong addresses in Player 2 status line]
 When displaying the Player 2 status line, the code at $65A1 uses incorrect
 source address and byte count parameters for the memory copy. The
