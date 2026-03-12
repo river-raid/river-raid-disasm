@@ -6487,7 +6487,11 @@ msg_credits:
   DEFM " 1983 "
   DEFM $95,$96,$97,$98,$99,$9A,$9B     ; Activision logo UDG symbols
   DEFM " Inc. All rights reserved                     "
-  DEFB $FF,$C3,$90,$EA
+  DEFB $FF
+
+; Unused
+data_unused_81E5:
+  DEFB $C3,$90,$EA
   DEFM " rights reserved        Press ENTER to play or C to change contro"
   DEFM "l or S to select game                              "
   DEFB $FF
@@ -11898,7 +11902,7 @@ level_terrains:
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
 
-; Island shape definitions (36 islands × 3 bytes = 108 bytes).
+; Island shape definitions (35 islands × 3 bytes = 105 bytes).
 ;
 ; Defines the shape of islands that appear in the river. Each island is 3 bytes. Referenced from terrain fragment byte 3
 ; (upper 6 bits = island index × 4). Initialized by handle_island.
@@ -11949,7 +11953,10 @@ data_islands:
   DEFB $0F,$08,$01
   DEFB $05,$00,$01
   DEFB $06,$00,$01
-  DEFB $C3,$90,$EA
+
+; Unused
+data_unused_C669:
+  DEFB $C3,$90,$EA,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
@@ -11999,8 +12006,7 @@ data_islands:
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00
 
 ; Level object spawn data (48 levels × 256 bytes = 12,288 bytes total).
 ;

@@ -2878,6 +2878,8 @@ t $8182 Credits message with copyright and Activision logo.
   $81A8,1 Copyright symbol
   $81AF,7 Activision logo UDG symbols
 B $81E4
+@ $81E5 label=data_unused_81E5
+u $81E5
 T $81E8
 B $825C
 @ $825D label=udg_data
@@ -3719,11 +3721,13 @@ D $9500 When profile is 2 (bridge), the bridge destroyed flag is cleared. When p
   $C300,256,4 Bridge 47
   $C400,256,4 Bridge 48
 @ $C600 label=data_islands
-b $C600 Island shape definitions (36 islands × 3 bytes = 108 bytes).
+b $C600 Island shape definitions (35 islands × 3 bytes = 105 bytes).
 D $C600 Defines the shape of islands that appear in the river. Each island is 3 bytes. Referenced from terrain fragment byte 3 (upper 6 bits = island index × 4). Initialized by #R$696B.
 D $C600 #TABLE(default) { =h Byte | =h Contents } { 0 | Profile index (0-14): selects shape from #R$8063 } { 1 | Width offset: added to profile values, shifts edge position } { 2 | Edge mode: 0=use byte directly, 1=mirror, 2=offset from left } TABLE#
 D $C600 Edge mode controls right edge calculation in #R$6990: mode 1 creates symmetric islands (right = 120 - left), mode 2 creates fixed-width channels (right = 60 + left).
-  $C600,108,3
+  $C600,105,3
+@ $C669 label=data_unused_C669
+u $C669
 @ $C800 label=level_objects
 b $C800 Level object spawn data (48 levels × 256 bytes = 12,288 bytes total).
 D $C800 Defines what objects spawn at each scroll position for all 48 game levels (bridges). Each level has 128 spawn slots (256 bytes, 2 bytes per slot). Read by #R$6F80 during scroll.
