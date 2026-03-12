@@ -6475,6 +6475,10 @@ data_terrain_profiles:
   DEFB $00,$00,$00,$02,$02,$02,$00,$00 ;
 
 ; Game Over message.
+;
+; Set as the scroller start by game_over on game over. Immediately followed by msg_credits with no $FF separator, so the
+; ticker falls through into the credits after the GAME OVER text. The scroller resets to msg_credits (not here) on $FF,
+; so GAME OVER appears only once.
 msg_game_over:
   DEFM " .....GAME OVER.....                           "
 

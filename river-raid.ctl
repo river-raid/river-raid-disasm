@@ -2872,6 +2872,7 @@ D $8063 When bit 7 of a profile byte is set, #R$6AA3 jumps to special bridge/roa
   $8143 Profile 14
 @ $8153 label=msg_game_over
 t $8153 Game Over message.
+D $8153 Set as the scroller start by #R$6577 on game over. Immediately followed by #R$8182 with no $FF separator, so the ticker falls through into the credits after the GAME OVER text. The scroller resets to #R$8182 (not here) on $FF, so GAME OVER appears only once.
 @ $8182 label=msg_credits
 t $8182 Credits message with copyright and Activision logo.
   $818D,1 Trademark UDG symbol

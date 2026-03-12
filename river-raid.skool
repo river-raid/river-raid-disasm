@@ -7349,6 +7349,11 @@ b$8063 DEFB $02,$04,$04,$06,$08,$08,$0A,$0A ; {Profile 0: standard river
  $814B DEFB $00,$00,$00,$02,$02,$02,$00,$00 ; }
 
 ; Game Over message.
+;
+; Set as the scroller start by #R$6577 on game over. Immediately followed by
+; #R$8182 with no $FF separator, so the ticker falls through into the credits
+; after the GAME OVER text. The scroller resets to #R$8182 (not here) on $FF,
+; so GAME OVER appears only once.
 @label=msg_game_over
 t$8153 DEFM " .....GAME OVER.....                           "
 
