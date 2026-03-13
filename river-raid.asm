@@ -1,4 +1,3 @@
-COLOR_INHERIT EQU $00
 COLOR_BLACK   EQU $00
 COLOR_BLUE    EQU $01
 COLOR_RED     EQU $02
@@ -24,6 +23,9 @@ COLOR_FUEL       EQU COLOR_MAGENTA
 COLOR_ROCK       EQU COLOR_RED
 COLOR_MISSILE    EQU COLOR_GREEN
 COLOR_EXPLOSION  EQU COLOR_GREEN
+
+; The sprite does not impose its own color; existing screen attributes are preserved.
+ATTRIBUTES_INHERIT EQU $00
 
 EXT_ATTR_INK   EQU $10
 EXT_ATTR_PAPER EQU $11
@@ -162,9 +164,9 @@ SPRITE_3BY1_ENEMY_FRAME_SIZE    EQU SPRITE_3BY1_ENEMY_WIDTH_TILES * SPRITE_3BY1_
 SPRITE_3BY1_ENEMY_ATTRIBUTES    EQU COLOR_RIVER<<3|COLOR_HELICOPTER
 
 SPRITE_SHIP_ATTRIBUTES         EQU COLOR_RIVER<<3|COLOR_SHIP
-SPRITE_TANK_ATTRIBUTES         EQU COLOR_INHERIT
-SPRITE_TANK_ON_BANK_ATTRIBUTES EQU COLOR_BANK
-SPRITE_FIGHTER_ATTRIBUTES      EQU COLOR_INHERIT
+SPRITE_TANK_ON_ROAD_ATTRIBUTES EQU ATTRIBUTES_INHERIT
+SPRITE_TANK_ON_BANK_ATTRIBUTES EQU COLOR_BLACK<<3|COLOR_BANK
+SPRITE_FIGHTER_ATTRIBUTES      EQU ATTRIBUTES_INHERIT
 
 SPRITE_ROTOR_WIDTH_TILES   EQU $02
 SPRITE_ROTOR_HEIGHT_PIXELS EQU $02
@@ -193,7 +195,7 @@ SPRITE_MISSILE_FRAME_SIZE_BYTES EQU SPRITE_MISSILE_WIDTH_TILES * SPRITE_MISSILE_
 SPRITE_MISSILE_ATTRIBUTES       EQU COLOR_RIVER<<3|COLOR_MISSILE
 
 SPRITE_HELICOPTER_MISSILE_WIDTH_TILES EQU $01
-SPRITE_HELICOPTER_MISSILE_ATTRIBUTES  EQU COLOR_INHERIT
+SPRITE_HELICOPTER_MISSILE_ATTRIBUTES  EQU ATTRIBUTES_INHERIT
 
 ; Shell sprite is a truncated missile sprite, so the frame size should be calculated
 ; based on the original height.
@@ -4627,7 +4629,7 @@ ld_attributes_fighter:
 ; I:D Object definition byte (bit 5 = tank on bank flag).
 ; O:E Attributes value $00 or $04.
 ld_attributes_tank:
-  LD E,SPRITE_TANK_ATTRIBUTES          ; Load E=$00. If D bit 5 set (tank on bank), load E=$04 instead.
+  LD E,SPRITE_TANK_ON_ROAD_ATTRIBUTES  ; Load E=$00. If D bit 5 set (tank on bank), load E=$04 instead.
   BIT SLOT_BIT_TANK_ON_BANK,D          ;
   RET Z                                ;
   LD E,SPRITE_TANK_ON_BANK_ATTRIBUTES  ;
@@ -5159,10 +5161,10 @@ tank_move_entry:
   CALL ld_enemy_sprites
   LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE   ; Set frame size=$18, enable XOR blending via blending_mode_xor_xor.
   CALL blending_mode_xor_xor           ;
-  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES                              ; Render sprite: width=3, height=8, attributes=$00.
-  LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_TANK_ATTRIBUTES ; Restore blending.
-  CALL render_sprite                                              ;
-  CALL blending_mode_or_or                                        ;
+  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES                                      ; Render sprite: width=3, height=8,
+  LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_TANK_ON_ROAD_ATTRIBUTES ; attributes=$00. Restore blending.
+  CALL render_sprite                                                      ;
+  CALL blending_mode_or_or                                                ;
   JP operate_viewport_slots
 
 ; Set XOR/XOR blending mode
@@ -8428,12 +8430,12 @@ attr_sprite_width:
 ; I:BC Old position coordinates from previous_object_coordinates.
 ; I:HL New position coordinates from object_coordinates.
 set_sprite_attributes:
-  PUSH HL                              ; Save registers, store width to attr_sprite_width. If attribute E is 0, skip to
-  PUSH BC                              ; handle_zero_attributes.
+  PUSH HL                              ; Save registers, store width to attr_sprite_width.
+  PUSH BC                              ;
   LD (attr_sprite_width),A             ;
   LD A,E                               ;
-  CP $00                               ;
-  JP Z,handle_zero_attributes          ; If attribute is 0, skip drawing (nothing to draw).
+  CP ATTRIBUTES_INHERIT                ; If ATTRIBUTES_INHERIT, leave existing screen attributes unchanged.
+  JP Z,handle_zero_attributes          ;
   LD (attr_saved_de),DE                ; Save DE, BC, HL to memory at attr_saved_de, attr_saved_bc, attr_saved_hl for
   LD (attr_saved_bc),BC                ; later use.
   LD (attr_saved_hl),HL                ;

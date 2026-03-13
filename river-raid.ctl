@@ -1,6 +1,5 @@
 > $4000 @start
 > $4000
-> $4000 COLOR_INHERIT EQU $00
 > $4000 COLOR_BLACK   EQU $00
 > $4000 COLOR_BLUE    EQU $01
 > $4000 COLOR_RED     EQU $02
@@ -26,6 +25,9 @@
 > $4000 COLOR_ROCK       EQU COLOR_RED
 > $4000 COLOR_MISSILE    EQU COLOR_GREEN
 > $4000 COLOR_EXPLOSION  EQU COLOR_GREEN
+> $4000
+> $4000 ; The sprite does not impose its own color; existing screen attributes are preserved.
+> $4000 ATTRIBUTES_INHERIT EQU $00
 > $4000
 > $4000 EXT_ATTR_INK   EQU $10
 > $4000 EXT_ATTR_PAPER EQU $11
@@ -164,9 +166,9 @@
 > $4000 SPRITE_3BY1_ENEMY_ATTRIBUTES    EQU COLOR_RIVER<<3|COLOR_HELICOPTER
 > $4000
 > $4000 SPRITE_SHIP_ATTRIBUTES         EQU COLOR_RIVER<<3|COLOR_SHIP
-> $4000 SPRITE_TANK_ATTRIBUTES         EQU COLOR_INHERIT
-> $4000 SPRITE_TANK_ON_BANK_ATTRIBUTES EQU COLOR_BANK
-> $4000 SPRITE_FIGHTER_ATTRIBUTES      EQU COLOR_INHERIT
+> $4000 SPRITE_TANK_ON_ROAD_ATTRIBUTES EQU ATTRIBUTES_INHERIT
+> $4000 SPRITE_TANK_ON_BANK_ATTRIBUTES EQU COLOR_BLACK<<3|COLOR_BANK
+> $4000 SPRITE_FIGHTER_ATTRIBUTES      EQU ATTRIBUTES_INHERIT
 > $4000
 > $4000 SPRITE_ROTOR_WIDTH_TILES   EQU $02
 > $4000 SPRITE_ROTOR_HEIGHT_PIXELS EQU $02
@@ -195,7 +197,7 @@
 > $4000 SPRITE_MISSILE_ATTRIBUTES       EQU COLOR_RIVER<<3|COLOR_MISSILE
 > $4000
 > $4000 SPRITE_HELICOPTER_MISSILE_WIDTH_TILES EQU $01
-> $4000 SPRITE_HELICOPTER_MISSILE_ATTRIBUTES  EQU COLOR_INHERIT
+> $4000 SPRITE_HELICOPTER_MISSILE_ATTRIBUTES  EQU ATTRIBUTES_INHERIT
 > $4000
 > $4000 ; Shell sprite is a truncated missile sprite, so the frame size should be calculated
 > $4000 ; based on the original height.
@@ -2009,7 +2011,7 @@ c $703B Load fighter screen attributes
 D $703B Returns SPRITE_FIGHTER_ATTRIBUTES = PAPER BLACK, INK BLACK (invisible/XOR mode).
 R $703B O:E Attributes value (SPRITE_FIGHTER_ATTRIBUTES).
   $703B Load E with $00 (fighter attributes).
-@ $703E isub=LD E,SPRITE_TANK_ATTRIBUTES
+@ $703E isub=LD E,SPRITE_TANK_ON_ROAD_ATTRIBUTES
 @ $703E label=ld_attributes_tank
 c $703E Load tank screen attributes
 D $703E Returns tank attributes: $00 normally, $04 if tank is on river bank (bit 5 of D set).
@@ -2277,7 +2279,7 @@ R $7296 I:D Object definition byte
   $72D2 Set frame size=$18, enable XOR blending via #R$72E6.
 @ $72D8 isub=LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
   $72D8,11 Render sprite: width=3, height=8, attributes=$00. Restore blending.
-@ $72DA isub=LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_TANK_ATTRIBUTES
+@ $72DA isub=LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_TANK_ON_ROAD_ATTRIBUTES
 @ $72E6 label=blending_mode_xor_xor
 @ $72E6 isub=LD A,OPCODE_XOR_B
 c $72E6 Set XOR/XOR blending mode
@@ -3562,8 +3564,9 @@ R $928D I:A Sprite width in tiles (columns to fill).
 R $928D I:DE Sprite height in pixels (D), attribute color byte (E).
 R $928D I:BC Old position coordinates from #R$8B0A.
 R $928D I:HL New position coordinates from #R$8B0C.
-  $928D Save registers, store width to #R$928B. If attribute E is 0, skip to #R$935D.
-  $9295 If attribute is 0, skip drawing (nothing to draw).
+  $928D Save registers, store width to #R$928B.
+@ $9293 isub=CP ATTRIBUTES_INHERIT
+  $9293 If ATTRIBUTES_INHERIT, leave existing screen attributes unchanged.
   $9298 Save DE, BC, HL to memory at #R$9287, #R$9285, #R$9289 for later use.
   $92A3 Calculate attribute address for old position: HL = #R$5800 + (Y AND $F8) * 4 + (X >> 3). Y coordinate is in B of stored BC at #R$8B0A, X in C.
   $92BD Calculate row count B = (height >> 3) + 3. This covers sprite height plus padding. Load width into C.
