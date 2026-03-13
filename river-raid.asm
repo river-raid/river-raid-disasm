@@ -5471,12 +5471,13 @@ render_helicopter_missile:
 
 ; Handle helicopter missile collision
 ;
-; Checks if helicopter missile hit the player. Called from collision handler when COLLISION_MODE_HELICOPTER_MISSILE is
-; active.
+; Called by the sprite renderer's pixel collision when the missile's $FF byte overlaps solid screen pixels (bank or
+; island terrain). Checks whether the overlap is actually the player plane; if not, clears the missile.
 ;
-; * Checks missile position against player position
-; * If collision detected, jumps to handle_player_death (player hit)
-; * Clears missile and pops return addresses to abort collision chain
+; * Triggered by terrain contact (solid pixels), not player proximity
+; * If missile Y is not at player level (bit 7 clear), clear missile immediately
+; * Otherwise check missile X against player X; if match, player hit
+; * On miss: clears missile and pops return addresses to abort collision chain
 handle_collision_mode_helicopter_missile:
   LD BC,(helicopter_missile_coordinates_ptr) ; Load missile coords. If Y bit 7 clear, clear missile and return.
   BIT 7,B                                    ;
@@ -7713,9 +7714,9 @@ sprite_erase_op:
   LD DE,(render_old_sprite_ptr)
 ; Second pass: draw new sprite (OR with screen), check collision.
 sprite_draw_loop:
-  PUSH DE                              ; Read sprite byte, XOR with screen to detect overlap.
-  LD A,(DE)                            ;
-  LD B,A                               ;
+  PUSH DE                              ; Read sprite byte; collision fires when sprite AND screen share set bits (both
+  LD A,(DE)                            ; non-zero after AND): computes (screen OR sprite) and (screen XOR sprite), jumps
+  LD B,A                               ; to dispatcher if they differ (i.e. screen AND sprite != 0).
   LD A,(HL)                            ;
   XOR B                                ;
   LD D,A                               ;

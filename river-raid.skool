@@ -6214,13 +6214,17 @@ c$73DD LD A,($5F68)  ; {Return if in GAMEPLAY_MODE_SCROLL_IN.
 
 ; Handle helicopter missile collision
 ;
-; Checks if helicopter missile hit the player. Called from collision handler
-; when COLLISION_MODE_HELICOPTER_MISSILE is active.
+; Called by the sprite renderer's pixel collision when the missile's $FF byte
+; overlaps solid screen pixels (bank or island terrain). Checks whether the
+; overlap is actually the player plane; if not, clears the missile.
 ; .
 ; #LIST
-; { Checks missile position against player position }
-; { If collision detected, jumps to #R$650A (player hit) }
-; { Clears missile and pops return addresses to abort collision chain }
+; { Triggered by terrain contact (solid pixels), not player proximity }
+; { If missile Y is not at player level (bit 7 clear), clear missile
+; immediately }
+; { Otherwise check missile X against player X; if match, player hit }
+; { On miss: clears missile and pops return addresses to abort collision chain
+; }
 ; LIST#
 @label=handle_collision_mode_helicopter_missile
 c$7415 LD BC,($5F73) ; {Load missile coords. If Y bit 7 clear, clear missile
@@ -8960,11 +8964,11 @@ c$8C1B OR B          ; {Apply blend, store result, advance pointers, loop.
  $8C2B LD DE,($8B10) ;
 ; Second pass: draw new sprite (OR with screen), check collision.
 @label=sprite_draw_loop
-*$8C2F PUSH DE       ; {Read sprite byte, XOR with screen to detect overlap.
- $8C30 LD A,(DE)     ;
- $8C31 LD B,A        ;
- $8C32 LD A,(HL)     ;
- $8C33 XOR B         ;
+*$8C2F PUSH DE       ; {Read sprite byte; collision fires when sprite AND
+ $8C30 LD A,(DE)     ; screen share set bits (both non-zero after AND):
+ $8C31 LD B,A        ; computes (screen OR sprite) and (screen XOR sprite),
+ $8C32 LD A,(HL)     ; jumps to dispatcher if they differ (i.e. screen AND
+ $8C33 XOR B         ; sprite != 0).
  $8C34 LD D,A        ;
  $8C35 XOR B         ;
  $8C36 OR B          ;

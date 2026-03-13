@@ -2432,8 +2432,8 @@ D $73DD #LIST { Returns immediately during GAMEPLAY_MODE_SCROLL_IN } { Returns i
   $740C,8 Add 4 to Y position (INC B × 4), store to #R$5F73.
 @ $7415 label=handle_collision_mode_helicopter_missile
 c $7415 Handle helicopter missile collision
-D $7415 Checks if helicopter missile hit the player. Called from collision handler when COLLISION_MODE_HELICOPTER_MISSILE is active.
-D $7415 #LIST { Checks missile position against player position } { If collision detected, jumps to #R$650A (player hit) } { Clears missile and pops return addresses to abort collision chain } LIST#
+D $7415 Called by the sprite renderer's pixel collision when the missile's $FF byte overlaps solid screen pixels (bank or island terrain). Checks whether the overlap is actually the player plane; if not, clears the missile.
+D $7415 #LIST { Triggered by terrain contact (solid pixels), not player proximity } { If missile Y is not at player level (bit 7 clear), clear missile immediately } { Otherwise check missile X against player X; if match, player hit } { On miss: clears missile and pops return addresses to abort collision chain } LIST#
   $7415 Load missile coords. If Y bit 7 clear, clear missile and return.
   $741B Clear Y bit 7, check if Y-8 is negative (missile above screen).
   $7423 Compare missile X with player X (from #R$5F72). If match, player hit.
@@ -3303,7 +3303,7 @@ D $8C1B This byte is patched to change blending mode: OR B for XOR mode, NOP for
   $8C1B,9 Apply blend, store result, advance pointers, loop.
 @ $8C2F label=sprite_draw_loop
 N $8C2F Second pass: draw new sprite (OR with screen), check collision.
-  $8C2F Read sprite byte, XOR with screen to detect overlap.
+  $8C2F Read sprite byte; collision fires when sprite AND screen share set bits (both non-zero after AND): computes (screen OR sprite) and (screen XOR sprite), jumps to dispatcher if they differ (i.e. screen AND sprite != 0).
   $8C38,3 If collision detected, jump to collision dispatcher.
 @ $8C3B label=handle_collision_mode_none
 @ $8C3C label=sprite_draw_op
