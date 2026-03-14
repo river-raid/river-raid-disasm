@@ -3715,8 +3715,8 @@ int_handler:
   PUSH DE                              ;
   PUSH BC                              ;
   PUSH AF                              ;
-  LD HL,int_counter                    ; Increment interrupt counter.
-  INC (HL)                             ;
+  CALL fps_update                      ; Increment interrupt counter and update FPS display.
+  NOP                                  ;
   LD A,$BF                             ; Check H key for pause.
   IN A,($FE)                           ;
   BIT 4,A                              ;
@@ -6004,16 +6004,80 @@ reverse_balloon_direction_0:
   CALL render_object                   ;
   JP operate_viewport_slots            ;
 
-; Unused
-data_unused_7727:
-  DEFB $C3,$90,$EA,$0D,$00,$05,$1F,$00
-  DEFB $F5,$AC,$30,$0E,$00,$00,$00,$00
-  DEFB $00,$2C,$30,$0E,$00,$00,$00,$00
-  DEFB $00,$3B,$C0,$32,$33,$37,$36,$32
-  DEFB $0E,$00,$00,$D2,$5C,$00,$0D,$9A
-  DEFB $05,$2C,$00,$F8,$22,$52,$69,$76
-  DEFB $65,$72,$20,$72,$61,$69,$64,$22
-  DEFB $CA,$36,$0E,$00,$00,$06,$00,$00
+; FPS display update (called from int_handler every interrupt)
+;
+; Increments int_counter and fps_irq_counter. Every 50 interrupts (1 second) computes
+; FPS = state_tick - fps_last_tick, stores it in fps_value, and writes two digits
+; directly to screen pixel memory at row 23, cols 30-31 using ROM font data ($3D80).
+; Direct screen writes are used instead of RST $10 because the ROM channel routines
+; are not safe to call from an interrupt handler (shared system variable state).
+fps_update:
+  LD HL,int_counter                    ; Increment int_counter (original int_handler logic).
+  INC (HL)                             ;
+  LD HL,fps_irq_counter                ; Increment interrupt sub-counter.
+  INC (HL)                             ;
+  LD A,(HL)                            ;
+  CP 50                                ; Every 50 interrupts = 1 second.
+  JR NZ,fps_update_exit                ;
+  LD (HL),0                            ; Reset sub-counter.
+  LD A,(state_tick)                    ; FPS = current tick - last tick.
+  LD HL,fps_last_tick                  ;
+  LD B,A                               ;
+  SUB (HL)                             ; A = frames elapsed in last second.
+  LD (fps_value),A                     ;
+  LD (HL),B                            ; Save current tick as baseline.
+  LD A,(fps_value)                     ; Split FPS into tens (B) and units (A).
+  LD B,0                               ;
+fps_div10:
+  CP 10                                ;
+  JR C,fps_draw                        ;
+  SUB 10                               ;
+  INC B                                ;
+  JR fps_div10                         ;
+fps_draw:
+  PUSH AF                              ; Save units digit.
+  LD A,B                               ; Draw tens digit at row 23, col 30 ($50FE).
+  LD C,A                               ; Font addr = $3D80 + digit * 8.
+  LD B,0                               ;
+  SLA C                                ;
+  SLA C                                ;
+  SLA C                                ;
+  LD HL,$3D80                          ;
+  ADD HL,BC                            ;
+  LD D,$50                             ; First pixel row of char row 23, col 30.
+  LD E,$FE                             ;
+  LD B,8                               ;
+fps_draw_tens:
+  LD A,(HL)                            ; Copy one pixel row of font glyph to screen.
+  LD (DE),A                            ;
+  INC HL                               ;
+  INC D                                ; Advance to next pixel row ($xx00 stride).
+  DJNZ fps_draw_tens                   ;
+  POP AF                               ; Draw units digit at row 23, col 31 ($50FF).
+  LD C,A                               ;
+  LD B,0                               ;
+  SLA C                                ;
+  SLA C                                ;
+  SLA C                                ;
+  LD HL,$3D80                          ;
+  ADD HL,BC                            ;
+  LD D,$50                             ;
+  LD E,$FF                             ;
+  LD B,8                               ;
+fps_draw_units:
+  LD A,(HL)                            ;
+  LD (DE),A                            ;
+  INC HL                               ;
+  INC D                                ;
+  DJNZ fps_draw_units                  ;
+fps_update_exit:
+  RET                                  ;
+fps_irq_counter:
+  DEFB 0                               ; Interrupt sub-counter (0-49).
+fps_last_tick:
+  DEFB 0                               ; state_tick value at last FPS update.
+fps_value:
+  DEFB 0                               ; Last measured FPS.
   DEFB $3A,$D7,$35,$0E,$00,$00,$05,$00
   DEFB $00,$2C,$31,$30,$0E,$00,$00,$0A
   DEFB $00,$00,$3A,$D6,$22,$22,$0D,$00
