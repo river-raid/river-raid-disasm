@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6E9C</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28306.html">6E92</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28316">Map</a></td>
+<td class="next">
+Next: <a href="28331.html">6EAB</a>
+</td>
+</tr>
+</table>
+<div class="description">6E9C: Create explosion fragment at coordinates</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Called when an enemy is destroyed or the player collides. Sets up explosion state and adds an explosion entry to the explosions set at <a href="24366.html">5F2E</a>.
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Sets CONTROLS_BIT_EXPLODING to trigger explosion sound</li>
+<li>Clears CONTROLS_BIT_FIRE_SOUND to stop the fire sound during explosion</li>
+<li>Resets <a href="27770.html">6C7A</a> (explosion counter) to EXPLOSION_SOUND_FRAMES</li>
+<li>Falls through to <a href="28331.html">6EAB</a> to add explosion to set</li>
+</ul>
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">BC</td>
+<td class="register-desc">Fragment coordinates: B=Y offset, C=X position</td>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Initial explosion frame index (0 = start at frame 1)</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="28316"></span>6E9C</td>
+<td class="instruction">LD HL,$6BB0</td>
+<td class="comment-1" rowspan="2">Set CONTROLS_BIT_EXPLODING in <a href="27568.html">6BB0</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28319"></span>6E9F</td>
+<td class="instruction">SET 5,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28321"></span>6EA1</td>
+<td class="instruction">RES 0,(HL)</td>
+<td class="comment-1" rowspan="1">Clear CONTROLS_BIT_FIRE_SOUND.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28323"></span>6EA3</td>
+<td class="instruction">LD A,$18</td>
+<td class="comment-1" rowspan="2">Reset explosion counter.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28325"></span>6EA5</td>
+<td class="instruction">LD ($6C7A),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28328"></span>6EA8</td>
+<td class="instruction">LD HL,$5F2E</td>
+<td class="comment-1" rowspan="1">Point HL to explosions set at <a href="24366.html">5F2E</a>, fall through to add_object_to_set.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28306.html">6E92</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28316">Map</a></td>
+<td class="next">
+Next: <a href="28331.html">6EAB</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

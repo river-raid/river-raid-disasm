@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6453</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25668.html">6444</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25683">Map</a></td>
+<td class="next">
+Next: <a href="25698.html">6462</a>
+</td>
+</tr>
+</table>
+<div class="description">6453: Handle missile hit on fighter</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routine at <a href="25320.html">62E8</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="25683"></span>
+<div class="comments">
+<div class="paragraph">
+Awards POINTS_FIGHTER and spawns 1 explosion fragment.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="25683"></span>6453</td>
+<td class="instruction">LD A,$10</td>
+<td class="comment-1" rowspan="2">Award POINTS_FIGHTER to player.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25685"></span>6455</td>
+<td class="instruction">CALL <a href="37088.html">$90E0</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25688"></span>6458</td>
+<td class="instruction">LD BC,($5F8B)</td>
+<td class="comment-1" rowspan="2">Spawn explosion at object coordinates from <a href="24459.html">5F8B</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25692"></span>645C</td>
+<td class="instruction">CALL <a href="28316.html">$6E9C</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25695"></span>645F</td>
+<td class="instruction">JP <a href="25320.html#25565">$63DD</a></td>
+<td class="comment-1" rowspan="1">Finalize collision.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25668.html">6444</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25683">Map</a></td>
+<td class="next">
+Next: <a href="25698.html">6462</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

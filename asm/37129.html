@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 9109</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37088.html">90E0</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37129">Map</a></td>
+<td class="next">
+Next: <a href="37154.html">9122</a>
+</td>
+</tr>
+</table>
+<div class="description">9109: Add a life to the current player.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Increments the current player's life count, prints the updated lives display, and triggers the bonus life sound. Switches to channel 2 (main screen) for printing, then restores channel 1 (upper screen) for the caller.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37129"></span>9109</td>
+<td class="instruction">PUSH AF</td>
+<td class="comment-1" rowspan="7">Increment lives and print updated display on main screen.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37130"></span>910A</td>
+<td class="instruction">CALL <a href="37923.html">$9423</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37133"></span>910D</td>
+<td class="instruction">INC (HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37134"></span>910E</td>
+<td class="instruction">LD A,$02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37136"></span>9110</td>
+<td class="instruction">CALL $1601</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37139"></span>9113</td>
+<td class="instruction">CALL <a href="37438.html">$923E</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37142"></span>9116</td>
+<td class="instruction">LD HL,($9283)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37145"></span>9119</td>
+<td class="instruction">SET 4,(HL)</td>
+<td class="comment-1" rowspan="5">Trigger bonus life sound, restore upper screen channel.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37147"></span>911B</td>
+<td class="instruction">LD A,$01</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37149"></span>911D</td>
+<td class="instruction">CALL $1601</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37152"></span>9120</td>
+<td class="instruction">POP AF</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37153"></span>9121</td>
+<td class="instruction">RET</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37088.html">90E0</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37129">Map</a></td>
+<td class="next">
+Next: <a href="37154.html">9122</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6EBC</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28331.html">6EAB</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28348">Map</a></td>
+<td class="next">
+Next: <a href="28360.html">6EC8</a>
+</td>
+</tr>
+</table>
+<div class="description">6EBC: Write object entry to set</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Writes a 3-byte object entry at the current position. If replacing the end-of-set marker, writes a new end marker after the entry.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">A</td>
+<td class="register-desc">Previous value at slot (used to check if extending set)</td>
+</tr>
+<tr>
+<td class="register">B</td>
+<td class="register-desc">Y offset</td>
+</tr>
+<tr>
+<td class="register">C</td>
+<td class="register-desc">X position</td>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Object type</td>
+</tr>
+<tr>
+<td class="register">HL</td>
+<td class="register-desc">Pointer to slot in set</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="28348"></span>6EBC</td>
+<td class="instruction">LD (HL),C</td>
+<td class="comment-1" rowspan="5">Write 3-byte entry: [C, B, D] = [X, Y_offset, type].</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28349"></span>6EBD</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28350"></span>6EBE</td>
+<td class="instruction">LD (HL),B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28351"></span>6EBF</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28352"></span>6EC0</td>
+<td class="instruction">LD (HL),D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28353"></span>6EC1</td>
+<td class="instruction">CP $FF</td>
+<td class="comment-1" rowspan="3">If replacing end marker, write new $FF marker after entry.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28355"></span>6EC3</td>
+<td class="instruction">RET NZ</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28356"></span>6EC4</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28357"></span>6EC5</td>
+<td class="instruction">LD (HL),$FF</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28359"></span>6EC7</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28331.html">6EAB</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28348">Map</a></td>
+<td class="next">
+Next: <a href="28360.html">6EC8</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

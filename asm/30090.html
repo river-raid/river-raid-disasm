@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 758A</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="30028.html">754C</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#30090">Map</a></td>
+<td class="next">
+Next: <a href="30114.html">75A2</a>
+</td>
+</tr>
+</table>
+<div class="description">758A: Clip fuel station height to viewport</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Called when the fuel station extends past the viewport bottom. Calculates the visible portion height by subtracting the overflow from the full height.
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Input: B = Y position, D = full height ($19)</li>
+<li>Calculates: overflow = (Y + height) - VIEWPORT_HEIGHT</li>
+<li>Output: D = visible height = height - overflow</li>
+</ul>
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">B</td>
+<td class="register-desc">Y position of fuel station</td>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Full sprite height ($19 = 25 pixels)</td>
+</tr>
+</table>
+<table class="output">
+<tr class="asm-output-header">
+<th colspan="2">Output</th>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Clipped height (visible portion only)</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="30090"></span>758A</td>
+<td class="instruction">LD H,$00</td>
+<td class="comment-1" rowspan="7">Calculate overflow: HL = (Y + height) - $90.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30092"></span>758C</td>
+<td class="instruction">LD L,B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30093"></span>758D</td>
+<td class="instruction">LD BC,$0019</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30096"></span>7590</td>
+<td class="instruction">ADD HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30097"></span>7591</td>
+<td class="instruction">LD BC,$0090</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30100"></span>7594</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30101"></span>7595</td>
+<td class="instruction">SBC HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30103"></span>7597</td>
+<td class="instruction">LD B,$00</td>
+<td class="comment-1" rowspan="6">Calculate visible height: D = $19 - overflow.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30105"></span>7599</td>
+<td class="instruction">LD C,L</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30106"></span>759A</td>
+<td class="instruction">LD H,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30108"></span>759C</td>
+<td class="instruction">LD L,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30109"></span>759D</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30110"></span>759E</td>
+<td class="instruction">SBC HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30112"></span>75A0</td>
+<td class="instruction">LD D,L</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="30113"></span>75A1</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="30028.html">754C</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#30090">Map</a></td>
+<td class="next">
+Next: <a href="30114.html">75A2</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

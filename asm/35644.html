@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 8B3C</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="35614.html">8B1E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#35644">Map</a></td>
+<td class="next">
+Next: <a href="35696.html">8B70</a>
+</td>
+</tr>
+</table>
+<div class="description">8B3C: Render an object with collision detection.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Two-phase rendering pipeline: (1) erase old sprite at <a href="35594.html">8B0A</a> using XOR blending, (2) draw new sprite at <a href="35596.html">8B0C</a> using OR blending, checking for pixel collisions during the draw phase. Sprite frame is selected from E's lower bits for sub-pixel alignment.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">A</td>
+<td class="register-desc">Sprite width in tiles (1-3)</td>
+</tr>
+<tr>
+<td class="register">BC</td>
+<td class="register-desc">Sprite frame size in bytes</td>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Sprite height in pixels</td>
+</tr>
+<tr>
+<td class="register">E</td>
+<td class="register-desc">Screen attributes (lower bits also select animation frame)</td>
+</tr>
+<tr>
+<td class="register">HL</td>
+<td class="register-desc">Pointer to sprite data array (base of all frames)</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35644"></span>8B3C</td>
+<td class="instruction">PUSH DE</td>
+<td class="comment-1" rowspan="3">Store width and set screen attributes for the sprite area.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35645"></span>8B3D</td>
+<td class="instruction">LD ($8B1A),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35648"></span>8B40</td>
+<td class="instruction">NOP</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35649"></span>8B41</td>
+<td class="instruction">CALL <a href="37517.html">$928D</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="35652"></span>8B44</td>
+<td class="instruction">LD A,E</td>
+<td class="comment-1" rowspan="9">Select sprite frame from E's lower bits (sub-pixel alignment).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35653"></span>8B45</td>
+<td class="instruction">AND $07</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35655"></span>8B47</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35657"></span>8B49</td>
+<td class="instruction">INC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35658"></span>8B4A</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35659"></span>8B4B</td>
+<td class="instruction">SBC HL,BC</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35661"></span>8B4D</td>
+<td class="instruction">ADD HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35662"></span>8B4E</td>
+<td class="instruction">DEC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35663"></span>8B4F</td>
+<td class="instruction">JR NZ,$8B4D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35665"></span>8B51</td>
+<td class="instruction">LD ($8B10),HL</td>
+<td class="comment-1" rowspan="2">Store selected frame pointer for both erase and draw passes.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35668"></span>8B54</td>
+<td class="instruction">LD ($8B16),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35671"></span>8B57</td>
+<td class="instruction">POP DE</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="35672"></span>
+<div class="comments">
+<div class="paragraph">
+This entry point is used by the routine at <a href="28360.html">6EC8</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35672"></span>8B58</td>
+<td class="instruction">PUSH DE</td>
+<td class="comment-1" rowspan="7">Calculate screen addresses for new and old positions.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35673"></span>8B59</td>
+<td class="instruction">LD BC,($8B0C)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35677"></span>8B5D</td>
+<td class="instruction">CALL <a href="35406.html">$8A4E</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="35680"></span>8B60</td>
+<td class="instruction">LD ($8B12),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35683"></span>8B63</td>
+<td class="instruction">LD BC,($8B0A)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35687"></span>8B67</td>
+<td class="instruction">CALL <a href="35406.html">$8A4E</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="35690"></span>8B6A</td>
+<td class="instruction">LD ($8B14),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35693"></span>8B6D</td>
+<td class="instruction">JP <a href="35782.html#35794">$8BD2</a></td>
+<td class="comment-1" rowspan="1">Jump to render loop.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="35614.html">8B1E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#35644">Map</a></td>
+<td class="next">
+Next: <a href="35696.html">8B70</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6BD2</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27583.html">6BBF</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27602">Map</a></td>
+<td class="next">
+Next: <a href="27611.html">6BDB</a>
+</td>
+</tr>
+</table>
+<div class="description">6BD2: Reset to control selection screen.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Resets the scrolling text pointer and jumps back to the title screen.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27602"></span>6BD2</td>
+<td class="instruction">LD HL,$8182</td>
+<td class="comment-1" rowspan="2">Reset text pointer to <a href="33154.html">8182</a> (credits text start).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27605"></span>6BD5</td>
+<td class="instruction">LD ($5F7E),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27608"></span>6BD8</td>
+<td class="instruction">JP <a href="23814.html">$5D06</a></td>
+<td class="comment-1" rowspan="1">Jump to title screen initialization.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27583.html">6BBF</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27602">Map</a></td>
+<td class="next">
+Next: <a href="27611.html">6BDB</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6990</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26987.html">696B</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27024">Map</a></td>
+<td class="next">
+Next: <a href="27199.html">6A3F</a>
+</td>
+</tr>
+</table>
+<div class="description">6990: Render one line of island terrain</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Renders the left and right edges of an island on the current screen line. Islands are rendered as two diagonal edges (left and right) with solid terrain ($FF) filling the space from screen edge to each diagonal edge.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="27024"></span>
+<div class="comments">
+<div class="paragraph">
+The left edge X position is calculated as: state_island_byte_2 + profile_value + $80. The $80 centers the coordinate system (screen center). The profile_value comes from <a href="32867.html">8063</a> indexed by state_island_profile_idx and state_terrain_position.
+</div>
+<div class="paragraph">
+The right edge position depends on state_island_byte_3: 0=use byte_3 directly, 1=mirror around center (2*$3C - left), 2=offset from left ($3C + left). $3C (60) is the default river half-width.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27024"></span>6990</td>
+<td class="instruction">LD HL,$5EFD</td>
+<td class="comment-1" rowspan="2">Increment island line counter.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27027"></span>6993</td>
+<td class="instruction">INC (HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27028"></span>6994</td>
+<td class="instruction">LD A,($5EFA)</td>
+<td class="comment-1" rowspan="5">Set up lookup: HL=data_terrain_profiles, DE=TERRAIN_PROFILE_SIZE.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27031"></span>6997</td>
+<td class="instruction">LD HL,$8063</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27034"></span>699A</td>
+<td class="instruction">LD DE,$0010</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27037"></span>699D</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27038"></span>699E</td>
+<td class="instruction">SBC HL,DE</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27040"></span>69A0</td>
+<td class="instruction">ADD HL,DE</td>
+<td class="comment-1" rowspan="3">Locate 16-byte profile entry by state_island_profile_idx.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27041"></span>69A1</td>
+<td class="instruction">DEC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27042"></span>69A2</td>
+<td class="instruction">JR NZ,$69A0</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27044"></span>69A4</td>
+<td class="instruction">LD A,($5F7D)</td>
+<td class="comment-1" rowspan="5">Index into profile by (state_terrain_position AND $0F) to get edge offset byte.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27047"></span>69A7</td>
+<td class="instruction">AND $0F</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27049"></span>69A9</td>
+<td class="instruction">LD D,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27051"></span>69AB</td>
+<td class="instruction">LD E,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27052"></span>69AC</td>
+<td class="instruction">ADD HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27053"></span>69AD</td>
+<td class="instruction">LD A,($5EFB)</td>
+<td class="comment-1" rowspan="7">Left edge X = state_island_byte_2 + profile_byte + $80. Save X on stack.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27056"></span>69B0</td>
+<td class="instruction">ADD A,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27057"></span>69B1</td>
+<td class="instruction">PUSH AF</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27058"></span>69B2</td>
+<td class="instruction">LD B,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27060"></span>69B4</td>
+<td class="instruction">ADD A,$80</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27062"></span>69B6</td>
+<td class="instruction">LD D,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27063"></span>69B7</td>
+<td class="instruction">LD HL,$89F2</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27066"></span>69BA</td>
+<td class="instruction">LD A,D</td>
+<td class="comment-1" rowspan="8">Look up 2-byte edge sprite from terrain_edge_left using (X AND $06) as sprite index.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27067"></span>69BB</td>
+<td class="instruction">AND $07</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27069"></span>69BD</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27071"></span>69BF</td>
+<td class="instruction">LD C,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27072"></span>69C0</td>
+<td class="instruction">SLA C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27074"></span>69C2</td>
+<td class="instruction">LD A,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27075"></span>69C3</td>
+<td class="instruction">ADD HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27076"></span>69C4</td>
+<td class="instruction">EX DE,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27077"></span>69C5</td>
+<td class="instruction">LD C,A</td>
+<td class="comment-1" rowspan="10">Calculate screen address = screen_ptr + (X &gt;&gt; 3). Copy 2-byte edge sprite via LDIR.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27078"></span>69C6</td>
+<td class="instruction">LD HL,($5F7B)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27081"></span>69C9</td>
+<td class="instruction">LD B,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27083"></span>69CB</td>
+<td class="instruction">SRL C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27085"></span>69CD</td>
+<td class="instruction">SRL C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27087"></span>69CF</td>
+<td class="instruction">SRL C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27089"></span>69D1</td>
+<td class="instruction">ADD HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27090"></span>69D2</td>
+<td class="instruction">EX DE,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27091"></span>69D3</td>
+<td class="instruction">LD BC,$0002</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27094"></span>69D6</td>
+<td class="instruction">LDIR</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27096"></span>69D8</td>
+<td class="instruction">DEC DE</td>
+<td class="comment-1" rowspan="10">Calculate fill count = (X &gt;&gt; 3) - 16. This is number of solid tiles left of edge.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27097"></span>69D9</td>
+<td class="instruction">DEC DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27098"></span>69DA</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27100"></span>69DC</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27102"></span>69DE</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27104"></span>69E0</td>
+<td class="instruction">SUB $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27106"></span>69E2</td>
+<td class="instruction">AND $0F</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27108"></span>69E4</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27109"></span>69E5</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27111"></span>69E7</td>
+<td class="instruction">JP Z,$69F0</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27114"></span>69EA</td>
+<td class="instruction">LD A,$FF</td>
+<td class="comment-1" rowspan="4">Fill leftward with $FF bytes (solid terrain) for fill count iterations.</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27116"></span>69EC</td>
+<td class="instruction">DEC DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27117"></span>69ED</td>
+<td class="instruction">LD (DE),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27118"></span>69EE</td>
+<td class="instruction">DJNZ $69EC</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27120"></span>69F0</td>
+<td class="instruction">POP AF</td>
+<td class="comment-1" rowspan="6">Restore left X from stack. Set D=left X, C=$3C (river half-width), B=state_island_byte_2.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27121"></span>69F1</td>
+<td class="instruction">LD B,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27123"></span>69F3</td>
+<td class="instruction">LD D,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27124"></span>69F4</td>
+<td class="instruction">LD C,$3C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27126"></span>69F6</td>
+<td class="instruction">LD A,($5EFB)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27129"></span>69F9</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27130"></span>69FA</td>
+<td class="instruction">LD A,($5EFC)</td>
+<td class="comment-1" rowspan="6">Dispatch based on state_island_byte_3: 1=<a href="27199.html">6A3F</a>, 2=<a href="27205.html">6A45</a>, else use byte_3 as right X.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27133"></span>69FD</td>
+<td class="instruction">CP $01</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27135"></span>69FF</td>
+<td class="instruction">JP Z,<a href="27199.html">$6A3F</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27138"></span>6A02</td>
+<td class="instruction">LD A,($5EFC)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27141"></span>6A05</td>
+<td class="instruction">CP $02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27143"></span>6A07</td>
+<td class="instruction">JP Z,<a href="27205.html">$6A45</a></td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="27146"></span>
+<div class="comments">
+<div class="paragraph">
+This entry point is used by the routines at <a href="27199.html">6A3F</a> and <a href="27205.html">6A45</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27146"></span>6A0A</td>
+<td class="instruction">LD D,A</td>
+<td class="comment-1" rowspan="10">Look up 2-byte edge sprite from terrain_edge_right using (right X AND $06) as index.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27147"></span>6A0B</td>
+<td class="instruction">LD HL,$89FA</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27150"></span>6A0E</td>
+<td class="instruction">LD A,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27151"></span>6A0F</td>
+<td class="instruction">AND $06</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27153"></span>6A11</td>
+<td class="instruction">LD C,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27154"></span>6A12</td>
+<td class="instruction">LD B,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27156"></span>6A14</td>
+<td class="instruction">LD A,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27157"></span>6A15</td>
+<td class="instruction">ADD HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27158"></span>6A16</td>
+<td class="instruction">EX DE,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27159"></span>6A17</td>
+<td class="instruction">LD C,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27160"></span>6A18</td>
+<td class="instruction">LD HL,($5F7B)</td>
+<td class="comment-1" rowspan="7">Calculate screen address = screen_ptr + (right X &gt;&gt; 3). Copy 2-byte edge sprite via LDIR.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27163"></span>6A1B</td>
+<td class="instruction">SRL C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27165"></span>6A1D</td>
+<td class="instruction">SRL C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27167"></span>6A1F</td>
+<td class="instruction">SRL C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27169"></span>6A21</td>
+<td class="instruction">ADD HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27170"></span>6A22</td>
+<td class="instruction">EX DE,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27171"></span>6A23</td>
+<td class="instruction">LD BC,$0002</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27174"></span>6A26</td>
+<td class="instruction">LDIR</td>
+<td class="comment-1" rowspan="11">Calculate fill count = 15 - (right X &gt;&gt; 3). This is number of solid tiles right of edge.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27176"></span>6A28</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27177"></span>6A29</td>
+<td class="instruction">SRL B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27179"></span>6A2B</td>
+<td class="instruction">SRL B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27181"></span>6A2D</td>
+<td class="instruction">SRL B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27183"></span>6A2F</td>
+<td class="instruction">LD A,$0F</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27185"></span>6A31</td>
+<td class="instruction">SUB B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27186"></span>6A32</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27187"></span>6A33</td>
+<td class="instruction">AND $0F</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27189"></span>6A35</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27191"></span>6A37</td>
+<td class="instruction">RET Z</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27192"></span>6A38</td>
+<td class="instruction">LD A,$FF</td>
+<td class="comment-1" rowspan="1">Load $FF (solid terrain byte) into A.</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27194"></span>6A3A</td>
+<td class="instruction">LD (DE),A</td>
+<td class="comment-1" rowspan="3">Write A to (DE), increment DE, loop B times to fill rightward.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27195"></span>6A3B</td>
+<td class="instruction">INC DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27196"></span>6A3C</td>
+<td class="instruction">DJNZ $6A3A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27198"></span>6A3E</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1">Return after filling right terrain.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26987.html">696B</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27024">Map</a></td>
+<td class="next">
+Next: <a href="27199.html">6A3F</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

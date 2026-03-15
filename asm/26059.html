@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 65CB</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26043.html">65BB</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26059">Map</a></td>
+<td class="next">
+Next: <a href="26078.html">65DE</a>
+</td>
+</tr>
+</table>
+<div class="description">65CB: Handle Player 2 death and determine next game state</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+This routine is called when Player 2 dies. It checks both players' lives to determine whether to switch to Player 1, continue with Player 2, or trigger game over.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26059"></span>65CB</td>
+<td class="instruction">LD A,($923C)</td>
+<td class="comment-1" rowspan="3">If Player 2 has no lives, check Player 1 status.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26062"></span>65CE</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26064"></span>65D0</td>
+<td class="instruction">JP Z,<a href="26078.html#26083">$65E3</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="26067"></span>65D3</td>
+<td class="instruction">LD A,($923B)</td>
+<td class="comment-1" rowspan="4">If Player 1 has lives, switch to Player 1; otherwise restart Player 2.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26070"></span>65D6</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26072"></span>65D8</td>
+<td class="instruction">JP NZ,<a href="26078.html">$65DE</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="26075"></span>65DB</td>
+<td class="instruction">JP <a href="25960.html">$6568</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26043.html">65BB</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26059">Map</a></td>
+<td class="next">
+Next: <a href="26078.html">65DE</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

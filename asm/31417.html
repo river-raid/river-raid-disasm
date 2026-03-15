@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 7AB9</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="30738.html">7812</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#31417">Map</a></td>
+<td class="next">
+Next: <a href="31437.html">7ACD</a>
+</td>
+</tr>
+</table>
+<div class="description">7AB9: Initial game setup</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Displays the control selection dialog, waits for user input (or times out to overview mode), then shows the game mode dialog. Stores the selected control type in <a href="30720.html">7800</a>, overview flag in <a href="30721.html">7801</a>, and game mode in <a href="37434.html">923A</a>. Uses a stack trick: sets SP to <a href="30736.html">7810</a> so RET jumps to <a href="23824.html">5D10</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="31417"></span>7AB9</td>
+<td class="instruction">LD DE,$7A2E</td>
+<td class="comment-1" rowspan="3">Print control types dialog</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31420"></span>7ABC</td>
+<td class="instruction">LD BC,$008B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31423"></span>7ABF</td>
+<td class="instruction">CALL $203C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31426"></span>7AC2</td>
+<td class="instruction">LD HL,$FFFF</td>
+<td class="comment-1" rowspan="2">Initialize timer</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31429"></span>7AC5</td>
+<td class="instruction">LD ($7802),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31432"></span>7AC8</td>
+<td class="instruction">LD A,$0D</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="31434"></span>7ACA</td>
+<td class="instruction">LD ($5C08),A</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="30738.html">7812</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#31417">Map</a></td>
+<td class="next">
+Next: <a href="31437.html">7ACD</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

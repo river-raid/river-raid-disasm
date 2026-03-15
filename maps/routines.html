@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routines</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="RoutinesMap">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<div class="map-intro"></div>
+<table class="map">
+<tr>
+<th>Address</th>
+<th>Description</th>
+</tr>
+<tr>
+<td class="map-c"><span id="23762"></span><a href="../asm/23762.html">5CD2</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/23762.html">Game initialization and interrupt setup</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="23814"></span><a href="../asm/23814.html">5D06</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/23814.html">Return to control selection dialog</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="23824"></span><a href="../asm/23824.html">5D10</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/23824.html">Start gameplay or overview mode based on user selection</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="23851"></span><a href="../asm/23851.html">5D2B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/23851.html">Start overview mode</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="23861"></span><a href="../asm/23861.html">5D35</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/23861.html">Start gameplay mode</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="23876"></span><a href="../asm/23876.html">5D44</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/23876.html">Initialize game state for overview/demo mode.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="23967"></span><a href="../asm/23967.html">5D9F</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/23967.html">Decrease player 2 lives</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="23974"></span><a href="../asm/23974.html">5DA6</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/23974.html">Initialize and start gameplay mode</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="24465"></span><a href="../asm/24465.html">5F91</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24465.html">Main gameplay loop</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="24538"></span><a href="../asm/24538.html">5FDA</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24538.html">Scan cursor keys</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="24586"></span><a href="../asm/24586.html">600A</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24586.html">Scan Kempston joystick</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="24633"></span><a href="../asm/24633.html">6039</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24633.html">Scan Sinclair joystick</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="24680"></span><a href="../asm/24680.html">6068</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24680.html">Scan keyboard</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="24741"></span><a href="../asm/24741.html">60A5</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24741.html">Render player plane and terrain fragments</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="24868"></span><a href="../asm/24868.html">6124</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24868.html">Calculate fuel gauge sprite offset</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="24886"></span><a href="../asm/24886.html">6136</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24886.html">Collision detection dispatcher</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="24926"></span><a href="../asm/24926.html">615E</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24926.html">Handle COLLISION_MODE_FIGHTER collision detection</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25019"></span><a href="../asm/25019.html">61BB</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25019.html">Check collision against bridges and viewport objects</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25161"></span><a href="../asm/25161.html">6249</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25161.html">Increment player 2's bridge counter</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25174"></span><a href="../asm/25174.html">6256</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25174.html">Handle COLLISION_MODE_FUEL_DEPOT (initiate refueling)</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25192"></span><a href="../asm/25192.html">6268</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25192.html">Check collision with explosion fragments</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25294"></span><a href="../asm/25294.html">62CE</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25294.html">End of fragment list - no collision found</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25300"></span><a href="../asm/25300.html">62D4</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25300.html">Get Y offset for balloon collision</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25303"></span><a href="../asm/25303.html">62D7</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25303.html">Get Y offset for fuel depot collision</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25306"></span><a href="../asm/25306.html">62DA</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25306.html">Increase vertical coordinate of the object by the value of <a href="../asm/24420.html">5F64</a>.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25312"></span><a href="../asm/25312.html">62E0</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25312.html">Decrease vertical coordinate of the object by the value of <a href="../asm/24420.html">5F64</a>.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25320"></span><a href="../asm/25320.html">62E8</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25320.html">Check missile collision against viewport objects</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25596"></span><a href="../asm/25596.html">63FC</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25596.html">Reset gameplay mode to normal and exit collision system</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25620"></span><a href="../asm/25620.html">6414</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25620.html">Handle missile hit on regular helicopter</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25635"></span><a href="../asm/25635.html">6423</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25635.html">Handle missile hit on ship</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25668"></span><a href="../asm/25668.html">6444</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25668.html">Handle missile hit on advanced helicopter</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25683"></span><a href="../asm/25683.html">6453</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25683.html">Handle missile hit on fighter</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25698"></span><a href="../asm/25698.html">6462</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25698.html">Handle missile hit on balloon</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25720"></span><a href="../asm/25720.html">6478</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25720.html">Handle collision with fuel depot</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25758"></span><a href="../asm/25758.html">649E</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25758.html">Jump to collision finalization</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25761"></span><a href="../asm/25761.html">64A1</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25761.html">Handle refueling from fuel depot</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25788"></span><a href="../asm/25788.html">64BC</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25788.html">Print current bridge number on status line</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25829"></span><a href="../asm/25829.html">64E5</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25829.html">Print bridge number for Player 2</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25841"></span><a href="../asm/25841.html">64F1</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25841.html">Common bridge printing for Player 2</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25862"></span><a href="../asm/25862.html">6506</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25862.html">Print a space character</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25866"></span><a href="../asm/25866.html">650A</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25866.html">Handle player death</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25960"></span><a href="../asm/25960.html">6568</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25960.html">Restart gameplay for current player</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25967"></span><a href="../asm/25967.html">656F</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25967.html">Check if Player 2 has lives remaining when Player 1 is out</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25975"></span><a href="../asm/25975.html">6577</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25975.html">Game Over</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="25991"></span><a href="../asm/25991.html">6587</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25991.html">Setup Player 2 status line during overview mode</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26027"></span><a href="../asm/26027.html">65AB</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26027.html">Switch to Player 2 after Player 1 death</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26043"></span><a href="../asm/26043.html">65BB</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26043.html">Switch to Player 2 when Player 1 dies in two-player mode</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26059"></span><a href="../asm/26059.html">65CB</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26059.html">Handle Player 2 death and determine next game state</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26078"></span><a href="../asm/26078.html">65DE</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26078.html">Switch to Player 1 after Player 2 death</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26099"></span><a href="../asm/26099.html">65F3</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26099.html">Move player plane right by 2 pixels</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26160"></span><a href="../asm/26160.html">6630</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26160.html">Restore plane state after rendering</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26178"></span><a href="../asm/26178.html">6642</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26178.html">Move player plane left by 2 pixels</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26242"></span><a href="../asm/26242.html">6682</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26242.html">Render player plane sprite</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26316"></span><a href="../asm/26316.html">66CC</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26316.html">Load banked plane sprite address</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26320"></span><a href="../asm/26320.html">66D0</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26320.html">Advance game scroll and update bridge position</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26350"></span><a href="../asm/26350.html">66EE</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26350.html">Update bridge Y position during scroll</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26372"></span><a href="../asm/26372.html">6704</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26372.html">Clear bridge when scrolled off screen</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26378"></span><a href="../asm/26378.html">670A</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26378.html">Handle up/accelerate input</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26391"></span><a href="../asm/26391.html">6717</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26391.html">Handle down/decelerate input</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26404"></span><a href="../asm/26404.html">6724</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26404.html">Handle fire button input</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26429"></span><a href="../asm/26429.html">673D</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26429.html">Animate and render player missile</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26510"></span><a href="../asm/26510.html">678E</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26510.html">Clear CONTROLS_BIT_FIRE_SOUND flag</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26516"></span><a href="../asm/26516.html">6794</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26516.html">Finalize collision and erase missile sprite</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26673"></span><a href="../asm/26673.html">6831</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26673.html">Add $0800 offset to screen pointer</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26678"></span><a href="../asm/26678.html">6836</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26678.html">Add $1000 offset to screen pointer</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26683"></span><a href="../asm/26683.html">683B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26683.html">Scroll screen pixels vertically</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26785"></span><a href="../asm/26785.html">68A1</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26785.html">Clear top screen rows after scrolling</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26807"></span><a href="../asm/26807.html">68B7</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26807.html">Scroll screen attributes up by one row</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26821"></span><a href="../asm/26821.html">68C5</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26821.html">Copy bottom attribute row to row 1 and refill bottom</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26857"></span><a href="../asm/26857.html">68E9</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26857.html">Initialize bridge state for current player</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26919"></span><a href="../asm/26919.html">6927</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26919.html">Render bridge attributes to bottom row</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26940"></span><a href="../asm/26940.html">693C</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26940.html">Initialize bridge approach state</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26951"></span><a href="../asm/26951.html">6947</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26951.html">Clear bridge destroyed flag</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26957"></span><a href="../asm/26957.html">694D</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26957.html">Advance to next bridge/level</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26979"></span><a href="../asm/26979.html">6963</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26979.html">Wrap bridge index from 49 to 1</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="26987"></span><a href="../asm/26987.html">696B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26987.html">Initialize island state from terrain data</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27024"></span><a href="../asm/27024.html">6990</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27024.html">Render one line of island terrain</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27199"></span><a href="../asm/27199.html">6A3F</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27199.html">Calculate mirrored right edge position</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27205"></span><a href="../asm/27205.html">6A45</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27205.html">Calculate offset right edge position</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27210"></span><a href="../asm/27210.html">6A4A</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27210.html">Get player 2's bridge progress</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27215"></span><a href="../asm/27215.html">6A4F</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27215.html">Load next terrain fragment and initialize rendering state</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27299"></span><a href="../asm/27299.html">6AA3</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27299.html">Render one pixel line of terrain</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27480"></span><a href="../asm/27480.html">6B58</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27480.html">Calculate mirrored right edge (terrain extras mode 1)</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27486"></span><a href="../asm/27486.html">6B5E</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27486.html">Calculate offset right edge (terrain extras mode 2)</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27491"></span><a href="../asm/27491.html">6B63</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27491.html">Load canal sprite (river-adjacent side)</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27499"></span><a href="../asm/27499.html">6B6B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27499.html">Load canal sprite (road-adjacent side)</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27507"></span><a href="../asm/27507.html">6B73</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27507.html">Load road/bridge sprite</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27515"></span><a href="../asm/27515.html">6B7B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27515.html">Render special terrain fragment (bridge/road area)</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27569"></span><a href="../asm/27569.html">6BB1</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27569.html">Keep the game paused</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27583"></span><a href="../asm/27583.html">6BBF</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27583.html">Handle the Enter key pressed</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27602"></span><a href="../asm/27602.html">6BD2</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27602.html">Reset to control selection screen.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27611"></span><a href="../asm/27611.html">6BDB</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27611.html">Maskable interrupt handler (IM 2)</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27629"></span><a href="../asm/27629.html">6BED</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27629.html">Process control state flags and trigger sound effects</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27684"></span><a href="../asm/27684.html">6C24</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27684.html">Return from interrupt handler</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27697"></span><a href="../asm/27697.html">6C31</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27697.html">Play bonus life sound effect</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27730"></span><a href="../asm/27730.html">6C52</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27730.html">Complete bonus life sound sequence</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27741"></span><a href="../asm/27741.html">6C5D</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27741.html">Play normal speed engine sound</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27771"></span><a href="../asm/27771.html">6C7B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27771.html">Play explosion sound effect</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27821"></span><a href="../asm/27821.html">6CAD</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27821.html">Complete explosion sound sequence</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27832"></span><a href="../asm/27832.html">6CB8</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27832.html">Play fast speed engine sound</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27862"></span><a href="../asm/27862.html">6CD6</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27862.html">Play slow speed engine sound</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27892"></span><a href="../asm/27892.html">6CF4</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27892.html">Play low fuel warning sound</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="27927"></span><a href="../asm/27927.html">6D17</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27927.html">Level overview screen</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28125"></span><a href="../asm/28125.html">6DDD</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28125.html">Reset scrolling title text</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28139"></span><a href="../asm/28139.html">6DEB</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28139.html">Initializes the starting bridge based on the value of <a href="../asm/37434.html">923A</a> using <a href="../asm/23871.html">5D3F</a> for the lookup.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28159"></span><a href="../asm/28159.html">6DFF</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28159.html">Consume fuel and update gauge display</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28224"></span><a href="../asm/28224.html">6E40</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28224.html">Add fuel during refueling</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28294"></span><a href="../asm/28294.html">6E86</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28294.html">Set low fuel warning flag</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28300"></span><a href="../asm/28300.html">6E8C</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28300.html">Clear low fuel warning flag</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28306"></span><a href="../asm/28306.html">6E92</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28306.html">Play tank full sound</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28316"></span><a href="../asm/28316.html">6E9C</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28316.html">Create explosion fragment at coordinates</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28331"></span><a href="../asm/28331.html">6EAB</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28331.html">Add object entry to a set</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28348"></span><a href="../asm/28348.html">6EBC</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28348.html">Write object entry to set</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28360"></span><a href="../asm/28360.html">6EC8</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28360.html">Process and render all active explosions</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28515"></span><a href="../asm/28515.html">6F63</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28515.html">Load frame 1/5 explosion sprite</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28519"></span><a href="../asm/28519.html">6F67</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28519.html">Load frame 2/4 explosion sprite</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28523"></span><a href="../asm/28523.html">6F6B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28523.html">Load frame 3 explosion sprite</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28527"></span><a href="../asm/28527.html">6F6F</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28527.html">Load explosion erasure sprite</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28531"></span><a href="../asm/28531.html">6F73</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28531.html">Reset explosions set pointer</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28538"></span><a href="../asm/28538.html">6F7A</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28538.html">Remove completed explosion from set</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28544"></span><a href="../asm/28544.html">6F80</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28544.html">Spawn objects from level data slot</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28603"></span><a href="../asm/28603.html">6FBB</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28603.html">Render rock sprite</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28646"></span><a href="../asm/28646.html">6FE6</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28646.html">Load pointer to right-facing enemy sprites</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28650"></span><a href="../asm/28650.html">6FEA</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28650.html">Set up object screen position for rendering</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28662"></span><a href="../asm/28662.html">6FF6</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28662.html">Spawn and render enemy on screen</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28728"></span><a href="../asm/28728.html">7038</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28728.html">Load ship screen attributes</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28731"></span><a href="../asm/28731.html">703B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28731.html">Load fighter screen attributes</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28734"></span><a href="../asm/28734.html">703E</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28734.html">Load tank screen attributes</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28742"></span><a href="../asm/28742.html">7046</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28742.html">Set XOR blending mode for sprite rendering</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28753"></span><a href="../asm/28753.html">7051</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28753.html">Render fuel station</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28780"></span><a href="../asm/28780.html">706C</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28780.html">Render balloon</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28814"></span><a href="../asm/28814.html">708E</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28814.html">Main viewport slot processing loop.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28932"></span><a href="../asm/28932.html">7104</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28932.html">Ship or helicopter operation routine</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28947"></span><a href="../asm/28947.html">7113</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28947.html">Advance left-facing ship or helicopter</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="28968"></span><a href="../asm/28968.html">7128</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28968.html">Continue ship/helicopter rendering</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29013"></span><a href="../asm/29013.html">7155</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29013.html">Reset left-moving fighter position</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29016"></span><a href="../asm/29016.html">7158</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29016.html">Fighter operation routine</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29035"></span><a href="../asm/29035.html">716B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29035.html">Continue fighter operation</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29074"></span><a href="../asm/29074.html">7192</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29074.html">Advance right-facing fighter</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29087"></span><a href="../asm/29087.html">719F</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29087.html">Reset right-moving fighter position</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29090"></span><a href="../asm/29090.html">71A2</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29090.html">Animate tank shell explosion</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29198"></span><a href="../asm/29198.html">720E</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29198.html">Finish tank shell explosion animation</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29220"></span><a href="../asm/29220.html">7224</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29220.html">Handle non-activated object</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29256"></span><a href="../asm/29256.html">7248</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29256.html">Load right-facing helicopter rotor sprite</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29260"></span><a href="../asm/29260.html">724C</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29260.html">Animate object (helicopter rotor)</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29273"></span><a href="../asm/29273.html">7259</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29273.html">Animate helicopter rotor</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29323"></span><a href="../asm/29323.html">728B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29323.html">Advance tank right by 4 pixels</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29328"></span><a href="../asm/29328.html">7290</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29328.html">Signal road tank at center</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29334"></span><a href="../asm/29334.html">7296</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29334.html">Tank operation routine</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29414"></span><a href="../asm/29414.html">72E6</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29414.html">Set XOR/XOR blending mode</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29423"></span><a href="../asm/29423.html">72EF</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29423.html">Set OR/OR blending mode</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29432"></span><a href="../asm/29432.html">72F8</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29432.html">Adjust tank position for left orientation</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29437"></span><a href="../asm/29437.html">72FD</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29437.html">Adjust tank position for right orientation</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29442"></span><a href="../asm/29442.html">7302</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29442.html">Operate tank on river bank</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29507"></span><a href="../asm/29507.html">7343</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29507.html">Initialize tank shell state</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29528"></span><a href="../asm/29528.html">7358</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29528.html">Cancel and remove tank shell</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29534"></span><a href="../asm/29534.html">735E</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29534.html">Check shell initialization condition</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29568"></span><a href="../asm/29568.html">7380</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29568.html">Invert coordinate for position calculation</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29575"></span><a href="../asm/29575.html">7387</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29575.html">Invert shell coordinate delta</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29582"></span><a href="../asm/29582.html">738E</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29582.html">Invert helicopter missile offset</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29587"></span><a href="../asm/29587.html">7393</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29587.html">Operate helicopter missile</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29648"></span><a href="../asm/29648.html">73D0</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29648.html">Remove helicopter missile</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29656"></span><a href="../asm/29656.html">73D8</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29656.html">Add X offset for right-facing missile spawn</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29661"></span><a href="../asm/29661.html">73DD</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29661.html">Render helicopter missile (spawn new)</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29717"></span><a href="../asm/29717.html">7415</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29717.html">Handle helicopter missile collision</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29761"></span><a href="../asm/29761.html">7441</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29761.html">Operate tank shell</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29856"></span><a href="../asm/29856.html">74A0</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29856.html">Erase off-screen tank shell</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29894"></span><a href="../asm/29894.html">74C6</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29894.html">Trigger tank shell explosion</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29924"></span><a href="../asm/29924.html">74E4</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29924.html">Remove tank shell from game</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="29934"></span><a href="../asm/29934.html">74EE</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29934.html">Handle tank after bridge destruction</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="30022"></span><a href="../asm/30022.html">7546</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30022.html">Get bridge number for player 1</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="30028"></span><a href="../asm/30028.html">754C</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30028.html">Operate fuel station</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="30090"></span><a href="../asm/30090.html">758A</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30090.html">Clip fuel station height to viewport</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="30114"></span><a href="../asm/30114.html">75A2</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30114.html">Advance right-facing ship or helicopter</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="30138"></span><a href="../asm/30138.html">75BA</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30138.html">Load enemy sprite pointer</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="30160"></span><a href="../asm/30160.html">75D0</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30160.html">Reverse enemy direction at river bank</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="30247"></span><a href="../asm/30247.html">7627</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30247.html">Reset <a href="../asm/24416.html">5F60</a> to the start of <a href="../asm/24320.html">5F00</a>.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="30254"></span><a href="../asm/30254.html">762E</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30254.html">Remove an object from the viewport array.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="30281"></span><a href="../asm/30281.html">7649</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30281.html">Operate balloon movement and rendering.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="30380"></span><a href="../asm/30380.html">76AC</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30380.html">A useless procedure that unconditionally jumps to <a href="../asm/28814.html">708E</a>.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="30383"></span><a href="../asm/30383.html">76AF</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30383.html">Right-facing balloon movement.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="30426"></span><a href="../asm/30426.html">76DA</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30426.html">Handle balloon terrain collision.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="30724"></span><a href="../asm/30724.html">7804</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30724.html">Clear screen and enter setup menu.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="31417"></span><a href="../asm/31417.html">7AB9</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/31417.html">Initial game setup</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="31437"></span><a href="../asm/31437.html">7ACD</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/31437.html">Wait until the user chooses a valid control type or switch to the overview mode on timeout.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="31495"></span><a href="../asm/31495.html">7B07</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/31495.html">Wait until the user chooses a valid game mode.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="31575"></span><a href="../asm/31575.html">7B57</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/31575.html">Switch to overview/demo mode on timeout.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="35330"></span><a href="../asm/35330.html">8A02</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35330.html">Generate firing sound effect.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="35355"></span><a href="../asm/35355.html">8A1B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35355.html">Scroll the text crawl row left by 1 pixel.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="35379"></span><a href="../asm/35379.html">8A33</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35379.html">Initialize UDG and screen attributes.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="35406"></span><a href="../asm/35406.html">8A4E</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35406.html">Calculate screen address from pixel coordinates.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="35614"></span><a href="../asm/35614.html">8B1E</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35614.html">Render a sprite at position from <a href="../asm/35594.html">8B0A</a>.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="35644"></span><a href="../asm/35644.html">8B3C</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35644.html">Render an object with collision detection.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="35696"></span><a href="../asm/35696.html">8B70</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35696.html">Process one row of sprite rendering.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="35732"></span><a href="../asm/35732.html">8B94</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35732.html">Adjust screen address for third-of-screen crossing.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="35747"></span><a href="../asm/35747.html">8BA3</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35747.html">Process old position screen address adjustment.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="35782"></span><a href="../asm/35782.html">8BC6</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35782.html">Adjust old position for third-of-screen crossing.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="35851"></span><a href="../asm/35851.html">8C0B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35851.html">Render one row of sprite data to screen.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="35867"></span><a href="../asm/35867.html">8C1B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35867.html">Self-modifying blending operation (erasure).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="35900"></span><a href="../asm/35900.html">8C3C</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35900.html">Self-modifying blending operation (drawing).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="35909"></span><a href="../asm/35909.html">8C45</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35909.html">Jump to collision dispatcher</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37088"></span><a href="../asm/37088.html">90E0</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37088.html">Add score points for a hit target</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37129"></span><a href="../asm/37129.html">9109</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37129.html">Add a life to the current player.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37154"></span><a href="../asm/37154.html">9122</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37154.html">Update and print score for current player.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37179"></span><a href="../asm/37179.html">913B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37179.html">Increase a digit in the player 1's score.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37195"></span><a href="../asm/37195.html">914B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37195.html">Print a digit from player 1's score.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37225"></span><a href="../asm/37225.html">9169</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37225.html">Increase a digit in the player 2's score.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37241"></span><a href="../asm/37241.html">9179</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37241.html">Print a digit from player 2's score.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37265"></span><a href="../asm/37265.html">9191</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37265.html">Handle carry for player 1's score digit.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37289"></span><a href="../asm/37289.html">91A9</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37289.html">Handle carry for player 2's score digit.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37313"></span><a href="../asm/37313.html">91C1</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37313.html">Print player 2's score on the status line.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37352"></span><a href="../asm/37352.html">91E8</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37352.html">Print player 2 score area or high score on status line.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37438"></span><a href="../asm/37438.html">923E</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37438.html">Print lives for current player.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37455"></span><a href="../asm/37455.html">924F</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37455.html">Continue printing lives after count has been loaded.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37476"></span><a href="../asm/37476.html">9264</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37476.html">Print six spaces to clear old lives display.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37495"></span><a href="../asm/37495.html">9277</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37495.html">Player 2 branch of <a href="../asm/37438.html">923E</a>.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37517"></span><a href="../asm/37517.html">928D</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37517.html">Set screen attributes for sprite area.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37725"></span><a href="../asm/37725.html">935D</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37725.html">Return point when attribute color is zero.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37735"></span><a href="../asm/37735.html">9367</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37735.html">Early exit from old position attribute loop.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37739"></span><a href="../asm/37739.html">936B</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37739.html">Early exit from new position attribute loop.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37743"></span><a href="../asm/37743.html">936F</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37743.html">Handle old position attributes when sprite is at screen top (row 0).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37768"></span><a href="../asm/37768.html">9388</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37768.html">Handle new position attributes when sprite is at screen top (row 0).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37793"></span><a href="../asm/37793.html">93A1</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37793.html">Compare two 6-digit scores.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37816"></span><a href="../asm/37816.html">93B8</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37816.html">Return 1 (first score less than second).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37819"></span><a href="../asm/37819.html">93BB</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37819.html">Return $FF (first score greater than second).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37822"></span><a href="../asm/37822.html">93BE</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37822.html">Update high score table from current player score.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37874"></span><a href="../asm/37874.html">93F2</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37874.html">Check if player 2 score beats player 1 score.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37898"></span><a href="../asm/37898.html">940A</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37898.html">Clear the screen by setting all pixel bytes to $00 and all attributes to the value set in <span class="register">D</span>.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-c"><span id="37923"></span><a href="../asm/37923.html">9423</a></td>
+<td class="map-c-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37923.html">Load pointer to current player's lives counter.</a></div>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

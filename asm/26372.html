@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6704</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26350.html">66EE</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26372">Map</a></td>
+<td class="next">
+Next: <a href="26378.html">670A</a>
+</td>
+</tr>
+</table>
+<div class="description">6704: Clear bridge when scrolled off screen</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routine at <a href="26350.html">66EE</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="26372"></span>
+<div class="comments">
+<div class="paragraph">
+Clears the bridge destroyed flag (<a href="24429.html">5F6D</a>) and returns 0 in A, which the caller stores to <a href="24430.html">5F6E</a> to mark no bridge present.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26372"></span>6704</td>
+<td class="instruction">LD A,$00</td>
+<td class="comment-1" rowspan="2">Clear bridge destroyed flag.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26374"></span>6706</td>
+<td class="instruction">LD ($5F6D),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26377"></span>6709</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26350.html">66EE</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26372">Map</a></td>
+<td class="next">
+Next: <a href="26378.html">670A</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

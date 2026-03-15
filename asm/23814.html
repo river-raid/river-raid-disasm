@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 5D06</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="23762.html">5CD2</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#23814">Map</a></td>
+<td class="next">
+Next: <a href="23824.html">5D10</a>
+</td>
+</tr>
+</table>
+<div class="description">5D06: Return to control selection dialog</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routines at <a href="27602.html">6BD2</a> and <a href="27927.html">6D17</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="23814"></span>
+<div class="comments">
+<div class="paragraph">
+This entry point is used when returning to the control selection dialog from the game (via <a href="27602.html">6BD2</a>) or from the overview mode. It switches back to IM 1, then calls clear_and_setup to display the control selection dialog.
+</div>
+<div class="paragraph">
+After the user selects controls and game mode, execution continues at <a href="23824.html">5D10</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="23814"></span>5D06</td>
+<td class="instruction">LD A,$3F</td>
+<td class="comment-1" rowspan="1">Restore standard IM 1 interrupt vector table.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23816"></span>5D08</td>
+<td class="instruction">LD I,A</td>
+<td class="comment-1" rowspan="1">Set the I register to $3F for IM 1 mode.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23818"></span>5D0A</td>
+<td class="instruction">IM 1</td>
+<td class="comment-1" rowspan="1">Set interrupt mode 1.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23820"></span>5D0C</td>
+<td class="instruction">EI</td>
+<td class="comment-1" rowspan="1">Enable interrupts.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23821"></span>5D0D</td>
+<td class="instruction">CALL <a href="30724.html">$7804</a></td>
+<td class="comment-1" rowspan="1">Display the control selection dialog.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="23762.html">5CD2</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#23814">Map</a></td>
+<td class="next">
+Next: <a href="23824.html">5D10</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

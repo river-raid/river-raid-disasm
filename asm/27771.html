@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6C7B</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27770.html">6C7A</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27771">Map</a></td>
+<td class="next">
+Next: <a href="27821.html">6CAD</a>
+</td>
+</tr>
+</table>
+<div class="description">6C7B: Play explosion sound effect</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Generates an explosion sound that plays over 24 frames ($18). Called once per frame while CONTROLS_BIT_EXPLODING is set. The ON delay is derived from (DE)&amp;7, but DE is not set up by the caller - it retains whatever value the interrupted main loop code had, making the pitch vary semi-randomly between frames and giving the explosion its noisy character.
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Counter decrements from $18 (24) to 0 over successive frames</li>
+<li>ON delay = ((DE) AND $07) &lt;&lt; 3 + $10, range $10-$48 (16-72)</li>
+<li>OFF delay = counter value, decreasing each frame (sound speeds up)</li>
+<li>4 cycles of waveform per frame</li>
+<li>As counter decreases, OFF delay shortens, making sound more rapid/urgent</li>
+</ul>
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">DE</td>
+<td class="register-desc">Not intentionally set - residual value from interrupted code, read as (DE)&amp;7 to derive ON delay</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27771"></span>6C7B</td>
+<td class="instruction">LD A,($6C7A)</td>
+<td class="comment-1" rowspan="2">Decrement explosion counter.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27774"></span>6C7E</td>
+<td class="instruction">DEC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27775"></span>6C7F</td>
+<td class="instruction">LD ($6C7A),A</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27778"></span>6C82</td>
+<td class="instruction">CP $00</td>
+<td class="comment-1" rowspan="2">If counter reached 0, jump to <a href="27821.html">6CAD</a> to finish.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27780"></span>6C84</td>
+<td class="instruction">JP Z,<a href="27821.html">$6CAD</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27783"></span>6C87</td>
+<td class="instruction">LD A,(DE)</td>
+<td class="comment-1" rowspan="6">Calculate ON delay: ((DE) AND $07) &lt;&lt; 3 + $10. Gives value $10-$48 based on low 3 bits of (DE).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27784"></span>6C88</td>
+<td class="instruction">AND $07</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27786"></span>6C8A</td>
+<td class="instruction">SLA A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27788"></span>6C8C</td>
+<td class="instruction">SLA A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27790"></span>6C8E</td>
+<td class="instruction">SLA A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27792"></span>6C90</td>
+<td class="instruction">ADD A,$10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27794"></span>6C92</td>
+<td class="instruction">LD E,A</td>
+<td class="comment-1" rowspan="2">Set ON delay in E, loop counter = 4 cycles.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27795"></span>6C93</td>
+<td class="instruction">LD C,$04</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27797"></span>6C95</td>
+<td class="instruction">LD A,$10</td>
+<td class="comment-1" rowspan="2">Speaker ON.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27799"></span>6C97</td>
+<td class="instruction">OUT ($FE),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27801"></span>6C99</td>
+<td class="instruction">LD D,E</td>
+<td class="comment-1" rowspan="1">Load ON delay into D.</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27802"></span>6C9A</td>
+<td class="instruction">DEC D</td>
+<td class="comment-1" rowspan="2">Delay loop for speaker ON phase.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27803"></span>6C9B</td>
+<td class="instruction">JR NZ,$6C9A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27805"></span>6C9D</td>
+<td class="instruction">LD A,$00</td>
+<td class="comment-1" rowspan="2">Speaker OFF.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27807"></span>6C9F</td>
+<td class="instruction">OUT ($FE),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27809"></span>6CA1</td>
+<td class="instruction">LD A,($6C7A)</td>
+<td class="comment-1" rowspan="2">Load counter value as OFF delay.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27812"></span>6CA4</td>
+<td class="instruction">LD D,A</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27813"></span>6CA5</td>
+<td class="instruction">DEC D</td>
+<td class="comment-1" rowspan="2">Delay loop for speaker OFF phase (speeds up as counter decreases).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27814"></span>6CA6</td>
+<td class="instruction">JR NZ,$6CA5</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27816"></span>6CA8</td>
+<td class="instruction">DEC C</td>
+<td class="comment-1" rowspan="3">Decrement cycle counter, loop for 4 cycles per frame.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27817"></span>6CA9</td>
+<td class="instruction">JP NZ,$6C95</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27820"></span>6CAC</td>
+<td class="instruction">RET</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27770.html">6C7A</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27771">Map</a></td>
+<td class="next">
+Next: <a href="27821.html">6CAD</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

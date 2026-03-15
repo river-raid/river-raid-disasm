@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 7259</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29260.html">724C</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29273">Map</a></td>
+<td class="next">
+Next: <a href="29323.html">728B</a>
+</td>
+</tr>
+</table>
+<div class="description">7259: Animate helicopter rotor</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Renders the helicopter rotor sprite based on orientation. Uses left-facing (<a href="35512.html">8AB8</a>) or right-facing (<a href="35528.html">8AC8</a>) rotor sprite.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="29273"></span>7259</td>
+<td class="instruction">LD HL,($5F60)</td>
+<td class="comment-1" rowspan="7">Load current_slot_ptr, extract [D, B, C] from current slot.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29276"></span>725C</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29277"></span>725D</td>
+<td class="instruction">LD D,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29278"></span>725E</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29279"></span>725F</td>
+<td class="instruction">LD B,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29280"></span>7260</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29281"></span>7261</td>
+<td class="instruction">LD C,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29282"></span>7262</td>
+<td class="instruction">LD HL,$8AB8</td>
+<td class="comment-1" rowspan="3">Load left rotor sprite <a href="35512.html">8AB8</a>. If right-facing (bit 6 clear), load <a href="35528.html">8AC8</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29285"></span>7265</td>
+<td class="instruction">BIT 6,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29287"></span>7267</td>
+<td class="instruction">CALL Z,<a href="29256.html">$7248</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29290"></span>726A</td>
+<td class="instruction">LD ($8B0C),BC</td>
+<td class="comment-1" rowspan="4">Store positions to <a href="35596.html">8B0C</a> and <a href="35594.html">8B0A</a>. Push rotor sprite, get main sprite pointer.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29294"></span>726E</td>
+<td class="instruction">LD ($8B0A),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29298"></span>7272</td>
+<td class="instruction">PUSH HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29299"></span>7273</td>
+<td class="instruction">CALL <a href="30138.html">$75BA</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29302"></span>7276</td>
+<td class="instruction">LD HL,$82C5</td>
+<td class="comment-1" rowspan="3">Store erase sprite <a href="33477.html">82C5</a> to <a href="35598.html">8B0E</a>. Pop rotor sprite.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29305"></span>7279</td>
+<td class="instruction">LD ($8B0E),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29308"></span>727C</td>
+<td class="instruction">POP HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29309"></span>727D</td>
+<td class="instruction">LD DE,$020E</td>
+<td class="comment-1" rowspan="4">Render rotor: height=2, attributes=$0E, frame size=4, width=2.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29312"></span>7280</td>
+<td class="instruction">LD BC,$0004</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29315"></span>7283</td>
+<td class="instruction">LD A,$02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29317"></span>7285</td>
+<td class="instruction">CALL <a href="35644.html">$8B3C</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29320"></span>7288</td>
+<td class="instruction">JP <a href="28814.html">$708E</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29260.html">724C</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29273">Map</a></td>
+<td class="next">
+Next: <a href="29323.html">728B</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

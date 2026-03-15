@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6BBF</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27569.html">6BB1</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27583">Map</a></td>
+<td class="next">
+Next: <a href="27602.html">6BD2</a>
+</td>
+</tr>
+</table>
+<div class="description">6BBF: Handle the Enter key pressed</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routines at <a href="24465.html">5F91</a> and <a href="27927.html">6D17</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27583"></span>6BBF</td>
+<td class="instruction">LD A,$FE</td>
+<td class="comment-1" rowspan="4">Scan Caps Shift</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27585"></span>6BC1</td>
+<td class="instruction">IN A,($FE)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27587"></span>6BC3</td>
+<td class="instruction">BIT 0,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27589"></span>6BC5</td>
+<td class="instruction">JP Z,<a href="23861.html">$5D35</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27592"></span>6BC8</td>
+<td class="instruction">LD A,$7F</td>
+<td class="comment-1" rowspan="5">Scan Symbol Shift</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27594"></span>6BCA</td>
+<td class="instruction">IN A,($FE)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27596"></span>6BCC</td>
+<td class="instruction">BIT 1,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27598"></span>6BCE</td>
+<td class="instruction">JP Z,<a href="27602.html">$6BD2</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27601"></span>6BD1</td>
+<td class="instruction">RET</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27569.html">6BB1</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27583">Map</a></td>
+<td class="next">
+Next: <a href="27602.html">6BD2</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

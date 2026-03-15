@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6BDB</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27602.html">6BD2</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27611">Map</a></td>
+<td class="next">
+Next: <a href="27629.html">6BED</a>
+</td>
+</tr>
+</table>
+<div class="description">6BDB: Maskable interrupt handler (IM 2)</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Frame interrupt handler triggered ~50 times/second. Installed via IM 2 at game startup (see <a href="23762.html">5CD2</a>). Uses RETN instead of RETI (functionally equivalent).
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="27611"></span>
+<div class="comments">
+<div class="paragraph">
+The handler performs three functions each frame:
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Increment interrupt counter (<a href="23672.html">5C78</a>)</li>
+<li>Check H key for pause (jumps to <a href="27569.html">6BB1</a>)</li>
+<li>Process control flags for sound effects (falls through to <a href="27629.html">6BED</a>)</li>
+</ul>
+</div>
+<div class="paragraph">
+Note: The game tick counter (<a href="24303.html">5EEF</a>) is incremented in the main loop (<a href="24465.html">5F91</a>), not here. int_counter is used for system timing, state_tick for game logic.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27611"></span>6BDB</td>
+<td class="instruction">DI</td>
+<td class="comment-1" rowspan="5">Disable interrupts and save registers.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27612"></span>6BDC</td>
+<td class="instruction">PUSH HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27613"></span>6BDD</td>
+<td class="instruction">PUSH DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27614"></span>6BDE</td>
+<td class="instruction">PUSH BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27615"></span>6BDF</td>
+<td class="instruction">PUSH AF</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27616"></span>6BE0</td>
+<td class="instruction">LD HL,$5C78</td>
+<td class="comment-1" rowspan="2">Increment interrupt counter.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27619"></span>6BE3</td>
+<td class="instruction">INC (HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27620"></span>6BE4</td>
+<td class="instruction">LD A,$BF</td>
+<td class="comment-1" rowspan="4">Check H key for pause.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27622"></span>6BE6</td>
+<td class="instruction">IN A,($FE)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27624"></span>6BE8</td>
+<td class="instruction">BIT 4,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27626"></span>6BEA</td>
+<td class="instruction">JP Z,<a href="27569.html">$6BB1</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27602.html">6BD2</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27611">Map</a></td>
+<td class="next">
+Next: <a href="27629.html">6BED</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

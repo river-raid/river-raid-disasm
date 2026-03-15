@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 9388</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37743.html">936F</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37768">Map</a></td>
+<td class="next">
+Next: <a href="37793.html">93A1</a>
+</td>
+</tr>
+</table>
+<div class="description">9388: Handle new position attributes when sprite is at screen top (row 0).</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Same $03DF wrap handling as <a href="37743.html">936F</a> but for new position. Wraps attribute writes to bottom of viewport to preserve row 0 as black.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37768"></span>9388</td>
+<td class="instruction">LD BC,$03DF</td>
+<td class="comment-1" rowspan="4">Add $03DF to HL to correct wrapped address. Restore and re-save BC.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37771"></span>938B</td>
+<td class="instruction">ADD HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37772"></span>938C</td>
+<td class="instruction">POP BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37773"></span>938D</td>
+<td class="instruction">PUSH BC</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37774"></span>938E</td>
+<td class="instruction">LD (HL),A</td>
+<td class="comment-1" rowspan="4">Inner loop: write attribute A to HL, increment HL, decrement C, repeat for row width.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37775"></span>938F</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37776"></span>9390</td>
+<td class="instruction">DEC C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37777"></span>9391</td>
+<td class="instruction">JR NZ,$938E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37779"></span>9393</td>
+<td class="instruction">POP BC</td>
+<td class="comment-1" rowspan="9">After row: restore BC, add stride DE, decrement B, re-save BC. Subtract $03DF from HL to maintain wrap. Jump back to <a href="37517.html#37704">9348</a> for next row.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37780"></span>9394</td>
+<td class="instruction">ADD HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37781"></span>9395</td>
+<td class="instruction">DEC B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37782"></span>9396</td>
+<td class="instruction">PUSH BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37783"></span>9397</td>
+<td class="instruction">LD BC,$03DF</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37786"></span>939A</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37787"></span>939B</td>
+<td class="instruction">SBC HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37789"></span>939D</td>
+<td class="instruction">POP BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37790"></span>939E</td>
+<td class="instruction">JP <a href="37517.html#37704">$9348</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37743.html">936F</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37768">Map</a></td>
+<td class="next">
+Next: <a href="37793.html">93A1</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

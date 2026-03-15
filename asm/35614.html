@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 8B1E</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="35611.html">8B1B</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#35614">Map</a></td>
+<td class="next">
+Next: <a href="35644.html">8B3C</a>
+</td>
+</tr>
+</table>
+<div class="description">8B1E: Render a sprite at position from <a href="35594.html">8B0A</a>.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Selects the pre-shifted sprite frame based on X position bits 1-2 (4 frames at 2-pixel alignment intervals) and renders it.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">A</td>
+<td class="register-desc">Sprite width in tiles</td>
+</tr>
+<tr>
+<td class="register">BC</td>
+<td class="register-desc">Sprite frame size</td>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Sprite height in pixels</td>
+</tr>
+<tr>
+<td class="register">E</td>
+<td class="register-desc">Screen attributes</td>
+</tr>
+<tr>
+<td class="register">HL</td>
+<td class="register-desc">Pointer to the sprite array</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35614"></span>8B1E</td>
+<td class="instruction">PUSH DE</td>
+<td class="comment-1" rowspan="2">Save attributes/height, store sprite width.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35615"></span>8B1F</td>
+<td class="instruction">LD ($8B1A),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35618"></span>8B22</td>
+<td class="instruction">LD DE,($8B0A)</td>
+<td class="comment-1" rowspan="4">Calculate animation frame index from X position bits 1-2.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35622"></span>8B26</td>
+<td class="instruction">LD A,E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35623"></span>8B27</td>
+<td class="instruction">AND $07</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35625"></span>8B29</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35627"></span>8B2B</td>
+<td class="instruction">INC A</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="35628"></span>8B2C</td>
+<td class="instruction">PUSH HL</td>
+<td class="comment-1" rowspan="3">Prepare for frame calculation loop.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35629"></span>8B2D</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35630"></span>8B2E</td>
+<td class="instruction">SBC HL,BC</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35632"></span>8B30</td>
+<td class="instruction">ADD HL,BC</td>
+<td class="comment-1" rowspan="3">Add frame offset to sprite pointer, loop until done.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35633"></span>8B31</td>
+<td class="instruction">DEC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35634"></span>8B32</td>
+<td class="instruction">JR NZ,$8B30</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35636"></span>8B34</td>
+<td class="instruction">LD ($8B0E),HL</td>
+<td class="comment-1" rowspan="1">Store result to <a href="35598.html">8B0E</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35639"></span>8B37</td>
+<td class="instruction">POP HL</td>
+<td class="comment-1" rowspan="2">Reload width and restore attributes/height, fall through to render_object.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35640"></span>8B38</td>
+<td class="instruction">LD A,($8B1A)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35643"></span>8B3B</td>
+<td class="instruction">POP DE</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="35611.html">8B1B</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#35614">Map</a></td>
+<td class="next">
+Next: <a href="35644.html">8B3C</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 7113</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28932.html">7104</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28947">Map</a></td>
+<td class="next">
+Next: <a href="28968.html">7128</a>
+</td>
+</tr>
+</table>
+<div class="description">7113: Advance left-facing ship or helicopter</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Moves a left-facing ship/helicopter 2 pixels left, checking for terrain collision.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">B</td>
+<td class="register-desc">Y position</td>
+</tr>
+<tr>
+<td class="register">C</td>
+<td class="register-desc">X position</td>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Object definition</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="28947"></span>7113</td>
+<td class="instruction">PUSH BC</td>
+<td class="comment-1" rowspan="4">Save BC, calculate terrain check position: C -= 16 pixels.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28948"></span>7114</td>
+<td class="instruction">LD A,C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28949"></span>7115</td>
+<td class="instruction">SUB $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28951"></span>7117</td>
+<td class="instruction">LD C,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28952"></span>7118</td>
+<td class="instruction">CALL <a href="35406.html">$8A4E</a></td>
+<td class="comment-1" rowspan="2">Get terrain byte at (C, B). Load result into A.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28955"></span>711B</td>
+<td class="instruction">LD A,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28956"></span>711C</td>
+<td class="instruction">POP BC</td>
+<td class="comment-1" rowspan="3">Restore BC. If terrain != 0, reverse direction.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28957"></span>711D</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28959"></span>711F</td>
+<td class="instruction">CALL NZ,<a href="30160.html">$75D0</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28962"></span>7122</td>
+<td class="instruction">LD ($8B0A),BC</td>
+<td class="comment-1" rowspan="3">Store position to <a href="35594.html">8B0A</a>. Advance X position left by 2 pixels (DEC C twice).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28966"></span>7126</td>
+<td class="instruction">DEC C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28967"></span>7127</td>
+<td class="instruction">DEC C</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28932.html">7104</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28947">Map</a></td>
+<td class="next">
+Next: <a href="28968.html">7128</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

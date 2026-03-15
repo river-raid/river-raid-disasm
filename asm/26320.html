@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 66D0</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26316.html">66CC</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26320">Map</a></td>
+<td class="next">
+Next: <a href="26350.html">66EE</a>
+</td>
+</tr>
+</table>
+<div class="description">66D0: Advance game scroll and update bridge position</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routines at <a href="23974.html">5DA6</a>, <a href="24465.html">5F91</a> and <a href="27927.html">6D17</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="26320"></span>
+<div class="comments">
+<div class="paragraph">
+Called each frame to advance the vertical scroll position. Adds current speed (<a href="24420.html">5F64</a>) to scroll offset (<a href="24432.html">5F70</a>), updates the bridge's Y position, then resets speed to SPEED_NORMAL and updates control flags.
+</div>
+<div class="paragraph">
+The control bits modified are: clears CONTROLS_BIT_SPEED_CHANGED, sets CONTROLS_BIT_SPEED_NOT_FAST. This triggers <a href="27741.html">6C5D</a> to play the normal speed engine sound.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26320"></span>66D0</td>
+<td class="instruction">LD BC,($5F70)</td>
+<td class="comment-1" rowspan="5">Add speed to scroll offset and store result.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26324"></span>66D4</td>
+<td class="instruction">LD H,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26326"></span>66D6</td>
+<td class="instruction">LD A,($5F64)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26329"></span>66D9</td>
+<td class="instruction">LD L,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26330"></span>66DA</td>
+<td class="instruction">ADD HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26331"></span>66DB</td>
+<td class="instruction">LD ($5F70),HL</td>
+<td class="comment-1" rowspan="2">Update bridge position; reset speed to SPEED_NORMAL.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26334"></span>66DE</td>
+<td class="instruction">CALL <a href="26350.html">$66EE</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="26337"></span>66E1</td>
+<td class="instruction">LD A,$02</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="26339"></span>66E3</td>
+<td class="instruction">LD ($5F64),A</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="26342"></span>66E6</td>
+<td class="instruction">LD HL,$6BB0</td>
+<td class="comment-1" rowspan="3">Clear CONTROLS_BIT_SPEED_CHANGED, set CONTROLS_BIT_SPEED_NOT_FAST in <a href="27568.html">6BB0</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26345"></span>66E9</td>
+<td class="instruction">RES 2,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26347"></span>66EB</td>
+<td class="instruction">SET 1,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26349"></span>66ED</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26316.html">66CC</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26320">Map</a></td>
+<td class="next">
+Next: <a href="26350.html">66EE</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 5FDA</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="24465.html">5F91</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#24538">Map</a></td>
+<td class="next">
+Next: <a href="24586.html">600A</a>
+</td>
+</tr>
+</table>
+<div class="description">5FDA: Scan cursor keys</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Reads keyboard half-rows via port $FE. Cursor keys use active-low bits (Z = pressed). Each detected press calls the corresponding handler.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="24538"></span>5FDA</td>
+<td class="instruction">LD A,$EF</td>
+<td class="comment-1" rowspan="5">Scan "8" (RIGHT)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24540"></span>5FDC</td>
+<td class="instruction">IN A,($FE)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24542"></span>5FDE</td>
+<td class="instruction">LD ($5EF1),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24545"></span>5FE1</td>
+<td class="instruction">BIT 2,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24547"></span>5FE3</td>
+<td class="instruction">CALL Z,<a href="26099.html">$65F3</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24550"></span>5FE6</td>
+<td class="instruction">LD A,$F7</td>
+<td class="comment-1" rowspan="4">Scan "5" (LEFT)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24552"></span>5FE8</td>
+<td class="instruction">IN A,($FE)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24554"></span>5FEA</td>
+<td class="instruction">BIT 4,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24556"></span>5FEC</td>
+<td class="instruction">CALL Z,<a href="26178.html">$6642</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24559"></span>5FEF</td>
+<td class="instruction">LD A,($5EF1)</td>
+<td class="comment-1" rowspan="3">Scan "0" (FIRE)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24562"></span>5FF2</td>
+<td class="instruction">BIT 0,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24564"></span>5FF4</td>
+<td class="instruction">CALL Z,<a href="26404.html">$6724</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24567"></span>5FF7</td>
+<td class="instruction">LD A,($5EF1)</td>
+<td class="comment-1" rowspan="3">Scan "7" (UP)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24570"></span>5FFA</td>
+<td class="instruction">BIT 3,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24572"></span>5FFC</td>
+<td class="instruction">CALL Z,<a href="26378.html">$670A</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24575"></span>5FFF</td>
+<td class="instruction">LD A,($5EF1)</td>
+<td class="comment-1" rowspan="4">Scan "6" (DOWN)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24578"></span>6002</td>
+<td class="instruction">BIT 4,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24580"></span>6004</td>
+<td class="instruction">CALL Z,<a href="26391.html">$6717</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24583"></span>6007</td>
+<td class="instruction">JP <a href="24465.html">$5F91</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="24465.html">5F91</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#24538">Map</a></td>
+<td class="next">
+Next: <a href="24586.html">600A</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

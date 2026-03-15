@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Game status buffer entry at 5F00</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-g">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Game status buffer</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="24318.html">5EFE</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#24320">Map</a></td>
+<td class="next">
+Next: <a href="24366.html">5F2E</a>
+</td>
+</tr>
+</table>
+<div class="description">5F00: Viewport slots array (15 slots for active game objects).</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Each slot is a 3-byte entry that can hold one game object (enemy, fuel depot, etc.). Iterated by <a href="28814.html">708E</a> (operate) and <a href="25320.html">62E8</a> (collision). New objects added via <a href="28331.html">6EAB</a>. See Glossary for terminology.
+</div>
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Byte</th>
+<th colspan="1" rowspan="1">Contents</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">0</td>
+<td class="" colspan="1" rowspan="1">X position (0-255 pixels), or slot marker</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">1</td>
+<td class="" colspan="1" rowspan="1">Y position (0-255 pixels, increases as object scrolls down)</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">2</td>
+<td class="" colspan="1" rowspan="1">Object definition byte (type, orientation, activation)</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Marker</th>
+<th colspan="1" rowspan="1">Value</th>
+<th colspan="1" rowspan="1">Meaning</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">SET_MARKER_EMPTY_SLOT</td>
+<td class="" colspan="1" rowspan="1">$00</td>
+<td class="" colspan="1" rowspan="1">Unused slot (skip during iteration)</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">SET_MARKER_END_OF_SET</td>
+<td class="" colspan="1" rowspan="1">$FF</td>
+<td class="" colspan="1" rowspan="1">End of active slots (reset iterator)</td>
+</tr>
+</table>
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24320"></span>5F00</td>
+<td class="instruction">DEFB $20,$20,$20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24323"></span>5F03</td>
+<td class="instruction">DEFB $20,$20,$20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24326"></span>5F06</td>
+<td class="instruction">DEFB $20,$20,$20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24329"></span>5F09</td>
+<td class="instruction">DEFB $20,$20,$20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24332"></span>5F0C</td>
+<td class="instruction">DEFB $20,$20,$20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24335"></span>5F0F</td>
+<td class="instruction">DEFB $20,$20,$20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24338"></span>5F12</td>
+<td class="instruction">DEFB $20,$20,$20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24341"></span>5F15</td>
+<td class="instruction">DEFB $20,$20,$20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24344"></span>5F18</td>
+<td class="instruction">DEFB $20,$20,$20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24347"></span>5F1B</td>
+<td class="instruction">DEFB $20,$20,$20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24350"></span>5F1E</td>
+<td class="instruction">DEFB $20,$20,$20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24353"></span>5F21</td>
+<td class="instruction">DEFB $20,$20,$20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24356"></span>5F24</td>
+<td class="instruction">DEFB $20,$20,$20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24359"></span>5F27</td>
+<td class="instruction">DEFB $20,$20,$20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24362"></span>5F2A</td>
+<td class="instruction">DEFB $20,$20,$20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24365"></span>5F2D</td>
+<td class="instruction">DEFB $20</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="24318.html">5EFE</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#24320">Map</a></td>
+<td class="next">
+Next: <a href="24366.html">5F2E</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

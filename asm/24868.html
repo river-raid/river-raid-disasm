@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6124</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="24741.html">60A5</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#24868">Map</a></td>
+<td class="next">
+Next: <a href="24886.html">6136</a>
+</td>
+</tr>
+</table>
+<div class="description">6124: Calculate fuel gauge sprite offset</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Computes a sprite data offset for the fuel gauge display using the formula: offset = (7 - B) * 8 + D. The result is patched into the operand of the following RLC instruction via self-modifying code.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">B</td>
+<td class="register-desc">Fuel gauge row (0-7, top to bottom)</td>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Sub-row pixel offset within the gauge row</td>
+</tr>
+</table>
+<table class="output">
+<tr class="asm-output-header">
+<th colspan="2">Output</th>
+</tr>
+<tr>
+<td class="register">B</td>
+<td class="register-desc">Rotated fuel gauge row (used by caller for next iteration)</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="24868"></span>6124</td>
+<td class="instruction">LD A,$07</td>
+<td class="comment-1" rowspan="9">Calculate offset = (7 - B) * 8 + D and patch into next instruction.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24870"></span>6126</td>
+<td class="instruction">PUSH DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24871"></span>6127</td>
+<td class="instruction">SUB B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24872"></span>6128</td>
+<td class="instruction">SLA A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24874"></span>612A</td>
+<td class="instruction">SLA A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24876"></span>612C</td>
+<td class="instruction">SLA A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24878"></span>612E</td>
+<td class="instruction">POP DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24879"></span>612F</td>
+<td class="instruction">ADD A,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24880"></span>6130</td>
+<td class="instruction">LD ($6134),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24883"></span>6133</td>
+<td class="instruction">RLC B</td>
+<td class="comment-1" rowspan="1">Rotate B left through carry.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24885"></span>6135</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="24741.html">60A5</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#24868">Map</a></td>
+<td class="next">
+Next: <a href="24886.html">6136</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

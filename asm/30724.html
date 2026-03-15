@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 7804</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="30722.html">7802</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#30724">Map</a></td>
+<td class="next">
+Next: <a href="30736.html">7810</a>
+</td>
+</tr>
+</table>
+<div class="description">7804: Clear screen and enter setup menu.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Saves stack pointer, clears screen with white-on-black attributes, then jumps to setup routine.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="30724"></span>7804</td>
+<td class="instruction">LD ($7810),SP</td>
+<td class="comment-1" rowspan="1">Save current stack pointer to <a href="30736.html">7810</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30728"></span>7808</td>
+<td class="instruction">LD D,$07</td>
+<td class="comment-1" rowspan="2">Clear screen with white-on-black attributes.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30730"></span>780A</td>
+<td class="instruction">CALL <a href="37898.html">$940A</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="30733"></span>780D</td>
+<td class="instruction">JP <a href="31417.html">$7AB9</a></td>
+<td class="comment-1" rowspan="1">Continue with setup.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="30722.html">7802</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#30724">Map</a></td>
+<td class="next">
+Next: <a href="30736.html">7810</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

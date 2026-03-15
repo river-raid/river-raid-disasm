@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 93F2</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37822.html">93BE</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37874">Map</a></td>
+<td class="next">
+Next: <a href="37898.html">940A</a>
+</td>
+</tr>
+</table>
+<div class="description">93F2: Check if player 2 score beats player 1 score.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+For 2-player games, compares scores and copies player 2 score to player 1 slot if higher. This ensures the best score from either player is compared against the high score.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37874"></span>93F2</td>
+<td class="instruction">LD HL,$90BC</td>
+<td class="comment-1" rowspan="3">Compare player 1 score (<a href="37052.html">90BC</a>) with player 2 score (<a href="37058.html">90C2</a>).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37877"></span>93F5</td>
+<td class="instruction">LD DE,$90C2</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37880"></span>93F8</td>
+<td class="instruction">CALL <a href="37793.html">$93A1</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37883"></span>93FB</td>
+<td class="instruction">CP $FF</td>
+<td class="comment-1" rowspan="2">Return if player 2 score is not greater.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37885"></span>93FD</td>
+<td class="instruction">RET NZ</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37886"></span>93FE</td>
+<td class="instruction">LD HL,$90C2</td>
+<td class="comment-1" rowspan="4">Copy player 2 score to player 1 score slot (6 bytes).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37889"></span>9401</td>
+<td class="instruction">LD DE,$90BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37892"></span>9404</td>
+<td class="instruction">LD BC,$0006</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37895"></span>9407</td>
+<td class="instruction">LDIR</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37897"></span>9409</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37822.html">93BE</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37874">Map</a></td>
+<td class="next">
+Next: <a href="37898.html">940A</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

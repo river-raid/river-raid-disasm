@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6568</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25866.html">650A</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25960">Map</a></td>
+<td class="next">
+Next: <a href="25967.html">656F</a>
+</td>
+</tr>
+</table>
+<div class="description">6568: Restart gameplay for current player</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+This entry point is used by multiple death handler routines to restart gameplay for the current player. It restores the stack pointer and jumps back to the main play routine.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="25960"></span>6568</td>
+<td class="instruction">LD SP,($5F83)</td>
+<td class="comment-1" rowspan="1">Restore stack pointer to main game loop</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25964"></span>656C</td>
+<td class="instruction">JP <a href="23974.html">$5DA6</a></td>
+<td class="comment-1" rowspan="1">Restart gameplay for current player</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25866.html">650A</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25960">Map</a></td>
+<td class="next">
+Next: <a href="25967.html">656F</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

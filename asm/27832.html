@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6CB8</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27821.html">6CAD</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27832">Map</a></td>
+<td class="next">
+Next: <a href="27862.html">6CD6</a>
+</td>
+</tr>
+</table>
+<div class="description">6CB8: Play fast speed engine sound</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Generates the engine sound for fast speed. Called when only CONTROLS_BIT_SPEED_CHANGED is set (player holding up). HL points to the controls byte on entry.
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Period = (controls_byte AND $07), used for speaker ON delay</li>
+<li>Fixed OFF delay of 4 iterations (shorter than ON = asymmetric wave)</li>
+<li>Asymmetric wave gives a higher-pitched timbre than normal speed</li>
+</ul>
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">HL</td>
+<td class="register-desc">Pointer to <a href="27568.html">6BB0</a> (controls state byte)</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27832"></span>6CB8</td>
+<td class="instruction">LD A,(HL)</td>
+<td class="comment-1" rowspan="3">Extract period from low 3 bits of controls byte.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27833"></span>6CB9</td>
+<td class="instruction">AND $07</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27835"></span>6CBB</td>
+<td class="instruction">LD E,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27836"></span>6CBC</td>
+<td class="instruction">LD C,$08</td>
+<td class="comment-1" rowspan="1">Loop counter: 8 cycles of the waveform.</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27838"></span>6CBE</td>
+<td class="instruction">LD A,$10</td>
+<td class="comment-1" rowspan="2">Speaker ON.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27840"></span>6CC0</td>
+<td class="instruction">OUT ($FE),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27842"></span>6CC2</td>
+<td class="instruction">LD D,E</td>
+<td class="comment-1" rowspan="1">Load period into D.</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27843"></span>6CC3</td>
+<td class="instruction">DEC D</td>
+<td class="comment-1" rowspan="2">Delay loop for speaker ON phase.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27844"></span>6CC4</td>
+<td class="instruction">JR NZ,$6CC3</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27846"></span>6CC6</td>
+<td class="instruction">LD A,$00</td>
+<td class="comment-1" rowspan="2">Speaker OFF.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27848"></span>6CC8</td>
+<td class="instruction">OUT ($FE),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27850"></span>6CCA</td>
+<td class="instruction">LD D,$04</td>
+<td class="comment-1" rowspan="1">Load fixed delay ($04) into D.</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27852"></span>6CCC</td>
+<td class="instruction">DEC D</td>
+<td class="comment-1" rowspan="2">Delay loop for speaker OFF phase (asymmetric wave).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27853"></span>6CCD</td>
+<td class="instruction">JR NZ,$6CCC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27855"></span>6CCF</td>
+<td class="instruction">DEC C</td>
+<td class="comment-1" rowspan="3">Decrement cycle counter, loop if not zero. Return from interrupt when done.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27856"></span>6CD0</td>
+<td class="instruction">JP NZ,$6CBE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27859"></span>6CD3</td>
+<td class="instruction">JP <a href="27684.html">$6C24</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27821.html">6CAD</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27832">Map</a></td>
+<td class="next">
+Next: <a href="27862.html">6CD6</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

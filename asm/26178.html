@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6642</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26160.html">6630</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26178">Map</a></td>
+<td class="next">
+Next: <a href="26242.html">6682</a>
+</td>
+</tr>
+</table>
+<div class="description">6642: Move player plane left by 2 pixels</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Mirrors <a href="26099.html">65F3</a> but moves the plane 2 pixels left instead of right.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26178"></span>6642</td>
+<td class="instruction">LD A,($5F72)</td>
+<td class="comment-1" rowspan="7">Back up missile coordinates and move plane 2 pixels left.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26181"></span>6645</td>
+<td class="instruction">LD HL,($5EF3)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26184"></span>6648</td>
+<td class="instruction">LD ($5F8F),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26187"></span>664B</td>
+<td class="instruction">DEC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26188"></span>664C</td>
+<td class="instruction">DEC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26189"></span>664D</td>
+<td class="instruction">LD ($5F72),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26192"></span>6650</td>
+<td class="instruction">LD C,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26193"></span>6651</td>
+<td class="instruction">LD B,$80</td>
+<td class="comment-1" rowspan="4">Set position and collision mode (FUEL_DEPOT) for rendering.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26195"></span>6653</td>
+<td class="instruction">LD A,$01</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26197"></span>6655</td>
+<td class="instruction">LD ($5EF5),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26200"></span>6658</td>
+<td class="instruction">LD ($8B0C),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26204"></span>665C</td>
+<td class="instruction">INC C</td>
+<td class="comment-1" rowspan="3">Calculate previous position for sprite erasure (2 pixels back).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26205"></span>665D</td>
+<td class="instruction">INC C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26206"></span>665E</td>
+<td class="instruction">LD ($8B0A),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26210"></span>6662</td>
+<td class="instruction">LD BC,$0010</td>
+<td class="comment-1" rowspan="12">Configure sprite, render plane, and restore state; use ship attributes for Player 2.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26213"></span>6665</td>
+<td class="instruction">LD HL,($5EF7)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26216"></span>6668</td>
+<td class="instruction">LD ($8B0E),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26219"></span>666B</td>
+<td class="instruction">LD E,$0E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26221"></span>666D</td>
+<td class="instruction">LD A,($923D)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26224"></span>6670</td>
+<td class="instruction">CP $02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26226"></span>6672</td>
+<td class="instruction">CALL Z,<a href="28728.html">$7038</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="26229"></span>6675</td>
+<td class="instruction">LD D,$08</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26231"></span>6677</td>
+<td class="instruction">LD A,$02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26233"></span>6679</td>
+<td class="instruction">LD HL,$83F1</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26236"></span>667C</td>
+<td class="instruction">CALL <a href="35644.html">$8B3C</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="26239"></span>667F</td>
+<td class="instruction">JP <a href="26160.html">$6630</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26160.html">6630</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26178">Map</a></td>
+<td class="next">
+Next: <a href="26242.html">6682</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

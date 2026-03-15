@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6B58</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27299.html">6AA3</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27480">Map</a></td>
+<td class="next">
+Next: <a href="27486.html">6B5E</a>
+</td>
+</tr>
+</table>
+<div class="description">6B58: Calculate mirrored right edge (terrain extras mode 1)</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+For symmetric river sections. Right edge = 2*C - D where C is the default river width from state_terrain_element_23 low byte and D is the left edge coordinate. This mirrors the left edge around the river center.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">C</td>
+<td class="register-desc">River center position (from state_terrain_element_23 low byte).</td>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Left terrain edge coordinate.</td>
+</tr>
+</table>
+<table class="output">
+<tr class="asm-output-header">
+<th colspan="2">Output</th>
+</tr>
+<tr>
+<td class="register">A</td>
+<td class="register-desc">Right terrain edge coordinate = 2*C - D.</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27480"></span>6B58</td>
+<td class="instruction">LD A,C</td>
+<td class="comment-1" rowspan="4">A = 2*C - D (mirror left around center), jump to <a href="27299.html#27424">6B20</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27481"></span>6B59</td>
+<td class="instruction">SUB D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27482"></span>6B5A</td>
+<td class="instruction">ADD A,C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27483"></span>6B5B</td>
+<td class="instruction">JP <a href="27299.html#27424">$6B20</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27299.html">6AA3</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27480">Map</a></td>
+<td class="next">
+Next: <a href="27486.html">6B5E</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

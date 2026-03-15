@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6FBB</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28544.html">6F80</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28603">Map</a></td>
+<td class="next">
+Next: <a href="28646.html">6FE6</a>
+</td>
+</tr>
+</table>
+<div class="description">6FBB: Render rock sprite</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Renders a rock decoration at the specified position. Uses 3x2 tile sprites (24x16 pixels) stored sequentially at <a href="33953.html">84A1</a> with $30 bytes per frame.
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Sprite address = <a href="33953.html">84A1</a> + (frame_index * $30)</li>
+<li>Frame index from bits 0-2 of D (0-7 rock variants)</li>
+<li>Sprite stored at <a href="35598.html">8B0E</a>, position at <a href="35594.html">8B0A</a> and <a href="35596.html">8B0C</a></li>
+<li>Width=3 tiles, height=16 pixels</li>
+</ul>
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Object type byte (bits 0-2 = rock frame index)</td>
+</tr>
+<tr>
+<td class="register">E</td>
+<td class="register-desc">X position</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="28603"></span>6FBB</td>
+<td class="instruction">LD A,D</td>
+<td class="comment-1" rowspan="3">Extract rock frame index: A = D AND $07. Set flags with OR A.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28604"></span>6FBC</td>
+<td class="instruction">AND $07</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28606"></span>6FBE</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28607"></span>6FBF</td>
+<td class="instruction">LD HL,$84A1</td>
+<td class="comment-1" rowspan="4">Load sprite base address <a href="33953.html">84A1</a> and frame size $30. Prepare loop: INC A, subtract BC once to offset the first ADD.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28610"></span>6FC2</td>
+<td class="instruction">LD BC,$0030</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28613"></span>6FC5</td>
+<td class="instruction">INC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28614"></span>6FC6</td>
+<td class="instruction">SBC HL,BC</td>
+</tr>
+<tr>
+<td class="address-2"><span id="28616"></span>6FC8</td>
+<td class="instruction">ADD HL,BC</td>
+<td class="comment-1" rowspan="3">Loop: HL += $30 for each frame index. Result: HL = <a href="33953.html">84A1</a> + (frame * $30).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28617"></span>6FC9</td>
+<td class="instruction">DEC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28618"></span>6FCA</td>
+<td class="instruction">JR NZ,$6FC8</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28620"></span>6FCC</td>
+<td class="instruction">LD B,$00</td>
+<td class="comment-1" rowspan="2">Set BC = X position (B=0, C=E from input).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28622"></span>6FCE</td>
+<td class="instruction">LD C,E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28623"></span>6FCF</td>
+<td class="instruction">LD ($8B0E),HL</td>
+<td class="comment-1" rowspan="4">Store rendering state: sprite pointer at <a href="35598.html">8B0E</a>, X position at <a href="35596.html">8B0C</a> and <a href="35594.html">8B0A</a> (duplicated). Load erase sprite <a href="33525.html">82F5</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28626"></span>6FD2</td>
+<td class="instruction">LD HL,$82F5</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28629"></span>6FD5</td>
+<td class="instruction">LD ($8B0C),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28633"></span>6FD9</td>
+<td class="instruction">LD ($8B0A),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28637"></span>6FDD</td>
+<td class="instruction">LD A,$03</td>
+<td class="comment-1" rowspan="3">Set dimensions: A=3 (width in tiles), D=$10 (height 16 pixels), E=$14 (attributes). Render rock.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28639"></span>6FDF</td>
+<td class="instruction">LD DE,$1014</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28642"></span>6FE2</td>
+<td class="instruction">CALL <a href="35644.html">$8B3C</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28645"></span>6FE5</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28544.html">6F80</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28603">Map</a></td>
+<td class="next">
+Next: <a href="28646.html">6FE6</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

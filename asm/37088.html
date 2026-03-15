@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 90E0</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37070.html">90CE</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37088">Map</a></td>
+<td class="next">
+Next: <a href="37129.html">9109</a>
+</td>
+</tr>
+</table>
+<div class="description">90E0: Add score points for a hit target</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Adds points to the current player's score. The value in A is BCD-encoded as score/10: high nibble increments the 10s digit (×100 displayed points), low nibble increments the 1s digit (×10 displayed points). The trailing zero in the score display provides the ×10 factor. E.g. POINTS_TANK = BCD 25 → 2×100 + 5×10 = 250 points.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">A</td>
+<td class="register-desc">Points to add in BCD/10 format (e.g. BCD 25 = 250 points).</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37088"></span>90E0</td>
+<td class="instruction">PUSH AF</td>
+<td class="comment-1" rowspan="6">Extract high nibble (hundreds digit), skip if zero.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37089"></span>90E1</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37091"></span>90E3</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37093"></span>90E5</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37095"></span>90E7</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37097"></span>90E9</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37099"></span>90EB</td>
+<td class="instruction">JP Z,$90F8</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-2"><span id="37102"></span>90EE</td>
+<td class="instruction">PUSH AF</td>
+<td class="comment-1" rowspan="5">Increment 10s score digit once per high-nibble unit.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37103"></span>90EF</td>
+<td class="instruction">LD A,$02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37105"></span>90F1</td>
+<td class="instruction">CALL <a href="37154.html">$9122</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37108"></span>90F4</td>
+<td class="instruction">POP AF</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37109"></span>90F5</td>
+<td class="instruction">DEC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37110"></span>90F6</td>
+<td class="instruction">JR NZ,$90EE</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-2"><span id="37112"></span>90F8</td>
+<td class="instruction">POP AF</td>
+<td class="comment-1" rowspan="4">Extract low nibble (tens digit), return if zero.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37113"></span>90F9</td>
+<td class="instruction">AND $0F</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37115"></span>90FB</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37117"></span>90FD</td>
+<td class="instruction">RET Z</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37118"></span>90FE</td>
+<td class="instruction">PUSH AF</td>
+<td class="comment-1" rowspan="6">Increment 1s score digit once per low-nibble unit.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37119"></span>90FF</td>
+<td class="instruction">LD A,$01</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37121"></span>9101</td>
+<td class="instruction">CALL <a href="37154.html">$9122</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37124"></span>9104</td>
+<td class="instruction">POP AF</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37125"></span>9105</td>
+<td class="instruction">DEC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37126"></span>9106</td>
+<td class="instruction">JR NZ,$90FE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37128"></span>9108</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37070.html">90CE</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37088">Map</a></td>
+<td class="next">
+Next: <a href="37129.html">9109</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6A45</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27199.html">6A3F</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27205">Map</a></td>
+<td class="next">
+Next: <a href="27210.html">6A4A</a>
+</td>
+</tr>
+</table>
+<div class="description">6A45: Calculate offset right edge position</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+For offset islands (state_island_byte_3=2). Right edge = $3C + left. This creates an asymmetric island where right edge follows left edge with fixed river width.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27205"></span>6A45</td>
+<td class="instruction">LD A,C</td>
+<td class="comment-1" rowspan="3">A = C + D = 60 + left_x, then jump to draw_right_edge.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27206"></span>6A46</td>
+<td class="instruction">ADD A,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27207"></span>6A47</td>
+<td class="instruction">JP <a href="27024.html#27146">$6A0A</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27199.html">6A3F</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27205">Map</a></td>
+<td class="next">
+Next: <a href="27210.html">6A4A</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6A3F</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27024.html">6990</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27199">Map</a></td>
+<td class="next">
+Next: <a href="27205.html">6A45</a>
+</td>
+</tr>
+</table>
+<div class="description">6A3F: Calculate mirrored right edge position</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+For symmetric islands (state_island_byte_3=1). Right edge = 2*$3C - left = 120 - left. This mirrors the left edge around screen center, creating a symmetric island shape.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27199"></span>6A3F</td>
+<td class="instruction">LD A,C</td>
+<td class="comment-1" rowspan="4">A = 2*C - D = 120 - left_x, then jump to draw_right_edge.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27200"></span>6A40</td>
+<td class="instruction">SUB D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27201"></span>6A41</td>
+<td class="instruction">ADD A,C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27202"></span>6A42</td>
+<td class="instruction">JP <a href="27024.html#27146">$6A0A</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27024.html">6990</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27199">Map</a></td>
+<td class="next">
+Next: <a href="27205.html">6A45</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 62E8</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25312.html">62E0</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25320">Map</a></td>
+<td class="next">
+Next: <a href="25596.html">63FC</a>
+</td>
+</tr>
+</table>
+<div class="description">62E8: Check missile collision against viewport objects</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routine at <a href="25019.html">61BB</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="25320"></span>
+<div class="comments">
+<div class="paragraph">
+Iterates through <a href="24320.html">5F00</a> (viewport_slots) checking if the player's missile collides with any object. Each slot is 3 bytes: X, Y, and definition.
+</div>
+<div class="paragraph">
+Collision detection uses type-specific bounding boxes. Most objects are 10x8 pixels, but balloons and fuel depots are taller (17-25 pixels), and ships are wider (19 pixels).
+</div>
+<div class="paragraph">
+On hit, dispatches to type-specific handlers: <a href="25620.html">6414</a> (helicopter), <a href="25635.html">6423</a> (ship), <a href="25668.html">6444</a> (advanced helicopter), <a href="25683.html">6453</a> (fighter), <a href="25698.html">6462</a> (balloon), <a href="25720.html">6478</a> (fuel). If no known type matches, checks <a href="25192.html">6268</a> for fragment collision.
+</div>
+<div class="paragraph">
+During GAMEPLAY_MODE_REFUEL, object Y coordinates are adjusted for scrolling before and after collision checks.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="25320"></span>62E8</td>
+<td class="instruction">LD HL,($5F60)</td>
+<td class="comment-1" rowspan="6">Load object coordinates (C=X, B=Y) from list pointer <a href="24416.html">5F60</a> and advance by 3.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25323"></span>62EB</td>
+<td class="instruction">LD C,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25324"></span>62EC</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25325"></span>62ED</td>
+<td class="instruction">LD B,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25326"></span>62EE</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25327"></span>62EF</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25328"></span>62F0</td>
+<td class="instruction">LD ($5F60),HL</td>
+<td class="comment-1" rowspan="2">Store updated pointer; copy X to A for marker check.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25331"></span>62F3</td>
+<td class="instruction">LD A,C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25332"></span>62F4</td>
+<td class="instruction">CP $00</td>
+<td class="comment-1" rowspan="2">If empty slot, skip to next object.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25334"></span>62F6</td>
+<td class="instruction">JP Z,$62E8</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25337"></span>62F9</td>
+<td class="instruction">CP $FF</td>
+<td class="comment-1" rowspan="2">If end-of-set marker, jump to <a href="25320.html#25529">63B9</a> for fragment collision check.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25339"></span>62FB</td>
+<td class="instruction">JP Z,$63B9</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25342"></span>62FE</td>
+<td class="instruction">LD A,($5F68)</td>
+<td class="comment-1" rowspan="3">If GAMEPLAY_MODE_REFUEL, call <a href="25306.html">62DA</a> to adjust object Y for scrolling.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25345"></span>6301</td>
+<td class="instruction">CP $06</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25347"></span>6303</td>
+<td class="instruction">CALL Z,<a href="25306.html">$62DA</a></td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="25350"></span>
+<div class="comments">
+<div class="paragraph">
+Y-axis collision check (entity height: 9 pixels).
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25350"></span>6306</td>
+<td class="instruction">LD DE,($5EF3)</td>
+<td class="comment-1" rowspan="9">Check if entity_Y + 9 &gt;= object_Y; if not, next object.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25354"></span>630A</td>
+<td class="instruction">LD A,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25355"></span>630B</td>
+<td class="instruction">ADD A,$09</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25357"></span>630D</td>
+<td class="instruction">LD H,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25359"></span>630F</td>
+<td class="instruction">LD L,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25360"></span>6310</td>
+<td class="instruction">LD D,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25362"></span>6312</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25363"></span>6313</td>
+<td class="instruction">LD E,B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25364"></span>6314</td>
+<td class="instruction">SBC HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25366"></span>6316</td>
+<td class="instruction">JP M,$62E8</td>
+<td class="comment-1" rowspan="1">(continued).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25369"></span>6319</td>
+<td class="instruction">LD A,B</td>
+<td class="comment-1" rowspan="4">Set up D = object_Y + 8, E = 0 (height offset).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25370"></span>631A</td>
+<td class="instruction">ADD A,$08</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25372"></span>631C</td>
+<td class="instruction">LD D,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25373"></span>631D</td>
+<td class="instruction">LD E,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25375"></span>631F</td>
+<td class="instruction">LD HL,($5F60)</td>
+<td class="comment-1" rowspan="3">Load object type from viewport pointer.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25378"></span>6322</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25379"></span>6323</td>
+<td class="instruction">LD A,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25380"></span>6324</td>
+<td class="instruction">AND $07</td>
+<td class="comment-1" rowspan="3">If balloon, call <a href="25300.html">62D4</a> (E = 9, taller).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25382"></span>6326</td>
+<td class="instruction">CP $06</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25384"></span>6328</td>
+<td class="instruction">CALL Z,<a href="25300.html">$62D4</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25387"></span>632B</td>
+<td class="instruction">CP $07</td>
+<td class="comment-1" rowspan="2">If fuel depot, call <a href="25303.html">62D7</a> (E = 17, tallest).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25389"></span>632D</td>
+<td class="instruction">CALL Z,<a href="25303.html">$62D7</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25392"></span>6330</td>
+<td class="instruction">LD A,D</td>
+<td class="comment-1" rowspan="9">Check if object_Y + 8 + offset &gt;= entity_Y; if not, next object.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25393"></span>6331</td>
+<td class="instruction">ADD A,E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25394"></span>6332</td>
+<td class="instruction">LD DE,($5EF3)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25398"></span>6336</td>
+<td class="instruction">LD H,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25400"></span>6338</td>
+<td class="instruction">LD L,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25401"></span>6339</td>
+<td class="instruction">LD E,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25402"></span>633A</td>
+<td class="instruction">LD D,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25404"></span>633C</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25405"></span>633D</td>
+<td class="instruction">SBC HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25407"></span>633F</td>
+<td class="instruction">JP M,$62E8</td>
+<td class="comment-1" rowspan="1">(continued).</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="25410"></span>
+<div class="comments">
+<div class="paragraph">
+X-axis collision check (entity width: 8 pixels).
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25410"></span>6342</td>
+<td class="instruction">LD DE,($5EF3)</td>
+<td class="comment-1" rowspan="10">Check if entity_X + 8 &gt;= object_X; if not, next object.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25414"></span>6346</td>
+<td class="instruction">LD A,E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25415"></span>6347</td>
+<td class="instruction">ADD A,$08</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25417"></span>6349</td>
+<td class="instruction">LD E,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25418"></span>634A</td>
+<td class="instruction">LD H,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25420"></span>634C</td>
+<td class="instruction">LD L,E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25421"></span>634D</td>
+<td class="instruction">LD D,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25423"></span>634F</td>
+<td class="instruction">LD E,C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25424"></span>6350</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25425"></span>6351</td>
+<td class="instruction">SBC HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25427"></span>6353</td>
+<td class="instruction">JP M,$62E8</td>
+<td class="comment-1" rowspan="1">(continued).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25430"></span>6356</td>
+<td class="instruction">LD A,C</td>
+<td class="comment-1" rowspan="4">Set up D = object_X + 10, E = 0 (width offset).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25431"></span>6357</td>
+<td class="instruction">ADD A,$0A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25433"></span>6359</td>
+<td class="instruction">LD D,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25434"></span>635A</td>
+<td class="instruction">LD E,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25436"></span>635C</td>
+<td class="instruction">LD HL,($5F60)</td>
+<td class="comment-1" rowspan="3">Load object type from viewport pointer.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25439"></span>635F</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25440"></span>6360</td>
+<td class="instruction">LD A,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25441"></span>6361</td>
+<td class="instruction">AND $07</td>
+<td class="comment-1" rowspan="3">If ship, call <a href="25300.html">62D4</a> (E = 9, wider).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25443"></span>6363</td>
+<td class="instruction">CP $02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25445"></span>6365</td>
+<td class="instruction">CALL Z,<a href="25300.html">$62D4</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25448"></span>6368</td>
+<td class="instruction">LD A,D</td>
+<td class="comment-1" rowspan="3">Store object coordinates to <a href="24459.html">5F8B</a> for hit handlers.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25449"></span>6369</td>
+<td class="instruction">ADD A,E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25450"></span>636A</td>
+<td class="instruction">LD DE,($5EF3)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25454"></span>636E</td>
+<td class="instruction">LD ($5F8B),BC</td>
+<td class="comment-1" rowspan="1">(continued).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25458"></span>6372</td>
+<td class="instruction">LD H,$00</td>
+<td class="comment-1" rowspan="5">Check if object_X + 10 + offset &gt;= entity_X; if not, next object.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25460"></span>6374</td>
+<td class="instruction">LD L,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25461"></span>6375</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25462"></span>6376</td>
+<td class="instruction">LD D,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25464"></span>6378</td>
+<td class="instruction">SBC HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25466"></span>637A</td>
+<td class="instruction">JP M,$62E8</td>
+<td class="comment-1" rowspan="1">(continued).</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="25469"></span>
+<div class="comments">
+<div class="paragraph">
+Collision detected - prepare for type dispatch.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25469"></span>637D</td>
+<td class="instruction">LD A,($5F68)</td>
+<td class="comment-1" rowspan="3">If GAMEPLAY_MODE_REFUEL, call <a href="25312.html">62E0</a> to undo Y adjustment.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25472"></span>6380</td>
+<td class="instruction">CP $06</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25474"></span>6382</td>
+<td class="instruction">CALL Z,<a href="25312.html">$62E0</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25477"></span>6385</td>
+<td class="instruction">LD ($5F8B),BC</td>
+<td class="comment-1" rowspan="1">Store object coordinates to <a href="24459.html">5F8B</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25481"></span>6389</td>
+<td class="instruction">LD HL,($5F60)</td>
+<td class="comment-1" rowspan="3">Load object type from viewport pointer.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25484"></span>638C</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25485"></span>638D</td>
+<td class="instruction">LD A,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25486"></span>638E</td>
+<td class="instruction">AND $07</td>
+<td class="comment-1" rowspan="3">If type is 0, jump to <a href="25320.html#25565">63DD</a> to process collision.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25488"></span>6390</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25490"></span>6392</td>
+<td class="instruction">JP Z,$63DD</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25493"></span>6395</td>
+<td class="instruction">DEC HL</td>
+<td class="comment-1" rowspan="3">Mark object slot as empty.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25494"></span>6396</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25495"></span>6397</td>
+<td class="instruction">LD (HL),$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25497"></span>6399</td>
+<td class="instruction">LD D,$00</td>
+<td class="comment-1" rowspan="1">Clear D for type dispatch.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25499"></span>639B</td>
+<td class="instruction">CP $01</td>
+<td class="comment-1" rowspan="2">If helicopter, jump to <a href="25620.html">6414</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25501"></span>639D</td>
+<td class="instruction">JP Z,<a href="25620.html">$6414</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25504"></span>63A0</td>
+<td class="instruction">CP $02</td>
+<td class="comment-1" rowspan="2">If ship, jump to <a href="25635.html">6423</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25506"></span>63A2</td>
+<td class="instruction">JP Z,<a href="25635.html">$6423</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25509"></span>63A5</td>
+<td class="instruction">CP $03</td>
+<td class="comment-1" rowspan="2">If advanced helicopter, jump to <a href="25668.html">6444</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25511"></span>63A7</td>
+<td class="instruction">JP Z,<a href="25668.html">$6444</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25514"></span>63AA</td>
+<td class="instruction">CP $05</td>
+<td class="comment-1" rowspan="2">If fighter, jump to <a href="25683.html">6453</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25516"></span>63AC</td>
+<td class="instruction">JP Z,<a href="25683.html">$6453</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25519"></span>63AF</td>
+<td class="instruction">CP $06</td>
+<td class="comment-1" rowspan="2">If balloon, jump to <a href="25698.html">6462</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25521"></span>63B1</td>
+<td class="instruction">JP Z,<a href="25698.html">$6462</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25524"></span>63B4</td>
+<td class="instruction">CP $07</td>
+<td class="comment-1" rowspan="2">If fuel depot, jump to <a href="25720.html">6478</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25526"></span>63B6</td>
+<td class="instruction">JP Z,<a href="25720.html">$6478</a></td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="25529"></span>
+<div class="comments">
+<div class="paragraph">
+End of object list - check fragment collision and tank shell.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="25529"></span>63B9</td>
+<td class="instruction">CALL <a href="25192.html">$6268</a></td>
+<td class="comment-1" rowspan="5">Reset <a href="24416.html">5F60</a>/<a href="24418.html">5F62</a> to list starts.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25532"></span>63BC</td>
+<td class="instruction">LD HL,$5F00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25535"></span>63BF</td>
+<td class="instruction">LD ($5F60),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25538"></span>63C2</td>
+<td class="instruction">LD HL,$5F2E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25541"></span>63C5</td>
+<td class="instruction">LD ($5F62),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25544"></span>63C8</td>
+<td class="instruction">LD A,($5F8B)</td>
+<td class="comment-1" rowspan="3">If fragment collision detected ($02), jump to <a href="25596.html">63FC</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25547"></span>63CB</td>
+<td class="instruction">CP $02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25549"></span>63CD</td>
+<td class="instruction">JP Z,<a href="25596.html">$63FC</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25552"></span>63D0</td>
+<td class="instruction">LD BC,($7385)</td>
+<td class="comment-1" rowspan="4">Compare missile Y with tank shell Y; if equal, jump to <a href="25596.html">63FC</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25556"></span>63D4</td>
+<td class="instruction">LD DE,($8B0C)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25560"></span>63D8</td>
+<td class="instruction">LD A,B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25561"></span>63D9</td>
+<td class="instruction">CP D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25562"></span>63DA</td>
+<td class="instruction">JP Z,<a href="25596.html">$63FC</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="25565"></span>
+<div class="comments">
+<div class="paragraph">
+Entry point for collision hit processing. Cleans up stack and finalizes collision.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="25565"></span>63DD</td>
+<td class="instruction">POP DE</td>
+<td class="comment-1" rowspan="4">Pop four words from stack (unwind call frames).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25566"></span>63DE</td>
+<td class="instruction">POP DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25567"></span>63DF</td>
+<td class="instruction">POP DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25568"></span>63E0</td>
+<td class="instruction">POP BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25569"></span>63E1</td>
+<td class="instruction">LD A,D</td>
+<td class="comment-1" rowspan="2">Store hit Y coordinate to <a href="24310.html">5EF6</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25570"></span>63E2</td>
+<td class="instruction">LD ($5EF6),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25573"></span>63E5</td>
+<td class="instruction">LD HL,$5F2E</td>
+<td class="comment-1" rowspan="4">Reset <a href="24418.html">5F62</a> and <a href="24416.html">5F60</a> to list starts.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25576"></span>63E8</td>
+<td class="instruction">LD ($5F62),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25579"></span>63EB</td>
+<td class="instruction">LD HL,$5F00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25582"></span>63EE</td>
+<td class="instruction">LD ($5F60),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25585"></span>63F1</td>
+<td class="instruction">LD BC,($5F8D)</td>
+<td class="comment-1" rowspan="1">Load saved coordinates from <a href="24461.html">5F8D</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25589"></span>63F5</td>
+<td class="instruction">LD ($5EF3),BC</td>
+<td class="comment-1" rowspan="1">Store to <a href="24307.html">5EF3</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25593"></span>63F9</td>
+<td class="instruction">JP <a href="26516.html">$6794</a></td>
+<td class="comment-1" rowspan="1">Finalize collision.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25312.html">62E0</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25320">Map</a></td>
+<td class="next">
+Next: <a href="25596.html">63FC</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

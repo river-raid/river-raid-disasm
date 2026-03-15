@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 5DA6</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="23967.html">5D9F</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#23974">Map</a></td>
+<td class="next">
+Next: <a href="24302.html">5EEE</a>
+</td>
+</tr>
+</table>
+<div class="description">5DA6: Initialize and start gameplay mode</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+This routine prepares the game for play and is called when starting a new game or after losing a life.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="23974"></span>5DA6</td>
+<td class="instruction">LD A,$10</td>
+<td class="comment-1" rowspan="2">Initialize island line index (starting line for island rendering).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23976"></span>5DA8</td>
+<td class="instruction">LD ($5EFD),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23979"></span>5DAB</td>
+<td class="instruction">LD A,$1F</td>
+<td class="comment-1" rowspan="2">Initialize activation interval (every 32 frames).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23981"></span>5DAD</td>
+<td class="instruction">LD ($5F5F),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23984"></span>5DB0</td>
+<td class="instruction">LD SP,($5F83)</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="23988"></span>5DB4</td>
+<td class="instruction">LD D,$0C</td>
+<td class="comment-1" rowspan="2">Clear screen with PAPER RIVER, INK BANK.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23990"></span>5DB6</td>
+<td class="instruction">CALL <a href="37898.html">$940A</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="23993"></span>5DB9</td>
+<td class="instruction">CALL <a href="35379.html">$8A33</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="23996"></span>5DBC</td>
+<td class="instruction">LD DE,$8000</td>
+<td class="comment-1" rowspan="3">Print status line 1.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23999"></span>5DBF</td>
+<td class="instruction">LD BC,$0031</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24002"></span>5DC2</td>
+<td class="instruction">CALL $203C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24005"></span>5DC5</td>
+<td class="instruction">LD A,$01</td>
+<td class="comment-1" rowspan="2">Initialize tick counter.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24007"></span>5DC7</td>
+<td class="instruction">LD ($5EEF),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24010"></span>5DCA</td>
+<td class="instruction">CALL $1601</td>
+<td class="comment-1" rowspan="1">Open channel 1 (upper screen).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24013"></span>5DCD</td>
+<td class="instruction">LD DE,$8031</td>
+<td class="comment-1" rowspan="3">Print status line 2.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24016"></span>5DD0</td>
+<td class="instruction">LD BC,$001E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24019"></span>5DD3</td>
+<td class="instruction">CALL $203C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24022"></span>5DD6</td>
+<td class="instruction">LD A,$02</td>
+<td class="comment-1" rowspan="2">Open channel 2 (lower screen).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24024"></span>5DD8</td>
+<td class="instruction">CALL $1601</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24027"></span>5DDB</td>
+<td class="instruction">CALL <a href="25788.html">$64BC</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24030"></span>5DDE</td>
+<td class="instruction">LD A,$04</td>
+<td class="comment-1" rowspan="2">Initialize terrain fragment counter.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24032"></span>5DE0</td>
+<td class="instruction">LD ($5EEE),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24035"></span>5DE3</td>
+<td class="instruction">LD A,$00</td>
+<td class="comment-1" rowspan="5">Clear state variables.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24037"></span>5DE5</td>
+<td class="instruction">LD ($5F6C),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24040"></span>5DE8</td>
+<td class="instruction">LD ($5F6F),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24043"></span>5DEB</td>
+<td class="instruction">LD ($5F7D),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24046"></span>5DEE</td>
+<td class="instruction">LD ($5F69),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24049"></span>5DF1</td>
+<td class="instruction">LD A,$FF</td>
+<td class="comment-1" rowspan="2">Initialize fuel level.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24051"></span>5DF3</td>
+<td class="instruction">LD ($5F66),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24054"></span>5DF6</td>
+<td class="instruction">LD BC,$0010</td>
+<td class="comment-1" rowspan="2">Initialize scroll offset.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24057"></span>5DF9</td>
+<td class="instruction">LD ($5F70),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24061"></span>5DFD</td>
+<td class="instruction">CALL <a href="26857.html">$68E9</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24064"></span>5E00</td>
+<td class="instruction">LD A,$78</td>
+<td class="comment-1" rowspan="2">Initialize X position (horizontal center).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24066"></span>5E02</td>
+<td class="instruction">LD ($5F72),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24069"></span>5E05</td>
+<td class="instruction">LD HL,$5F00</td>
+<td class="comment-1" rowspan="2">Initialize viewport_slots list.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24072"></span>5E08</td>
+<td class="instruction">LD ($5F60),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24075"></span>5E0B</td>
+<td class="instruction">LD (HL),$FF</td>
+<td class="comment-1" rowspan="1">Mark viewport objects list as empty.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24077"></span>5E0D</td>
+<td class="instruction">LD HL,$5F2E</td>
+<td class="comment-1" rowspan="2">Initialize exploding_fragments list.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24080"></span>5E10</td>
+<td class="instruction">LD ($5F62),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24083"></span>5E13</td>
+<td class="instruction">LD (HL),$FF</td>
+<td class="comment-1" rowspan="1">Mark exploding fragments list as empty.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24085"></span>5E15</td>
+<td class="instruction">LD BC,$0000</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24088"></span>5E18</td>
+<td class="instruction">CALL <a href="37438.html">$923E</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24091"></span>5E1B</td>
+<td class="instruction">LD A,$01</td>
+<td class="comment-1" rowspan="2">Open channel 1 for score display.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24093"></span>5E1D</td>
+<td class="instruction">CALL $1601</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24096"></span>5E20</td>
+<td class="instruction">LD A,$16</td>
+<td class="comment-1" rowspan="6">AT 1,5</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24098"></span>5E22</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24099"></span>5E23</td>
+<td class="instruction">LD A,$01</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24101"></span>5E25</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24102"></span>5E26</td>
+<td class="instruction">LD A,$05</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24104"></span>5E28</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24105"></span>5E29</td>
+<td class="instruction">LD A,$10</td>
+<td class="comment-1" rowspan="4">INK PLAYER_1</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24107"></span>5E2B</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24108"></span>5E2C</td>
+<td class="instruction">LD A,$06</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24110"></span>5E2E</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24111"></span>5E2F</td>
+<td class="instruction">LD DE,$90BC</td>
+<td class="comment-1" rowspan="3">Print player 1 score.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24114"></span>5E32</td>
+<td class="instruction">LD BC,$0006</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24117"></span>5E35</td>
+<td class="instruction">CALL $203C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24120"></span>5E38</td>
+<td class="instruction">LD A,$02</td>
+<td class="comment-1" rowspan="2">Open channel 2.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24122"></span>5E3A</td>
+<td class="instruction">CALL $1601</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24125"></span>5E3D</td>
+<td class="instruction">LD DE,$805A</td>
+<td class="comment-1" rowspan="3">Print status line 4.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24128"></span>5E40</td>
+<td class="instruction">LD BC,$0005</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24131"></span>5E43</td>
+<td class="instruction">CALL $203C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24134"></span>5E46</td>
+<td class="instruction">LD A,($923A)</td>
+<td class="comment-1" rowspan="3">Print game mode digit (1 or 2 player).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24137"></span>5E49</td>
+<td class="instruction">ADD A,$31</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24139"></span>5E4B</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24140"></span>5E4C</td>
+<td class="instruction">LD A,$01</td>
+<td class="comment-1" rowspan="2">Open channel 1.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24142"></span>5E4E</td>
+<td class="instruction">CALL $1601</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24145"></span>5E51</td>
+<td class="instruction">LD A,$FF</td>
+<td class="comment-1" rowspan="2">Set terrain position to $FF (forces terrain regeneration).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24147"></span>5E53</td>
+<td class="instruction">LD ($5F7D),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24150"></span>5E56</td>
+<td class="instruction">LD A,$02</td>
+<td class="comment-1" rowspan="2">Initialize terrain profile number.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24152"></span>5E58</td>
+<td class="instruction">LD ($5F77),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24155"></span>5E5B</td>
+<td class="instruction">CALL $1601</td>
+<td class="comment-1" rowspan="1">Open channel 2.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24158"></span>5E5E</td>
+<td class="instruction">LD A,$01</td>
+<td class="comment-1" rowspan="3">Initialize level fragment number, gameplay mode, and bridge destroyed flag.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24160"></span>5E60</td>
+<td class="instruction">LD ($5F76),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24163"></span>5E63</td>
+<td class="instruction">LD ($5F68),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24166"></span>5E66</td>
+<td class="instruction">LD ($5F6D),A</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24169"></span>5E69</td>
+<td class="instruction">LD A,$68</td>
+<td class="comment-1" rowspan="2">Set LAST_K to 'h' to start in paused state.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24171"></span>5E6B</td>
+<td class="instruction">LD ($5C08),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24174"></span>5E6E</td>
+<td class="instruction">LD A,$00</td>
+<td class="comment-1" rowspan="3">Clear control state and tank shell state.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24176"></span>5E70</td>
+<td class="instruction">LD ($6BB0),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24179"></span>5E73</td>
+<td class="instruction">LD ($5EF2),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24182"></span>5E76</td>
+<td class="instruction">LD A,$04</td>
+<td class="comment-1" rowspan="2">Set speed for scroll-in animation.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24184"></span>5E78</td>
+<td class="instruction">LD ($5F64),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24187"></span>5E7B</td>
+<td class="instruction">LD BC,$4C83</td>
+<td class="comment-1" rowspan="2">Initialize terrain element (C=$83: river center position, B=$4C: row offset).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24190"></span>5E7E</td>
+<td class="instruction">LD ($5F78),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24194"></span>5E82</td>
+<td class="instruction">CALL <a href="37352.html">$91E8</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24197"></span>5E85</td>
+<td class="instruction">CALL <a href="26857.html">$68E9</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24200"></span>5E88</td>
+<td class="instruction">LD B,$28</td>
+<td class="comment-1" rowspan="1">Set loop counter for scroll-in (40 iterations).</td>
+</tr>
+<tr>
+<td class="address-2"><span id="24202"></span>5E8A</td>
+<td class="instruction">PUSH BC</td>
+<td class="comment-1" rowspan="1">Save loop counter.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24203"></span>5E8B</td>
+<td class="instruction">LD HL,$5EEF</td>
+<td class="comment-1" rowspan="2">Increment tick counter.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24206"></span>5E8E</td>
+<td class="instruction">INC (HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24207"></span>5E8F</td>
+<td class="instruction">CALL <a href="24741.html">$60A5</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24210"></span>5E92</td>
+<td class="instruction">CALL <a href="28814.html">$708E</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24213"></span>5E95</td>
+<td class="instruction">CALL <a href="26320.html">$66D0</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24216"></span>5E98</td>
+<td class="instruction">LD A,$04</td>
+<td class="comment-1" rowspan="2">Maintain speed during scroll-in.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24218"></span>5E9A</td>
+<td class="instruction">LD ($5F64),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24221"></span>5E9D</td>
+<td class="instruction">POP BC</td>
+<td class="comment-1" rowspan="1">Restore loop counter.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24222"></span>5E9E</td>
+<td class="instruction">DJNZ $5E8A</td>
+<td class="comment-1" rowspan="1">Loop until scroll-in complete.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24224"></span>5EA0</td>
+<td class="instruction">LD A,$00</td>
+<td class="comment-1" rowspan="2">Clear control state.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24226"></span>5EA2</td>
+<td class="instruction">LD ($6BB0),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24229"></span>5EA5</td>
+<td class="instruction">LD ($5F68),A</td>
+<td class="comment-1" rowspan="1">Set gameplay mode to normal (ready for player control).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24232"></span>5EA8</td>
+<td class="instruction">CALL <a href="26242.html">$6682</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24235"></span>5EAB</td>
+<td class="instruction">LD A,$0D</td>
+<td class="comment-1" rowspan="2">Set last key to Enter (wait for start input).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24237"></span>5EAD</td>
+<td class="instruction">LD ($5C08),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24240"></span>5EB0</td>
+<td class="instruction">LD A,($923D)</td>
+<td class="comment-1" rowspan="5">Decrement current player's lives.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24243"></span>5EB3</td>
+<td class="instruction">CP $02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24245"></span>5EB5</td>
+<td class="instruction">JP Z,<a href="23967.html">$5D9F</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24248"></span>5EB8</td>
+<td class="instruction">LD HL,$923B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24251"></span>5EBB</td>
+<td class="instruction">DEC (HL)</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="24252"></span>
+<div class="comments">
+<div class="paragraph">
+This entry point is used by the routine at <a href="23967.html">5D9F</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="24252"></span>5EBC</td>
+<td class="instruction">CALL <a href="37438.html">$923E</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-2"><span id="24255"></span>5EBF</td>
+<td class="instruction">CALL $02BF</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24258"></span>5EC2</td>
+<td class="instruction">EI</td>
+<td class="comment-1" rowspan="1">Enable interrupts.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24259"></span>5EC3</td>
+<td class="instruction">LD A,($5C08)</td>
+<td class="comment-1" rowspan="3">If any key except Enter pressed, start game.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24262"></span>5EC6</td>
+<td class="instruction">CP $0D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24264"></span>5EC8</td>
+<td class="instruction">JR NZ,$5EDB</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24266"></span>5ECA</td>
+<td class="instruction">LD A,($5F67)</td>
+<td class="comment-1" rowspan="3">If not Kempston joystick, keep waiting.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24269"></span>5ECD</td>
+<td class="instruction">CP $02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24271"></span>5ECF</td>
+<td class="instruction">JP NZ,$5EBF</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24274"></span>5ED2</td>
+<td class="instruction">LD A,$FE</td>
+<td class="comment-1" rowspan="4">Read Kempston joystick; if centered, keep waiting.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24276"></span>5ED4</td>
+<td class="instruction">IN A,($1F)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24278"></span>5ED6</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24280"></span>5ED8</td>
+<td class="instruction">JP Z,$5EBF</td>
+</tr>
+<tr>
+<td class="address-2"><span id="24283"></span>5EDB</td>
+<td class="instruction">LD A,$00</td>
+<td class="comment-1" rowspan="7">Clear bridge destroyed flag.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24285"></span>5EDD</td>
+<td class="instruction">LD ($5F6D),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24288"></span>5EE0</td>
+<td class="instruction">LD ($5F6E),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24291"></span>5EE3</td>
+<td class="instruction">LD A,$02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24293"></span>5EE5</td>
+<td class="instruction">LD ($5F64),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24296"></span>5EE8</td>
+<td class="instruction">LD ($5EEF),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24299"></span>5EEB</td>
+<td class="instruction">JP <a href="24465.html">$5F91</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="23967.html">5D9F</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#23974">Map</a></td>
+<td class="next">
+Next: <a href="24302.html">5EEE</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

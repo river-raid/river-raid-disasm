@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6B63</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27486.html">6B5E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27491">Map</a></td>
+<td class="next">
+Next: <a href="27499.html">6B6B</a>
+</td>
+</tr>
+</table>
+<div class="description">6B63: Load canal sprite (river-adjacent side)</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Helper for special terrain: loads canal/water transition sprite for the side adjacent to the river. Sets bridge_section = 0 (no special attributes).
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27491"></span>6B63</td>
+<td class="instruction">LD A,$00</td>
+<td class="comment-1" rowspan="3">A = 0 (no special section), HL = sprite_terrain_pre_post_bridge, jump to continue.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27493"></span>6B65</td>
+<td class="instruction">LD HL,$8331</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27496"></span>6B68</td>
+<td class="instruction">JP <a href="27515.html#27535">$6B8F</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27486.html">6B5E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27491">Map</a></td>
+<td class="next">
+Next: <a href="27499.html">6B6B</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

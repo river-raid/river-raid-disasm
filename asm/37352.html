@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 91E8</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37313.html">91C1</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37352">Map</a></td>
+<td class="next">
+Next: <a href="37434.html">923A</a>
+</td>
+</tr>
+</table>
+<div class="description">91E8: Print player 2 score area or high score on status line.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+In 2-player mode, prints player 2's score. In 1-player mode, prints the high score for the current starting bridge.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37352"></span>91E8</td>
+<td class="instruction">LD A,$01</td>
+<td class="comment-1" rowspan="2">Open channel 1 (upper screen).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37354"></span>91EA</td>
+<td class="instruction">CALL $1601</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37357"></span>91ED</td>
+<td class="instruction">LD A,$16</td>
+<td class="comment-1" rowspan="6">AT 1,21</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37359"></span>91EF</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37360"></span>91F0</td>
+<td class="instruction">LD A,$01</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37362"></span>91F2</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37363"></span>91F3</td>
+<td class="instruction">LD A,$15</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37365"></span>91F5</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37366"></span>91F6</td>
+<td class="instruction">LD A,($923A)</td>
+<td class="comment-1" rowspan="3">If 2-player mode, jump to <a href="37313.html">91C1</a> to print player 2 score.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37369"></span>91F9</td>
+<td class="instruction">BIT 0,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37371"></span>91FB</td>
+<td class="instruction">JP NZ,<a href="37313.html">$91C1</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37374"></span>91FE</td>
+<td class="instruction">LD A,$10</td>
+<td class="comment-1" rowspan="4">INK WHITE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37376"></span>9200</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37377"></span>9201</td>
+<td class="instruction">LD A,$07</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37379"></span>9203</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37380"></span>9204</td>
+<td class="instruction">LD BC,$0006</td>
+<td class="comment-1" rowspan="15">Select high score for current bridge: offset = (game_mode AND $FE) * 3 = bridge_index * 6 (6 bytes per entry). Print 6-digit score.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37383"></span>9207</td>
+<td class="instruction">LD HL,$90C8</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37386"></span>920A</td>
+<td class="instruction">LD A,($923A)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37389"></span>920D</td>
+<td class="instruction">AND $FE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37391"></span>920F</td>
+<td class="instruction">LD E,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37392"></span>9210</td>
+<td class="instruction">LD A,($923A)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37395"></span>9213</td>
+<td class="instruction">AND $FE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37397"></span>9215</td>
+<td class="instruction">SLA A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37399"></span>9217</td>
+<td class="instruction">SLA A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37401"></span>9219</td>
+<td class="instruction">SUB E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37402"></span>921A</td>
+<td class="instruction">LD D,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37404"></span>921C</td>
+<td class="instruction">LD E,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37405"></span>921D</td>
+<td class="instruction">ADD HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37406"></span>921E</td>
+<td class="instruction">EX DE,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37407"></span>921F</td>
+<td class="instruction">CALL $203C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37410"></span>9222</td>
+<td class="instruction">LD A,"0"</td>
+<td class="comment-1" rowspan="1">Print trailing '0' after score.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37412"></span>9224</td>
+<td class="instruction">RST $10</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37413"></span>9225</td>
+<td class="instruction">LD A,$16</td>
+<td class="comment-1" rowspan="6">AT 1,18</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37415"></span>9227</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37416"></span>9228</td>
+<td class="instruction">LD A,$01</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37418"></span>922A</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37419"></span>922B</td>
+<td class="instruction">LD A,$12</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37421"></span>922D</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37422"></span>922E</td>
+<td class="instruction">LD A,"H"</td>
+<td class="comment-1" rowspan="1">Print "HI" label.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37424"></span>9230</td>
+<td class="instruction">RST $10</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37425"></span>9231</td>
+<td class="instruction">LD A,"I"</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37427"></span>9233</td>
+<td class="instruction">RST $10</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37428"></span>9234</td>
+<td class="instruction">LD A,$02</td>
+<td class="comment-1" rowspan="3">Switch to channel 2 (main screen).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37430"></span>9236</td>
+<td class="instruction">CALL $1601</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37433"></span>9239</td>
+<td class="instruction">RET</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37313.html">91C1</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37352">Map</a></td>
+<td class="next">
+Next: <a href="37434.html">923A</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

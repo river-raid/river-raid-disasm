@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 928D</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37515.html">928B</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37517">Map</a></td>
+<td class="next">
+Next: <a href="37725.html">935D</a>
+</td>
+</tr>
+</table>
+<div class="description">928D: Set screen attributes for sprite area.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Fills rectangular regions of attribute cells for both old (erase) and new (draw) sprite positions.
+</div>
+<div class="paragraph">
+Algorithm: For each position (old then new), calculate the top-left attribute address, then fill a rectangle of B rows × C columns with attribute value A. After filling each row, advance HL by stride DE to reach the next row's starting column.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">A</td>
+<td class="register-desc">Sprite width in tiles (columns to fill).</td>
+</tr>
+<tr>
+<td class="register">DE</td>
+<td class="register-desc">Sprite height in pixels (D), attribute color byte (E).</td>
+</tr>
+<tr>
+<td class="register">BC</td>
+<td class="register-desc">Old position coordinates from <a href="35594.html">8B0A</a>.</td>
+</tr>
+<tr>
+<td class="register">HL</td>
+<td class="register-desc">New position coordinates from <a href="35596.html">8B0C</a>.</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37517"></span>928D</td>
+<td class="instruction">PUSH HL</td>
+<td class="comment-1" rowspan="4">Save registers, store width to <a href="37515.html">928B</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37518"></span>928E</td>
+<td class="instruction">PUSH BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37519"></span>928F</td>
+<td class="instruction">LD ($928B),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37522"></span>9292</td>
+<td class="instruction">LD A,E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37523"></span>9293</td>
+<td class="instruction">CP $00</td>
+<td class="comment-1" rowspan="2">If ATTRIBUTES_INHERIT, leave existing screen attributes unchanged.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37525"></span>9295</td>
+<td class="instruction">JP Z,<a href="37725.html">$935D</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37528"></span>9298</td>
+<td class="instruction">LD ($9287),DE</td>
+<td class="comment-1" rowspan="3">Save DE, BC, HL to memory at <a href="37511.html">9287</a>, <a href="37509.html">9285</a>, <a href="37513.html">9289</a> for later use.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37532"></span>929C</td>
+<td class="instruction">LD ($9285),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37536"></span>92A0</td>
+<td class="instruction">LD ($9289),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37539"></span>92A3</td>
+<td class="instruction">LD BC,($8B0A)</td>
+<td class="comment-1" rowspan="15">Calculate attribute address for old position: HL = <a href="22528.html">5800</a> + (Y AND $F8) * 4 + (X &gt;&gt; 3). Y coordinate is in B of stored BC at <a href="35594.html">8B0A</a>, X in C.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37543"></span>92A7</td>
+<td class="instruction">LD A,B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37544"></span>92A8</td>
+<td class="instruction">AND $F8</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37546"></span>92AA</td>
+<td class="instruction">LD H,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37548"></span>92AC</td>
+<td class="instruction">LD L,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37549"></span>92AD</td>
+<td class="instruction">ADD HL,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37550"></span>92AE</td>
+<td class="instruction">ADD HL,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37551"></span>92AF</td>
+<td class="instruction">LD DE,$5800</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37554"></span>92B2</td>
+<td class="instruction">ADD HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37555"></span>92B3</td>
+<td class="instruction">LD D,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37557"></span>92B5</td>
+<td class="instruction">LD E,C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37558"></span>92B6</td>
+<td class="instruction">SRL E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37560"></span>92B8</td>
+<td class="instruction">SRL E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37562"></span>92BA</td>
+<td class="instruction">SRL E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37564"></span>92BC</td>
+<td class="instruction">ADD HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37565"></span>92BD</td>
+<td class="instruction">LD A,($928B)</td>
+<td class="comment-1" rowspan="10">Calculate row count B = (height &gt;&gt; 3) + 3. This covers sprite height plus padding. Load width into C.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37568"></span>92C0</td>
+<td class="instruction">LD C,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37569"></span>92C1</td>
+<td class="instruction">LD DE,($9287)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37573"></span>92C5</td>
+<td class="instruction">LD A,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37574"></span>92C6</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37576"></span>92C8</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37578"></span>92CA</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37580"></span>92CC</td>
+<td class="instruction">INC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37581"></span>92CD</td>
+<td class="instruction">INC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37582"></span>92CE</td>
+<td class="instruction">INC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37583"></span>92CF</td>
+<td class="instruction">LD B,A</td>
+<td class="comment-1" rowspan="10">Calculate row stride DE = $20 - width. After filling C columns, add DE to reach column 0 of next row. Check if Y is at screen top (row 0).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37584"></span>92D0</td>
+<td class="instruction">EX DE,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37585"></span>92D1</td>
+<td class="instruction">LD HL,$0020</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37588"></span>92D4</td>
+<td class="instruction">PUSH BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37589"></span>92D5</td>
+<td class="instruction">LD B,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37591"></span>92D7</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37592"></span>92D8</td>
+<td class="instruction">SBC HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37594"></span>92DA</td>
+<td class="instruction">EX DE,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37595"></span>92DB</td>
+<td class="instruction">LD BC,($8B0A)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37599"></span>92DF</td>
+<td class="instruction">LD A,B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37600"></span>92E0</td>
+<td class="instruction">AND $F8</td>
+<td class="comment-1" rowspan="4">If at screen top (Y AND $F8 = 0), use wrapped fill at <a href="37743.html">936F</a> to handle attribute area start.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37602"></span>92E2</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37604"></span>92E4</td>
+<td class="instruction">LD A,$0C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37606"></span>92E6</td>
+<td class="instruction">JP Z,<a href="37743.html">$936F</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37609"></span>92E9</td>
+<td class="instruction">POP BC</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="37610"></span>
+<div class="comments">
+<div class="paragraph">
+This entry point is used by the routine at <a href="37743.html">936F</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37610"></span>92EA</td>
+<td class="instruction">PUSH BC</td>
+<td class="comment-1" rowspan="1">Outer loop start: push BC to preserve row count (B) and column count (C) for this row.</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37611"></span>92EB</td>
+<td class="instruction">LD (HL),A</td>
+<td class="comment-1" rowspan="4">Inner loop: write attribute byte A to address HL, increment HL, decrement column counter C, repeat until row complete.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37612"></span>92EC</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37613"></span>92ED</td>
+<td class="instruction">DEC C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37614"></span>92EE</td>
+<td class="instruction">JR NZ,$92EB</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37616"></span>92F0</td>
+<td class="instruction">PUSH HL</td>
+<td class="comment-1" rowspan="6">Boundary check: compare HL against <a href="23072.html">5A20</a> (row 16 of attributes). If HL &gt;= <a href="23072.html">5A20</a>, sprite has scrolled off visible area, exit early via <a href="37735.html">9367</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37617"></span>92F1</td>
+<td class="instruction">LD BC,$5A20</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37620"></span>92F4</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37621"></span>92F5</td>
+<td class="instruction">SBC HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37623"></span>92F7</td>
+<td class="instruction">POP HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37624"></span>92F8</td>
+<td class="instruction">JP P,<a href="37735.html">$9367</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37627"></span>92FB</td>
+<td class="instruction">POP BC</td>
+<td class="comment-1" rowspan="3">Row complete: restore BC, add stride DE to HL (moves to same column on next row), decrement row counter B, repeat outer loop.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37628"></span>92FC</td>
+<td class="instruction">ADD HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37629"></span>92FD</td>
+<td class="instruction">DJNZ $92EA</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="37631"></span>
+<div class="comments">
+<div class="paragraph">
+This entry point is used by the routine at <a href="37735.html">9367</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37631"></span>92FF</td>
+<td class="instruction">LD BC,($8B0C)</td>
+<td class="comment-1" rowspan="14">Calculate attribute address for new position: HL = <a href="22528.html">5800</a> + (Y AND $F8) * 4 + (X &gt;&gt; 3) using coordinates from <a href="35596.html">8B0C</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37635"></span>9303</td>
+<td class="instruction">LD A,B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37636"></span>9304</td>
+<td class="instruction">AND $F8</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37638"></span>9306</td>
+<td class="instruction">LD H,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37640"></span>9308</td>
+<td class="instruction">LD L,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37641"></span>9309</td>
+<td class="instruction">ADD HL,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37642"></span>930A</td>
+<td class="instruction">ADD HL,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37643"></span>930B</td>
+<td class="instruction">LD DE,$5800</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37646"></span>930E</td>
+<td class="instruction">ADD HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37647"></span>930F</td>
+<td class="instruction">LD D,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37649"></span>9311</td>
+<td class="instruction">LD E,C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37650"></span>9312</td>
+<td class="instruction">SRL E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37652"></span>9314</td>
+<td class="instruction">SRL E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37654"></span>9316</td>
+<td class="instruction">SRL E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37656"></span>9318</td>
+<td class="instruction">ADD HL,DE</td>
+<td class="comment-1" rowspan="9">Calculate row count B = (height &gt;&gt; 3) + 2 (one less row than old position). Load width into C.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37657"></span>9319</td>
+<td class="instruction">LD A,($928B)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37660"></span>931C</td>
+<td class="instruction">LD C,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37661"></span>931D</td>
+<td class="instruction">LD DE,($9287)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37665"></span>9321</td>
+<td class="instruction">LD A,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37666"></span>9322</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37668"></span>9324</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37670"></span>9326</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37672"></span>9328</td>
+<td class="instruction">INC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37673"></span>9329</td>
+<td class="instruction">INC A</td>
+<td class="comment-1" rowspan="11">Calculate row stride DE = $20 - width. Check if Y is at screen top.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37674"></span>932A</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37675"></span>932B</td>
+<td class="instruction">EX DE,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37676"></span>932C</td>
+<td class="instruction">LD HL,$0020</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37679"></span>932F</td>
+<td class="instruction">PUSH BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37680"></span>9330</td>
+<td class="instruction">LD B,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37682"></span>9332</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37683"></span>9333</td>
+<td class="instruction">SBC HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37685"></span>9335</td>
+<td class="instruction">EX DE,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37686"></span>9336</td>
+<td class="instruction">LD BC,($8B0C)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37690"></span>933A</td>
+<td class="instruction">LD A,B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37691"></span>933B</td>
+<td class="instruction">AND $F8</td>
+<td class="comment-1" rowspan="5">If at screen top, use wrapped fill at <a href="37768.html">9388</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37693"></span>933D</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37695"></span>933F</td>
+<td class="instruction">LD BC,($9287)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37699"></span>9343</td>
+<td class="instruction">LD A,C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37700"></span>9344</td>
+<td class="instruction">JP Z,<a href="37768.html">$9388</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37703"></span>9347</td>
+<td class="instruction">POP BC</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="37704"></span>
+<div class="comments">
+<div class="paragraph">
+This entry point is used by the routine at <a href="37768.html">9388</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37704"></span>9348</td>
+<td class="instruction">PUSH BC</td>
+<td class="comment-1" rowspan="1">Outer loop start: push BC to preserve row count (B) and column count (C) for this row.</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37705"></span>9349</td>
+<td class="instruction">LD (HL),A</td>
+<td class="comment-1" rowspan="4">Inner loop: write attribute byte A to address HL, increment HL, decrement column counter C, repeat until row complete.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37706"></span>934A</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37707"></span>934B</td>
+<td class="instruction">DEC C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37708"></span>934C</td>
+<td class="instruction">JR NZ,$9349</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37710"></span>934E</td>
+<td class="instruction">PUSH HL</td>
+<td class="comment-1" rowspan="6">Boundary check: compare HL against <a href="23072.html">5A20</a>. If HL &gt;= <a href="23072.html">5A20</a>, exit early via <a href="37739.html">936B</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37711"></span>934F</td>
+<td class="instruction">LD BC,$5A20</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37714"></span>9352</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37715"></span>9353</td>
+<td class="instruction">SBC HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37717"></span>9355</td>
+<td class="instruction">POP HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37718"></span>9356</td>
+<td class="instruction">JP P,<a href="37739.html">$936B</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37721"></span>9359</td>
+<td class="instruction">POP BC</td>
+<td class="comment-1" rowspan="3">Row complete: restore BC, add stride DE to HL, decrement row counter B, repeat outer loop.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37722"></span>935A</td>
+<td class="instruction">ADD HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37723"></span>935B</td>
+<td class="instruction">DJNZ $9348</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37515.html">928B</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37517">Map</a></td>
+<td class="next">
+Next: <a href="37725.html">935D</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

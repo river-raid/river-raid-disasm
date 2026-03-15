@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 66EE</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26320.html">66D0</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26350">Map</a></td>
+<td class="next">
+Next: <a href="26372.html">6704</a>
+</td>
+</tr>
+</table>
+<div class="description">66EE: Update bridge Y position during scroll</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routine at <a href="26320.html">66D0</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="26350"></span>
+<div class="comments">
+<div class="paragraph">
+Adjusts the bridge's Y position (<a href="24430.html">5F6E</a>) based on current scrolling. If no bridge exists (Y=0), returns immediately. If the bridge scrolls off the bottom of the screen (Y AND $88 == $88), clears it.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26350"></span>66EE</td>
+<td class="instruction">LD A,($5F6E)</td>
+<td class="comment-1" rowspan="4">If no bridge, return; otherwise advance bridge Y position.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26353"></span>66F1</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26355"></span>66F3</td>
+<td class="instruction">RET Z</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26356"></span>66F4</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26357"></span>66F5</td>
+<td class="instruction">CALL <a href="25306.html">$62DA</a></td>
+<td class="comment-1" rowspan="4">If bridge scrolled off screen, call <a href="26372.html">6704</a> to clear it.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26360"></span>66F8</td>
+<td class="instruction">AND $88</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26362"></span>66FA</td>
+<td class="instruction">CP $88</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26364"></span>66FC</td>
+<td class="instruction">LD A,B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26365"></span>66FD</td>
+<td class="instruction">CALL Z,<a href="26372.html">$6704</a></td>
+<td class="comment-1" rowspan="2">Store updated bridge Y and return.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26368"></span>6700</td>
+<td class="instruction">LD ($5F6E),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26371"></span>6703</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26320.html">66D0</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26350">Map</a></td>
+<td class="next">
+Next: <a href="26372.html">6704</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

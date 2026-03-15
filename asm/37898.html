@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 940A</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37874.html">93F2</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37898">Map</a></td>
+<td class="next">
+Next: <a href="37923.html">9423</a>
+</td>
+</tr>
+</table>
+<div class="description">940A: Clear the screen by setting all pixel bytes to $00 and all attributes to the value set in <span class="register">D</span>.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Clears screen memory.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Attribute value to fill the attribute area.</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37898"></span>940A</td>
+<td class="instruction">LD HL,$4000</td>
+<td class="comment-1" rowspan="1">Point HL to start of screen memory (<a href="16384.html">4000</a>).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37901"></span>940D</td>
+<td class="instruction">LD C,$18</td>
+<td class="comment-1" rowspan="1">Set outer loop counter to $18 (24 blocks for pixel area).</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37903"></span>940F</td>
+<td class="instruction">LD B,$00</td>
+<td class="comment-1" rowspan="1">Set inner loop counter to 256 (full block).</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37905"></span>9411</td>
+<td class="instruction">LD (HL),$00</td>
+<td class="comment-1" rowspan="3">Write $00 to pixel byte, advance HL, loop until block cleared.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37907"></span>9413</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37908"></span>9414</td>
+<td class="instruction">DJNZ $9411</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37910"></span>9416</td>
+<td class="instruction">DEC C</td>
+<td class="comment-1" rowspan="2">Decrement block counter, continue until all pixel blocks done.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37911"></span>9417</td>
+<td class="instruction">JR NZ,$940F</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37913"></span>9419</td>
+<td class="instruction">LD C,$03</td>
+<td class="comment-1" rowspan="1">Set outer loop counter to $03 (3 blocks for attribute area).</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37915"></span>941B</td>
+<td class="instruction">LD (HL),D</td>
+<td class="comment-1" rowspan="3">Write attribute value D to byte, advance HL, loop until block cleared.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37916"></span>941C</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37917"></span>941D</td>
+<td class="instruction">DJNZ $941B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37919"></span>941F</td>
+<td class="instruction">DEC C</td>
+<td class="comment-1" rowspan="2">Decrement block counter, continue until all attribute blocks done.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37920"></span>9420</td>
+<td class="instruction">JR NZ,$941B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37922"></span>9422</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37874.html">93F2</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37898">Map</a></td>
+<td class="next">
+Next: <a href="37923.html">9423</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

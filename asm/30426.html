@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 76DA</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="30383.html">76AF</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#30426">Map</a></td>
+<td class="next">
+Next: <a href="30503.html">7727</a>
+</td>
+</tr>
+</table>
+<div class="description">76DA: Handle balloon terrain collision.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Reverses balloon direction when it collides with terrain. Also handles rendering.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">BC</td>
+<td class="register-desc">Position</td>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Object definition</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="30426"></span>76DA</td>
+<td class="instruction">LD ($8B0A),BC</td>
+<td class="comment-1" rowspan="4">Save position. If Y &gt;= 128 (off visible area), return early.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30430"></span>76DE</td>
+<td class="instruction">LD A,B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30431"></span>76DF</td>
+<td class="instruction">SUB $80</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30433"></span>76E1</td>
+<td class="instruction">RET P</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30434"></span>76E2</td>
+<td class="instruction">LD BC,($8B0A)</td>
+<td class="comment-1" rowspan="5">Reload position, get object definition from viewport.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30438"></span>76E6</td>
+<td class="instruction">POP HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30439"></span>76E7</td>
+<td class="instruction">LD HL,($5F60)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30442"></span>76EA</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30443"></span>76EB</td>
+<td class="instruction">LD D,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30444"></span>76EC</td>
+<td class="instruction">LD HL,$8972</td>
+<td class="comment-1" rowspan="7">Calculate sprite frame offset from X position bits 1-2.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30447"></span>76EF</td>
+<td class="instruction">LD BC,($8B0A)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30451"></span>76F3</td>
+<td class="instruction">LD A,C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30452"></span>76F4</td>
+<td class="instruction">AND $06</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30454"></span>76F6</td>
+<td class="instruction">LD BC,$0020</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30457"></span>76F9</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30459"></span>76FB</td>
+<td class="instruction">INC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30460"></span>76FC</td>
+<td class="instruction">OR A</td>
+<td class="comment-1" rowspan="5">Loop to select correct frame in sprite data.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30461"></span>76FD</td>
+<td class="instruction">SBC HL,BC</td>
+</tr>
+<tr>
+<td class="address-2"><span id="30463"></span>76FF</td>
+<td class="instruction">ADD HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30464"></span>7700</td>
+<td class="instruction">DEC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30465"></span>7701</td>
+<td class="instruction">JR NZ,$76FF</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30467"></span>7703</td>
+<td class="instruction">LD ($8B0E),HL</td>
+<td class="comment-1" rowspan="3">Store sprite pointer and render position.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30470"></span>7706</td>
+<td class="instruction">LD BC,($8B0A)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30474"></span>770A</td>
+<td class="instruction">LD ($8B0C),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30478"></span>770E</td>
+<td class="instruction">LD A,D</td>
+<td class="comment-1" rowspan="5">Flip orientation bit and update in viewport array.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30479"></span>770F</td>
+<td class="instruction">XOR $40</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30481"></span>7711</td>
+<td class="instruction">LD HL,($5F60)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30484"></span>7714</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30485"></span>7715</td>
+<td class="instruction">LD (HL),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30486"></span>7716</td>
+<td class="instruction">LD HL,$8972</td>
+<td class="comment-1" rowspan="6">Load sprite parameters, render balloon with new orientation, return to main loop.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30489"></span>7719</td>
+<td class="instruction">LD DE,$100D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30492"></span>771C</td>
+<td class="instruction">LD A,$02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30494"></span>771E</td>
+<td class="instruction">LD BC,$0020</td>
+</tr>
+<tr>
+<td class="address-1"><span id="30497"></span>7721</td>
+<td class="instruction">CALL <a href="35644.html">$8B3C</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="30500"></span>7724</td>
+<td class="instruction">JP <a href="28814.html">$708E</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="30383.html">76AF</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#30426">Map</a></td>
+<td class="next">
+Next: <a href="30503.html">7727</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

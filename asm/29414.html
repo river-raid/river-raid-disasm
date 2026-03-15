@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 72E6</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29334.html">7296</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29414">Map</a></td>
+<td class="next">
+Next: <a href="29423.html">72EF</a>
+</td>
+</tr>
+</table>
+<div class="description">72E6: Set XOR/XOR blending mode</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Patches sprite renderer to use XOR for both mask and sprite operations. Used for tanks and fighters.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="29414"></span>72E6</td>
+<td class="instruction">LD A,$A8</td>
+<td class="comment-1" rowspan="1">Load OPCODE_XOR_B.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29416"></span>72E8</td>
+<td class="instruction">LD ($8C1B),A</td>
+<td class="comment-1" rowspan="1">Patch XOR B into <a href="35867.html">8C1B</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29419"></span>72EB</td>
+<td class="instruction">LD ($8C3C),A</td>
+<td class="comment-1" rowspan="1">Patch XOR B into <a href="35900.html">8C3C</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29422"></span>72EE</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29334.html">7296</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29414">Map</a></td>
+<td class="next">
+Next: <a href="29423.html">72EF</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

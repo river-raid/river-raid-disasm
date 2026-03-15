@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 656F</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25960.html">6568</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25967">Map</a></td>
+<td class="next">
+Next: <a href="25975.html">6577</a>
+</td>
+</tr>
+</table>
+<div class="description">656F: Check if Player 2 has lives remaining when Player 1 is out</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+This routine is called when Player 1 has no lives left. In two-player mode, it checks if Player 2 has lives and switches to Player 2 if so, otherwise triggers game over.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="25967"></span>656F</td>
+<td class="instruction">LD A,($923A)</td>
+<td class="comment-1" rowspan="3">If two-player mode, switch to Player 2.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25970"></span>6572</td>
+<td class="instruction">BIT 0,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25972"></span>6574</td>
+<td class="instruction">JP NZ,<a href="26027.html">$65AB</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25960.html">6568</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25967">Map</a></td>
+<td class="next">
+Next: <a href="25975.html">6577</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

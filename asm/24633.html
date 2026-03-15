@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6039</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="24586.html">600A</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#24633">Map</a></td>
+<td class="next">
+Next: <a href="24680.html">6068</a>
+</td>
+</tr>
+</table>
+<div class="description">6039: Scan Sinclair joystick</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Reads half-row $EF (keys 6-0) via port $FE. Maps Sinclair Interface 2 joystick 1 to game actions.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="24633"></span>6039</td>
+<td class="instruction">LD A,$EF</td>
+<td class="comment-1" rowspan="5">Scan "0" (FIRE)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24635"></span>603B</td>
+<td class="instruction">IN A,($FE)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24637"></span>603D</td>
+<td class="instruction">LD ($5EF1),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24640"></span>6040</td>
+<td class="instruction">BIT 0,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24642"></span>6042</td>
+<td class="instruction">CALL Z,<a href="26404.html">$6724</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24645"></span>6045</td>
+<td class="instruction">LD A,($5EF1)</td>
+<td class="comment-1" rowspan="3">Scan "9" (UP)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24648"></span>6048</td>
+<td class="instruction">BIT 1,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24650"></span>604A</td>
+<td class="instruction">CALL Z,<a href="26378.html">$670A</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24653"></span>604D</td>
+<td class="instruction">LD A,($5EF1)</td>
+<td class="comment-1" rowspan="3">Scan "8" (DOWN)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24656"></span>6050</td>
+<td class="instruction">BIT 2,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24658"></span>6052</td>
+<td class="instruction">CALL Z,<a href="26391.html">$6717</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24661"></span>6055</td>
+<td class="instruction">LD A,($5EF1)</td>
+<td class="comment-1" rowspan="3">Scan "7" (RIGHT)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24664"></span>6058</td>
+<td class="instruction">BIT 3,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24666"></span>605A</td>
+<td class="instruction">CALL Z,<a href="26099.html">$65F3</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24669"></span>605D</td>
+<td class="instruction">LD A,($5EF1)</td>
+<td class="comment-1" rowspan="4">Scan "6" (LEFT)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24672"></span>6060</td>
+<td class="instruction">BIT 4,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24674"></span>6062</td>
+<td class="instruction">CALL Z,<a href="26178.html">$6642</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24677"></span>6065</td>
+<td class="instruction">JP <a href="24465.html">$5F91</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="24586.html">600A</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#24633">Map</a></td>
+<td class="next">
+Next: <a href="24680.html">6068</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

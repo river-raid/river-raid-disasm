@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 7B07</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="31437.html">7ACD</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#31495">Map</a></td>
+<td class="next">
+Next: <a href="31575.html">7B57</a>
+</td>
+</tr>
+</table>
+<div class="description">7B07: Wait until the user chooses a valid game mode.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="31495"></span>7B07</td>
+<td class="instruction">LD A,($5C08)</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="31498"></span>7B0A</td>
+<td class="instruction">CALL $02BF</td>
+<td class="comment-1" rowspan="2">Scan keyboard</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31501"></span>7B0D</td>
+<td class="instruction">EI</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31502"></span>7B0E</td>
+<td class="instruction">SUB $31</td>
+<td class="comment-1" rowspan="1">Subtract "1" from the pressed key ASCII code, mapping "1" to 0, "2" to 1, etc.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31504"></span>7B10</td>
+<td class="instruction">LD ($923A),A</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="31507"></span>7B13</td>
+<td class="instruction">AND $F8</td>
+<td class="comment-1" rowspan="2">Validate the pressed key by making sure that none of the bits older than the first three are set, effectively allowing values 0 through 7.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31509"></span>7B15</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31511"></span>7B17</td>
+<td class="instruction">JP NZ,$7B07</td>
+<td class="comment-1" rowspan="1">Repeat if a valid key was not pressed.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31514"></span>7B1A</td>
+<td class="instruction">LD D,$07</td>
+<td class="comment-1" rowspan="1">PAPER BLACK; INK WHITE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31516"></span>7B1C</td>
+<td class="instruction">CALL <a href="37898.html">$940A</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="31519"></span>7B1F</td>
+<td class="instruction">LD A,($7800)</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="31522"></span>7B22</td>
+<td class="instruction">CP $00</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="31524"></span>7B24</td>
+<td class="instruction">JP NZ,$7B30</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="31527"></span>7B27</td>
+<td class="instruction">LD DE,$7812</td>
+<td class="comment-1" rowspan="3">Print keyboard configuration</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31530"></span>7B2A</td>
+<td class="instruction">LD BC,$0070</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31533"></span>7B2D</td>
+<td class="instruction">CALL $203C</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="31536"></span>
+<div class="comments">
+<div class="paragraph">
+Print instructions and wait for Enter key.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="31536"></span>7B30</td>
+<td class="instruction">LD DE,$7882</td>
+<td class="comment-1" rowspan="3">Print instructions text (<a href="30738.html#30850">7882</a>, 168 bytes) via ROM PR_STRING.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31539"></span>7B33</td>
+<td class="instruction">LD BC,$00A8</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31542"></span>7B36</td>
+<td class="instruction">CALL $203C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31545"></span>7B39</td>
+<td class="instruction">LD A," "</td>
+<td class="comment-1" rowspan="1">Initialize LAST_K to space character.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31547"></span>7B3B</td>
+<td class="instruction">LD ($5C08),A</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="31550"></span>
+<div class="comments">
+<div class="paragraph">
+Wait for user to press Enter.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="31550"></span>7B3E</td>
+<td class="instruction">LD A,($5C08)</td>
+<td class="comment-1" rowspan="1">Read last key pressed from LAST_K.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31553"></span>7B41</td>
+<td class="instruction">CALL $02BF</td>
+<td class="comment-1" rowspan="2">Scan keyboard via ROM routine.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31556"></span>7B44</td>
+<td class="instruction">EI</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31557"></span>7B45</td>
+<td class="instruction">LD A,($5C08)</td>
+<td class="comment-1" rowspan="2">Loop until Enter is pressed.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31560"></span>7B48</td>
+<td class="instruction">CP $0D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31562"></span>7B4A</td>
+<td class="instruction">JP NZ,$7B3E</td>
+<td class="comment-1" rowspan="1">Exit loop when Enter detected.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31565"></span>7B4D</td>
+<td class="instruction">LD A,$00</td>
+<td class="comment-1" rowspan="2">Clear overview mode flag (start game).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31567"></span>7B4F</td>
+<td class="instruction">LD ($7801),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31570"></span>7B52</td>
+<td class="instruction">LD SP,($7810)</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="31574"></span>7B56</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="31437.html">7ACD</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#31495">Map</a></td>
+<td class="next">
+Next: <a href="31575.html">7B57</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

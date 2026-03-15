@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6CAD</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27771.html">6C7B</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27821">Map</a></td>
+<td class="next">
+Next: <a href="27832.html">6CB8</a>
+</td>
+</tr>
+</table>
+<div class="description">6CAD: Complete explosion sound sequence</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Resets the explosion counter and clears CONTROLS_BIT_EXPLODING flag.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27821"></span>6CAD</td>
+<td class="instruction">LD A,$18</td>
+<td class="comment-1" rowspan="2">Reset explosion counter for next explosion.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27823"></span>6CAF</td>
+<td class="instruction">LD ($6C7A),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27826"></span>6CB2</td>
+<td class="instruction">LD HL,$6BB0</td>
+<td class="comment-1" rowspan="2">Clear CONTROLS_BIT_EXPLODING in <a href="27568.html">6BB0</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27829"></span>6CB5</td>
+<td class="instruction">RES 5,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27831"></span>6CB7</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27771.html">6C7B</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27821">Map</a></td>
+<td class="next">
+Next: <a href="27832.html">6CB8</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

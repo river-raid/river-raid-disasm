@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 5CD2</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="23673.html">5C79</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#23762">Map</a></td>
+<td class="next">
+Next: <a href="23814.html">5D06</a>
+</td>
+</tr>
+</table>
+<div class="description">5CD2: Game initialization and interrupt setup</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="23762"></span>
+<div class="comments">
+<div class="paragraph">
+This is the main entry point invoked by the BASIC loader. It performs one-time initialization of the game engine, including setting up the custom interrupt handler (IM 2 mode) and initializing global pointers.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="23762"></span>5CD2</td>
+<td class="instruction">LD HL,$6BB0</td>
+<td class="comment-1" rowspan="2">Initialize <a href="37507.html">9283</a> to point to <a href="27568.html">6BB0</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23765"></span>5CD5</td>
+<td class="instruction">LD ($9283),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23768"></span>5CD8</td>
+<td class="instruction">LD HL,$6136</td>
+<td class="comment-1" rowspan="2">Initialize <a href="35592.html">8B08</a> to point to <a href="24886.html">6136</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="23771"></span>5CDB</td>
+<td class="instruction">LD ($8B08),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23774"></span>5CDE</td>
+<td class="instruction">LD A,$C3</td>
+<td class="comment-1" rowspan="2">Write the JP opcode to the address that all vector table entries will point to.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23776"></span>5CE0</td>
+<td class="instruction">LD ($FEFE),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23779"></span>5CE3</td>
+<td class="instruction">LD HL,$6BDB</td>
+<td class="comment-1" rowspan="2">Write the interrupt handler address, completing the JP <a href="27611.html">6BDB</a> instruction.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23782"></span>5CE6</td>
+<td class="instruction">LD ($FEFF),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23785"></span>5CE9</td>
+<td class="instruction">LD HL,$FC00</td>
+<td class="comment-1" rowspan="1">Point HL to the start of interrupt vector table.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23788"></span>5CEC</td>
+<td class="instruction">LD B,$00</td>
+<td class="comment-1" rowspan="1">Prepare to iterate 256 times.</td>
+</tr>
+<tr>
+<td class="address-2"><span id="23790"></span>5CEE</td>
+<td class="instruction">LD (HL),$FE</td>
+<td class="comment-1" rowspan="1">Write INT_VECTOR_ENTRY to the current vector table entry.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23792"></span>5CF0</td>
+<td class="instruction">INC HL</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="23793"></span>5CF1</td>
+<td class="instruction">DJNZ $5CEE</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="23795"></span>5CF3</td>
+<td class="instruction">LD (HL),$FE</td>
+<td class="comment-1" rowspan="1">Write INT_VECTOR_ENTRY to the final vector table entry.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23797"></span>5CF5</td>
+<td class="instruction">LD A,$FC</td>
+<td class="comment-1" rowspan="2">Set the I register to the high byte of the interrupt vector table address.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23799"></span>5CF7</td>
+<td class="instruction">LD I,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23801"></span>5CF9</td>
+<td class="instruction">LD ($5F83),SP</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="23805"></span>5CFD</td>
+<td class="instruction">IM 2</td>
+<td class="comment-1" rowspan="1">Set interrupt mode 2 (vectored interrupts).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23807"></span>5CFF</td>
+<td class="instruction">EI</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="23808"></span>5D00</td>
+<td class="instruction">LD HL,$8182</td>
+<td class="comment-1" rowspan="2">Store the address of <a href="33154.html">8182</a> in <a href="24446.html">5F7E</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23811"></span>5D03</td>
+<td class="instruction">LD ($5F7E),HL</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="23673.html">5C79</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#23762">Map</a></td>
+<td class="next">
+Next: <a href="23814.html">5D06</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

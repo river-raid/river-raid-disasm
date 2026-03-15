@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 65BB</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26027.html">65AB</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26043">Map</a></td>
+<td class="next">
+Next: <a href="26059.html">65CB</a>
+</td>
+</tr>
+</table>
+<div class="description">65BB: Switch to Player 2 when Player 1 dies in two-player mode</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+This routine is called when Player 1 dies in two-player mode and still has lives. It checks if Player 2 has lives, and if so, switches to Player 2. If Player 2 has no lives, it restarts Player 1 instead.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26043"></span>65BB</td>
+<td class="instruction">LD A,($923C)</td>
+<td class="comment-1" rowspan="3">If Player 2 has no lives, restart Player 1.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26046"></span>65BE</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26048"></span>65C0</td>
+<td class="instruction">JP Z,<a href="25960.html">$6568</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="26051"></span>65C3</td>
+<td class="instruction">LD A,$02</td>
+<td class="comment-1" rowspan="3">Switch to Player 2 and restart gameplay.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26053"></span>65C5</td>
+<td class="instruction">LD ($923D),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26056"></span>65C8</td>
+<td class="instruction">JP <a href="25960.html">$6568</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26027.html">65AB</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26043">Map</a></td>
+<td class="next">
+Next: <a href="26059.html">65CB</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

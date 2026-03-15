@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 9277</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37476.html">9264</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37495">Map</a></td>
+<td class="next">
+Next: <a href="37507.html">9283</a>
+</td>
+</tr>
+</table>
+<div class="description">9277: Player 2 branch of <a href="37438.html">923E</a>.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Sets player 2 color and loads player 2 lives count before jumping to common display code.
+</div>
+</div>
+<table class="output">
+<tr class="asm-output-header">
+<th colspan="2">Output</th>
+</tr>
+<tr>
+<td class="register">A</td>
+<td class="register-desc">Number of lives.</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37495"></span>9277</td>
+<td class="instruction">LD A,$10</td>
+<td class="comment-1" rowspan="4">INK PLAYER_2</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37497"></span>9279</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37498"></span>927A</td>
+<td class="instruction">LD A,$05</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37500"></span>927C</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37501"></span>927D</td>
+<td class="instruction">LD A,($923C)</td>
+<td class="comment-1" rowspan="2">Load player 2 lives count and jump to <a href="37455.html">924F</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37504"></span>9280</td>
+<td class="instruction">JP <a href="37455.html">$924F</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37476.html">9264</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37495">Map</a></td>
+<td class="next">
+Next: <a href="37507.html">9283</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

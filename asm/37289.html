@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 91A9</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37265.html">9191</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37289">Map</a></td>
+<td class="next">
+Next: <a href="37313.html">91C1</a>
+</td>
+</tr>
+</table>
+<div class="description">91A9: Handle carry for player 2's score digit.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+When a digit overflows past '9', this routine sets it to '0' and propagates the carry to the next higher digit by recursively calling update_score.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Offset of the overflowed digit.</td>
+</tr>
+<tr>
+<td class="register">HL</td>
+<td class="register-desc">Pointer to the overflowed digit.</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37289"></span>91A9</td>
+<td class="instruction">LD (HL),$30</td>
+<td class="comment-1" rowspan="1">Write '0' to the overflowed digit.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37291"></span>91AB</td>
+<td class="instruction">LD A,$06</td>
+<td class="comment-1" rowspan="4">Check if this is the leftmost digit (offset 0): A = SCORE_DIGIT_COUNT - D + 1.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37293"></span>91AD</td>
+<td class="instruction">SUB D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37294"></span>91AE</td>
+<td class="instruction">INC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37295"></span>91AF</td>
+<td class="instruction">CP $07</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37297"></span>91B1</td>
+<td class="instruction">RET Z</td>
+<td class="comment-1" rowspan="1">Return if leftmost digit (no more digits to carry into).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37298"></span>91B2</td>
+<td class="instruction">PUSH HL</td>
+<td class="comment-1" rowspan="3">Save HL/DE, call <a href="37154.html">9122</a> to increment next higher digit.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37299"></span>91B3</td>
+<td class="instruction">PUSH DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37300"></span>91B4</td>
+<td class="instruction">CALL <a href="37154.html">$9122</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37303"></span>91B7</td>
+<td class="instruction">LD A,$01</td>
+<td class="comment-1" rowspan="2">Open channel 1 (upper screen) for printing.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37305"></span>91B9</td>
+<td class="instruction">CALL $1601</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37308"></span>91BC</td>
+<td class="instruction">POP DE</td>
+<td class="comment-1" rowspan="3">Restore HL/DE, jump to <a href="37241.html">9179</a> to print the '0' digit.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37309"></span>91BD</td>
+<td class="instruction">POP HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37310"></span>91BE</td>
+<td class="instruction">JP <a href="37241.html">$9179</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37265.html">9191</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37289">Map</a></td>
+<td class="next">
+Next: <a href="37313.html">91C1</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 7387</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29573.html">7385</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29575">Map</a></td>
+<td class="next">
+Next: <a href="29582.html">738E</a>
+</td>
+</tr>
+</table>
+<div class="description">7387: Invert shell coordinate delta</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Subtracts E×4 from C for left-facing tank shell trajectory adjustment.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">C</td>
+<td class="register-desc">Current X position</td>
+</tr>
+<tr>
+<td class="register">E</td>
+<td class="register-desc">Delta value</td>
+</tr>
+</table>
+<table class="output">
+<tr class="asm-output-header">
+<th colspan="2">Output</th>
+</tr>
+<tr>
+<td class="register">C</td>
+<td class="register-desc">Adjusted X position</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="29575"></span>7387</td>
+<td class="instruction">LD A,C</td>
+<td class="comment-1" rowspan="6">C = C - E×4 (SUB E four times).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29576"></span>7388</td>
+<td class="instruction">SUB E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29577"></span>7389</td>
+<td class="instruction">SUB E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29578"></span>738A</td>
+<td class="instruction">SUB E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29579"></span>738B</td>
+<td class="instruction">SUB E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29580"></span>738C</td>
+<td class="instruction">LD C,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29581"></span>738D</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29573.html">7385</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29575">Map</a></td>
+<td class="next">
+Next: <a href="29582.html">738E</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

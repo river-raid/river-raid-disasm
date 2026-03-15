@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 7104</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28814.html">708E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28932">Map</a></td>
+<td class="next">
+Next: <a href="28947.html">7113</a>
+</td>
+</tr>
+</table>
+<div class="description">7104: Ship or helicopter operation routine</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Animates and moves ships and helicopters. On even ticks, advances the object by 2 pixels toward the opposite river bank. When the object gets within 16 pixels of the bank edge, it reverses direction.
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Checks tick parity for movement timing</li>
+<li>Determines direction from bit 6 (SLOT_BIT_ORIENTATION)</li>
+<li>Left-facing objects advance left, right-facing advance right</li>
+<li>Collision with terrain triggers direction reversal</li>
+</ul>
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">B</td>
+<td class="register-desc">Y position of object</td>
+</tr>
+<tr>
+<td class="register">C</td>
+<td class="register-desc">X position of object</td>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Object definition byte</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="28932"></span>7104</td>
+<td class="instruction">LD A,($5EEF)</td>
+<td class="comment-1" rowspan="3">Skip if odd tick (ships/helicopters move on even ticks).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28935"></span>7107</td>
+<td class="instruction">AND $01</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28937"></span>7109</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28939"></span>710B</td>
+<td class="instruction">JP Z,<a href="29260.html">$724C</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28942"></span>710E</td>
+<td class="instruction">BIT 6,D</td>
+<td class="comment-1" rowspan="2">Check orientation: if bit 6 clear (right-facing), jump to <a href="30114.html">75A2</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28944"></span>7110</td>
+<td class="instruction">JP Z,<a href="30114.html">$75A2</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28814.html">708E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28932">Map</a></td>
+<td class="next">
+Next: <a href="28947.html">7113</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

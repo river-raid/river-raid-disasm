@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 8BC6</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="35747.html">8BA3</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#35782">Map</a></td>
+<td class="next">
+Next: <a href="35851.html">8C0B</a>
+</td>
+</tr>
+</table>
+<div class="description">8BC6: Adjust old position for third-of-screen crossing.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routine at <a href="35747.html">8BA3</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35782"></span>8BC6</td>
+<td class="instruction">LD HL,($8B14)</td>
+<td class="comment-1" rowspan="4">HL -= $E0, fall through to sprite renderer.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35785"></span>8BC9</td>
+<td class="instruction">LD DE,$00E0</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35788"></span>8BCC</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35789"></span>8BCD</td>
+<td class="instruction">SBC HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35791"></span>8BCF</td>
+<td class="instruction">LD ($8B14),HL</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="35794"></span>
+<div class="comments">
+<div class="paragraph">
+Main rendering loop - draws sprite row and advances to next pixel row.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35794"></span>8BD2</td>
+<td class="instruction">CALL <a href="35851.html">$8C0B</a></td>
+<td class="comment-1" rowspan="1">Render this sprite row.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35797"></span>8BD5</td>
+<td class="instruction">LD A,($8B1A)</td>
+<td class="comment-1" rowspan="9">Advance sprite pointers by width.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35800"></span>8BD8</td>
+<td class="instruction">LD D,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35802"></span>8BDA</td>
+<td class="instruction">LD E,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35803"></span>8BDB</td>
+<td class="instruction">LD HL,($8B0E)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35806"></span>8BDE</td>
+<td class="instruction">ADD HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35807"></span>8BDF</td>
+<td class="instruction">LD ($8B0E),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35810"></span>8BE2</td>
+<td class="instruction">LD HL,($8B10)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35813"></span>8BE5</td>
+<td class="instruction">ADD HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35814"></span>8BE6</td>
+<td class="instruction">LD ($8B10),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35817"></span>8BE9</td>
+<td class="instruction">LD HL,($8B0A)</td>
+<td class="comment-1" rowspan="12">Increment Y coordinate for all position/address variables.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35820"></span>8BEC</td>
+<td class="instruction">INC H</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35821"></span>8BED</td>
+<td class="instruction">LD ($8B0A),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35824"></span>8BF0</td>
+<td class="instruction">LD HL,($8B0C)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35827"></span>8BF3</td>
+<td class="instruction">INC H</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35828"></span>8BF4</td>
+<td class="instruction">LD ($8B0C),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35831"></span>8BF7</td>
+<td class="instruction">LD HL,($8B12)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35834"></span>8BFA</td>
+<td class="instruction">INC H</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35835"></span>8BFB</td>
+<td class="instruction">LD ($8B12),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35838"></span>8BFE</td>
+<td class="instruction">LD HL,($8B14)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35841"></span>8C01</td>
+<td class="instruction">INC H</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35842"></span>8C02</td>
+<td class="instruction">LD ($8B14),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35845"></span>8C05</td>
+<td class="instruction">POP DE</td>
+<td class="comment-1" rowspan="3">Decrement row counter, loop if more rows.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35846"></span>8C06</td>
+<td class="instruction">DEC D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35847"></span>8C07</td>
+<td class="instruction">JP NZ,<a href="35696.html">$8B70</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="35850"></span>8C0A</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="35747.html">8BA3</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#35782">Map</a></td>
+<td class="next">
+Next: <a href="35851.html">8C0B</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

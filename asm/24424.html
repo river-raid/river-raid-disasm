@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Game status buffer entry at 5F68</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-g">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Game status buffer</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="24423.html">5F67</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#24424">Map</a></td>
+<td class="next">
+Next: <a href="24425.html">5F69</a>
+</td>
+</tr>
+</table>
+<div class="description">5F68: Current gameplay mode</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Controls what actions are allowed and how rendering/collision works.
+</div>
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Mode</th>
+<th colspan="1" rowspan="1">Value</th>
+<th colspan="1" rowspan="1">Description</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">NORMAL</td>
+<td class="" colspan="1" rowspan="1">$00</td>
+<td class="" colspan="1" rowspan="1">Full player control, collision active</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">SCROLL_IN</td>
+<td class="" colspan="1" rowspan="1">$01</td>
+<td class="" colspan="1" rowspan="1">Terrain preview at game start, no input</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">OVERVIEW</td>
+<td class="" colspan="1" rowspan="1">$02</td>
+<td class="" colspan="1" rowspan="1">Attract mode demo</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">REFUEL</td>
+<td class="" colspan="1" rowspan="1">$06</td>
+<td class="" colspan="1" rowspan="1">Over fuel depot, adding fuel</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+During SCROLL_IN and OVERVIEW, player input is ignored and no collision occurs. During REFUEL, fuel is added each frame and collisions use plane position instead of missile position.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24424"></span>5F68</td>
+<td class="instruction">DEFB $00</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="24423.html">5F67</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#24424">Map</a></td>
+<td class="next">
+Next: <a href="24425.html">5F69</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 924F</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37438.html">923E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37455">Map</a></td>
+<td class="next">
+Next: <a href="37476.html">9264</a>
+</td>
+</tr>
+</table>
+<div class="description">924F: Continue printing lives after count has been loaded.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Positions cursor and prints plane symbols for each life. Pads with spaces to clear any previous display.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">A</td>
+<td class="register-desc">Number of lives.</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37455"></span>924F</td>
+<td class="instruction">LD B,A</td>
+<td class="comment-1" rowspan="1">Store lives count in B for loop counter.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37456"></span>9250</td>
+<td class="instruction">LD A,$16</td>
+<td class="comment-1" rowspan="6">AT 20,18</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37458"></span>9252</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37459"></span>9253</td>
+<td class="instruction">LD A,$14</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37461"></span>9255</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37462"></span>9256</td>
+<td class="instruction">LD A,$12</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37464"></span>9258</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37465"></span>9259</td>
+<td class="instruction">LD A,B</td>
+<td class="comment-1" rowspan="3">If lives count is 0, skip to padding.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37466"></span>925A</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37468"></span>925C</td>
+<td class="instruction">JP Z,<a href="37476.html">$9264</a></td>
+</tr>
+<tr>
+<td class="address-2"><span id="37471"></span>925F</td>
+<td class="instruction">LD A,$9C</td>
+<td class="comment-1" rowspan="3">Print ✈ UDG symbol, loop B times.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37473"></span>9261</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37474"></span>9262</td>
+<td class="instruction">DJNZ $925F</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37438.html">923E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37455">Map</a></td>
+<td class="next">
+Next: <a href="37476.html">9264</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

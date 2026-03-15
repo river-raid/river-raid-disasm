@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 62DA</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25303.html">62D7</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25306">Map</a></td>
+<td class="next">
+Next: <a href="25312.html">62E0</a>
+</td>
+</tr>
+</table>
+<div class="description">62DA: Increase vertical coordinate of the object by the value of <a href="24420.html">5F64</a>.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Adds the current scroll delta to an object's Y coordinate. Used during refueling mode to compensate for screen scrolling when checking collisions.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">B</td>
+<td class="register-desc">Current Y coordinate</td>
+</tr>
+</table>
+<table class="output">
+<tr class="asm-output-header">
+<th colspan="2">Output</th>
+</tr>
+<tr>
+<td class="register">B</td>
+<td class="register-desc">New Y coordinate (B + scroll_delta)</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="25306"></span>62DA</td>
+<td class="instruction">LD A,($5F64)</td>
+<td class="comment-1" rowspan="3">Load scroll delta from <a href="24420.html">5F64</a> and add to B.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25309"></span>62DD</td>
+<td class="instruction">ADD A,B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25310"></span>62DE</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25311"></span>62DF</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25303.html">62D7</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25306">Map</a></td>
+<td class="next">
+Next: <a href="25312.html">62E0</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

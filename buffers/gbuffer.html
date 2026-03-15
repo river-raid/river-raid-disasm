@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Game status buffer</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="GameStatusBuffer">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Game status buffer</td>
+</tr>
+</table>
+<div class="map-intro"></div>
+<table class="map">
+<tr>
+<th>Address</th>
+<th class="map-length">Length</th>
+<th>Description</th>
+</tr>
+<tr>
+<td class="map-g"><span id="23672"></span><a href="../asm/23672.html">5C78</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/23672.html">Interrupt counter. Incremented by the interrupt handler.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="23875"></span><a href="../asm/23875.html">5D43</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/23875.html">Game status buffer entry at 5D43</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24302"></span><a href="../asm/24302.html">5EEE</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24302.html">Terrain fragment render counter (0-7). Tracks which of the 8 terrain fragments to render next. Incremented after each fragment, wraps at 8.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24303"></span><a href="../asm/24303.html">5EEF</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24303.html">Frame tick (0-255). Incremented each game frame for animation timing. Bit 0 alternates every frame, bits 0-1 cycle every 4 frames, etc.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24304"></span><a href="../asm/24304.html">5EF0</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24304.html">Current bridge number (0-47).</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24305"></span><a href="../asm/24305.html">5EF1</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24305.html">Raw input port value from last keyboard/joystick read. Format depends on input interface type.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24306"></span><a href="../asm/24306.html">5EF2</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24306.html">Road tank center flag ($00 = inactive, $01 = road tank is at center X=$80).</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24307"></span><a href="../asm/24307.html">5EF3</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24307.html">Player missile Y coordinate in pixels (0-255). $00 when no missile active.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24308"></span><a href="../asm/24308.html">5EF4</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24308.html">Player missile X coordinate in pixels (0-255).</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24309"></span><a href="../asm/24309.html">5EF5</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24309.html">Collision detection mode for current render pass. Determines which collision handler to invoke on pixel overlap.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24310"></span><a href="../asm/24310.html">5EF6</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24310.html">Y coordinate where collision was detected, in pixels.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24311"></span><a href="../asm/24311.html">5EF7</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24311.html">Pointer to current plane sprite data. Points into <a href="../asm/33477.html">82C5</a> sprite bank, offset by speed for animation frame selection.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24313"></span><a href="../asm/24313.html">5EF9</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24313.html">Island rendering line counter. Tracks current scanline during island terrain rendering (0-23).</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24314"></span><a href="../asm/24314.html">5EFA</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24314.html">Island terrain profile index (0-7). Selects which of 8 island shapes from <a href="../asm/32867.html">8063</a> to render.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24315"></span><a href="../asm/24315.html">5EFB</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24315.html">Island definition byte 2. Second byte from island data at <a href="../asm/50688.html">C600</a>, controls island width/shape.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24316"></span><a href="../asm/24316.html">5EFC</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24316.html">Island definition byte 3. Third byte from island data at <a href="../asm/50688.html">C600</a>, controls island rendering parameters.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24317"></span><a href="../asm/24317.html">5EFD</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24317.html">Island starting line index. Screen line (0-23) where island rendering begins. Initialized to $10 (16).</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24320"></span><a href="../asm/24320.html">5F00</a></td>
+<td class="map-length">46</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24320.html">Viewport slots array (15 slots for active game objects).</a></div>
+<div class="map-entry-desc">
+<div class="paragraph">
+Each slot is a 3-byte entry that can hold one game object (enemy, fuel depot, etc.). Iterated by <a href="../asm/28814.html">708E</a> (operate) and <a href="../asm/25320.html">62E8</a> (collision). New objects added via <a href="../asm/28331.html">6EAB</a>. See Glossary for terminology.
+</div>
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Byte</th>
+<th colspan="1" rowspan="1">Contents</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">0</td>
+<td class="" colspan="1" rowspan="1">X position (0-255 pixels), or slot marker</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">1</td>
+<td class="" colspan="1" rowspan="1">Y position (0-255 pixels, increases as object scrolls down)</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">2</td>
+<td class="" colspan="1" rowspan="1">Object definition byte (type, orientation, activation)</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Marker</th>
+<th colspan="1" rowspan="1">Value</th>
+<th colspan="1" rowspan="1">Meaning</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">SET_MARKER_EMPTY_SLOT</td>
+<td class="" colspan="1" rowspan="1">$00</td>
+<td class="" colspan="1" rowspan="1">Unused slot (skip during iteration)</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">SET_MARKER_END_OF_SET</td>
+<td class="" colspan="1" rowspan="1">$FF</td>
+<td class="" colspan="1" rowspan="1">End of active slots (reset iterator)</td>
+</tr>
+</table>
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24366"></span><a href="../asm/24366.html">5F2E</a></td>
+<td class="map-length">49</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24366.html">Explosion animation fragments array.</a></div>
+<div class="map-entry-desc">
+<div class="paragraph">
+Array of up to 16 explosion fragments. Each entry is 3 bytes. Animated by <a href="../asm/28360.html">6EC8</a>. New explosions added via <a href="../asm/28331.html">6EAB</a>.
+</div>
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Byte</th>
+<th colspan="1" rowspan="1">Contents</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">0</td>
+<td class="" colspan="1" rowspan="1">X position (0-255 pixels)</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">1</td>
+<td class="" colspan="1" rowspan="1">Y offset (relative position, adjusted during scroll)</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">2</td>
+<td class="" colspan="1" rowspan="1">Frame counter: bits 0-6 = frame (1-6), bit 7 = erase flag</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Explosion frames: 1,5=<a href="../asm/33905.html">8471</a> (small), 2,4=<a href="../asm/33921.html">8481</a> (medium), 3=<a href="../asm/33937.html">8491</a> (large), 6=<a href="../asm/33525.html">82F5</a> (erase).
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24415"></span><a href="../asm/24415.html">5F5F</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24415.html">Object activation interval bitmask</a></div>
+<div class="map-entry-desc">
+<div class="paragraph">
+Controls when newly spawned objects become active (start moving/shooting). Objects spawn inactive (bit 7 clear in slot definition) and activate when (interrupt_counter AND mask) == 0. Checked in <a href="../asm/28814.html">708E</a>.
+</div>
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Value</th>
+<th colspan="1" rowspan="1">Meaning</th>
+<th colspan="1" rowspan="1">When Set</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">$1F</td>
+<td class="" colspan="1" rowspan="1">Every 32 frames</td>
+<td class="" colspan="1" rowspan="1">Normal gameplay</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">$0F</td>
+<td class="" colspan="1" rowspan="1">Every 16 frames</td>
+<td class="" colspan="1" rowspan="1">After bridge destruction</td>
+</tr>
+</table>
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24416"></span><a href="../asm/24416.html">5F60</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24416.html">Current slot pointer. Iterator for traversing <a href="../asm/24320.html">5F00</a> during object processing.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24418"></span><a href="../asm/24418.html">5F62</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24418.html">Pointer to a slot from <a href="../asm/24366.html">5F2E</a></a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24420"></span><a href="../asm/24420.html">5F64</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24420.html">Current scroll speed in pixels per frame.</a></div>
+<div class="map-entry-desc">
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Speed</th>
+<th colspan="1" rowspan="1">Value</th>
+<th colspan="1" rowspan="1">Terrain scroll</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">SLOW</td>
+<td class="" colspan="1" rowspan="1">$01</td>
+<td class="" colspan="1" rowspan="1">1 pixel/frame</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">NORMAL</td>
+<td class="" colspan="1" rowspan="1">$02</td>
+<td class="" colspan="1" rowspan="1">2 pixels/frame</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">FAST</td>
+<td class="" colspan="1" rowspan="1">$04</td>
+<td class="" colspan="1" rowspan="1">4 pixels/frame</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Also determines sprite animation frame and number of terrain fragments rendered per frame. Horizontal movement is fixed at 2 pixels per input regardless of scroll speed.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24421"></span><a href="../asm/24421.html">5F65</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24421.html">Low fuel warning sound period (0-127). Used as delay loop iteration count for speaker ON/OFF phases. Lower values = higher pitch. Decremented each frame, creating a rising-then-resetting warble effect.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24422"></span><a href="../asm/24422.html">5F66</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24422.html">Fuel level (0-255). $FF=full tank, $00=empty.</a></div>
+<div class="map-entry-desc">
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Mechanic</th>
+<th colspan="1" rowspan="1">Rate</th>
+<th colspan="1" rowspan="1">Formula</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Consumption</td>
+<td class="" colspan="1" rowspan="1">1 unit every 2 frames</td>
+<td class="" colspan="1" rowspan="1">~25 units/sec at 50fps</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Refueling</td>
+<td class="" colspan="1" rowspan="1">4 units per frame</td>
+<td class="" colspan="1" rowspan="1">~200 units/sec at 50fps</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Full tank duration</td>
+<td class="" colspan="1" rowspan="1">~10 seconds</td>
+<td class="" colspan="1" rowspan="1">255 / 25 = 10.2 sec</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Full refuel time</td>
+<td class="" colspan="1" rowspan="1">~1.3 seconds</td>
+<td class="" colspan="1" rowspan="1">255 / 200 = 1.3 sec</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Consumption rate does NOT depend on scroll speed. Low fuel warning triggers when &lt;$40 (top 2 bits clear). Refueling only occurs when plane is centered over depot (not banking left/right).
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24423"></span><a href="../asm/24423.html">5F67</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24423.html">Input interface type ($00=Keyboard, $01=Sinclair, $02=Kempston, $03=Cursor).</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24424"></span><a href="../asm/24424.html">5F68</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24424.html">Current gameplay mode</a></div>
+<div class="map-entry-desc">
+<div class="paragraph">
+Controls what actions are allowed and how rendering/collision works.
+</div>
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Mode</th>
+<th colspan="1" rowspan="1">Value</th>
+<th colspan="1" rowspan="1">Description</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">NORMAL</td>
+<td class="" colspan="1" rowspan="1">$00</td>
+<td class="" colspan="1" rowspan="1">Full player control, collision active</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">SCROLL_IN</td>
+<td class="" colspan="1" rowspan="1">$01</td>
+<td class="" colspan="1" rowspan="1">Terrain preview at game start, no input</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">OVERVIEW</td>
+<td class="" colspan="1" rowspan="1">$02</td>
+<td class="" colspan="1" rowspan="1">Attract mode demo</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">REFUEL</td>
+<td class="" colspan="1" rowspan="1">$06</td>
+<td class="" colspan="1" rowspan="1">Over fuel depot, adding fuel</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+During SCROLL_IN and OVERVIEW, player input is ignored and no collision occurs. During REFUEL, fuel is added each frame and collisions use plane position instead of missile position.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24425"></span><a href="../asm/24425.html">5F69</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24425.html">Plane sprite bank offset. $00=centered, $04=banked left/right. Reset to $00 at the start of each frame, then set to $04 by <a href="../asm/26160.html">6630</a> after the banked sprite is rendered. Read by <a href="../asm/28224.html">6E40</a>, but always $00 at that call site — the check is dead code.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24426"></span><a href="../asm/24426.html">5F6A</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24426.html">Player 1's current bridge number (0-47). Saved when switching players in 2-player mode.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24427"></span><a href="../asm/24427.html">5F6B</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24427.html">Player 2's current bridge number (0-47). Saved when switching players in 2-player mode.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24428"></span><a href="../asm/24428.html">5F6C</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24428.html">Bridge section indicator. $00=normal terrain, $02=bridge terrain section. Set when plane enters bridge area.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24429"></span><a href="../asm/24429.html">5F6D</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24429.html">Bridge destruction flag ($00 = intact, $01 = destroyed).</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24430"></span><a href="../asm/24430.html">5F6E</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24430.html">Y-position of destroyed bridge in pixels. Updated during scroll to track bridge debris position on screen.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24431"></span><a href="../asm/24431.html">5F6F</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24431.html">Unused.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24432"></span><a href="../asm/24432.html">5F70</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24432.html">Vertical scroll offset (16-bit, little-endian). Accumulated distance traveled in pixels. Used to calculate level slot index and bridge position.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24434"></span><a href="../asm/24434.html">5F72</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24434.html">Player plane X coordinate in pixels (0-255). $78 (120) is horizontal center. Changes by 2 pixels per left/right input.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24435"></span><a href="../asm/24435.html">5F73</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24435.html">Pointer to helicopter missile coordinates in viewport_slots array. Updated when advanced helicopter fires.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24437"></span><a href="../asm/24437.html">5F75</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24437.html">Helicopter missile state. Bit 7 set when missile active. Lower bits track missile animation/position.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24438"></span><a href="../asm/24438.html">5F76</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24438.html">Current level terrain array index (1-255). Points to current element in level definition at <a href="../asm/38144.html">9500</a>. Incremented as terrain scrolls.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24440"></span><a href="../asm/24440.html">5F78</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24440.html">Cached terrain element data (2 bytes). Stores bytes 2-3 of current level element for object spawning.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24442"></span><a href="../asm/24442.html">5F7A</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24442.html">Terrain extras byte. Additional terrain rendering flags from level data.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24443"></span><a href="../asm/24443.html">5F7B</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24443.html">Current screen memory pointer. Points to pixel address being rendered during terrain drawing.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24445"></span><a href="../asm/24445.html">5F7D</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24445.html">Terrain sub-position (0-3). Index within current terrain element. Incremented every 4 scroll units, triggers new terrain load at 0.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24446"></span><a href="../asm/24446.html">5F7E</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24446.html">Pointer to the text to be displayed in the scroller.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24449"></span><a href="../asm/24449.html">5F81</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24449.html">Overview mode frame counter. Counts scroll iterations during attract mode. Game starts after 5 increments or key press.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24451"></span><a href="../asm/24451.html">5F83</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24451.html">Saved stack pointer. Captured at init, restored when starting new life to unwind any nested calls.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24453"></span><a href="../asm/24453.html">5F85</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24453.html">Saved HL register during collision detection. Preserved across collision handler calls.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24455"></span><a href="../asm/24455.html">5F87</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24455.html">Saved DE register during collision detection. Preserved across collision handler calls.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24457"></span><a href="../asm/24457.html">5F89</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24457.html">Saved BC register during collision detection. Preserved across collision handler calls.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24459"></span><a href="../asm/24459.html">5F8B</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24459.html">Collision coordinates (Y in high byte, X in low byte). Set by collision detection when overlap found.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24461"></span><a href="../asm/24461.html">5F8D</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24461.html">Saved object coordinates during rendering. Backup of object position for multi-pass rendering.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="24463"></span><a href="../asm/24463.html">5F8F</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24463.html">Backup of plane missile coordinates. Saved before movement, used for collision detection and erasure.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="26428"></span><a href="../asm/26428.html">673C</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/26428.html">Missile animation pass selector. $01=first pass (erase at old position), $00=second pass (draw at new position). Two-pass rendering prevents flicker.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="27568"></span><a href="../asm/27568.html">6BB0</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/27568.html">Control state bitmask. Bit 0=FIRE, 1=SPEED_DECREASED, 2=SPEED_ALTERED, 3=LOW_FUEL, 4=BONUS_LIFE, 5=EXPLODING.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="27696"></span><a href="../asm/27696.html">6C30</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/27696.html">Bonus life sound progress counter (0-64). Incremented each frame during jingle. Sound completes when reaching $40 (64).</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="27770"></span><a href="../asm/27770.html">6C7A</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/27770.html">Explosion sound frame counter. Counts down from $18 (24) to 0. Value also controls pitch - higher values = lower frequency.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="29571"></span><a href="../asm/29571.html">7383</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/29571.html">Tank shell state flags and speed</a></div>
+<div class="map-entry-desc">
+<div class="paragraph">
+Controls tank shell behavior during flight and explosion.
+</div>
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Bit(s)</th>
+<th colspan="1" rowspan="1">Meaning</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">0-2</td>
+<td class="" colspan="1" rowspan="1">Speed (1-4): horizontal pixels per frame</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">5</td>
+<td class="" colspan="1" rowspan="1">TANK_SHELL_BIT_EXPLODING: explosion animation active</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">6</td>
+<td class="" colspan="1" rowspan="1">Orientation (same as SLOT_BIT_ORIENTATION)</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">7</td>
+<td class="" colspan="1" rowspan="1">TANK_SHELL_BIT_FLYING: shell in flight</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Speed is pseudo-random (1-4), set when shell is fired at <a href="../asm/29442.html#29486">732E</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="29572"></span><a href="../asm/29572.html">7384</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/29572.html">Tank shell trajectory step (0-7)</a></div>
+<div class="map-entry-desc">
+<div class="paragraph">
+Current step in the shell's parabolic arc. Incremented each frame while flying. At step 8, shell explodes via <a href="../asm/29894.html">74C6</a>.
+</div>
+<div class="paragraph">
+Higher steps produce lower-pitched whistle sounds (BEEPER with HL = step × 256).
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="29573"></span><a href="../asm/29573.html">7385</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/29573.html">Tank shell position (BC format: C=X, B=Y)</a></div>
+<div class="map-entry-desc">
+<div class="paragraph">
+Current screen position of the flying shell. Updated each frame based on speed and orientation. Cleared to $0000 when shell is removed.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="35592"></span><a href="../asm/35592.html">8B08</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/35592.html">Pointer to collision handler routine at <a href="../asm/24886.html">6136</a>. Called when sprite rendering detects pixel overlap.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="35594"></span><a href="../asm/35594.html">8B0A</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/35594.html">Previous object coordinates (Y high, X low). Position before movement, used for sprite erasure.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="35596"></span><a href="../asm/35596.html">8B0C</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/35596.html">Current object coordinates (Y high, X low). Position after movement, used for sprite drawing.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="35598"></span><a href="../asm/35598.html">8B0E</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/35598.html">Pointer to current sprite frame data. Set before calling render routines.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="35600"></span><a href="../asm/35600.html">8B10</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/35600.html">Pointer to sprite data for erasure. Points to previous frame or erase pattern.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="35602"></span><a href="../asm/35602.html">8B12</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/35602.html">Screen memory address for drawing new sprite position. Calculated from object_coordinates.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="35604"></span><a href="../asm/35604.html">8B14</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/35604.html">Screen memory address for erasing old sprite position. Calculated from previous_object_coordinates.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="35606"></span><a href="../asm/35606.html">8B16</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/35606.html">Output sprite pointer after rendering. Advanced by frame size during render loop.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="35610"></span><a href="../asm/35610.html">8B1A</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/35610.html">Sprite width in tiles (1-3). Used by render loop to process correct number of bytes per row.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="37435"></span><a href="../asm/37435.html">923B</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/37435.html">Player 1 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the end of the first scroll-in (<a href="../asm/23974.html">5DA6</a>). Decremented again at the end of each subsequent scroll-in after a death. Game over is triggered when 0 at the time of the player's next death.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="37436"></span><a href="../asm/37436.html">923C</a></td>
+<td class="map-length">1</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/37436.html">Player 2 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the end of the first scroll-in (<a href="../asm/23974.html">5DA6</a>). Decremented again at the end of each subsequent scroll-in after a death. Game over is triggered when 0 at the time of the player's next death.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="37507"></span><a href="../asm/37507.html">9283</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/37507.html">Pointer to state_controls at <a href="../asm/27568.html">6BB0</a>. Allows indirect access to control state bitmask.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="37509"></span><a href="../asm/37509.html">9285</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/37509.html">Saved BC register during attribute setting. Preserved across attribute routine calls.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="37511"></span><a href="../asm/37511.html">9287</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/37511.html">Saved DE register during attribute setting. Preserved across attribute routine calls.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="37513"></span><a href="../asm/37513.html">9289</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/37513.html">Saved HL register during attribute setting. Preserved across attribute routine calls.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+<tr>
+<td class="map-g"><span id="37515"></span><a href="../asm/37515.html">928B</a></td>
+<td class="map-length">2</td>
+<td class="map-g-desc">
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/37515.html">Sprite width in tiles for attribute routine. Determines how many attribute cells to update.</a></div>
+<div class="map-entry-desc">
+</div>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

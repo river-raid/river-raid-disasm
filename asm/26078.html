@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 65DE</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26059.html">65CB</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26078">Map</a></td>
+<td class="next">
+Next: <a href="26099.html">65F3</a>
+</td>
+</tr>
+</table>
+<div class="description">65DE: Switch to Player 1 after Player 2 death</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+This routine is called when Player 2 dies and Player 1 has lives remaining. It switches the current player to Player 1 and restarts gameplay, or triggers game over if Player 1 has no lives.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26078"></span>65DE</td>
+<td class="instruction">LD A,$01</td>
+<td class="comment-1" rowspan="2">Set current player to PLAYER_1.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26080"></span>65E0</td>
+<td class="instruction">LD ($923D),A</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="26083"></span>
+<div class="comments">
+<div class="paragraph">
+This entry point is used by the routine at <a href="26059.html">65CB</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26083"></span>65E3</td>
+<td class="instruction">LD A,($923B)</td>
+<td class="comment-1" rowspan="3">If Player 1 has no lives, trigger game over.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26086"></span>65E6</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26088"></span>65E8</td>
+<td class="instruction">JP Z,<a href="25975.html">$6577</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="26091"></span>65EB</td>
+<td class="instruction">LD A,$01</td>
+<td class="comment-1" rowspan="3">Set current player to PLAYER_1 and restart gameplay.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26093"></span>65ED</td>
+<td class="instruction">LD ($923D),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26096"></span>65F0</td>
+<td class="instruction">JP <a href="25960.html">$6568</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26059.html">65CB</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26078">Map</a></td>
+<td class="next">
+Next: <a href="26099.html">65F3</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

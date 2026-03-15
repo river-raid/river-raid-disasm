@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 7ACD</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="31417.html">7AB9</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#31437">Map</a></td>
+<td class="next">
+Next: <a href="31495.html">7B07</a>
+</td>
+</tr>
+</table>
+<div class="description">7ACD: Wait until the user chooses a valid control type or switch to the overview mode on timeout.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="31437"></span>7ACD</td>
+<td class="instruction">LD HL,($7802)</td>
+<td class="comment-1" rowspan="3">Decrease timer</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31440"></span>7AD0</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31441"></span>7AD1</td>
+<td class="instruction">LD ($7802),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31444"></span>7AD4</td>
+<td class="instruction">LD A,H</td>
+<td class="comment-1" rowspan="3">Check if the time is up</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31445"></span>7AD5</td>
+<td class="instruction">OR L</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31446"></span>7AD6</td>
+<td class="instruction">JP Z,<a href="31575.html">$7B57</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="31449"></span>7AD9</td>
+<td class="instruction">LD A,($5C08)</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="31452"></span>7ADC</td>
+<td class="instruction">CALL $02BF</td>
+<td class="comment-1" rowspan="2">Scan keyboard</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31455"></span>7ADF</td>
+<td class="instruction">EI</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31456"></span>7AE0</td>
+<td class="instruction">SUB $31</td>
+<td class="comment-1" rowspan="1">Subtract "1" from the pressed key ASCII code, mapping "1" to 0, "2" to 1, etc.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31458"></span>7AE2</td>
+<td class="instruction">LD ($7800),A</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="31461"></span>7AE5</td>
+<td class="instruction">AND $FC</td>
+<td class="comment-1" rowspan="2">Validate the pressed key by making sure that none of the bits older than the first two are set, effectively allowing values 0 through 3.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31463"></span>7AE7</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31465"></span>7AE9</td>
+<td class="instruction">JR NZ,$7ACD</td>
+<td class="comment-1" rowspan="1">Repeat if a valid key was not pressed.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31467"></span>7AEB</td>
+<td class="instruction">LD A,$FF</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-2"><span id="31469"></span>7AED</td>
+<td class="instruction">LD B,$00</td>
+<td class="comment-1" rowspan="1">Initialize delay counter.</td>
+</tr>
+<tr>
+<td class="address-2"><span id="31471"></span>7AEF</td>
+<td class="instruction">DJNZ $7AEF</td>
+<td class="comment-1" rowspan="3">Delay loop (purpose unclear).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31473"></span>7AF1</td>
+<td class="instruction">DEC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31474"></span>7AF2</td>
+<td class="instruction">JR NZ,$7AED</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31476"></span>7AF4</td>
+<td class="instruction">LD D,$07</td>
+<td class="comment-1" rowspan="1">PAPER BLACK; INK WHITE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31478"></span>7AF6</td>
+<td class="instruction">CALL <a href="37898.html">$940A</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="31481"></span>7AF9</td>
+<td class="instruction">LD DE,$792A</td>
+<td class="comment-1" rowspan="3">Print game mode dialog</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31484"></span>7AFC</td>
+<td class="instruction">LD BC,$0104</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31487"></span>7AFF</td>
+<td class="instruction">CALL $203C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31490"></span>7B02</td>
+<td class="instruction">LD A,$0D</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="31492"></span>7B04</td>
+<td class="instruction">LD ($5C08),A</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="31417.html">7AB9</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#31437">Map</a></td>
+<td class="next">
+Next: <a href="31495.html">7B07</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

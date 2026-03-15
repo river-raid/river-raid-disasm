@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6F7A</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28531.html">6F73</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28538">Map</a></td>
+<td class="next">
+Next: <a href="28544.html">6F80</a>
+</td>
+</tr>
+</table>
+<div class="description">6F7A: Remove completed explosion from set</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Called when explosion animation reaches frame 7 (complete). Marks the entry as empty so it can be reused, then continues processing remaining explosions.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">HL</td>
+<td class="register-desc">Pointer past the current explosion entry's frame counter byte</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="28538"></span>6F7A</td>
+<td class="instruction">DEC HL</td>
+<td class="comment-1" rowspan="2">Move back to frame counter byte and mark entry as empty.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28539"></span>6F7B</td>
+<td class="instruction">LD (HL),$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28541"></span>6F7D</td>
+<td class="instruction">JP <a href="28360.html">$6EC8</a></td>
+<td class="comment-1" rowspan="1">Continue processing remaining explosions.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28531.html">6F73</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28538">Map</a></td>
+<td class="next">
+Next: <a href="28544.html">6F80</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

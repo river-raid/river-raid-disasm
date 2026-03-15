@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6963</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26957.html">694D</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26979">Map</a></td>
+<td class="next">
+Next: <a href="26987.html">696B</a>
+</td>
+</tr>
+</table>
+<div class="description">6963: Wrap bridge index from 49 to 1</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Resets bridge index to 1 when it would exceed 48. Note: player progress at <a href="24426.html">5F6A</a> is not reset, allowing the wraparound algorithm to work.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26979"></span>6963</td>
+<td class="instruction">LD A,$01</td>
+<td class="comment-1" rowspan="2">Reset bridge index to 1.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26981"></span>6965</td>
+<td class="instruction">LD ($5EF0),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26984"></span>6968</td>
+<td class="instruction">LD A,$00</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="26986"></span>696A</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26957.html">694D</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26979">Map</a></td>
+<td class="next">
+Next: <a href="26987.html">696B</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6C31</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27696.html">6C30</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27697">Map</a></td>
+<td class="next">
+Next: <a href="27730.html">6C52</a>
+</td>
+</tr>
+</table>
+<div class="description">6C31: Play bonus life sound effect</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Generates a rising pitch sound effect when player earns an extra life. Called once per frame while CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 frames.
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Counter increments from 0 to 64 over successive frames</li>
+<li>Pitch = ($40 - counter) &gt;&gt; 3, giving values 7→0 as counter increases</li>
+<li>Lower pitch values = higher frequency, so sound rises in pitch</li>
+<li>Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001</li>
+</ul>
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27697"></span>6C31</td>
+<td class="instruction">LD A,($6C30)</td>
+<td class="comment-1" rowspan="3">Increment counter and check if reached $40 (64). If so, sound is complete.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27700"></span>6C34</td>
+<td class="instruction">INC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27701"></span>6C35</td>
+<td class="instruction">LD ($6C30),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27704"></span>6C38</td>
+<td class="instruction">CP $40</td>
+<td class="comment-1" rowspan="2">Check if counter reached BONUS_LIFE_SOUND_FRAMES. If done, finish sound sequence.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27706"></span>6C3A</td>
+<td class="instruction">JP Z,<a href="27730.html">$6C52</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27709"></span>6C3D</td>
+<td class="instruction">LD B,A</td>
+<td class="comment-1" rowspan="3">Calculate pitch: pitch = BONUS_LIFE_SOUND_FRAMES - counter.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27710"></span>6C3E</td>
+<td class="instruction">LD A,$40</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27712"></span>6C40</td>
+<td class="instruction">SUB B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27713"></span>6C41</td>
+<td class="instruction">LD L,$FF</td>
+<td class="comment-1" rowspan="5">Set up BEEPER parameters: H = pitch &gt;&gt; 3 (range 7-0), L = $FF (duration).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27715"></span>6C43</td>
+<td class="instruction">LD H,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27716"></span>6C44</td>
+<td class="instruction">SRL H</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27718"></span>6C46</td>
+<td class="instruction">SRL H</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27720"></span>6C48</td>
+<td class="instruction">SRL H</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27722"></span>6C4A</td>
+<td class="instruction">LD DE,$0001</td>
+<td class="comment-1" rowspan="3">Call ROM BEEPER at $03B5 with DE=$0001 (one iteration). Disable interrupts after.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27725"></span>6C4D</td>
+<td class="instruction">CALL $03B5</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27728"></span>6C50</td>
+<td class="instruction">DI</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27729"></span>6C51</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27696.html">6C30</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27697">Map</a></td>
+<td class="next">
+Next: <a href="27730.html">6C52</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

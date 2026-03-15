@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6577</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25967.html">656F</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25975">Map</a></td>
+<td class="next">
+Next: <a href="25991.html">6587</a>
+</td>
+</tr>
+</table>
+<div class="description">6577: Game Over</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+This routine displays the "GAME OVER" message, plays the game over sequence, and returns to the overview/demo mode.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="25975"></span>6577</td>
+<td class="instruction">LD HL,$8153</td>
+<td class="comment-1" rowspan="2">Set scroller to "GAME OVER" message.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25978"></span>657A</td>
+<td class="instruction">LD ($5F7E),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25981"></span>657D</td>
+<td class="instruction">CALL <a href="37822.html">$93BE</a></td>
+<td class="comment-1" rowspan="3">Update high score, restore stack, and return to overview mode.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25984"></span>6580</td>
+<td class="instruction">LD SP,($5F83)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25988"></span>6584</td>
+<td class="instruction">JP <a href="23851.html">$5D2B</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25967.html">656F</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25975">Map</a></td>
+<td class="next">
+Next: <a href="25991.html">6587</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

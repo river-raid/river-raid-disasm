@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 7343</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29442.html">7302</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29507">Map</a></td>
+<td class="next">
+Next: <a href="29528.html">7358</a>
+</td>
+</tr>
+</table>
+<div class="description">7343: Initialize tank shell state</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Sets up shell with orientation from tank and pseudo-random speed from interrupt counter.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Object definition byte (bit 6 = orientation)</td>
+</tr>
+</table>
+<table class="output">
+<tr class="asm-output-header">
+<th colspan="2">Output</th>
+</tr>
+<tr>
+<td class="register">A</td>
+<td class="register-desc">Shell state with orientation and speed bits</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="29507"></span>7343</td>
+<td class="instruction">BIT 4,D</td>
+<td class="comment-1" rowspan="2">If SLOT_BIT_ALT_SHELL_INIT is set, use alternate initialization via <a href="29534.html">735E</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29509"></span>7345</td>
+<td class="instruction">JP NZ,<a href="29534.html">$735E</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29512"></span>7348</td>
+<td class="instruction">LD A,D</td>
+<td class="comment-1" rowspan="3">Copy orientation bit from object definition to shell state.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29513"></span>7349</td>
+<td class="instruction">AND $40</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29515"></span>734B</td>
+<td class="instruction">LD D,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29516"></span>734C</td>
+<td class="instruction">LD A,($5C78)</td>
+<td class="comment-1" rowspan="2">Derive speed from interrupt counter (pseudo-random 1-4).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29519"></span>734F</td>
+<td class="instruction">AND $03</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29521"></span>7351</td>
+<td class="instruction">LD E,A</td>
+<td class="comment-1" rowspan="2">Store in E, load D into A.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29522"></span>7352</td>
+<td class="instruction">LD A,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29523"></span>7353</td>
+<td class="instruction">INC E</td>
+<td class="comment-1" rowspan="3">Ensure speed &gt;= 1, combine with orientation, continue to fire shell.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29524"></span>7354</td>
+<td class="instruction">ADD A,E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29525"></span>7355</td>
+<td class="instruction">JP <a href="29442.html#29486">$732E</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29442.html">7302</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29507">Map</a></td>
+<td class="next">
+Next: <a href="29528.html">7358</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

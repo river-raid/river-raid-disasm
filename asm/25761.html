@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 64A1</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25758.html">649E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25761">Map</a></td>
+<td class="next">
+Next: <a href="25780.html">64B4</a>
+</td>
+</tr>
+</table>
+<div class="description">64A1: Handle refueling from fuel depot</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routine at <a href="25720.html">6478</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="25761"></span>
+<div class="comments">
+<div class="paragraph">
+Called when the plane touches a fuel depot during REFUEL mode. Marks the depot slot as empty and adds fuel.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="25761"></span>64A1</td>
+<td class="instruction">LD (HL),C</td>
+<td class="comment-1" rowspan="1">Mark depot slot as empty.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25762"></span>64A2</td>
+<td class="instruction">LD HL,$5F00</td>
+<td class="comment-1" rowspan="4">Reset <a href="24416.html">5F60</a> and <a href="24418.html">5F62</a> to list starts.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25765"></span>64A5</td>
+<td class="instruction">LD ($5F60),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25768"></span>64A8</td>
+<td class="instruction">LD HL,$5F2E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25771"></span>64AB</td>
+<td class="instruction">LD ($5F62),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25774"></span>64AE</td>
+<td class="instruction">CALL <a href="28224.html">$6E40</a></td>
+<td class="comment-1" rowspan="2">Add fuel and jump to <a href="25596.html">63FC</a> to reset gameplay mode.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25777"></span>64B1</td>
+<td class="instruction">JP <a href="25596.html">$63FC</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25758.html">649E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25761">Map</a></td>
+<td class="next">
+Next: <a href="25780.html">64B4</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

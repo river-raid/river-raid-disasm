@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 64E5</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25788.html">64BC</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25829">Map</a></td>
+<td class="next">
+Next: <a href="25841.html">64F1</a>
+</td>
+</tr>
+</table>
+<div class="description">64E5: Print bridge number for Player 2</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routine at <a href="25788.html">64BC</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="25829"></span>
+<div class="comments">
+<div class="paragraph">
+Entry point when current player is Player 2. Sets ink color and falls through to common printing logic.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="25829"></span>64E5</td>
+<td class="instruction">LD A,$10</td>
+<td class="comment-1" rowspan="4">INK PLAYER_2</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25831"></span>64E7</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25832"></span>64E8</td>
+<td class="instruction">LD A,$05</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25834"></span>64EA</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25835"></span>64EB</td>
+<td class="instruction">LD DE,$804F</td>
+<td class="comment-1" rowspan="2">Set up DE=$804F, BC=11 for status text.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25838"></span>64EE</td>
+<td class="instruction">LD BC,$000B</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25788.html">64BC</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25829">Map</a></td>
+<td class="next">
+Next: <a href="25841.html">64F1</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

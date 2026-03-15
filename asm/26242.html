@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6682</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26178.html">6642</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26242">Map</a></td>
+<td class="next">
+Next: <a href="26316.html">66CC</a>
+</td>
+</tr>
+</table>
+<div class="description">6682: Render player plane sprite</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routines at <a href="23974.html">5DA6</a> and <a href="26683.html">683B</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="26242"></span>
+<div class="comments">
+<div class="paragraph">
+Renders the player's plane at its current position. Only executes in GAMEPLAY_MODE_NORMAL; returns immediately in other modes (scroll-in, overview, refuel).
+</div>
+<div class="paragraph">
+Sets COLLISION_MODE_FUEL_DEPOT so the collision system checks for fuel depot contact during rendering. Backs up missile coordinates to <a href="24463.html">5F8F</a> before modifying them for collision detection.
+</div>
+<div class="paragraph">
+Selects between normal sprite (<a href="33713.html">83B1</a>) and banked sprite (<a href="33777.html">83F1</a>) based on <a href="24425.html">5F69</a>. Player 2 uses different attributes (same as ship).
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26242"></span>6682</td>
+<td class="instruction">LD A,($5F68)</td>
+<td class="comment-1" rowspan="3">Return if not in GAMEPLAY_MODE_NORMAL.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26245"></span>6685</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26247"></span>6687</td>
+<td class="instruction">RET NZ</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26248"></span>6688</td>
+<td class="instruction">LD A,($5F72)</td>
+<td class="comment-1" rowspan="3">Backup missile coords to <a href="24463.html">5F8F</a>; set up plane position (Y=$80, X from <a href="24434.html">5F72</a>).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26251"></span>668B</td>
+<td class="instruction">LD HL,($5EF3)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26254"></span>668E</td>
+<td class="instruction">LD ($5F8F),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26257"></span>6691</td>
+<td class="instruction">LD C,A</td>
+<td class="comment-1" rowspan="5">Set COLLISION_MODE_FUEL_DEPOT and store plane coords.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26258"></span>6692</td>
+<td class="instruction">LD B,$80</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26260"></span>6694</td>
+<td class="instruction">LD A,$01</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26262"></span>6696</td>
+<td class="instruction">LD ($5EF5),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26265"></span>6699</td>
+<td class="instruction">LD ($8B0C),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26269"></span>669D</td>
+<td class="instruction">CALL <a href="25306.html">$62DA</a></td>
+<td class="comment-1" rowspan="2">Calculate previous position for sprite erasure.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26272"></span>66A0</td>
+<td class="instruction">LD ($8B0A),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26276"></span>66A4</td>
+<td class="instruction">LD BC,$0010</td>
+<td class="comment-1" rowspan="3">Set frame size and sprite pointer from <a href="24311.html">5EF7</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26279"></span>66A7</td>
+<td class="instruction">LD HL,($5EF7)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26282"></span>66AA</td>
+<td class="instruction">LD ($8B0E),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26285"></span>66AD</td>
+<td class="instruction">LD E,$0E</td>
+<td class="comment-1" rowspan="4">Set attributes; call <a href="28728.html">7038</a> for Player 2 (uses ship attributes).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26287"></span>66AF</td>
+<td class="instruction">LD A,($923D)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26290"></span>66B2</td>
+<td class="instruction">CP $02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26292"></span>66B4</td>
+<td class="instruction">CALL Z,<a href="28728.html">$7038</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="26295"></span>66B7</td>
+<td class="instruction">LD D,$08</td>
+<td class="comment-1" rowspan="4">Set height, load sprite base; if bank=$04, use <a href="33777.html">83F1</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26297"></span>66B9</td>
+<td class="instruction">LD HL,$83B1</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26300"></span>66BC</td>
+<td class="instruction">LD A,($5F69)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26303"></span>66BF</td>
+<td class="instruction">CP $04</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26305"></span>66C1</td>
+<td class="instruction">CALL Z,<a href="26316.html">$66CC</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="26308"></span>66C4</td>
+<td class="instruction">LD A,$02</td>
+<td class="comment-1" rowspan="2">Set width and call <a href="35644.html">8B3C</a> to render.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26310"></span>66C6</td>
+<td class="instruction">CALL <a href="35644.html">$8B3C</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="26313"></span>66C9</td>
+<td class="instruction">JP <a href="26160.html">$6630</a></td>
+<td class="comment-1" rowspan="1">Restore state.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26178.html">6642</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26242">Map</a></td>
+<td class="next">
+Next: <a href="26316.html">66CC</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 93A1</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37768.html">9388</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37793">Map</a></td>
+<td class="next">
+Next: <a href="37816.html">93B8</a>
+</td>
+</tr>
+</table>
+<div class="description">93A1: Compare two 6-digit scores.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Compares score at HL with score at DE, digit by digit.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">HL</td>
+<td class="register-desc">Pointer to first score (6 ASCII digits)</td>
+</tr>
+<tr>
+<td class="register">DE</td>
+<td class="register-desc">Pointer to second score (6 ASCII digits)</td>
+</tr>
+</table>
+<table class="output">
+<tr class="asm-output-header">
+<th colspan="2">Output</th>
+</tr>
+<tr>
+<td class="register">A</td>
+<td class="register-desc">Result: 0 if equal, 1 if HL &lt; DE, $FF if HL &gt; DE</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37793"></span>93A1</td>
+<td class="instruction">LD C,$06</td>
+<td class="comment-1" rowspan="1">Initialize digit counter to SCORE_DIGIT_COUNT.</td>
+</tr>
+<tr>
+<td class="address-2"><span id="37795"></span>93A3</td>
+<td class="instruction">LD A,(HL)</td>
+<td class="comment-1" rowspan="12">Compare digits, return if different, advance pointers, loop.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37796"></span>93A4</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37797"></span>93A5</td>
+<td class="instruction">LD A,(DE)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37798"></span>93A6</td>
+<td class="instruction">SUB B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37799"></span>93A7</td>
+<td class="instruction">JP M,<a href="37816.html">$93B8</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37802"></span>93AA</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37804"></span>93AC</td>
+<td class="instruction">JP NZ,<a href="37819.html">$93BB</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="37807"></span>93AF</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37808"></span>93B0</td>
+<td class="instruction">INC DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37809"></span>93B1</td>
+<td class="instruction">DEC C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37810"></span>93B2</td>
+<td class="instruction">JP NZ,$93A3</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37813"></span>93B5</td>
+<td class="instruction">LD A,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="37815"></span>93B7</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1">Return 0 (scores equal).</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="37768.html">9388</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#37793">Map</a></td>
+<td class="next">
+Next: <a href="37816.html">93B8</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

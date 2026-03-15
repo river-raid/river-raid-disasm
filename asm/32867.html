@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Data at 8063</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-b">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Data</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="32863.html">805F</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#32867">Map</a></td>
+<td class="next">
+Next: <a href="33107.html">8153</a>
+</td>
+</tr>
+</table>
+<div class="description">8063: River bank shape profiles (15 profiles × 16 bytes = 240 bytes).</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Defines how the river banks curve. Each profile has 16 bytes, one per scanline within a terrain fragment. Each byte is the X offset for the left bank edge at that line. Used by <a href="27299.html">6AA3</a> (terrain) and <a href="27024.html">6990</a> (islands).
+</div>
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Profile</th>
+<th colspan="1" rowspan="1">Type</th>
+<th colspan="1" rowspan="1">Description</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">0</td>
+<td class="" colspan="1" rowspan="1">Normal</td>
+<td class="" colspan="1" rowspan="1">Standard river section</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">1</td>
+<td class="" colspan="1" rowspan="1">Normal</td>
+<td class="" colspan="1" rowspan="1">Alternate river shape</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">2</td>
+<td class="" colspan="1" rowspan="1">Special</td>
+<td class="" colspan="1" rowspan="1">Pre-bridge approach (bit 7 set)</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">3</td>
+<td class="" colspan="1" rowspan="1">Special</td>
+<td class="" colspan="1" rowspan="1">Bridge structure (bit 7 set)</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">4</td>
+<td class="" colspan="1" rowspan="1">Special</td>
+<td class="" colspan="1" rowspan="1">Post-bridge transition</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">5-10</td>
+<td class="" colspan="1" rowspan="1">Normal</td>
+<td class="" colspan="1" rowspan="1">Various river widths</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">11</td>
+<td class="" colspan="1" rowspan="1">Narrow</td>
+<td class="" colspan="1" rowspan="1">River narrows significantly</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">12</td>
+<td class="" colspan="1" rowspan="1">Wide</td>
+<td class="" colspan="1" rowspan="1">River widens significantly</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">13-14</td>
+<td class="" colspan="1" rowspan="1">Normal</td>
+<td class="" colspan="1" rowspan="1">Additional variations</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+When bit 7 of a profile byte is set, <a href="27299.html">6AA3</a> jumps to special bridge/road rendering at <a href="27515.html">6B7B</a>. Left edge X = profile_byte + row_offset - 16.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32867"></span>8063</td>
+<td class="instruction">DEFB $02,$04,$04,$06,$08,$08,$0A,$0A</td>
+<td class="comment-1" rowspan="2">Profile 0: standard river</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32875"></span>806B</td>
+<td class="instruction">DEFB $0C,$0A,$0A,$08,$06,$04,$02,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32883"></span>8073</td>
+<td class="instruction">DEFB $80,$80,$80,$80,$80,$80,$80,$80</td>
+<td class="comment-1" rowspan="2">Profile 1: pre-bridge (special, bit 7 set)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32891"></span>807B</td>
+<td class="instruction">DEFB $E0,$E0,$E0,$E0,$E0,$E0,$E0,$E0</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32899"></span>8083</td>
+<td class="instruction">DEFB $C0,$C0,$C0,$C0,$C0,$C0,$C0,$F0</td>
+<td class="comment-1" rowspan="2">Profile 2: bridge structure (special, bit 7 set)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32907"></span>808B</td>
+<td class="instruction">DEFB $F0,$C0,$C0,$C0,$C0,$C0,$C0,$C0</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32915"></span>8093</td>
+<td class="instruction">DEFB $E0,$E0,$E0,$E0,$E0,$E0,$E0,$E0</td>
+<td class="comment-1" rowspan="2">Profile 3: post-bridge transition</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32923"></span>809B</td>
+<td class="instruction">DEFB $80,$80,$80,$80,$80,$80,$80,$80</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32931"></span>80A3</td>
+<td class="instruction">DEFB $00,$00,$02,$02,$04,$04,$06,$06</td>
+<td class="comment-1" rowspan="2">Profile 4</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32939"></span>80AB</td>
+<td class="instruction">DEFB $08,$08,$06,$06,$04,$04,$06,$06</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32947"></span>80B3</td>
+<td class="instruction">DEFB $06,$06,$06,$06,$04,$04,$04,$04</td>
+<td class="comment-1" rowspan="2">Profile 5</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32955"></span>80BB</td>
+<td class="instruction">DEFB $02,$02,$02,$02,$00,$00,$00,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32963"></span>80C3</td>
+<td class="instruction">DEFB $00,$00,$02,$02,$04,$04,$06,$06</td>
+<td class="comment-1" rowspan="2">Profile 6</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32971"></span>80CB</td>
+<td class="instruction">DEFB $08,$08,$0A,$0A,$0C,$0C,$0E,$0E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32979"></span>80D3</td>
+<td class="instruction">DEFB $0E,$0E,$0C,$0A,$0A,$08,$08,$06</td>
+<td class="comment-1" rowspan="2">Profile 7</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32987"></span>80DB</td>
+<td class="instruction">DEFB $06,$08,$08,$06,$04,$02,$02,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="32995"></span>80E3</td>
+<td class="instruction">DEFB $00,$00,$02,$04,$04,$06,$08,$08</td>
+<td class="comment-1" rowspan="2">Profile 8</td>
+</tr>
+<tr>
+<td class="address-1"><span id="33003"></span>80EB</td>
+<td class="instruction">DEFB $0A,$0C,$0E,$0E,$10,$12,$14,$16</td>
+</tr>
+<tr>
+<td class="address-1"><span id="33011"></span>80F3</td>
+<td class="instruction">DEFB $16,$16,$14,$12,$10,$10,$0E,$0C</td>
+<td class="comment-1" rowspan="2">Profile 9</td>
+</tr>
+<tr>
+<td class="address-1"><span id="33019"></span>80FB</td>
+<td class="instruction">DEFB $0A,$08,$0A,$0A,$08,$06,$04,$02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="33027"></span>8103</td>
+<td class="instruction">DEFB $02,$02,$04,$04,$06,$06,$04,$04</td>
+<td class="comment-1" rowspan="2">Profile 10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="33035"></span>810B</td>
+<td class="instruction">DEFB $02,$02,$00,$00,$02,$02,$02,$02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="33043"></span>8113</td>
+<td class="instruction">DEFB $00,$02,$04,$06,$0A,$0C,$10,$12</td>
+<td class="comment-1" rowspan="2">Profile 11: river narrows</td>
+</tr>
+<tr>
+<td class="address-1"><span id="33051"></span>811B</td>
+<td class="instruction">DEFB $16,$18,$1C,$1E,$22,$24,$26,$28</td>
+</tr>
+<tr>
+<td class="address-1"><span id="33059"></span>8123</td>
+<td class="instruction">DEFB $28,$26,$24,$22,$1E,$1C,$18,$16</td>
+<td class="comment-1" rowspan="2">Profile 12: river widens</td>
+</tr>
+<tr>
+<td class="address-1"><span id="33067"></span>812B</td>
+<td class="instruction">DEFB $12,$10,$0C,$0A,$06,$04,$02,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="33075"></span>8133</td>
+<td class="instruction">DEFB $00,$02,$00,$00,$02,$02,$04,$02</td>
+<td class="comment-1" rowspan="2">Profile 13</td>
+</tr>
+<tr>
+<td class="address-1"><span id="33083"></span>813B</td>
+<td class="instruction">DEFB $02,$00,$00,$02,$02,$04,$02,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="33091"></span>8143</td>
+<td class="instruction">DEFB $00,$02,$04,$02,$02,$04,$04,$02</td>
+<td class="comment-1" rowspan="2">Profile 14</td>
+</tr>
+<tr>
+<td class="address-1"><span id="33099"></span>814B</td>
+<td class="instruction">DEFB $00,$00,$00,$02,$02,$02,$00,$00</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="32863.html">805F</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#32867">Map</a></td>
+<td class="next">
+Next: <a href="33107.html">8153</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

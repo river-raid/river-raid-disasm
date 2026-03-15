@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6EAB</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28316.html">6E9C</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28331">Map</a></td>
+<td class="next">
+Next: <a href="28348.html">6EBC</a>
+</td>
+</tr>
+</table>
+<div class="description">6EAB: Add object entry to a set</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Finds an empty slot or end-of-set marker in the object set and writes a 3-byte entry (C, B, D). Each entry represents an object with X position, Y offset, and type.
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Searches forward through set, 3 bytes per entry</li>
+<li>Skips non-empty entries until finding SET_MARKER_EMPTY_SLOT or SET_MARKER_END_OF_SET</li>
+</ul>
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">B</td>
+<td class="register-desc">Y offset (usually 0 for new objects)</td>
+</tr>
+<tr>
+<td class="register">C</td>
+<td class="register-desc">X position</td>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Object type/definition</td>
+</tr>
+<tr>
+<td class="register">HL</td>
+<td class="register-desc">Pointer to start of object set</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="28331"></span>6EAB</td>
+<td class="instruction">LD A,(HL)</td>
+<td class="comment-1" rowspan="3">Load current entry's first byte. If empty slot, jump to write.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28332"></span>6EAC</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28334"></span>6EAE</td>
+<td class="instruction">JP Z,<a href="28348.html">$6EBC</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28337"></span>6EB1</td>
+<td class="instruction">CP $FF</td>
+<td class="comment-1" rowspan="2">If end-of-set marker, jump to write (will extend set).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28339"></span>6EB3</td>
+<td class="instruction">JP Z,<a href="28348.html">$6EBC</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28342"></span>6EB6</td>
+<td class="instruction">INC HL</td>
+<td class="comment-1" rowspan="4">Entry occupied: advance HL by 3 bytes and loop.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28343"></span>6EB7</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28344"></span>6EB8</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28345"></span>6EB9</td>
+<td class="instruction">JP $6EAB</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28316.html">6E9C</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28331">Map</a></td>
+<td class="next">
+Next: <a href="28348.html">6EBC</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

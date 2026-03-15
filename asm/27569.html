@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6BB1</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27568.html">6BB0</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27569">Map</a></td>
+<td class="next">
+Next: <a href="27583.html">6BBF</a>
+</td>
+</tr>
+</table>
+<div class="description">6BB1: Keep the game paused</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routine at <a href="27611.html">6BDB</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27569"></span>6BB1</td>
+<td class="instruction">CALL $02BF</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27572"></span>6BB4</td>
+<td class="instruction">LD A,($5C08)</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27575"></span>6BB7</td>
+<td class="instruction">CP $68</td>
+<td class="comment-1" rowspan="2">Loop until anything else than H is pressed</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27577"></span>6BB9</td>
+<td class="instruction">JP Z,$6BB1</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27580"></span>6BBC</td>
+<td class="instruction">JP <a href="27629.html">$6BED</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27568.html">6BB0</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27569">Map</a></td>
+<td class="next">
+Next: <a href="27583.html">6BBF</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

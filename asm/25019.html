@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 61BB</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="24926.html">615E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25019">Map</a></td>
+<td class="next">
+Next: <a href="25161.html">6249</a>
+</td>
+</tr>
+</table>
+<div class="description">61BB: Check collision against bridges and viewport objects</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routines at <a href="24886.html">6136</a> and <a href="25174.html">6256</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="25019"></span>
+<div class="comments">
+<div class="paragraph">
+Checks if the entity (missile or plane) has collided with a bridge or any viewport object. The coordinates to check are read from <a href="24307.html">5EF3</a>.
+</div>
+<div class="paragraph">
+Called in two contexts: (1) when COLLISION_MODE_MISSILE is set, checks missile collision; (2) when called from <a href="25174.html">6256</a>, checks plane collision with fuel depots.
+</div>
+<div class="paragraph">
+First checks if a bridge exists (<a href="24430.html">5F6E</a> != 0) and whether the Y coordinate is within the bridge's vertical bounds (bridge_y - $16 to bridge_y). If the bridge is hit, awards POINTS_BRIDGE, triggers 6 explosion fragments in a 2x3 grid pattern, increments the player's bridge counter, and clears the bridge.
+</div>
+<div class="paragraph">
+If no bridge collision, falls through to <a href="25320.html">62E8</a> to check collision against viewport objects.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="25019"></span>61BB</td>
+<td class="instruction">LD BC,($5EF3)</td>
+<td class="comment-1" rowspan="2">Load entity coordinates from <a href="24307.html">5EF3</a> and bridge Y from <a href="24430.html">5F6E</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25023"></span>61BF</td>
+<td class="instruction">LD A,($5F6E)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25026"></span>61C2</td>
+<td class="instruction">CP $00</td>
+<td class="comment-1" rowspan="2">If no bridge exists, jump to <a href="25320.html">62E8</a> to check viewport objects.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25028"></span>61C4</td>
+<td class="instruction">JP Z,<a href="25320.html">$62E8</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25031"></span>61C7</td>
+<td class="instruction">LD D,A</td>
+<td class="comment-1" rowspan="3">Check if entity_Y &lt;= bridge_Y; if not, check objects.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25032"></span>61C8</td>
+<td class="instruction">SUB B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25033"></span>61C9</td>
+<td class="instruction">JP M,<a href="25320.html">$62E8</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25036"></span>61CC</td>
+<td class="instruction">LD A,D</td>
+<td class="comment-1" rowspan="4">Check if entity_Y &gt;= bridge_Y - $16; if not, check objects.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25037"></span>61CD</td>
+<td class="instruction">SUB $16</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25039"></span>61CF</td>
+<td class="instruction">SUB B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25040"></span>61D0</td>
+<td class="instruction">JP P,<a href="25320.html">$62E8</a></td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="25043"></span>
+<div class="comments">
+<div class="paragraph">
+Bridge hit - award points and spawn explosions.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25043"></span>61D3</td>
+<td class="instruction">LD A,$50</td>
+<td class="comment-1" rowspan="2">Award POINTS_BRIDGE to player.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25045"></span>61D5</td>
+<td class="instruction">CALL <a href="37088.html">$90E0</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25048"></span>61D8</td>
+<td class="instruction">LD A,$0F</td>
+<td class="comment-1" rowspan="2">Increase activation rate (every 16 frames after bridge destruction).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25050"></span>61DA</td>
+<td class="instruction">LD ($5F5F),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25053"></span>61DD</td>
+<td class="instruction">POP DE</td>
+<td class="comment-1" rowspan="6">Clean up stack and store hit Y to <a href="24310.html">5EF6</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25054"></span>61DE</td>
+<td class="instruction">POP DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25055"></span>61DF</td>
+<td class="instruction">POP DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25056"></span>61E0</td>
+<td class="instruction">POP BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25057"></span>61E1</td>
+<td class="instruction">LD A,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25058"></span>61E2</td>
+<td class="instruction">LD ($5EF6),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25061"></span>61E5</td>
+<td class="instruction">LD A,($5F6E)</td>
+<td class="comment-1" rowspan="5">Set up bottom explosion row: Y = bridge_Y - 4, X = $70, D = 0.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25064"></span>61E8</td>
+<td class="instruction">SUB $04</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25066"></span>61EA</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25067"></span>61EB</td>
+<td class="instruction">LD C,$70</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25069"></span>61ED</td>
+<td class="instruction">LD D,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25071"></span>61EF</td>
+<td class="instruction">CALL <a href="28316.html">$6E9C</a></td>
+<td class="comment-1" rowspan="1">Spawn explosion 1 (bottom-left).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25074"></span>61F2</td>
+<td class="instruction">LD C,$80</td>
+<td class="comment-1" rowspan="2">Move to X = $80 and spawn explosion 2 (bottom-right).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25076"></span>61F4</td>
+<td class="instruction">CALL <a href="28316.html">$6E9C</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25079"></span>61F7</td>
+<td class="instruction">LD A,B</td>
+<td class="comment-1" rowspan="4">Move Y - 8 and spawn explosion 3 (middle-right).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25080"></span>61F8</td>
+<td class="instruction">SUB $08</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25082"></span>61FA</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25083"></span>61FB</td>
+<td class="instruction">CALL <a href="28316.html">$6E9C</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25086"></span>61FE</td>
+<td class="instruction">LD C,$70</td>
+<td class="comment-1" rowspan="2">Move to X = $70 and spawn explosion 4 (middle-left).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25088"></span>6200</td>
+<td class="instruction">CALL <a href="28316.html">$6E9C</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25091"></span>6203</td>
+<td class="instruction">LD A,B</td>
+<td class="comment-1" rowspan="4">Move Y - 8 and spawn explosion 5 (top-left).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25092"></span>6204</td>
+<td class="instruction">SUB $08</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25094"></span>6206</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25095"></span>6207</td>
+<td class="instruction">CALL <a href="28316.html">$6E9C</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25098"></span>620A</td>
+<td class="instruction">LD C,$80</td>
+<td class="comment-1" rowspan="2">Move to X = $80 and spawn explosion 6 (top-right).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25100"></span>620C</td>
+<td class="instruction">CALL <a href="28316.html">$6E9C</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25103"></span>620F</td>
+<td class="instruction">LD A,($5F6C)</td>
+<td class="comment-1" rowspan="3">If bridge section is $02, call <a href="27515.html#27556">6BA4</a> with screen <a href="16384.html">4000</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25106"></span>6212</td>
+<td class="instruction">CP $02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25108"></span>6214</td>
+<td class="instruction">LD HL,$4000</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25111"></span>6217</td>
+<td class="instruction">CALL Z,<a href="27515.html#27556">$6BA4</a></td>
+<td class="comment-1" rowspan="1">(continued from above).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25114"></span>621A</td>
+<td class="instruction">LD A,($5F6C)</td>
+<td class="comment-1" rowspan="3">If bridge section is $02, call <a href="27515.html#27556">6BA4</a> with screen $4100.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25117"></span>621D</td>
+<td class="instruction">CP $02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25119"></span>621F</td>
+<td class="instruction">LD HL,$4100</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25122"></span>6222</td>
+<td class="instruction">CALL Z,<a href="27515.html#27556">$6BA4</a></td>
+<td class="comment-1" rowspan="1">(continued from above).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25125"></span>6225</td>
+<td class="instruction">LD A,$00</td>
+<td class="comment-1" rowspan="2">Clear bridge Y position (<a href="24430.html">5F6E</a>).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25127"></span>6227</td>
+<td class="instruction">LD ($5F6E),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25130"></span>622A</td>
+<td class="instruction">LD A,$01</td>
+<td class="comment-1" rowspan="2">Set bridge destroyed flag (<a href="24429.html">5F6D</a>).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25132"></span>622C</td>
+<td class="instruction">LD ($5F6D),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25135"></span>622F</td>
+<td class="instruction">LD BC,($5F8D)</td>
+<td class="comment-1" rowspan="2">Restore entity coordinates from <a href="24461.html">5F8D</a> to <a href="24307.html">5EF3</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25139"></span>6233</td>
+<td class="instruction">LD ($5EF3),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25143"></span>6237</td>
+<td class="instruction">LD A,($923D)</td>
+<td class="comment-1" rowspan="2">Check if player 2; if so, jump to <a href="25161.html">6249</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25146"></span>623A</td>
+<td class="instruction">CP $02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25148"></span>623C</td>
+<td class="instruction">JP Z,<a href="25161.html">$6249</a></td>
+<td class="comment-1" rowspan="1">(continued from above).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25151"></span>623F</td>
+<td class="instruction">LD HL,$5F6A</td>
+<td class="comment-1" rowspan="3">Increment player 1 bridge counter at <a href="24426.html">5F6A</a> and print.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25154"></span>6242</td>
+<td class="instruction">INC (HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25155"></span>6243</td>
+<td class="instruction">CALL <a href="25788.html">$64BC</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25158"></span>6246</td>
+<td class="instruction">JP <a href="26516.html">$6794</a></td>
+<td class="comment-1" rowspan="1">Finalize collision.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="24926.html">615E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25019">Map</a></td>
+<td class="next">
+Next: <a href="25161.html">6249</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 703E</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28731.html">703B</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28734">Map</a></td>
+<td class="next">
+Next: <a href="28742.html">7046</a>
+</td>
+</tr>
+</table>
+<div class="description">703E: Load tank screen attributes</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Returns tank attributes: $00 normally, $04 if tank is on river bank (bit 5 of D set).
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Object definition byte (bit 5 = tank on bank flag).</td>
+</tr>
+</table>
+<table class="output">
+<tr class="asm-output-header">
+<th colspan="2">Output</th>
+</tr>
+<tr>
+<td class="register">E</td>
+<td class="register-desc">Attributes value $00 or $04.</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="28734"></span>703E</td>
+<td class="instruction">LD E,$00</td>
+<td class="comment-1" rowspan="5">Load E=$00. If D bit 5 set (tank on bank), load E=$04 instead.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28736"></span>7040</td>
+<td class="instruction">BIT 5,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28738"></span>7042</td>
+<td class="instruction">RET Z</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28739"></span>7043</td>
+<td class="instruction">LD E,$04</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28741"></span>7045</td>
+<td class="instruction">RET</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28731.html">703B</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28734">Map</a></td>
+<td class="next">
+Next: <a href="28742.html">7046</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

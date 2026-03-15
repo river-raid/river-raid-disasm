@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 7B57</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="31495.html">7B07</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#31575">Map</a></td>
+<td class="next">
+Next: <a href="31585.html">7B61</a>
+</td>
+</tr>
+</table>
+<div class="description">7B57: Switch to overview/demo mode on timeout.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Called when the control selection timer expires without user input.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="31575"></span>7B57</td>
+<td class="instruction">LD A,$01</td>
+<td class="comment-1" rowspan="2">Set overview mode flag to $01 (enabled).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31577"></span>7B59</td>
+<td class="instruction">LD ($7801),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31580"></span>7B5C</td>
+<td class="instruction">LD SP,($7810)</td>
+<td class="comment-1" rowspan="2">Restore stack pointer and return to caller.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="31584"></span>7B60</td>
+<td class="instruction">RET</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="31495.html">7B07</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#31575">Map</a></td>
+<td class="next">
+Next: <a href="31585.html">7B61</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

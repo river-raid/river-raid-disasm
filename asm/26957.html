@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 694D</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26951.html">6947</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26957">Map</a></td>
+<td class="next">
+Next: <a href="26979.html">6963</a>
+</td>
+</tr>
+</table>
+<div class="description">694D: Advance to next bridge/level</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Called when all 64 terrain fragments of the current bridge are completed. Resets Y-position and advances to the next bridge. Bridge index wraps from 49 back to 1, but the player's progress counter in <a href="24426.html">5F6A</a> continues incrementing for the wraparound calculation in <a href="26857.html">68E9</a>.
+</div>
+</div>
+<table class="output">
+<tr class="asm-output-header">
+<th colspan="2">Output</th>
+</tr>
+<tr>
+<td class="register">A</td>
+<td class="register-desc">Always set to 0</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26957"></span>694D</td>
+<td class="instruction">LD DE,$0000</td>
+<td class="comment-1" rowspan="2">Reset Y-position to start of new bridge.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26960"></span>6950</td>
+<td class="instruction">LD ($5F70),DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26964"></span>6954</td>
+<td class="instruction">LD A,($5EF0)</td>
+<td class="comment-1" rowspan="3">Increment bridge index at <a href="24304.html">5EF0</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26967"></span>6957</td>
+<td class="instruction">INC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26968"></span>6958</td>
+<td class="instruction">LD ($5EF0),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26971"></span>695B</td>
+<td class="instruction">CP $31</td>
+<td class="comment-1" rowspan="4">If index reaches $31 (49), wrap to 1.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26973"></span>695D</td>
+<td class="instruction">JP Z,<a href="26979.html">$6963</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="26976"></span>6960</td>
+<td class="instruction">LD A,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26978"></span>6962</td>
+<td class="instruction">RET</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26951.html">6947</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26957">Map</a></td>
+<td class="next">
+Next: <a href="26979.html">6963</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

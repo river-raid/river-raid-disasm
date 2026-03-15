@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 724C</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29256.html">7248</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29260">Map</a></td>
+<td class="next">
+Next: <a href="29273.html">7259</a>
+</td>
+</tr>
+</table>
+<div class="description">724C: Animate object (helicopter rotor)</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Routes helicopters to rotor animation. Non-helicopters return to main loop.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Object definition byte</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="29260"></span>724C</td>
+<td class="instruction">LD A,D</td>
+<td class="comment-1" rowspan="5">If helicopter (REG or ADV), animate rotor via <a href="29273.html">7259</a>. Otherwise return to main loop.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29261"></span>724D</td>
+<td class="instruction">AND $07</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29263"></span>724F</td>
+<td class="instruction">CP $01</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29265"></span>7251</td>
+<td class="instruction">JP Z,<a href="29273.html">$7259</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29268"></span>7254</td>
+<td class="instruction">CP $03</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29270"></span>7256</td>
+<td class="instruction">JP NZ,<a href="28814.html">$708E</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29256.html">7248</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29260">Map</a></td>
+<td class="next">
+Next: <a href="29273.html">7259</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

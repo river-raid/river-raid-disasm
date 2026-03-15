@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 8A4E</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="35379.html">8A33</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#35406">Map</a></td>
+<td class="next">
+Next: <a href="35462.html">8A86</a>
+</td>
+</tr>
+</table>
+<div class="description">8A4E: Calculate screen address from pixel coordinates.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Converts X,Y pixel coordinates to a ZX Spectrum screen memory address.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">B</td>
+<td class="register-desc">Vertical coordinate of the object in pixels.</td>
+</tr>
+<tr>
+<td class="register">C</td>
+<td class="register-desc">Horizontal coordinate of the object in pixels.</td>
+</tr>
+</table>
+<table class="output">
+<tr class="asm-output-header">
+<th colspan="2">Output</th>
+</tr>
+<tr>
+<td class="register">B</td>
+<td class="register-desc">Horizontal coordinate of the object in pixels relative to its tile.</td>
+</tr>
+<tr>
+<td class="register">HL</td>
+<td class="register-desc">Screen address corresponding to the coordinates.</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35406"></span>8A4E</td>
+<td class="instruction">LD DE,$0800</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="35409"></span>8A51</td>
+<td class="instruction">LD HL,$3800</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="35412"></span>8A54</td>
+<td class="instruction">LD A,B</td>
+<td class="comment-1" rowspan="5">Load the number of the third of the screen corresponding to the vertical coordinate of the object into <span class="register">A</span>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35413"></span>8A55</td>
+<td class="instruction">RLCA</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35414"></span>8A56</td>
+<td class="instruction">RLCA</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35415"></span>8A57</td>
+<td class="instruction">AND $03</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35417"></span>8A59</td>
+<td class="instruction">INC A</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35418"></span>8A5A</td>
+<td class="instruction">ADD HL,DE</td>
+<td class="comment-1" rowspan="3">Load the starting address of the third of the screen into <span class="register">HL</span>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35419"></span>8A5B</td>
+<td class="instruction">DEC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35420"></span>8A5C</td>
+<td class="instruction">JP NZ,$8A5A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35423"></span>8A5F</td>
+<td class="instruction">LD A,B</td>
+<td class="comment-1" rowspan="3">Leave only the 6 lowest bits in <span class="register">B</span> which define the coordinate of the object relative to its third of the screen.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35424"></span>8A60</td>
+<td class="instruction">AND $3F</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35426"></span>8A62</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35427"></span>8A63</td>
+<td class="instruction">AND $38</td>
+<td class="comment-1" rowspan="1">Unset the 3 lowest bits, so now <span class="register">A</span> contains the coordinate of starting tile relative to its third of the screen.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35429"></span>8A65</td>
+<td class="instruction">PUSH HL</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="35430"></span>8A66</td>
+<td class="instruction">LD H,$00</td>
+<td class="comment-1" rowspan="5">Multiply the value of <span class="register">A</span> by 4 and put into <span class="register">DE</span> which makes the offset of the starting tile address from its third of the screen.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35432"></span>8A68</td>
+<td class="instruction">LD L,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35433"></span>8A69</td>
+<td class="instruction">ADD HL,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35434"></span>8A6A</td>
+<td class="instruction">ADD HL,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35435"></span>8A6B</td>
+<td class="instruction">EX DE,HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35436"></span>8A6C</td>
+<td class="instruction">POP HL</td>
+<td class="comment-1" rowspan="2">Now <span class="register">HL</span> contains the screen address of the tile.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35437"></span>8A6D</td>
+<td class="instruction">ADD HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35438"></span>8A6E</td>
+<td class="instruction">LD A,B</td>
+<td class="comment-1" rowspan="3">Leave only the 3 lowest bits in <span class="register">B</span> which define the coordinate of the object relative to it tile.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35439"></span>8A6F</td>
+<td class="instruction">AND $07</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35441"></span>8A71</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35442"></span>8A72</td>
+<td class="instruction">INC B</td>
+<td class="comment-1" rowspan="2">Prepare for row loop.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35443"></span>8A73</td>
+<td class="instruction">DEC H</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35444"></span>8A74</td>
+<td class="instruction">INC H</td>
+<td class="comment-1" rowspan="3">Increment H (row within tile) B times.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35445"></span>8A75</td>
+<td class="instruction">DJNZ $8A74</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35447"></span>8A77</td>
+<td class="instruction">LD A,C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35448"></span>8A78</td>
+<td class="instruction">SRL A</td>
+<td class="comment-1" rowspan="10">Add column offset and extract bit position.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35450"></span>8A7A</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35452"></span>8A7C</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35454"></span>8A7E</td>
+<td class="instruction">LD D,C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35455"></span>8A7F</td>
+<td class="instruction">LD C,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35456"></span>8A80</td>
+<td class="instruction">ADD HL,BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35457"></span>8A81</td>
+<td class="instruction">LD A,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35458"></span>8A82</td>
+<td class="instruction">AND $07</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35460"></span>8A84</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35461"></span>8A85</td>
+<td class="instruction">RET</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="35379.html">8A33</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#35406">Map</a></td>
+<td class="next">
+Next: <a href="35462.html">8A86</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

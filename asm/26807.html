@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 68B7</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26785.html">68A1</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26807">Map</a></td>
+<td class="next">
+Next: <a href="26821.html">68C5</a>
+</td>
+</tr>
+</table>
+<div class="description">68B7: Scroll screen attributes up by one row</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+This routine is called every 8 terrain fragments to scroll the screen attributes. It copies attribute data from one row to the next, effectively scrolling the attributes upward. It also handles special bridge attribute rendering.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26807"></span>68B7</td>
+<td class="instruction">LD HL,$5A1F</td>
+<td class="comment-1" rowspan="4">Copy 524 attribute bytes backward, scrolling all rows up by one.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26810"></span>68BA</td>
+<td class="instruction">LD DE,$5A3F</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26813"></span>68BD</td>
+<td class="instruction">LD BC,$020C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26816"></span>68C0</td>
+<td class="instruction">LDDR</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26818"></span>68C2</td>
+<td class="instruction">LD HL,$5BDF</td>
+<td class="comment-1" rowspan="1">Point HL at the bottom attribute row.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26785.html">68A1</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26807">Map</a></td>
+<td class="next">
+Next: <a href="26821.html">68C5</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

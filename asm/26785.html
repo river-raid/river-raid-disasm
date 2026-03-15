@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 68A1</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26683.html">683B</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26785">Map</a></td>
+<td class="next">
+Next: <a href="26807.html">68B7</a>
+</td>
+</tr>
+</table>
+<div class="description">68A1: Clear top screen rows after scrolling</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Clears the top rows of the screen based on scroll speed. After screen content scrolls upward, the topmost rows contain old data that needs to be zeroed.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26785"></span>68A1</td>
+<td class="instruction">LD HL,$4000</td>
+<td class="comment-1" rowspan="3">Initialize screen pointer, row offset, and row count from speed.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26788"></span>68A4</td>
+<td class="instruction">LD DE,$00E0</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26791"></span>68A7</td>
+<td class="instruction">LD A,($5F64)</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26794"></span>68AA</td>
+<td class="instruction">LD B,$20</td>
+<td class="comment-1" rowspan="1">Set bytes per row (32).</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26796"></span>68AC</td>
+<td class="instruction">LD (HL),$00</td>
+<td class="comment-1" rowspan="3">Clear byte, advance pointer, loop 32 times.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26798"></span>68AE</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26799"></span>68AF</td>
+<td class="instruction">DJNZ $68AC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26801"></span>68B1</td>
+<td class="instruction">ADD HL,DE</td>
+<td class="comment-1" rowspan="3">Advance to next row and loop until all rows cleared.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26802"></span>68B2</td>
+<td class="instruction">DEC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26803"></span>68B3</td>
+<td class="instruction">JP NZ,$68AA</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26806"></span>68B6</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26683.html">683B</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26785">Map</a></td>
+<td class="next">
+Next: <a href="26807.html">68B7</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

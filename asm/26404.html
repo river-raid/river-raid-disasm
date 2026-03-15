@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6724</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26391.html">6717</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26404">Map</a></td>
+<td class="next">
+Next: <a href="26428.html">673C</a>
+</td>
+</tr>
+</table>
+<div class="description">6724: Handle fire button input</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routines at <a href="24538.html">5FDA</a>, <a href="24586.html">600A</a>, <a href="24633.html">6039</a> and <a href="24680.html">6068</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="26404"></span>
+<div class="comments">
+<div class="paragraph">
+Creates a new missile if none is currently active. Positions missile at plane X + 4, Y = $7E (just above plane). Sets CONTROLS_BIT_FIRE_SOUND to trigger the fire sound effect.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26404"></span>6724</td>
+<td class="instruction">LD A,($5EF3)</td>
+<td class="comment-1" rowspan="3">Return if missile already active (Y != 0).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26407"></span>6727</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26409"></span>6729</td>
+<td class="instruction">RET NZ</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26410"></span>672A</td>
+<td class="instruction">LD A,($5F72)</td>
+<td class="comment-1" rowspan="5">Create missile at (plane_X + 4, $7E).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26413"></span>672D</td>
+<td class="instruction">ADD A,$04</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26415"></span>672F</td>
+<td class="instruction">LD B,$7E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26417"></span>6731</td>
+<td class="instruction">LD C,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26418"></span>6732</td>
+<td class="instruction">LD ($5EF3),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26422"></span>6736</td>
+<td class="instruction">LD HL,$6BB0</td>
+<td class="comment-1" rowspan="2">Set CONTROLS_BIT_FIRE_SOUND in <a href="27568.html">6BB0</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26425"></span>6739</td>
+<td class="instruction">SET 0,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26427"></span>673B</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26391.html">6717</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26404">Map</a></td>
+<td class="next">
+Next: <a href="26428.html">673C</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

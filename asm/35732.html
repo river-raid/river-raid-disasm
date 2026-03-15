@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 8B94</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="35696.html">8B70</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#35732">Map</a></td>
+<td class="next">
+Next: <a href="35747.html">8BA3</a>
+</td>
+</tr>
+</table>
+<div class="description">8B94: Adjust screen address for third-of-screen crossing.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Subtracts $00E0 to correct screen address when crossing a screen-third boundary.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35732"></span>8B94</td>
+<td class="instruction">LD HL,($8B12)</td>
+<td class="comment-1" rowspan="5">HL -= $E0 (adjust for character row boundary).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35735"></span>8B97</td>
+<td class="instruction">LD DE,$00E0</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35738"></span>8B9A</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35739"></span>8B9B</td>
+<td class="instruction">SBC HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35741"></span>8B9D</td>
+<td class="instruction">LD ($8B12),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35744"></span>8BA0</td>
+<td class="instruction">JP <a href="35747.html">$8BA3</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="35696.html">8B70</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#35732">Map</a></td>
+<td class="next">
+Next: <a href="35747.html">8BA3</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

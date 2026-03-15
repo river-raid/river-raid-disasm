@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 64BC</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25780.html">64B4</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25788">Map</a></td>
+<td class="next">
+Next: <a href="25829.html">64E5</a>
+</td>
+</tr>
+</table>
+<div class="description">64BC: Print current bridge number on status line</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routines at <a href="23974.html">5DA6</a>, <a href="25019.html">61BB</a>, <a href="25161.html">6249</a>, <a href="25991.html">6587</a> and <a href="27927.html">6D17</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="25788"></span>
+<div class="comments">
+<div class="paragraph">
+Displays the current bridge number for the active player on the status line. Sets the appropriate ink color (yellow for Player 1, cyan for Player 2) and prints the bridge counter with leading space padding for single-digit numbers.
+</div>
+<div class="paragraph">
+Uses ROM routine at $203C to print status line text and $1A1B (OUT_NUM_1) to print the numeric value.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="25788"></span>64BC</td>
+<td class="instruction">LD A,($923D)</td>
+<td class="comment-1" rowspan="2">If Player 2, jump to <a href="25829.html">64E5</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25791"></span>64BF</td>
+<td class="instruction">CP $02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25793"></span>64C1</td>
+<td class="instruction">JP Z,<a href="25829.html">$64E5</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25796"></span>64C4</td>
+<td class="instruction">LD A,$10</td>
+<td class="comment-1" rowspan="4">INK PLAYER_1</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25798"></span>64C6</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25799"></span>64C7</td>
+<td class="instruction">LD A,$06</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25801"></span>64C9</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25802"></span>64CA</td>
+<td class="instruction">LD DE,$804F</td>
+<td class="comment-1" rowspan="3">Print <a href="32847.html">804F</a> (11 bytes) to position cursor.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25805"></span>64CD</td>
+<td class="instruction">LD BC,$000B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25808"></span>64D0</td>
+<td class="instruction">CALL $203C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25811"></span>64D3</td>
+<td class="instruction">LD A,($5F6A)</td>
+<td class="comment-1" rowspan="2">If bridge count &lt; 10, print leading space.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25814"></span>64D6</td>
+<td class="instruction">SUB $0A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25816"></span>64D8</td>
+<td class="instruction">CALL M,<a href="25862.html">$6506</a></td>
+<td class="comment-1" rowspan="1">(continued).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25819"></span>64DB</td>
+<td class="instruction">LD A,($5F6A)</td>
+<td class="comment-1" rowspan="4">Print bridge count from <a href="24426.html">5F6A</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25822"></span>64DE</td>
+<td class="instruction">LD B,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25824"></span>64E0</td>
+<td class="instruction">LD C,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25825"></span>64E1</td>
+<td class="instruction">CALL $1A1B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25828"></span>64E4</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25780.html">64B4</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25788">Map</a></td>
+<td class="next">
+Next: <a href="25829.html">64E5</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

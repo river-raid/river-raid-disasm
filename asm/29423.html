@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 72EF</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29414.html">72E6</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29423">Map</a></td>
+<td class="next">
+Next: <a href="29432.html">72F8</a>
+</td>
+</tr>
+</table>
+<div class="description">72EF: Set OR/OR blending mode</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Patches sprite renderer to use OR for both mask and sprite operations. Restores default blending after XOR rendering.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="29423"></span>72EF</td>
+<td class="instruction">LD A,$B0</td>
+<td class="comment-1" rowspan="1">Load OPCODE_OR_B.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29425"></span>72F1</td>
+<td class="instruction">LD ($8C1B),A</td>
+<td class="comment-1" rowspan="1">Patch OR B into <a href="35867.html">8C1B</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29428"></span>72F4</td>
+<td class="instruction">LD ($8C3C),A</td>
+<td class="comment-1" rowspan="1">Patch OR B into <a href="35900.html">8C3C</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29431"></span>72F7</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29414.html">72E6</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29423">Map</a></td>
+<td class="next">
+Next: <a href="29432.html">72F8</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

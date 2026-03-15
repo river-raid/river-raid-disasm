@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 5D44</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="23875.html">5D43</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#23876">Map</a></td>
+<td class="next">
+Next: <a href="23967.html">5D9F</a>
+</td>
+</tr>
+</table>
+<div class="description">5D44: Initialize game state for overview/demo mode.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routines at <a href="23824.html">5D10</a>, <a href="23851.html">5D2B</a> and <a href="23861.html">5D35</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="23876"></span>
+<div class="comments">
+<div class="paragraph">
+This routine sets up the initial game state used by the overview (attract mode) routine. It initializes player positions, scores, lives, terrain state, and sets the gameplay mode to GAMEPLAY_MODE_OVERVIEW.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="23876"></span>5D44</td>
+<td class="instruction">LD A,$78</td>
+<td class="comment-1" rowspan="2">Initialize plane X position to $78. Why isn't it $80?</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23878"></span>5D46</td>
+<td class="instruction">LD ($5F72),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23881"></span>5D49</td>
+<td class="instruction">CALL <a href="28139.html">$6DEB</a></td>
+<td class="comment-1" rowspan="1">Set starting bridges for both players based on game mode.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23884"></span>5D4C</td>
+<td class="instruction">LD HL,$5F00</td>
+<td class="comment-1" rowspan="3">Initialize viewport objects list (set pointer, mark as empty).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23887"></span>5D4F</td>
+<td class="instruction">LD ($5F60),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23890"></span>5D52</td>
+<td class="instruction">LD (HL),$FF</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23892"></span>5D54</td>
+<td class="instruction">LD A,$1F</td>
+<td class="comment-1" rowspan="2">Set normal activation timing (every 32 frames).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23894"></span>5D56</td>
+<td class="instruction">LD ($5F5F),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23897"></span>5D59</td>
+<td class="instruction">LD A,$00</td>
+<td class="comment-1" rowspan="4">Set border to black, silence speaker, clear tank shell and controls state.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23899"></span>5D5B</td>
+<td class="instruction">OUT ($FE),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23901"></span>5D5D</td>
+<td class="instruction">LD ($5EF2),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23904"></span>5D60</td>
+<td class="instruction">LD ($6BB0),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23907"></span>5D63</td>
+<td class="instruction">LD BC,$4C83</td>
+<td class="comment-1" rowspan="2">Initialize terrain element (C=$83: river center position, B=$4C: row offset).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23910"></span>5D66</td>
+<td class="instruction">LD ($5F78),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23914"></span>5D6A</td>
+<td class="instruction">LD A,$02</td>
+<td class="comment-1" rowspan="4">Initialize terrain profile, gameplay mode, and speed to $02 (GAMEPLAY_MODE_OVERVIEW / SPEED_NORMAL).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23916"></span>5D6C</td>
+<td class="instruction">LD ($5F77),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23919"></span>5D6F</td>
+<td class="instruction">LD ($5F68),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23922"></span>5D72</td>
+<td class="instruction">LD ($5F64),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23925"></span>5D75</td>
+<td class="instruction">LD ($5F6D),A</td>
+<td class="comment-1" rowspan="1">Store $02 to <a href="24429.html">5F6D</a> (unclear why $02 is used here).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23928"></span>5D78</td>
+<td class="instruction">LD HL,"0"</td>
+<td class="comment-1" rowspan="7">Initialize all player scores to zero.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23931"></span>5D7B</td>
+<td class="instruction">LD ($90BC),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23934"></span>5D7E</td>
+<td class="instruction">LD ($90BE),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23937"></span>5D81</td>
+<td class="instruction">LD ($90C0),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23940"></span>5D84</td>
+<td class="instruction">LD ($90C2),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23943"></span>5D87</td>
+<td class="instruction">LD ($90C4),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23946"></span>5D8A</td>
+<td class="instruction">LD ($90C6),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23949"></span>5D8D</td>
+<td class="instruction">LD A,$01</td>
+<td class="comment-1" rowspan="3">Set level fragment number and terrain position to 1.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23951"></span>5D8F</td>
+<td class="instruction">LD ($5F76),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23954"></span>5D92</td>
+<td class="instruction">LD ($5F7D),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23957"></span>5D95</td>
+<td class="instruction">LD HL,$0404</td>
+<td class="comment-1" rowspan="2">Set both players' lives to 4.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23960"></span>5D98</td>
+<td class="instruction">LD ($923B),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23963"></span>5D9B</td>
+<td class="instruction">LD ($923D),A</td>
+<td class="comment-1" rowspan="1">Set current player to PLAYER_1.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="23966"></span>5D9E</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="23875.html">5D43</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#23876">Map</a></td>
+<td class="next">
+Next: <a href="23967.html">5D9F</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

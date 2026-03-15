@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 74C6</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29856.html">74A0</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29894">Map</a></td>
+<td class="next">
+Next: <a href="29924.html">74E4</a>
+</td>
+</tr>
+</table>
+<div class="description">74C6: Trigger tank shell explosion</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Converts the flying tank shell into an explosion. Clears flying bit, sets exploding bit, and adds explosion to viewport objects.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="29894"></span>74C6</td>
+<td class="instruction">LD D,$80</td>
+<td class="comment-1" rowspan="2">Set D=$80 (explosion marker), clear shell coordinates.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29896"></span>74C8</td>
+<td class="instruction">LD HL,$0000</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29899"></span>74CB</td>
+<td class="instruction">LD ($7385),HL</td>
+<td class="comment-1" rowspan="1">Store $0000 to <a href="29573.html">7385</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29902"></span>74CE</td>
+<td class="instruction">LD A,($7383)</td>
+<td class="comment-1" rowspan="3">Load shell state, clear FLYING bit, set EXPLODING bit.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29905"></span>74D1</td>
+<td class="instruction">RES 7,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29907"></span>74D3</td>
+<td class="instruction">SET 5,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29909"></span>74D5</td>
+<td class="instruction">LD ($7383),A</td>
+<td class="comment-1" rowspan="3">Store updated state, add explosion to <a href="24320.html">5F00</a> objects set.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29912"></span>74D8</td>
+<td class="instruction">LD HL,$5F00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29915"></span>74DB</td>
+<td class="instruction">CALL <a href="28331.html">$6EAB</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29918"></span>74DE</td>
+<td class="instruction">LD A,$00</td>
+<td class="comment-1" rowspan="2">Reset trajectory step to 0.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29920"></span>74E0</td>
+<td class="instruction">LD ($7384),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29923"></span>74E3</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29856.html">74A0</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29894">Map</a></td>
+<td class="next">
+Next: <a href="29924.html">74E4</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

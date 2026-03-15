@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 7158</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29013.html">7155</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29016">Map</a></td>
+<td class="next">
+Next: <a href="29035.html">716B</a>
+</td>
+</tr>
+</table>
+<div class="description">7158: Fighter operation routine</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Operates fighter jets that fly horizontally across the screen. Fighters move 4 pixels per frame and wrap around when reaching screen edges. Uses XOR blending mode for rendering.
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Moves 4 pixels per frame (faster than ships/helicopters)</li>
+<li>Left-facing: decrements X, wraps at $00 to $E8</li>
+<li>Right-facing: increments X, wraps at $E8 to $04</li>
+<li>Sets COLLISION_MODE_FIGHTER for collision detection</li>
+</ul>
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">B</td>
+<td class="register-desc">Y position</td>
+</tr>
+<tr>
+<td class="register">C</td>
+<td class="register-desc">X position</td>
+</tr>
+<tr>
+<td class="register">D</td>
+<td class="register-desc">Object definition byte</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="29016"></span>7158</td>
+<td class="instruction">LD ($8B0A),BC</td>
+<td class="comment-1" rowspan="1">Store current position to <a href="35594.html">8B0A</a> for rendering.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29020"></span>715C</td>
+<td class="instruction">BIT 6,D</td>
+<td class="comment-1" rowspan="2">Check orientation: if bit 6 clear (right-facing), jump to <a href="29074.html">7192</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29022"></span>715E</td>
+<td class="instruction">JP Z,<a href="29074.html">$7192</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29025"></span>7161</td>
+<td class="instruction">DEC C</td>
+<td class="comment-1" rowspan="6">Move left 4 pixels (DEC C × 4). If C == 0, reset via <a href="29013.html">7155</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29026"></span>7162</td>
+<td class="instruction">DEC C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29027"></span>7163</td>
+<td class="instruction">DEC C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29028"></span>7164</td>
+<td class="instruction">DEC C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29029"></span>7165</td>
+<td class="instruction">LD A,C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29030"></span>7166</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29032"></span>7168</td>
+<td class="instruction">CALL Z,<a href="29013.html">$7155</a></td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29013.html">7155</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29016">Map</a></td>
+<td class="next">
+Next: <a href="29035.html">716B</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

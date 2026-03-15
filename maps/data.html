@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Data</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="DataMap">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Data</td>
+</tr>
+</table>
+<div class="map-intro"></div>
+<table class="map">
+<tr>
+<th class="map-page">Page</th>
+<th class="map-byte">Byte</th>
+<th>Address</th>
+<th>Description</th>
+</tr>
+<tr>
+<td class="map-page">64</td>
+<td class="map-byte">0</td>
+<td class="map-b"><span id="16384"></span><a href="../asm/16384.html">4000</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/16384.html">Screen pixels.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">88</td>
+<td class="map-byte">0</td>
+<td class="map-b"><span id="22528"></span><a href="../asm/22528.html">5800</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/22528.html">Screen attributes.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">88</td>
+<td class="map-byte">32</td>
+<td class="map-b"><span id="22560"></span><a href="../asm/22560.html">5820</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/22560.html">Screen attributes row 1.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">90</td>
+<td class="map-byte">32</td>
+<td class="map-b"><span id="23072"></span><a href="../asm/23072.html">5A20</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/23072.html">Screen attributes row 16 (boundary for visible sprite area).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">90</td>
+<td class="map-byte">64</td>
+<td class="map-b"><span id="23104"></span><a href="../asm/23104.html">5A40</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/23104.html">Screen attributes row 17 (start of lower screen area).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">91</td>
+<td class="map-byte">0</td>
+<td class="map-b"><span id="23296"></span><a href="../asm/23296.html">5B00</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/23296.html">Screen row address lookup table (64 entries × 2 bytes = 128 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">93</td>
+<td class="map-byte">63</td>
+<td class="map-b"><span id="23871"></span><a href="../asm/23871.html">5D3F</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/23871.html">Array of possible starting bridge values.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">95</td>
+<td class="map-byte">119</td>
+<td class="map-b"><span id="24439"></span><a href="../asm/24439.html">5F77</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24439.html">Current terrain profile number (0-7). Index into terrain sprite table at <a href="../asm/32867.html">8063</a>. Loaded from first byte of level element at <a href="../asm/38144.html">9500</a>.</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">105</td>
+<td class="map-byte">59</td>
+<td class="map-b"><span id="26939"></span><a href="../asm/26939.html">693B</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26939.html">Terrain edge rendering counter</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">120</td>
+<td class="map-byte">0</td>
+<td class="map-b"><span id="30720"></span><a href="../asm/30720.html">7800</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30720.html">Control type chosen from the dialog before the validation</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">120</td>
+<td class="map-byte">1</td>
+<td class="map-b"><span id="30721"></span><a href="../asm/30721.html">7801</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30721.html">Overview mode flag ($00 - No, $01 - Yes)</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">120</td>
+<td class="map-byte">2</td>
+<td class="map-w"><span id="30722"></span><a href="../asm/30722.html">7802</a></td>
+<td class="map-w-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30722.html">Stores the number of remaining iterations before the control choice dialog switches to overview mode</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">120</td>
+<td class="map-byte">16</td>
+<td class="map-w"><span id="30736"></span><a href="../asm/30736.html">7810</a></td>
+<td class="map-w-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30736.html">Temporary stack pointer used by the control choice dialog</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">128</td>
+<td class="map-byte">99</td>
+<td class="map-b"><span id="32867"></span><a href="../asm/32867.html">8063</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/32867.html">River bank shape profiles (15 profiles × 16 bytes = 240 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">130</td>
+<td class="map-byte">93</td>
+<td class="map-b"><span id="33373"></span><a href="../asm/33373.html">825D</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/33373.html">User-defined graphics data (13 characters).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">130</td>
+<td class="map-byte">197</td>
+<td class="map-b"><span id="33477"></span><a href="../asm/33477.html">82C5</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/33477.html">Solid fill pattern (48 bytes of $FF).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">130</td>
+<td class="map-byte">245</td>
+<td class="map-b"><span id="33525"></span><a href="../asm/33525.html">82F5</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/33525.html">Sprite erasure pattern (60 bytes of $00).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">131</td>
+<td class="map-byte">49</td>
+<td class="map-b"><span id="33585"></span><a href="../asm/33585.html">8331</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/33585.html">Terrain pixels for pre/post bridge sections (2×16 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">131</td>
+<td class="map-byte">81</td>
+<td class="map-b"><span id="33617"></span><a href="../asm/33617.html">8351</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/33617.html">Road and bridge pixel patterns (2×16 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">131</td>
+<td class="map-byte">113</td>
+<td class="map-b"><span id="33649"></span><a href="../asm/33649.html">8371</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/33649.html">Road and bridge color attributes (2×16 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">131</td>
+<td class="map-byte">177</td>
+<td class="map-b"><span id="33713"></span><a href="../asm/33713.html">83B1</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/33713.html">Player plane sprite (4 frames × 16 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">131</td>
+<td class="map-byte">241</td>
+<td class="map-b"><span id="33777"></span><a href="../asm/33777.html">83F1</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/33777.html">Player plane banked sprite (4 frames × 16 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">132</td>
+<td class="map-byte">49</td>
+<td class="map-b"><span id="33841"></span><a href="../asm/33841.html">8431</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/33841.html">Player missile sprite (4 frames × 8 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">132</td>
+<td class="map-byte">81</td>
+<td class="map-b"><span id="33873"></span><a href="../asm/33873.html">8451</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/33873.html">Missile trail sprite (4 frames × 8 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">132</td>
+<td class="map-byte">113</td>
+<td class="map-b"><span id="33905"></span><a href="../asm/33905.html">8471</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/33905.html">Explosion sprite frame 1 (2×1 tiles).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">132</td>
+<td class="map-byte">129</td>
+<td class="map-b"><span id="33921"></span><a href="../asm/33921.html">8481</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/33921.html">Explosion sprite frame 2 (2×1 tiles).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">132</td>
+<td class="map-byte">145</td>
+<td class="map-b"><span id="33937"></span><a href="../asm/33937.html">8491</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/33937.html">Explosion sprite frame 3 (2×1 tiles).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">132</td>
+<td class="map-byte">161</td>
+<td class="map-b"><span id="33953"></span><a href="../asm/33953.html">84A1</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/33953.html">Array [4] of rock sprites (3×2 tiles, 48 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">133</td>
+<td class="map-byte">179</td>
+<td class="map-b"><span id="34227"></span><a href="../asm/34227.html">85B3</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/34227.html">Array [5] arrays of enemy headed left sprites (each element is 3×1 tiles × 4 frames = 96 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">135</td>
+<td class="map-byte">147</td>
+<td class="map-b"><span id="34707"></span><a href="../asm/34707.html">8793</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/34707.html">Array [5] arrays of enemy headed right sprites (each element is 3×1 tiles × 4 frames = 96 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">137</td>
+<td class="map-byte">114</td>
+<td class="map-b"><span id="35186"></span><a href="../asm/35186.html">8972</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35186.html">Array [4] of balloon sprites (2×2 tiles, 32 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">137</td>
+<td class="map-byte">242</td>
+<td class="map-b"><span id="35314"></span><a href="../asm/35314.html">89F2</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35314.html">Left terrain edge masks (4 widths: 10, 12, 14, 16 pixels).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">137</td>
+<td class="map-byte">250</td>
+<td class="map-b"><span id="35322"></span><a href="../asm/35322.html">89FA</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35322.html">Right terrain edge masks (4 widths: 16, 14, 12, 10 pixels).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">138</td>
+<td class="map-byte">134</td>
+<td class="map-b"><span id="35462"></span><a href="../asm/35462.html">8A86</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35462.html">Fuel sprite</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">138</td>
+<td class="map-byte">184</td>
+<td class="map-b"><span id="35512"></span><a href="../asm/35512.html">8AB8</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35512.html">Helicopter rotor sprite (left-facing, 4 frames × 4 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">138</td>
+<td class="map-byte">200</td>
+<td class="map-b"><span id="35528"></span><a href="../asm/35528.html">8AC8</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35528.html">Helicopter rotor sprite (right-facing, 4 frames × 4 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">143</td>
+<td class="map-byte">252</td>
+<td class="map-b"><span id="36860"></span><a href="../asm/36860.html">8FFC</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/36860.html">Tank shell explosion sprite (6 frames × 32 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">146</td>
+<td class="map-byte">58</td>
+<td class="map-b"><span id="37434"></span><a href="../asm/37434.html">923A</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37434.html">Game mode configuration byte</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">146</td>
+<td class="map-byte">61</td>
+<td class="map-b"><span id="37437"></span><a href="../asm/37437.html">923D</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37437.html">Current active player ($01=PLAYER_1, $02=PLAYER_2).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">149</td>
+<td class="map-byte">0</td>
+<td class="map-b"><span id="38144"></span><a href="../asm/38144.html">9500</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/38144.html">Level terrain data (48 levels × 256 bytes = 12,288 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">198</td>
+<td class="map-byte">0</td>
+<td class="map-b"><span id="50688"></span><a href="../asm/50688.html">C600</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/50688.html">Island shape definitions (35 islands × 3 bytes = 105 bytes).</a></div>
+</td>
+</tr>
+<tr>
+<td class="map-page">200</td>
+<td class="map-byte">0</td>
+<td class="map-b"><span id="51200"></span><a href="../asm/51200.html">C800</a></td>
+<td class="map-b-desc">
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/51200.html">Level object spawn data (48 levels × 256 bytes = 12,288 bytes total).</a></div>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

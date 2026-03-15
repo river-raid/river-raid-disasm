@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 8A02</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="35322.html">89FA</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#35330">Map</a></td>
+<td class="next">
+Next: <a href="35355.html">8A1B</a>
+</td>
+</tr>
+</table>
+<div class="description">8A02: Generate firing sound effect.</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Produces the "pew" sound when the player fires a missile by toggling the speaker port rapidly.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35330"></span>8A02</td>
+<td class="instruction">LD C,$08</td>
+<td class="comment-1" rowspan="1">Loop 8 pulses for sound duration.</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35332"></span>8A04</td>
+<td class="instruction">LD A,$10</td>
+<td class="comment-1" rowspan="5">Speaker ON, delay 32 iterations (~150us half-period, ~3.3kHz).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35334"></span>8A06</td>
+<td class="instruction">OUT ($FE),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35336"></span>8A08</td>
+<td class="instruction">LD D,$20</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35338"></span>8A0A</td>
+<td class="instruction">DEC D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35339"></span>8A0B</td>
+<td class="instruction">JR NZ,$8A0A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35341"></span>8A0D</td>
+<td class="instruction">LD A,$00</td>
+<td class="comment-1" rowspan="8">Speaker OFF, same delay. $FD prefix byte adds 4 T-states before DEC C (IY prefix on non-HL instruction = extra delay cycle).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35343"></span>8A0F</td>
+<td class="instruction">OUT ($FE),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35345"></span>8A11</td>
+<td class="instruction">LD D,$20</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35347"></span>8A13</td>
+<td class="instruction">LD D,$20</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35349"></span>8A15</td>
+<td class="instruction">DEFB $FD</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35350"></span>8A16</td>
+<td class="instruction">DEC C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35351"></span>8A17</td>
+<td class="instruction">JP NZ,$8A04</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35354"></span>8A1A</td>
+<td class="instruction">RET</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="35322.html">89FA</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#35330">Map</a></td>
+<td class="next">
+Next: <a href="35355.html">8A1B</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

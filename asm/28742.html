@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 7046</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28734.html">703E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28742">Map</a></td>
+<td class="next">
+Next: <a href="28753.html">7051</a>
+</td>
+</tr>
+</table>
+<div class="description">7046: Set XOR blending mode for sprite rendering</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Modifies sprite rendering code via self-modifying instructions. Patches <a href="35900.html">8C3C</a> with XOR B and <a href="35867.html">8C1B</a> with NOP to enable XOR blending mode for fighters/tanks.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="28742"></span>7046</td>
+<td class="instruction">LD A,$A8</td>
+<td class="comment-1" rowspan="5">Patch OPCODE_XOR_B into <a href="35900.html">8C3C</a> and OPCODE_NOP into <a href="35867.html">8C1B</a> for XOR rendering.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28744"></span>7048</td>
+<td class="instruction">LD ($8C3C),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28747"></span>704B</td>
+<td class="instruction">LD A,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28749"></span>704D</td>
+<td class="instruction">LD ($8C1B),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28752"></span>7050</td>
+<td class="instruction">RET</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28734.html">703E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28742">Map</a></td>
+<td class="next">
+Next: <a href="28753.html">7051</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

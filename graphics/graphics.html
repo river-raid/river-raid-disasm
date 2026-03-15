@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Sprite graphics</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Graphics">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Sprite graphics</td>
+</tr>
+</table>
+<ul class="contents">
+<li><a href="#plane">Player plane</a></li>
+<li><a href="#helicopter">Helicopter</a></li>
+<li><a href="#rotor">Helicopter rotor</a></li>
+<li><a href="#ship">Ship</a></li>
+<li><a href="#tank">Tank</a></li>
+<li><a href="#fighter">Fighter</a></li>
+<li><a href="#balloon">Balloon</a></li>
+<li><a href="#fuelDepot">Fuel depot</a></li>
+<li><a href="#rock">Rock</a></li>
+<li><a href="#explosion">Explosion</a></li>
+<li><a href="#missile">Missile and shell</a></li>
+<li><a href="#tankShellExplosion">Tank shell explosion</a></li>
+<li><a href="#unusedExplosion">Unused explosion (prototype)</a></li>
+</ul>
+<div><span id="plane"></span></div>
+<div class="box box-1">
+<div class="box-title">Player plane</div>
+<div class="paragraph">
+The player's plane is a 2x1 tile (16x8 pixel) sprite with 4 pre-shifted
+frames for smooth horizontal movement. A separate banked variant is used when
+the plane turns left or right.
+</div>
+<div class="paragraph">
+<table class="">
+<tr>
+<th colspan="1" rowspan="1">Centered (straight flight)</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="plane" src="../images/udgs/plane.png" /></td>
+</tr>
+<tr>
+<th colspan="1" rowspan="1">Banked (turning left/right)</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="plane-banked" src="../images/udgs/plane-banked.png" /></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Sprite data: <a href="../asm/33713.html">83B1</a> (centered), <a href="../asm/33777.html">83F1</a> (banked).
+</div>
+</div>
+<div><span id="helicopter"></span></div>
+<div class="box box-2">
+<div class="box-title">Helicopter</div>
+<div class="paragraph">
+Regular and advanced helicopters share the same 3x1 tile (24x8 pixel) sprite
+format with 4 pre-shifted frames per direction. The advanced variant fires
+missiles at the player.
+</div>
+<div class="paragraph">
+
+</div>
+<div class="paragraph">
+<table class="">
+<tr>
+<th colspan="1" rowspan="1">Regular helicopter</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="helicopter-reg" src="../images/udgs/helicopter-reg.png" /></td>
+</tr>
+<tr>
+<th colspan="1" rowspan="1">Advanced helicopter</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="helicopter-adv" src="../images/udgs/helicopter-adv.png" /></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Sprite data: <a href="../asm/34227.html">85B3</a> (left-facing), <a href="../asm/34707.html">8793</a> (right-facing).
+</div>
+</div>
+<div><span id="rotor"></span></div>
+<div class="box box-1">
+<div class="box-title">Helicopter rotor</div>
+<div class="paragraph">
+The helicopter rotor is a 2-tile wide × 2-pixel tall sprite rendered separately
+above the helicopter body. Each direction has 4 pre-shifted frames for smooth
+animation as the helicopter moves horizontally.
+</div>
+<div class="paragraph">
+<table class="">
+<tr>
+<th colspan="1" rowspan="1">Left-facing rotor</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="rotor-left" src="../images/udgs/rotor-left.png" /></td>
+</tr>
+<tr>
+<th colspan="1" rowspan="1">Right-facing rotor</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="rotor-right" src="../images/udgs/rotor-right.png" /></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Sprite data: <a href="../asm/35512.html">8AB8</a> (left), <a href="../asm/35528.html">8AC8</a> (right).
+</div>
+</div>
+<div><span id="ship"></span></div>
+<div class="box box-2">
+<div class="box-title">Ship</div>
+<div class="paragraph">
+Ships are 3x1 tile (24x8 pixel) sprites with 4 pre-shifted frames per
+direction.
+</div>
+<div class="paragraph">
+<table class="">
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="ship" src="../images/udgs/ship.png" /></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Sprite data: <a href="../asm/34227.html#34323">8613</a> (left), <a href="../asm/34707.html#34803">87F3</a> (right).
+</div>
+</div>
+<div><span id="tank"></span></div>
+<div class="box box-1">
+<div class="box-title">Tank</div>
+<div class="paragraph">
+Tanks are 3x1 tile (24x8 pixel) sprites with 4 pre-shifted frames per
+direction. They move along river banks and fire parabolic shells.
+</div>
+<div class="paragraph">
+<table class="">
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="tank" src="../images/udgs/tank.png" /></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Sprite data: <a href="../asm/34227.html#34515">86D3</a> (left), <a href="../asm/34707.html#34995">88B3</a> (right).
+</div>
+</div>
+<div><span id="fighter"></span></div>
+<div class="box box-2">
+<div class="box-title">Fighter</div>
+<div class="paragraph">
+Fighters are 3x1 tile (24x8 pixel) sprites with 4 pre-shifted frames per
+direction. They are the fastest enemy at 4 pixels/frame, which means they
+always move in full character cell increments — so at most 1-2 of the 4
+pre-shifted frames are ever displayed.
+</div>
+<div class="paragraph">
+<table class="">
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="fighter" src="../images/udgs/fighter.png" /></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Sprite data: <a href="../asm/34227.html#34611">8733</a> (left), <a href="../asm/34707.html#35091">8913</a> (right).
+</div>
+</div>
+<div><span id="balloon"></span></div>
+<div class="box box-1">
+<div class="box-title">Balloon</div>
+<div class="paragraph">
+Balloons are 2x2 tile (16x16 pixel) sprites with 4 pre-shifted frames. Unlike
+other enemies, balloons have no separate left/right variants — they float
+vertically.
+</div>
+<div class="paragraph">
+<table class="">
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="balloon" src="../images/udgs/balloon.png" /></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Sprite data: <a href="../asm/35186.html">8972</a>.
+</div>
+</div>
+<div><span id="fuelDepot"></span></div>
+<div class="box box-2">
+<div class="box-title">Fuel depot</div>
+<div class="paragraph">
+The fuel depot is a 2-tile wide, 25-pixel tall static sprite — the tallest
+object in the game.
+</div>
+<div class="paragraph">
+<table class="">
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="sprite-fuel" src="../images/udgs/sprite-fuel.png" /></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Sprite data: <a href="../asm/35462.html">8A86</a>.
+</div>
+</div>
+<div><span id="rock"></span></div>
+<div class="box box-1">
+<div class="box-title">Rock</div>
+<div class="paragraph">
+Rocks are 3x2 tile (24x16 pixel) static decorations with 4 variants.
+</div>
+<div class="paragraph">
+<table class="">
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="rock-1" src="../images/udgs/rock-1.png" /></td>
+<td class="" colspan="1" rowspan="1"><img alt="rock-2" src="../images/udgs/rock-2.png" /></td>
+<td class="" colspan="1" rowspan="1"><img alt="rock-3" src="../images/udgs/rock-3.png" /></td>
+<td class="" colspan="1" rowspan="1"><img alt="rock-4" src="../images/udgs/rock-4.png" /></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Sprite data: <a href="../asm/33953.html">84A1</a>.
+</div>
+</div>
+<div><span id="explosion"></span></div>
+<div class="box box-2">
+<div class="box-title">Explosion</div>
+<div class="paragraph">
+The explosion animation uses 3 frames of 2x1 tile (16x8 pixel) sprites,
+played back in a 1-2-3-2 loop.
+</div>
+<div class="paragraph">
+<table class="">
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="explosion" src="../images/udgs/explosion.png" /></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Sprite data: <a href="../asm/33905.html">8471</a> (frame 1), <a href="../asm/33921.html">8481</a> (frame 2), <a href="../asm/33937.html">8491</a> (frame 3).
+</div>
+</div>
+<div><span id="missile"></span></div>
+<div class="box box-1">
+<div class="box-title">Missile and shell</div>
+<div class="paragraph">
+The player's missile is a 1x1 tile (8x8 pixel) sprite with 4 pre-shifted
+frames and a separate trail sprite drawn below it.
+</div>
+<div class="paragraph">
+<table class="">
+<tr>
+<th colspan="1" rowspan="1">Missile</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="missile" src="../images/udgs/missile.png" /></td>
+</tr>
+<tr>
+<th colspan="1" rowspan="1">Trail</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="missile-trail" src="../images/udgs/missile-trail.png" /></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Sprite data: <a href="../asm/33841.html">8431</a> (missile), <a href="../asm/33873.html">8451</a> (trail).
+</div>
+<div class="paragraph">
+Tank shells reuse the missile sprite data but render only 1 pixel height
+(SPRITE_SHELL_HEIGHT_PIXELS). The shell explosion is a 2x2 tile (16x16 pixel)
+sprite at <a href="../asm/36860.html">8FFC</a>.
+</div>
+</div>
+<div><span id="tankShellExplosion"></span></div>
+<div class="box box-2">
+<div class="box-title">Tank shell explosion</div>
+<div class="paragraph">
+The tank shell explosion is a 2x2 tile (16x16 pixel) sprite with 6 frames
+showing an expanding diamond pattern. Used when tank shells hit the ground
+or player.
+</div>
+<div class="paragraph">
+<table class="">
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="tank-shell-explosion" src="../images/udgs/tank-shell-explosion.png" /></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Sprite data: <a href="../asm/36860.html">8FFC</a>.
+</div>
+</div>
+<div><span id="unusedExplosion"></span></div>
+<div class="box box-1">
+<div class="box-title">Unused explosion (prototype)</div>
+<div class="paragraph">
+An unused 6-frame animation at <a href="../asm/35544.html">8AD8</a> showing a diamond shape expanding from
+a single pixel to a full diamond. Each frame is 1x1 tile (8x8 pixels) — half
+the size of the tank shell explosion at <a href="../asm/36860.html">8FFC</a>. This appears to be an early
+prototype that was replaced with the larger 16x16 pixel version for better
+visibility.
+</div>
+<div class="paragraph">
+<table class="">
+<tr>
+<td class="" colspan="1" rowspan="1"><img alt="unused-explosion" src="../images/udgs/unused-explosion.png" /></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Sprite data: <a href="../asm/35544.html">8AD8</a>.
+</div>
+</div>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

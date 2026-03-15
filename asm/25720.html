@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6478</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25698.html">6462</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25720">Map</a></td>
+<td class="next">
+Next: <a href="25758.html">649E</a>
+</td>
+</tr>
+</table>
+<div class="description">6478: Handle collision with fuel depot</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routine at <a href="25320.html">62E8</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="25720"></span>
+<div class="comments">
+<div class="paragraph">
+Handles both missile hits and plane refueling at fuel depots.
+</div>
+<div class="paragraph">
+If in GAMEPLAY_MODE_REFUEL: marks the depot slot as empty and calls <a href="28224.html">6E40</a> to add fuel to the player's tank.
+</div>
+<div class="paragraph">
+Otherwise (missile hit): awards POINTS_FUEL and spawns 4 explosion fragments vertically (fuel depot is the tallest object).
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="25720"></span>6478</td>
+<td class="instruction">LD A,($5F68)</td>
+<td class="comment-1" rowspan="3">Check if in REFUEL mode; if so, jump to <a href="25761.html">64A1</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25723"></span>647B</td>
+<td class="instruction">CP $06</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25725"></span>647D</td>
+<td class="instruction">JP Z,<a href="25761.html">$64A1</a></td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="25728"></span>
+<div class="comments">
+<div class="paragraph">
+Missile hit on fuel depot - destroy it.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25728"></span>6480</td>
+<td class="instruction">LD A,$08</td>
+<td class="comment-1" rowspan="2">Award POINTS_FUEL to player.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25730"></span>6482</td>
+<td class="instruction">CALL <a href="37088.html">$90E0</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25733"></span>6485</td>
+<td class="instruction">LD BC,($5F8B)</td>
+<td class="comment-1" rowspan="2">Load coordinates from <a href="24459.html">5F8B</a> and spawn explosion 1.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25737"></span>6489</td>
+<td class="instruction">CALL <a href="28316.html">$6E9C</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25740"></span>648C</td>
+<td class="instruction">LD A,B</td>
+<td class="comment-1" rowspan="4">Move Y+8 and spawn explosion 2.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25741"></span>648D</td>
+<td class="instruction">ADD A,$08</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25743"></span>648F</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25744"></span>6490</td>
+<td class="instruction">CALL <a href="28316.html">$6E9C</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25747"></span>6493</td>
+<td class="instruction">LD A,B</td>
+<td class="comment-1" rowspan="4">Move Y+8 and spawn explosion 3.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25748"></span>6494</td>
+<td class="instruction">ADD A,$08</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25750"></span>6496</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25751"></span>6497</td>
+<td class="instruction">CALL <a href="28316.html">$6E9C</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="25754"></span>649A</td>
+<td class="instruction">INC B</td>
+<td class="comment-1" rowspan="2">Move Y+1 and spawn explosion 4.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="25755"></span>649B</td>
+<td class="instruction">CALL <a href="28316.html">$6E9C</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="25698.html">6462</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25720">Map</a></td>
+<td class="next">
+Next: <a href="25758.html">649E</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

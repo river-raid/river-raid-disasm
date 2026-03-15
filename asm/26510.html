@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 678E</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26429.html">673D</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26510">Map</a></td>
+<td class="next">
+Next: <a href="26516.html">6794</a>
+</td>
+</tr>
+</table>
+<div class="description">678E: Clear CONTROLS_BIT_FIRE_SOUND flag</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routine at <a href="26429.html">673D</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="26510"></span>
+<div class="comments">
+<div class="paragraph">
+Called when missile Y &lt;= $70 (112), stopping the fire sound effect. Does not affect firing — a new missile is gated by missile Y being 0.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="26510"></span>678E</td>
+<td class="instruction">LD HL,$6BB0</td>
+<td class="comment-1" rowspan="2">Clear CONTROLS_BIT_FIRE_SOUND in <a href="27568.html">6BB0</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26513"></span>6791</td>
+<td class="instruction">RES 0,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="26515"></span>6793</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="26429.html">673D</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#26510">Map</a></td>
+<td class="next">
+Next: <a href="26516.html">6794</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

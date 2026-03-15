@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6B7B</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27507.html">6B73</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27515">Map</a></td>
+<td class="next">
+Next: <a href="27568.html">6BB0</a>
+</td>
+</tr>
+</table>
+<div class="description">6B7B: Render special terrain fragment (bridge/road area)</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Handles terrain lines with bit 7 set in profile byte, indicating bridge/road sections. These use full-width 32-byte sprites instead of edge rendering. Dispatches based on profile byte value: $80 = canal (river side), $E0 = canal (road side), $F0 = road, else = bridge.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="27515"></span>
+<div class="comments">
+<div class="paragraph">
+After copying the 32-byte sprite to screen, sets state_bridge_section for attribute handling. If bridge was destroyed, clears a 4-byte hole in the middle of the road sprite.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27515"></span>6B7B</td>
+<td class="instruction">CP $80</td>
+<td class="comment-1" rowspan="6">Dispatch: $80=<a href="27491.html">6B63</a>, $E0=<a href="27499.html">6B6B</a>, $F0=<a href="27507.html">6B73</a>, else=bridge (A=1).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27517"></span>6B7D</td>
+<td class="instruction">JP Z,<a href="27491.html">$6B63</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27520"></span>6B80</td>
+<td class="instruction">CP $E0</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27522"></span>6B82</td>
+<td class="instruction">JP Z,<a href="27499.html">$6B6B</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27525"></span>6B85</td>
+<td class="instruction">CP $F0</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27527"></span>6B87</td>
+<td class="instruction">JP Z,<a href="27507.html">$6B73</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27530"></span>6B8A</td>
+<td class="instruction">LD A,$01</td>
+<td class="comment-1" rowspan="2">Load bridge sprite (sprite_road_and_bridge_pixels), A = 1 (bridge section).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27532"></span>6B8C</td>
+<td class="instruction">LD HL,$8351</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="27535"></span>
+<div class="comments">
+<div class="paragraph">
+This entry point is used by the routines at <a href="27491.html">6B63</a>, <a href="27499.html">6B6B</a> and <a href="27507.html">6B73</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27535"></span>6B8F</td>
+<td class="instruction">LD DE,($5F7B)</td>
+<td class="comment-1" rowspan="3">Copy 32-byte sprite row to screen via LDIR. Store A to state_bridge_section.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27539"></span>6B93</td>
+<td class="instruction">LD BC,$0020</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27542"></span>6B96</td>
+<td class="instruction">LDIR</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27544"></span>6B98</td>
+<td class="instruction">LD ($5F6C),A</td>
+<td class="comment-1" rowspan="4">If state_bridge_destroyed = 0, return (bridge intact).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27547"></span>6B9B</td>
+<td class="instruction">LD A,($5F6D)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27550"></span>6B9E</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27552"></span>6BA0</td>
+<td class="instruction">RET Z</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27553"></span>6BA1</td>
+<td class="instruction">LD HL,($5F7B)</td>
+<td class="comment-1" rowspan="1">Load screen_ptr for destroyed bridge clearing.</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="27556"></span>
+<div class="comments">
+<div class="paragraph">
+This entry point is used by the routine at <a href="25019.html">61BB</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27556"></span>6BA4</td>
+<td class="instruction">LD DE,$000E</td>
+<td class="comment-1" rowspan="3">Set up loop to clear 4 bytes at offset $0E.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27559"></span>6BA7</td>
+<td class="instruction">LD B,$04</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27561"></span>6BA9</td>
+<td class="instruction">ADD HL,DE</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27562"></span>6BAA</td>
+<td class="instruction">LD (HL),$00</td>
+<td class="comment-1" rowspan="4">Clear byte, advance pointer, loop 4 times.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27564"></span>6BAC</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27565"></span>6BAD</td>
+<td class="instruction">DJNZ $6BAA</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27567"></span>6BAF</td>
+<td class="instruction">RET</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27507.html">6B73</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27515">Map</a></td>
+<td class="next">
+Next: <a href="27568.html">6BB0</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

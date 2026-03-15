@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 73DD</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29656.html">73D8</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29661">Map</a></td>
+<td class="next">
+Next: <a href="29717.html">7415</a>
+</td>
+</tr>
+</table>
+<div class="description">73DD: Render helicopter missile (spawn new)</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Spawns a new helicopter missile from an advanced helicopter. Called when processing OBJECT_HELICOPTER_ADV in the viewport loop. Plays a sound and initializes missile trajectory.
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Returns immediately during GAMEPLAY_MODE_SCROLL_IN</li>
+<li>Returns if missile already active (B != 0)</li>
+<li>Plays missile launch sound via ROM BEEPER</li>
+<li>Extracts helicopter position and orientation</li>
+<li>Stores initial missile coordinates to <a href="24435.html">5F73</a></li>
+</ul>
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="29661"></span>73DD</td>
+<td class="instruction">LD A,($5F68)</td>
+<td class="comment-1" rowspan="3">Return if in GAMEPLAY_MODE_SCROLL_IN.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29664"></span>73E0</td>
+<td class="instruction">CP $01</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29666"></span>73E2</td>
+<td class="instruction">RET Z</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29667"></span>73E3</td>
+<td class="instruction">LD BC,($5F73)</td>
+<td class="comment-1" rowspan="3">Load missile coords from <a href="24435.html">5F73</a>. Return if missile active (B != 0).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29671"></span>73E7</td>
+<td class="instruction">LD A,B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29672"></span>73E8</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29674"></span>73EA</td>
+<td class="instruction">RET NZ</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29675"></span>73EB</td>
+<td class="instruction">LD DE,$0001</td>
+<td class="comment-1" rowspan="3">Play missile launch sound: BEEPER with DE=$0001, HL=$2800.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29678"></span>73EE</td>
+<td class="instruction">LD HL,$2800</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29681"></span>73F1</td>
+<td class="instruction">CALL $03B5</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29684"></span>73F4</td>
+<td class="instruction">LD HL,($5F60)</td>
+<td class="comment-1" rowspan="7">Load current_slot_ptr, extract [D, B, C] from helicopter's slot.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29687"></span>73F7</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29688"></span>73F8</td>
+<td class="instruction">LD D,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29689"></span>73F9</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29690"></span>73FA</td>
+<td class="instruction">LD B,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29691"></span>73FB</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29692"></span>73FC</td>
+<td class="instruction">LD C,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29693"></span>73FD</td>
+<td class="instruction">LD A,C</td>
+<td class="comment-1" rowspan="5">Align X to 8-pixel boundary (AND $F8), extract orientation bit.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29694"></span>73FE</td>
+<td class="instruction">AND $F8</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29696"></span>7400</td>
+<td class="instruction">LD C,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29697"></span>7401</td>
+<td class="instruction">LD A,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29698"></span>7402</td>
+<td class="instruction">AND $40</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29700"></span>7404</td>
+<td class="instruction">LD ($5F75),A</td>
+<td class="comment-1" rowspan="3">Store orientation to <a href="24437.html">5F75</a>. If right-facing, add offset via <a href="29656.html">73D8</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29703"></span>7407</td>
+<td class="instruction">BIT 6,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29705"></span>7409</td>
+<td class="instruction">CALL Z,<a href="29656.html">$73D8</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29708"></span>740C</td>
+<td class="instruction">INC B</td>
+<td class="comment-1" rowspan="5">Add 4 to Y position (INC B × 4), store to <a href="24435.html">5F73</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29709"></span>740D</td>
+<td class="instruction">INC B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29710"></span>740E</td>
+<td class="instruction">INC B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29711"></span>740F</td>
+<td class="instruction">INC B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29712"></span>7410</td>
+<td class="instruction">LD ($5F73),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29716"></span>7414</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29656.html">73D8</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29661">Map</a></td>
+<td class="next">
+Next: <a href="29717.html">7415</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

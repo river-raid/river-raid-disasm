@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 735E</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29528.html">7358</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29534">Map</a></td>
+<td class="next">
+Next: <a href="29568.html">7380</a>
+</td>
+</tr>
+</table>
+<div class="description">735E: Check shell initialization condition</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Alternative shell initialization when bit 4 is set. Checks if tank can fire based on shell active state and position.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="29534"></span>735E</td>
+<td class="instruction">LD A,($5EF2)</td>
+<td class="comment-1" rowspan="3">If TANK_SHELL_ACTIVE, cancel shell via <a href="29528.html">7358</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29537"></span>7361</td>
+<td class="instruction">CP $01</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29539"></span>7363</td>
+<td class="instruction">JP Z,<a href="29528.html">$7358</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29542"></span>7366</td>
+<td class="instruction">PUSH BC</td>
+<td class="comment-1" rowspan="7">Push BC, check X position sign bit, invert if positive via <a href="29568.html">7380</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29543"></span>7367</td>
+<td class="instruction">LD A,C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29544"></span>7368</td>
+<td class="instruction">BIT 7,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29546"></span>736A</td>
+<td class="instruction">CALL Z,<a href="29568.html">$7380</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29549"></span>736D</td>
+<td class="instruction">RES 7,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29551"></span>736F</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29553"></span>7371</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29555"></span>7373</td>
+<td class="instruction">SRL A</td>
+<td class="comment-1" rowspan="5">Shift right 4 times to get upper nibble.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29557"></span>7375</td>
+<td class="instruction">SRL A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29559"></span>7377</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29560"></span>7378</td>
+<td class="instruction">LD A,D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29561"></span>7379</td>
+<td class="instruction">AND $40</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29563"></span>737B</td>
+<td class="instruction">ADD A,B</td>
+<td class="comment-1" rowspan="3">Combine with orientation, pop BC, continue to fire shell.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29564"></span>737C</td>
+<td class="instruction">POP BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29565"></span>737D</td>
+<td class="instruction">JP <a href="29442.html#29486">$732E</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29528.html">7358</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29534">Map</a></td>
+<td class="next">
+Next: <a href="29568.html">7380</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

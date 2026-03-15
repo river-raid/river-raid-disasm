@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 74A0</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29761.html">7441</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29856">Map</a></td>
+<td class="next">
+Next: <a href="29894.html">74C6</a>
+</td>
+</tr>
+</table>
+<div class="description">74A0: Erase off-screen tank shell</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Erases the tank shell sprite when it goes off-screen and removes it from the game.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="29856"></span>74A0</td>
+<td class="instruction">LD BC,($8B0A)</td>
+<td class="comment-1" rowspan="2">Load shell position from <a href="35594.html">8B0A</a>, shell sprite <a href="33841.html">8431</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29860"></span>74A4</td>
+<td class="instruction">LD HL,$8431</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29863"></span>74A7</td>
+<td class="instruction">LD A,C</td>
+<td class="comment-1" rowspan="7">Calculate sprite frame offset from X position: (X AND 6) &lt;&lt; 2.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29864"></span>74A8</td>
+<td class="instruction">AND $06</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29866"></span>74AA</td>
+<td class="instruction">SLA A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29868"></span>74AC</td>
+<td class="instruction">SLA A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29870"></span>74AE</td>
+<td class="instruction">LD D,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29872"></span>74B0</td>
+<td class="instruction">LD E,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29873"></span>74B1</td>
+<td class="instruction">ADD HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29874"></span>74B2</td>
+<td class="instruction">LD ($8B0E),HL</td>
+<td class="comment-1" rowspan="2">Add offset to sprite address, store to <a href="35598.html">8B0E</a>. Load erase sprite <a href="33525.html">82F5</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29877"></span>74B5</td>
+<td class="instruction">LD HL,$82F5</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29880"></span>74B8</td>
+<td class="instruction">LD DE,$0100</td>
+<td class="comment-1" rowspan="4">Render erase sprite and remove shell.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29883"></span>74BB</td>
+<td class="instruction">LD A,$01</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29885"></span>74BD</td>
+<td class="instruction">LD BC,$0008</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29888"></span>74C0</td>
+<td class="instruction">CALL <a href="35644.html">$8B3C</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29891"></span>74C3</td>
+<td class="instruction">JP <a href="29924.html">$74E4</a></td>
+<td class="comment-1" rowspan="1">Remove shell.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29761.html">7441</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29856">Map</a></td>
+<td class="next">
+Next: <a href="29894.html">74C6</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

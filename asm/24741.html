@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 60A5</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="24680.html">6068</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#24741">Map</a></td>
+<td class="next">
+Next: <a href="24868.html">6124</a>
+</td>
+</tr>
+</table>
+<div class="description">60A5: Render player plane and terrain fragments</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Top-level render routine called from main loop (<a href="24465.html">5F91</a>). Orchestrates visual updates in a specific order to prevent flicker.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="24741"></span>
+<div class="comments">
+<div class="paragraph">
+Render sequence:
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Player plane sprite (GAMEPLAY_MODE_NORMAL only)</li>
+<li>Screen scroll system</li>
+<li>Terrain fragments (count = current speed)</li>
+<li>Attribute scroll (every 8 fragments)</li>
+</ul>
+</div>
+<div class="paragraph">
+Speed affects the number of terrain fragments rendered per frame and the sprite animation frame selection.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="24741"></span>60A5</td>
+<td class="instruction">LD A,($5F68)</td>
+<td class="comment-1" rowspan="3">Skip plane rendering if not GAMEPLAY_MODE_NORMAL.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24744"></span>60A8</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24746"></span>60AA</td>
+<td class="instruction">JP NZ,$60E5</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24749"></span>60AD</td>
+<td class="instruction">LD A,$00</td>
+<td class="comment-1" rowspan="2">Set collision mode to NONE for plane (no collision during render).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24751"></span>60AF</td>
+<td class="instruction">LD ($5EF5),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24754"></span>60B2</td>
+<td class="instruction">LD A,($5F72)</td>
+<td class="comment-1" rowspan="9">Calculate plane sprite frame: offset = (8 - speed) * 2.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24757"></span>60B5</td>
+<td class="instruction">LD C,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24758"></span>60B6</td>
+<td class="instruction">LD A,($5F64)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24761"></span>60B9</td>
+<td class="instruction">LD E,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24762"></span>60BA</td>
+<td class="instruction">LD A,$08</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24764"></span>60BC</td>
+<td class="instruction">SUB E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24765"></span>60BD</td>
+<td class="instruction">LD D,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24767"></span>60BF</td>
+<td class="instruction">LD E,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24768"></span>60C0</td>
+<td class="instruction">SLA E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24770"></span>60C2</td>
+<td class="instruction">LD HL,($5EF7)</td>
+<td class="comment-1" rowspan="3">Apply offset to sprite pointer.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24773"></span>60C5</td>
+<td class="instruction">ADD HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24774"></span>60C6</td>
+<td class="instruction">LD ($8B0E),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24777"></span>60C9</td>
+<td class="instruction">ADD A,$80</td>
+<td class="comment-1" rowspan="4">Calculate plane Y: Y = $88 - speed. However, movement handlers (<a href="26099.html">65F3</a>, <a href="26178.html">6642</a>, <a href="26242.html">6682</a>) always use the fixed PLANE_COORDINATE_Y ($80), so this speed-dependent value has no visible effect.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24779"></span>60CB</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24780"></span>60CC</td>
+<td class="instruction">LD A,($5F64)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24783"></span>60CF</td>
+<td class="instruction">LD D,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24784"></span>60D0</td>
+<td class="instruction">LD ($8B0A),BC</td>
+<td class="comment-1" rowspan="2">Set plane coordinates for rendering.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24788"></span>60D4</td>
+<td class="instruction">LD ($8B0C),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24792"></span>60D8</td>
+<td class="instruction">LD E,$00</td>
+<td class="comment-1" rowspan="5">Render plane: width=2, size=$10, attrs=$00.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24794"></span>60DA</td>
+<td class="instruction">LD BC,$0010</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24797"></span>60DD</td>
+<td class="instruction">LD A,$02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24799"></span>60DF</td>
+<td class="instruction">LD HL,$82F5</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24802"></span>60E2</td>
+<td class="instruction">CALL <a href="35644.html">$8B3C</a></td>
+</tr>
+<tr>
+<td class="address-2"><span id="24805"></span>60E5</td>
+<td class="instruction">CALL <a href="26683.html">$683B</a></td>
+<td class="comment-1" rowspan="1">Render islands.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24808"></span>60E8</td>
+<td class="instruction">LD A,($5F64)</td>
+<td class="comment-1" rowspan="5">Calculate starting screen row based on speed.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24811"></span>60EB</td>
+<td class="instruction">LD DE,$0100</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24814"></span>60EE</td>
+<td class="instruction">LD HL,$4000</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24817"></span>60F1</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24818"></span>60F2</td>
+<td class="instruction">SBC HL,DE</td>
+</tr>
+<tr>
+<td class="address-2"><span id="24820"></span>60F4</td>
+<td class="instruction">ADD HL,DE</td>
+<td class="comment-1" rowspan="3">HL = screen_start + (speed * $100).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24821"></span>60F5</td>
+<td class="instruction">DEC A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24822"></span>60F6</td>
+<td class="instruction">JR NZ,$60F4</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24824"></span>60F8</td>
+<td class="instruction">LD ($5F7B),HL</td>
+<td class="comment-1" rowspan="1">Store screen pointer to <a href="24443.html">5F7B</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24827"></span>60FB</td>
+<td class="instruction">LD A,($5F64)</td>
+<td class="comment-1" rowspan="4">Set up terrain fragment loop (count = speed).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24830"></span>60FE</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24831"></span>60FF</td>
+<td class="instruction">LD A,($5EEE)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24834"></span>6102</td>
+<td class="instruction">LD C,A</td>
+</tr>
+<tr>
+<td class="address-2"><span id="24835"></span>6103</td>
+<td class="instruction">INC C</td>
+<td class="comment-1" rowspan="3">Increment fragment counter.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24836"></span>6104</td>
+<td class="instruction">LD A,C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24837"></span>6105</td>
+<td class="instruction">PUSH BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24838"></span>6106</td>
+<td class="instruction">AND $07</td>
+<td class="comment-1" rowspan="3">Every 8 fragments, scroll attributes.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24840"></span>6108</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24842"></span>610A</td>
+<td class="instruction">CALL Z,<a href="26807.html">$68B7</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="24845"></span>610D</td>
+<td class="instruction">CALL <a href="27299.html">$6AA3</a></td>
+<td class="comment-1" rowspan="1">Render terrain fragment.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24848"></span>6110</td>
+<td class="instruction">LD DE,$0100</td>
+<td class="comment-1" rowspan="6">Move screen pointer up one row ($100 bytes).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24851"></span>6113</td>
+<td class="instruction">LD HL,($5F7B)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24854"></span>6116</td>
+<td class="instruction">OR A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24855"></span>6117</td>
+<td class="instruction">SBC HL,DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24857"></span>6119</td>
+<td class="instruction">LD ($5F7B),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24860"></span>611C</td>
+<td class="instruction">POP BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24861"></span>611D</td>
+<td class="instruction">DJNZ $6103</td>
+<td class="comment-1" rowspan="1">Loop until all fragments rendered.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24863"></span>611F</td>
+<td class="instruction">LD A,C</td>
+<td class="comment-1" rowspan="3">Store updated fragment counter.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24864"></span>6120</td>
+<td class="instruction">LD ($5EEE),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="24867"></span>6123</td>
+<td class="instruction">RET</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="24680.html">6068</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#24741">Map</a></td>
+<td class="next">
+Next: <a href="24868.html">6124</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

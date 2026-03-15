@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6D17</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27892.html">6CF4</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27927">Map</a></td>
+<td class="next">
+Next: <a href="28125.html">6DDD</a>
+</td>
+</tr>
+</table>
+<div class="description">6D17: Level overview screen</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Displays a preview fly-over of the upcoming terrain before the game starts. Shows scrolling terrain with game number and scrolling title text. Player can press Enter to start the game early, or wait for 5 scroll units to auto-start.
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Initializes screen with PAPER RIVER, INK BANK</li>
+<li>Prints status line and "GAME n" where n is the game mode (1-4)</li>
+<li>Runs a main loop that scrolls terrain and displays title text</li>
+<li>Exits to game start after 5 scroll increments or Enter key</li>
+</ul>
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="27927"></span>6D17</td>
+<td class="instruction">LD BC,$0010</td>
+<td class="comment-1" rowspan="3">Initialize scroll position (<a href="24432.html">5F70</a> = $0010) and scroll speed (<a href="24317.html">5EFD</a> = $10).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27930"></span>6D1A</td>
+<td class="instruction">LD ($5F70),BC</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27934"></span>6D1E</td>
+<td class="instruction">LD A,$10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27936"></span>6D20</td>
+<td class="instruction">LD ($5EFD),A</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27939"></span>6D23</td>
+<td class="instruction">LD D,$0C</td>
+<td class="comment-1" rowspan="2">Set screen colors (PAPER RIVER, INK BANK) via <a href="37898.html">940A</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27941"></span>6D25</td>
+<td class="instruction">CALL <a href="37898.html">$940A</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27944"></span>6D28</td>
+<td class="instruction">CALL <a href="35379.html">$8A33</a></td>
+<td class="comment-1" rowspan="1">Clear/initialize screen via <a href="35379.html">8A33</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27947"></span>6D2B</td>
+<td class="instruction">LD DE,$8000</td>
+<td class="comment-1" rowspan="3">Print status line 1 (<a href="32768.html">8000</a>, length $31 bytes) using ROM PR_STRING ($203C).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27950"></span>6D2E</td>
+<td class="instruction">LD BC,$0031</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27953"></span>6D31</td>
+<td class="instruction">CALL $203C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27956"></span>6D34</td>
+<td class="instruction">CALL <a href="25788.html">$64BC</a></td>
+<td class="comment-1" rowspan="3">Initialize gameplay: call <a href="25788.html">64BC</a>, <a href="25991.html">6587</a>, <a href="28139.html">6DEB</a> (init_starting_bridge).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27959"></span>6D37</td>
+<td class="instruction">CALL <a href="25991.html">$6587</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27962"></span>6D3A</td>
+<td class="instruction">CALL <a href="28139.html">$6DEB</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27965"></span>6D3D</td>
+<td class="instruction">CALL <a href="26857.html">$68E9</a></td>
+<td class="comment-1" rowspan="1">Initialize terrain rendering.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27968"></span>6D40</td>
+<td class="instruction">LD A,$04</td>
+<td class="comment-1" rowspan="4">Print "GAME" text (<a href="32858.html">805A</a>, length 5) using ROM PR_STRING.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27970"></span>6D42</td>
+<td class="instruction">LD ($5EEE),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27973"></span>6D45</td>
+<td class="instruction">LD DE,$805A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27976"></span>6D48</td>
+<td class="instruction">LD BC,$0005</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27979"></span>6D4B</td>
+<td class="instruction">CALL $203C</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="27982"></span>6D4E</td>
+<td class="instruction">LD A,($923A)</td>
+<td class="comment-1" rowspan="3">Print game number: load game mode from <a href="37434.html">923A</a>, add "1" for ASCII digit, output via RST $10.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27985"></span>6D51</td>
+<td class="instruction">ADD A,$31</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27987"></span>6D53</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27988"></span>6D54</td>
+<td class="instruction">LD A,$68</td>
+<td class="comment-1" rowspan="5">Initialize state: set LAST_K to 'h' (paused state), clear <a href="24445.html">5F7D</a>, save initial scroll value to <a href="23875.html">5D43</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27990"></span>6D56</td>
+<td class="instruction">LD ($5C08),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27993"></span>6D59</td>
+<td class="instruction">LD A,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27995"></span>6D5B</td>
+<td class="instruction">LD ($5F7D),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="27998"></span>6D5E</td>
+<td class="instruction">LD A,($5EF0)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28001"></span>6D61</td>
+<td class="instruction">LD ($5D43),A</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="28004"></span>
+<div class="comments">
+<div class="paragraph">
+This entry point is used by the routine at <a href="28125.html">6DDD</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="28004"></span>6D64</td>
+<td class="instruction">LD A,$BF</td>
+<td class="comment-1" rowspan="4">Check Enter key (row 6, bit 0). Handle Enter if pressed.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28006"></span>6D66</td>
+<td class="instruction">IN A,($FE)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28008"></span>6D68</td>
+<td class="instruction">BIT 0,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28010"></span>6D6A</td>
+<td class="instruction">CALL Z,<a href="27583.html">$6BBF</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28013"></span>6D6D</td>
+<td class="instruction">LD A,($5D43)</td>
+<td class="comment-1" rowspan="6">Check if 5 scroll units passed: if (<a href="24304.html">5EF0</a> - <a href="23875.html">5D43</a>) == 5, jump to <a href="23814.html">5D06</a> to start game.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28016"></span>6D70</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28017"></span>6D71</td>
+<td class="instruction">LD A,($5EF0)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28020"></span>6D74</td>
+<td class="instruction">SUB B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28021"></span>6D75</td>
+<td class="instruction">CP $05</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28023"></span>6D77</td>
+<td class="instruction">JP Z,<a href="23814.html">$5D06</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28026"></span>6D7A</td>
+<td class="instruction">CALL <a href="35355.html">$8A1B</a></td>
+<td class="comment-1" rowspan="1">Text crawl: 1st of 2 pixel shifts this frame.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28029"></span>6D7D</td>
+<td class="instruction">CALL <a href="24741.html">$60A5</a></td>
+<td class="comment-1" rowspan="6">Render plane and terrain, increment tick counter, operate viewport objects and projectiles.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28032"></span>6D80</td>
+<td class="instruction">LD HL,$5EEF</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28035"></span>6D83</td>
+<td class="instruction">INC (HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28036"></span>6D84</td>
+<td class="instruction">CALL <a href="28814.html">$708E</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28039"></span>6D87</td>
+<td class="instruction">CALL <a href="29761.html">$7441</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28042"></span>6D8A</td>
+<td class="instruction">CALL <a href="29587.html">$7393</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28045"></span>6D8D</td>
+<td class="instruction">CALL <a href="26320.html">$66D0</a></td>
+<td class="comment-1" rowspan="1">Advance terrain scroll and render terrain.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28048"></span>6D90</td>
+<td class="instruction">CALL <a href="35355.html">$8A1B</a></td>
+<td class="comment-1" rowspan="1">Text crawl: 2nd of 2 pixel shifts this frame.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28051"></span>6D93</td>
+<td class="instruction">LD HL,$5F81</td>
+<td class="comment-1" rowspan="4">Increment frame counter <a href="24449.html">5F81</a>, scan keyboard, enable interrupts.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28054"></span>6D96</td>
+<td class="instruction">INC (HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28055"></span>6D97</td>
+<td class="instruction">CALL $02BF</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28058"></span>6D9A</td>
+<td class="instruction">EI</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28059"></span>6D9B</td>
+<td class="instruction">LD A,($5C08)</td>
+<td class="comment-1" rowspan="3">Check if Enter was pressed. If so, jump to <a href="23974.html">5DA6</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28062"></span>6D9E</td>
+<td class="instruction">CP $0D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28064"></span>6DA0</td>
+<td class="instruction">JP Z,<a href="23974.html">$5DA6</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28067"></span>6DA3</td>
+<td class="instruction">LD A,($5F81)</td>
+<td class="comment-1" rowspan="3">Check frame counter AND 3: if not zero, loop back to overview_loop.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28070"></span>6DA6</td>
+<td class="instruction">AND $03</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28072"></span>6DA8</td>
+<td class="instruction">CP $00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28074"></span>6DAA</td>
+<td class="instruction">JP NZ,$6D64</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28077"></span>6DAD</td>
+<td class="instruction">LD A,$01</td>
+<td class="comment-1" rowspan="2">Open lower screen (K) channel via ROM CHAN_OPEN ($1601) to print next text crawl character.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28079"></span>6DAF</td>
+<td class="instruction">CALL $1601</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28082"></span>6DB2</td>
+<td class="instruction">LD A,$10</td>
+<td class="comment-1" rowspan="4">INK BLACK</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28084"></span>6DB4</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28085"></span>6DB5</td>
+<td class="instruction">LD A,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28087"></span>6DB7</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28088"></span>6DB8</td>
+<td class="instruction">LD A,$11</td>
+<td class="comment-1" rowspan="4">PAPER BLACK</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28090"></span>6DBA</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28091"></span>6DBB</td>
+<td class="instruction">LD A,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28093"></span>6DBD</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28094"></span>6DBE</td>
+<td class="instruction">LD A,$16</td>
+<td class="comment-1" rowspan="6">AT 1,31 — bottom-right corner of the lower screen (char row 23, column 31).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28096"></span>6DC0</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28097"></span>6DC1</td>
+<td class="instruction">LD A,$01</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28099"></span>6DC3</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28100"></span>6DC4</td>
+<td class="instruction">LD A,$1F</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28102"></span>6DC6</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28103"></span>6DC7</td>
+<td class="instruction">LD HL,($5F7E)</td>
+<td class="comment-1" rowspan="5">Advance text pointer (<a href="24446.html">5F7E</a>) and read next character. Every 4 frames = 8 pixels scrolled = 1 character width.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28106"></span>6DCA</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28107"></span>6DCB</td>
+<td class="instruction">LD ($5F7E),HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28110"></span>6DCE</td>
+<td class="instruction">LD A,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28111"></span>6DCF</td>
+<td class="instruction">CP $FF</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28113"></span>6DD1</td>
+<td class="instruction">JP Z,<a href="28125.html">$6DDD</a></td>
+<td class="comment-1" rowspan="4">If $FF (end of text), jump to <a href="28125.html">6DDD</a> to reset pointer. Otherwise print character via RST $10, reopen upper screen (S) channel (A=2), and fall through to loop.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28116"></span>6DD4</td>
+<td class="instruction">RST $10</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28117"></span>6DD5</td>
+<td class="instruction">LD A,$02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28119"></span>6DD7</td>
+<td class="instruction">CALL $1601</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28122"></span>6DDA</td>
+<td class="instruction">JP $6D64</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="27892.html">6CF4</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#27927">Map</a></td>
+<td class="next">
+Next: <a href="28125.html">6DDD</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

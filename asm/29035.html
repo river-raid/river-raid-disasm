@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 716B</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29016.html">7158</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29035">Map</a></td>
+<td class="next">
+Next: <a href="29074.html">7192</a>
+</td>
+</tr>
+</table>
+<div class="description">716B: Continue fighter operation</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Updates fighter position in viewport array and renders the sprite with XOR blending.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="29035"></span>716B</td>
+<td class="instruction">LD HL,($5F60)</td>
+<td class="comment-1" rowspan="7">Load current_slot_ptr, navigate to current slot, update [X, Y, D] values.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29038"></span>716E</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29039"></span>716F</td>
+<td class="instruction">LD D,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29040"></span>7170</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29041"></span>7171</td>
+<td class="instruction">LD (HL),B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29042"></span>7172</td>
+<td class="instruction">DEC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29043"></span>7173</td>
+<td class="instruction">LD (HL),C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29044"></span>7174</td>
+<td class="instruction">LD ($8B0C),BC</td>
+<td class="comment-1" rowspan="2">Store position to <a href="35596.html">8B0C</a>, get sprite pointer.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29048"></span>7178</td>
+<td class="instruction">CALL <a href="30138.html">$75BA</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29051"></span>717B</td>
+<td class="instruction">LD BC,$0018</td>
+<td class="comment-1" rowspan="2">Set frame size=$18, call <a href="29414.html">72E6</a> to set XOR blending mode.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29054"></span>717E</td>
+<td class="instruction">CALL <a href="29414.html">$72E6</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29057"></span>7181</td>
+<td class="instruction">LD A,$03</td>
+<td class="comment-1" rowspan="2">Set collision mode to COLLISION_MODE_FIGHTER ($03) at <a href="24309.html">5EF5</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29059"></span>7183</td>
+<td class="instruction">LD ($5EF5),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29062"></span>7186</td>
+<td class="instruction">LD DE,$0800</td>
+<td class="comment-1" rowspan="3">Render sprite: height=8px, attributes=$00. Restore blending.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="29065"></span>7189</td>
+<td class="instruction">CALL <a href="35614.html">$8B1E</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29068"></span>718C</td>
+<td class="instruction">CALL <a href="29423.html">$72EF</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="29071"></span>718F</td>
+<td class="instruction">JP <a href="28814.html">$708E</a></td>
+<td class="comment-1" rowspan="1">Return to main viewport loop.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="29016.html">7158</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#29035">Map</a></td>
+<td class="next">
+Next: <a href="29074.html">7192</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 8C1B</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="35851.html">8C0B</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#35867">Map</a></td>
+<td class="next">
+Next: <a href="35900.html">8C3C</a>
+</td>
+</tr>
+</table>
+<div class="description">8C1B: Self-modifying blending operation (erasure).</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+This byte is patched to change blending mode: OR B for XOR mode, NOP for OR mode.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35867"></span>8C1B</td>
+<td class="instruction">OR B</td>
+<td class="comment-1" rowspan="7">Apply blend, store result, advance pointers, loop.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35868"></span>8C1C</td>
+<td class="instruction">XOR $FF</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35870"></span>8C1E</td>
+<td class="instruction">LD (HL),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35871"></span>8C1F</td>
+<td class="instruction">INC DE</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35872"></span>8C20</td>
+<td class="instruction">INC HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35873"></span>8C21</td>
+<td class="instruction">DEC C</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35874"></span>8C22</td>
+<td class="instruction">JR NZ,<a href="35851.html#35862">$8C16</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="35876"></span>8C24</td>
+<td class="instruction">LD A,($8B1A)</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="35879"></span>8C27</td>
+<td class="instruction">LD C,A</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="35880"></span>8C28</td>
+<td class="instruction">LD HL,($8B12)</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="address-1"><span id="35883"></span>8C2B</td>
+<td class="instruction">LD DE,($8B10)</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="35887"></span>
+<div class="comments">
+<div class="paragraph">
+Second pass: draw new sprite (OR with screen), check collision.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35887"></span>8C2F</td>
+<td class="instruction">PUSH DE</td>
+<td class="comment-1" rowspan="9">Read sprite byte; collision fires when sprite AND screen share set bits (both non-zero after AND): computes (screen OR sprite) and (screen XOR sprite), jumps to dispatcher if they differ (i.e. screen AND sprite != 0).</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35888"></span>8C30</td>
+<td class="instruction">LD A,(DE)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35889"></span>8C31</td>
+<td class="instruction">LD B,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35890"></span>8C32</td>
+<td class="instruction">LD A,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35891"></span>8C33</td>
+<td class="instruction">XOR B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35892"></span>8C34</td>
+<td class="instruction">LD D,A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35893"></span>8C35</td>
+<td class="instruction">XOR B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35894"></span>8C36</td>
+<td class="instruction">OR B</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35895"></span>8C37</td>
+<td class="instruction">CP D</td>
+</tr>
+<tr>
+<td class="address-1"><span id="35896"></span>8C38</td>
+<td class="instruction">JP NZ,<a href="35909.html">$8C45</a></td>
+<td class="comment-1" rowspan="1">If collision detected, jump to collision dispatcher.</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="35899"></span>
+<div class="comments">
+<div class="paragraph">
+This entry point is used by the routines at <a href="24886.html">6136</a> and <a href="25596.html">63FC</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="35899"></span>8C3B</td>
+<td class="instruction">LD A,(HL)</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="35851.html">8C0B</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#35867">Map</a></td>
+<td class="next">
+Next: <a href="35900.html">8C3C</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

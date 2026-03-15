@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 706C</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28753.html">7051</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28780">Map</a></td>
+<td class="next">
+Next: <a href="28814.html">708E</a>
+</td>
+</tr>
+</table>
+<div class="description">706C: Render balloon</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Renders a balloon enemy sprite at the specified X position. Balloons are 2-tile wide animated objects that float above the river. Unlike other enemies, balloons disable collision detection during rendering.
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Disables collision mode via <a href="24309.html">5EF5</a> (allows plane to pass through during render)</li>
+<li>Animated sprite with $20 byte frames at <a href="35186.html">8972</a></li>
+<li>Dimensions: 2 tiles wide (16px) × 16 pixels tall</li>
+<li>Attributes: $0E (PAPER RIVER, INK BALLOON)</li>
+</ul>
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">E</td>
+<td class="register-desc">X position of balloon</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="28780"></span>706C</td>
+<td class="instruction">LD B,$00</td>
+<td class="comment-1" rowspan="2">BC = (0, E): set X position in BC for object entry.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28782"></span>706E</td>
+<td class="instruction">LD C,E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28783"></span>706F</td>
+<td class="instruction">LD HL,$8972</td>
+<td class="comment-1" rowspan="3">Load balloon sprite <a href="35186.html">8972</a>, set COLLISION_MODE_NONE to <a href="24309.html">5EF5</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28786"></span>7072</td>
+<td class="instruction">LD A,$00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28788"></span>7074</td>
+<td class="instruction">LD ($5EF5),A</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28791"></span>7077</td>
+<td class="instruction">PUSH HL</td>
+<td class="comment-1" rowspan="5">Push sprite addr, add balloon to <a href="24320.html">5F00</a> objects set, pop and call <a href="28650.html">6FEA</a>.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28792"></span>7078</td>
+<td class="instruction">LD HL,$5F00</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28795"></span>707B</td>
+<td class="instruction">CALL <a href="28331.html">$6EAB</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28798"></span>707E</td>
+<td class="instruction">POP HL</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28799"></span>707F</td>
+<td class="instruction">CALL <a href="28650.html">$6FEA</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28802"></span>7082</td>
+<td class="instruction">LD BC,$0020</td>
+<td class="comment-1" rowspan="4">Render sprite: frame size=$20, width=2, height=16px, attributes=$0E.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28805"></span>7085</td>
+<td class="instruction">LD A,$02</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28807"></span>7087</td>
+<td class="instruction">LD DE,$100E</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28810"></span>708A</td>
+<td class="instruction">CALL <a href="35614.html">$8B1E</a></td>
+</tr>
+<tr>
+<td class="address-1"><span id="28813"></span>708D</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28753.html">7051</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28780">Map</a></td>
+<td class="next">
+Next: <a href="28814.html">708E</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>

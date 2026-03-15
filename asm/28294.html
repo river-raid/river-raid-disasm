@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>River Raid: Routine at 6E86</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html">River Raid</a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28224.html">6E40</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28294">Map</a></td>
+<td class="next">
+Next: <a href="28300.html">6E8C</a>
+</td>
+</tr>
+</table>
+<div class="description">6E86: Set low fuel warning flag</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Sets CONTROLS_BIT_LOW_FUEL in <a href="27568.html">6BB0</a> to trigger the warbling low fuel warning sound.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="address-2"><span id="28294"></span>6E86</td>
+<td class="instruction">LD HL,$6BB0</td>
+<td class="comment-1" rowspan="2">Set CONTROLS_BIT_LOW_FUEL in controls state.</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28297"></span>6E89</td>
+<td class="instruction">SET 3,(HL)</td>
+</tr>
+<tr>
+<td class="address-1"><span id="28299"></span>6E8B</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="28224.html">6E40</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#28294">Map</a></td>
+<td class="next">
+Next: <a href="28300.html">6E8C</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</body>
+</html>
