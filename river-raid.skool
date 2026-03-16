@@ -252,9 +252,9 @@ SCROLL_IN_ITERATIONS EQU $28
 TERRAIN_PROFILE_SIZE EQU $10
 
 EXPLOSION_ANIM_FRAMES  EQU $10
-EXPLOSION_SOUND_FRAMES EQU $18
+EXPLOSION_SOUND_TICKS EQU $18
 
-BONUS_LIFE_SOUND_FRAMES EQU $40
+BONUS_LIFE_SOUND_TICKS EQU $40
 
 SCORE_DIGIT_COUNT EQU $06
 
@@ -4246,7 +4246,7 @@ c$6C24 POP AF        ; {Restore registers.
 @label=data_unused_6C2B
 u$6C2B DEFB $ED,$56,$C3,$08,$00
 
-; Bonus life sound progress counter (0-64). Incremented each frame during
+; Bonus life sound progress counter (0-64). Incremented each interrupt during
 ; jingle. Sound completes when reaching $40 (64).
 @label=bonus_life_sound_counter
 g$6C30 DEFB $00
@@ -4254,11 +4254,11 @@ g$6C30 DEFB $00
 ; Play bonus life sound effect
 ;
 ; Generates a rising pitch sound effect when player earns an extra life. Called
-; once per frame while CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64
-; frames.
+; once per interrupt while CONTROLS_BIT_BONUS_LIFE is set. The sound plays over
+; 64 interrupts (~1.28 seconds).
 ; .
 ; #LIST
-; { Counter increments from 0 to 64 over successive frames }
+; { Counter increments from 0 to 64 over successive interrupts }
 ; { Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases }
 ; { Lower pitch values = higher frequency, so sound rises in pitch }
 ; { Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001 }
@@ -4267,11 +4267,11 @@ g$6C30 DEFB $00
 c$6C31 LD A,($6C30)  ; {Increment counter and check if reached $40 (64). If so,
  $6C34 INC A         ; sound is complete.
  $6C35 LD ($6C30),A  ; }
-@isub=CP BONUS_LIFE_SOUND_FRAMES
- $6C38 CP $40        ; {Check if counter reached BONUS_LIFE_SOUND_FRAMES. If
+@isub=CP BONUS_LIFE_SOUND_TICKS
+ $6C38 CP $40        ; {Check if counter reached BONUS_LIFE_SOUND_TICKS. If
  $6C3A JP Z,$6C52    ; done, finish sound sequence.}
- $6C3D LD B,A        ; {Calculate pitch: pitch = BONUS_LIFE_SOUND_FRAMES -
-@isub=LD A,BONUS_LIFE_SOUND_FRAMES
+ $6C3D LD B,A        ; {Calculate pitch: pitch = BONUS_LIFE_SOUND_TICKS -
+@isub=LD A,BONUS_LIFE_SOUND_TICKS
  $6C3E LD A,$40      ; counter.
  $6C40 SUB B         ; }
  $6C41 LD L,$FF      ; {Set up BEEPER parameters: H = pitch >> 3 (range 7-0), L
@@ -4333,24 +4333,24 @@ c$6C5D LD A,(HL)     ; {Extract period from low 4 bits of controls byte. Higher
  $6C74 JP NZ,$6C63   ; interrupt when done.
  $6C77 JP $6C24      ; }
 
-; Explosion sound frame counter. Counts down from $18 (24) to 0. Value also
+; Explosion sound tick counter. Counts down from $18 (24) to 0. Value also
 ; controls pitch - higher values = lower frequency.
 @label=explosion_counter
 g$6C7A DEFB $18
 
 ; Play explosion sound effect
 ;
-; Generates an explosion sound that plays over 24 frames ($18). Called once per
-; frame while CONTROLS_BIT_EXPLODING is set. The ON delay is derived from
-; (DE)&7, but DE is not set up by the caller - it retains whatever value the
-; interrupted main loop code had, making the pitch vary semi-randomly between
-; frames and giving the explosion its noisy character.
+; Generates an explosion sound that plays over 24 interrupts ($18). Called once
+; per interrupt while CONTROLS_BIT_EXPLODING is set. The ON delay is derived
+; from (DE)&7, but DE is not set up by the caller - it retains whatever value
+; the interrupted main loop code had, making the pitch vary semi-randomly
+; between interrupts and giving the explosion its noisy character.
 ; .
 ; #LIST
-; { Counter decrements from $18 (24) to 0 over successive frames }
+; { Counter decrements from $18 (24) to 0 over successive interrupts }
 ; { ON delay = ((DE) AND $07) << 3 + $10, range $10-$48 (16-72) }
-; { OFF delay = counter value, decreasing each frame (sound speeds up) }
-; { 4 cycles of waveform per frame }
+; { OFF delay = counter value, decreasing each interrupt (sound speeds up) }
+; { 4 cycles of waveform per interrupt }
 ; { As counter decreases, OFF delay shortens, making sound more rapid/urgent }
 ; LIST#
 ;
@@ -4386,15 +4386,15 @@ c$6C7B LD A,($6C7A)  ; {Decrement explosion counter.
 @label=beep_explosion_delay_off
 *$6CA5 DEC D         ; {Delay loop for speaker OFF phase (speeds up as counter
  $6CA6 JR NZ,$6CA5   ; decreases).}
- $6CA8 DEC C         ; {Decrement cycle counter, loop for 4 cycles per frame.
- $6CA9 JP NZ,$6C95   ;
+ $6CA8 DEC C         ; {Decrement cycle counter, loop for 4 cycles per
+ $6CA9 JP NZ,$6C95   ; interrupt.
  $6CAC RET           ; }
 
 ; Complete explosion sound sequence
 ;
 ; Resets the explosion counter and clears CONTROLS_BIT_EXPLODING flag.
 @label=explosion_render_finish
-@isub=LD A,EXPLOSION_SOUND_FRAMES
+@isub=LD A,EXPLOSION_SOUND_TICKS
 c$6CAD LD A,$18      ; {Reset explosion counter for next explosion.
  $6CAF LD ($6C7A),A  ; }
  $6CB2 LD HL,$6BB0   ; {Clear CONTROLS_BIT_EXPLODING in #R$6BB0.
@@ -4478,12 +4478,12 @@ c$6CD6 LD A,(HL)     ; {Extract period from bits 0-2 and bit 4 of controls
 
 ; Play low fuel warning sound
 ;
-; Generates a warbling warning sound when fuel is low. Called once per frame
-; while CONTROLS_BIT_LOW_FUEL is set. The sound pitch varies each frame
-; creating an urgent warbling effect.
+; Generates a warbling warning sound when fuel is low. Called once per
+; interrupt while CONTROLS_BIT_LOW_FUEL is set. The sound pitch varies each
+; interrupt creating an urgent warbling effect.
 ; .
 ; #LIST
-; { Decrements #R$5F65 each frame, wrapping at $7F (0-127 range) }
+; { Decrements #R$5F65 each interrupt, wrapping at $7F (0-127 range) }
 ; { Uses this value as period for symmetric square wave }
 ; { 3 cycles of waveform per invocation }
 ; { As period decrements, pitch rises then resets, creating warble }
@@ -4799,7 +4799,7 @@ c$6E92 LD DE,$0008   ; {Play tank full sound: BEEPER with DE=$0008, HL=$0111.
 ; #LIST
 ; { Sets CONTROLS_BIT_EXPLODING to trigger explosion sound }
 ; { Clears CONTROLS_BIT_FIRE_SOUND to stop the fire sound during explosion }
-; { Resets #R$6C7A (explosion counter) to EXPLOSION_SOUND_FRAMES }
+; { Resets #R$6C7A (explosion counter) to EXPLOSION_SOUND_TICKS }
 ; { Falls through to #R$6EAB to add explosion to set }
 ; LIST#
 ;
@@ -4811,7 +4811,7 @@ c$6E9C LD HL,$6BB0   ; {Set CONTROLS_BIT_EXPLODING in #R$6BB0.
  $6E9F SET 5,(HL)    ; }
 @isub=RES CONTROLS_BIT_FIRE_SOUND,(HL)
  $6EA1 RES 0,(HL)    ; Clear CONTROLS_BIT_FIRE_SOUND.
-@isub=LD A,EXPLOSION_SOUND_FRAMES
+@isub=LD A,EXPLOSION_SOUND_TICKS
  $6EA3 LD A,$18      ; {Reset explosion counter.
  $6EA5 LD ($6C7A),A  ; }
  $6EA8 LD HL,$5F2E   ; Point HL to explosions set at #R$5F2E, fall through to

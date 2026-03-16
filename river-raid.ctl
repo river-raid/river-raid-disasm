@@ -252,9 +252,9 @@
 > $4000 TERRAIN_PROFILE_SIZE EQU $10
 > $4000
 > $4000 EXPLOSION_ANIM_FRAMES  EQU $10
-> $4000 EXPLOSION_SOUND_FRAMES EQU $18
+> $4000 EXPLOSION_SOUND_TICKS EQU $18
 > $4000
-> $4000 BONUS_LIFE_SOUND_FRAMES EQU $40
+> $4000 BONUS_LIFE_SOUND_TICKS EQU $40
 > $4000
 > $4000 SCORE_DIGIT_COUNT EQU $06
 > $4000
@@ -1610,16 +1610,16 @@ D $6C24 Restores registers and returns. Uses RETN instead of RETI (both work ide
 @ $6C2B label=data_unused_6C2B
 u $6C2B
 @ $6C30 label=bonus_life_sound_counter
-g $6C30 Bonus life sound progress counter (0-64). Incremented each frame during jingle. Sound completes when reaching $40 (64).
+g $6C30 Bonus life sound progress counter (0-64). Incremented each interrupt during jingle. Sound completes when reaching $40 (64).
 @ $6C31 label=do_bonus_life
 c $6C31 Play bonus life sound effect
-D $6C31 Generates a rising pitch sound effect when player earns an extra life. Called once per frame while CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 frames.
-D $6C31 #LIST { Counter increments from 0 to 64 over successive frames } { Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases } { Lower pitch values = higher frequency, so sound rises in pitch } { Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001 } LIST#
+D $6C31 Generates a rising pitch sound effect when player earns an extra life. Called once per interrupt while CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 interrupts (~1.28 seconds).
+D $6C31 #LIST { Counter increments from 0 to 64 over successive interrupts } { Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases } { Lower pitch values = higher frequency, so sound rises in pitch } { Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001 } LIST#
   $6C31 Increment counter and check if reached $40 (64). If so, sound is complete.
-@ $6C38 isub=CP BONUS_LIFE_SOUND_FRAMES
-  $6C38 Check if counter reached BONUS_LIFE_SOUND_FRAMES. If done, finish sound sequence.
-@ $6C3E isub=LD A,BONUS_LIFE_SOUND_FRAMES
-  $6C3D Calculate pitch: pitch = BONUS_LIFE_SOUND_FRAMES - counter.
+@ $6C38 isub=CP BONUS_LIFE_SOUND_TICKS
+  $6C38 Check if counter reached BONUS_LIFE_SOUND_TICKS. If done, finish sound sequence.
+@ $6C3E isub=LD A,BONUS_LIFE_SOUND_TICKS
+  $6C3D Calculate pitch: pitch = BONUS_LIFE_SOUND_TICKS - counter.
   $6C41 Set up BEEPER parameters: H = pitch >> 3 (range 7-0), L = $FF (duration).
   $6C4A,7 Call ROM BEEPER at $03B5 with DE=$0001 (one iteration). Disable interrupts after.
 @ $6C52 label=bonus_life_sound_done
@@ -1648,11 +1648,11 @@ R $6C5D I:HL Pointer to #R$6BB0 (controls state byte)
   $6C70 Delay loop for speaker OFF phase.
   $6C73,7 Decrement cycle counter, loop if not zero. Return from interrupt when done.
 @ $6C7A label=explosion_counter
-g $6C7A Explosion sound frame counter. Counts down from $18 (24) to 0. Value also controls pitch - higher values = lower frequency.
+g $6C7A Explosion sound tick counter. Counts down from $18 (24) to 0. Value also controls pitch - higher values = lower frequency.
 @ $6C7B label=beep_explosion
 c $6C7B Play explosion sound effect
-D $6C7B Generates an explosion sound that plays over 24 frames ($18). Called once per frame while CONTROLS_BIT_EXPLODING is set. The ON delay is derived from (DE)&7, but DE is not set up by the caller - it retains whatever value the interrupted main loop code had, making the pitch vary semi-randomly between frames and giving the explosion its noisy character.
-D $6C7B #LIST { Counter decrements from $18 (24) to 0 over successive frames } { ON delay = ((DE) AND $07) << 3 + $10, range $10-$48 (16-72) } { OFF delay = counter value, decreasing each frame (sound speeds up) } { 4 cycles of waveform per frame } { As counter decreases, OFF delay shortens, making sound more rapid/urgent } LIST#
+D $6C7B Generates an explosion sound that plays over 24 interrupts ($18). Called once per interrupt while CONTROLS_BIT_EXPLODING is set. The ON delay is derived from (DE)&7, but DE is not set up by the caller - it retains whatever value the interrupted main loop code had, making the pitch vary semi-randomly between interrupts and giving the explosion its noisy character.
+D $6C7B #LIST { Counter decrements from $18 (24) to 0 over successive interrupts } { ON delay = ((DE) AND $07) << 3 + $10, range $10-$48 (16-72) } { OFF delay = counter value, decreasing each interrupt (sound speeds up) } { 4 cycles of waveform per interrupt } { As counter decreases, OFF delay shortens, making sound more rapid/urgent } LIST#
 R $6C7B I:DE Not intentionally set - residual value from interrupted code, read as (DE)&7 to derive ON delay
   $6C7B,4 Decrement explosion counter.
   $6C82 If counter reached 0, jump to #R$6CAD to finish.
@@ -1669,9 +1669,9 @@ R $6C7B I:DE Not intentionally set - residual value from interrupted code, read 
   $6CA1 Load counter value as OFF delay.
 @ $6CA5 label=beep_explosion_delay_off
   $6CA5 Delay loop for speaker OFF phase (speeds up as counter decreases).
-  $6CA8 Decrement cycle counter, loop for 4 cycles per frame.
+  $6CA8 Decrement cycle counter, loop for 4 cycles per interrupt.
 @ $6CAD label=explosion_render_finish
-@ $6CAD isub=LD A,EXPLOSION_SOUND_FRAMES
+@ $6CAD isub=LD A,EXPLOSION_SOUND_TICKS
 c $6CAD Complete explosion sound sequence
 D $6CAD Resets the explosion counter and clears CONTROLS_BIT_EXPLODING flag.
   $6CAD Reset explosion counter for next explosion.
@@ -1717,8 +1717,8 @@ R $6CD6 I:HL Pointer to #R$6BB0 (controls state byte)
   $6CED Decrement cycle counter, loop if not zero. Return from interrupt when done.
 @ $6CF4 label=do_low_fuel
 c $6CF4 Play low fuel warning sound
-D $6CF4 Generates a warbling warning sound when fuel is low. Called once per frame while CONTROLS_BIT_LOW_FUEL is set. The sound pitch varies each frame creating an urgent warbling effect.
-D $6CF4 #LIST { Decrements #R$5F65 each frame, wrapping at $7F (0-127 range) } { Uses this value as period for symmetric square wave } { 3 cycles of waveform per invocation } { As period decrements, pitch rises then resets, creating warble } LIST#
+D $6CF4 Generates a warbling warning sound when fuel is low. Called once per interrupt while CONTROLS_BIT_LOW_FUEL is set. The sound pitch varies each interrupt creating an urgent warbling effect.
+D $6CF4 #LIST { Decrements #R$5F65 each interrupt, wrapping at $7F (0-127 range) } { Uses this value as period for symmetric square wave } { 3 cycles of waveform per invocation } { As period decrements, pitch rises then resets, creating warble } LIST#
   $6CF4 Loop counter: 3 cycles of waveform.
 @ $6CF6 label=do_low_fuel_loop
   $6CF6 Decrement period (#R$5F65), wrap at $7F. Store new period in E.
@@ -1841,14 +1841,14 @@ D $6E92 Plays a short beep (~1450 Hz, ~6ms) when fuel tank is already full and c
 @ $6E9C label=spawn_explosion_fragment
 c $6E9C Create explosion fragment at coordinates
 D $6E9C Called when an enemy is destroyed or the player collides. Sets up explosion state and adds an explosion entry to the explosions set at #R$5F2E.
-D $6E9C #LIST { Sets CONTROLS_BIT_EXPLODING to trigger explosion sound } { Clears CONTROLS_BIT_FIRE_SOUND to stop the fire sound during explosion } { Resets #R$6C7A (explosion counter) to EXPLOSION_SOUND_FRAMES } { Falls through to #R$6EAB to add explosion to set } LIST#
+D $6E9C #LIST { Sets CONTROLS_BIT_EXPLODING to trigger explosion sound } { Clears CONTROLS_BIT_FIRE_SOUND to stop the fire sound during explosion } { Resets #R$6C7A (explosion counter) to EXPLOSION_SOUND_TICKS } { Falls through to #R$6EAB to add explosion to set } LIST#
 R $6E9C I:BC Fragment coordinates: B=Y offset, C=X position
 R $6E9C I:D Initial explosion frame index (0 = start at frame 1)
   $6E9C Set CONTROLS_BIT_EXPLODING in #R$6BB0.
 @ $6E9F isub=SET CONTROLS_BIT_EXPLODING,(HL)
 @ $6EA1 isub=RES CONTROLS_BIT_FIRE_SOUND,(HL)
   $6EA1 Clear CONTROLS_BIT_FIRE_SOUND.
-@ $6EA3 isub=LD A,EXPLOSION_SOUND_FRAMES
+@ $6EA3 isub=LD A,EXPLOSION_SOUND_TICKS
   $6EA3 Reset explosion counter.
   $6EA8 Point HL to explosions set at #R$5F2E, fall through to add_object_to_set.
 @ $6EAB label=add_object_to_set

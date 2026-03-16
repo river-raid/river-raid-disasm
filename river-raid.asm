@@ -249,9 +249,9 @@ SCROLL_IN_ITERATIONS EQU $28
 TERRAIN_PROFILE_SIZE EQU $10
 
 EXPLOSION_ANIM_FRAMES  EQU $10
-EXPLOSION_SOUND_FRAMES EQU $18
+EXPLOSION_SOUND_TICKS EQU $18
 
-BONUS_LIFE_SOUND_FRAMES EQU $40
+BONUS_LIFE_SOUND_TICKS EQU $40
 
 SCORE_DIGIT_COUNT EQU $06
 
@@ -3779,17 +3779,17 @@ int_return:
 data_unused_6C2B:
   DEFB $ED,$56,$C3,$08,$00
 
-; Bonus life sound progress counter (0-64). Incremented each frame during jingle. Sound completes when reaching $40
+; Bonus life sound progress counter (0-64). Incremented each interrupt during jingle. Sound completes when reaching $40
 ; (64).
 bonus_life_sound_counter:
   DEFB $00
 
 ; Play bonus life sound effect
 ;
-; Generates a rising pitch sound effect when player earns an extra life. Called once per frame while
-; CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 frames.
+; Generates a rising pitch sound effect when player earns an extra life. Called once per interrupt while
+; CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 interrupts.
 ;
-; * Counter increments from 0 to 64 over successive frames
+; * Counter increments from 0 to 64 over successive interrupts
 ; * Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases
 ; * Lower pitch values = higher frequency, so sound rises in pitch
 ; * Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001
@@ -3797,10 +3797,10 @@ do_bonus_life:
   LD A,(bonus_life_sound_counter)      ; Increment counter and check if reached $40 (64). If so, sound is complete.
   INC A                                ;
   LD (bonus_life_sound_counter),A      ;
-  CP BONUS_LIFE_SOUND_FRAMES           ; Check if counter reached BONUS_LIFE_SOUND_FRAMES. If done, finish sound
+  CP BONUS_LIFE_SOUND_TICKS            ; Check if counter reached BONUS_LIFE_SOUND_TICKS. If done, finish sound
   JP Z,bonus_life_sound_done           ; sequence.
-  LD B,A                               ; Calculate pitch: pitch = BONUS_LIFE_SOUND_FRAMES - counter.
-  LD A,BONUS_LIFE_SOUND_FRAMES         ;
+  LD B,A                               ; Calculate pitch: pitch = BONUS_LIFE_SOUND_TICKS - counter.
+  LD A,BONUS_LIFE_SOUND_TICKS          ;
   SUB B                                ;
   LD L,$FF                             ; Set up BEEPER parameters: H = pitch >> 3 (range 7-0), L = $FF (duration).
   LD H,A                               ;
@@ -3854,22 +3854,22 @@ beep_engine_normal_delay_off:
   JP NZ,beep_engine_normal_loop        ;
   JP int_return                        ;
 
-; Explosion sound frame counter. Counts down from $18 (24) to 0. Value also controls pitch - higher values = lower
+; Explosion sound tick counter. Counts down from $18 (24) to 0. Value also controls pitch - higher values = lower
 ; frequency.
 explosion_counter:
   DEFB $18
 
 ; Play explosion sound effect
 ;
-; Generates an explosion sound that plays over 24 frames ($18). Called once per frame while CONTROLS_BIT_EXPLODING is
-; set. The ON delay is derived from (DE)&7, but DE is not set up by the caller - it retains whatever value the
-; interrupted main loop code had, making the pitch vary semi-randomly between frames and giving the explosion its noisy
-; character.
+; Generates an explosion sound that plays over 24 interrupts ($18). Called once per interrupt while
+; CONTROLS_BIT_EXPLODING is set. The ON delay is derived from (DE)&7, but DE is not set up by the caller - it retains
+; whatever value the interrupted main loop code had, making the pitch vary semi-randomly between interrupts and giving
+; the explosion its noisy character.
 ;
-; * Counter decrements from $18 (24) to 0 over successive frames
+; * Counter decrements from $18 (24) to 0 over successive interrupts
 ; * ON delay = ((DE) AND $07) << 3 + $10, range $10-$48 (16-72)
-; * OFF delay = counter value, decreasing each frame (sound speeds up)
-; * 4 cycles of waveform per frame
+; * OFF delay = counter value, decreasing each interrupt (sound speeds up)
+; * 4 cycles of waveform per interrupt
 ; * As counter decreases, OFF delay shortens, making sound more rapid/urgent
 ;
 ; I:DE Not intentionally set - residual value from interrupted code, read as (DE)&7 to derive ON delay
@@ -3901,7 +3901,7 @@ beep_explosion_delay_on:
 beep_explosion_delay_off:
   DEC D                                ; Delay loop for speaker OFF phase (speeds up as counter decreases).
   JR NZ,beep_explosion_delay_off       ;
-  DEC C                                ; Decrement cycle counter, loop for 4 cycles per frame.
+  DEC C                                ; Decrement cycle counter, loop for 4 cycles per interrupt.
   JP NZ,beep_explosion_loop            ;
   RET                                  ;
 
@@ -3909,7 +3909,7 @@ beep_explosion_delay_off:
 ;
 ; Resets the explosion counter and clears CONTROLS_BIT_EXPLODING flag.
 explosion_render_finish:
-  LD A,EXPLOSION_SOUND_FRAMES          ; Reset explosion counter for next explosion.
+  LD A,EXPLOSION_SOUND_TICKS           ; Reset explosion counter for next explosion.
   LD (explosion_counter),A             ;
   LD HL,state_controls                 ; Clear CONTROLS_BIT_EXPLODING in state_controls.
   RES CONTROLS_BIT_EXPLODING,(HL)      ;
@@ -3981,10 +3981,10 @@ beep_engine_slow_delay_off:
 
 ; Play low fuel warning sound
 ;
-; Generates a warbling warning sound when fuel is low. Called once per frame while CONTROLS_BIT_LOW_FUEL is set. The
-; sound pitch varies each frame creating an urgent warbling effect.
+; Generates a warbling warning sound when fuel is low. Called once per interrupt while CONTROLS_BIT_LOW_FUEL is set. The
+; sound pitch varies each interrupt creating an urgent warbling effect.
 ;
-; * Decrements low_fuel_sound_period each frame, wrapping at $7F (0-127 range)
+; * Decrements low_fuel_sound_period each interrupt, wrapping at $7F (0-127 range)
 ; * Uses this value as period for symmetric square wave
 ; * 3 cycles of waveform per invocation
 ; * As period decrements, pitch rises then resets, creating warble
@@ -4259,7 +4259,7 @@ signal_fuel_level_excessive:
 ;
 ; * Sets CONTROLS_BIT_EXPLODING to trigger explosion sound
 ; * Clears CONTROLS_BIT_FIRE_SOUND to stop the fire sound during explosion
-; * Resets explosion_counter (explosion counter) to EXPLOSION_SOUND_FRAMES
+; * Resets explosion_counter (explosion counter) to EXPLOSION_SOUND_TICKS
 ; * Falls through to add_object_to_set to add explosion to set
 ;
 ; I:BC Fragment coordinates: B=Y offset, C=X position
@@ -4268,7 +4268,7 @@ spawn_explosion_fragment:
   LD HL,state_controls                 ; Set CONTROLS_BIT_EXPLODING in state_controls.
   SET CONTROLS_BIT_EXPLODING,(HL)      ;
   RES CONTROLS_BIT_FIRE_SOUND,(HL)     ; Clear CONTROLS_BIT_FIRE_SOUND.
-  LD A,EXPLOSION_SOUND_FRAMES          ; Reset explosion counter.
+  LD A,EXPLOSION_SOUND_TICKS           ; Reset explosion counter.
   LD (explosion_counter),A             ;
   LD HL,exploding_fragments            ; Point HL to explosions set at exploding_fragments, fall through to
                                        ; add_object_to_set.
