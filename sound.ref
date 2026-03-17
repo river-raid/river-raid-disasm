@@ -1,8 +1,12 @@
 [Audio:fire:Missile fire]
-This sound effect is produced by the routine at #R$8A02 when the player fires a
-missile.
+This sound effect is produced by the routine at #R$8A02. The routine plays 8
+speaker pulses (~1.3 ms) per interrupt. The CONTROLS_BIT_FIRE_SOUND flag is set
+when the missile is created and cleared by the game loop when missile Y drops to
+$70 (112). Starting from Y=$7E (126) and moving -6 pixels per game frame, this
+takes 3 game frames (~12 interrupts at 50 Hz). The audio below shows 12
+consecutive interrupt calls with ~18.7 ms gaps between them.
 
-#AUDIO(fire.wav)(25,[532,50]*7,532)
+#AUDIO(fire.wav)(#INCLUDE(FireDelays))
 
 [Audio:engine-normal:Engine (normal speed)]
 This sound effect is produced by the routine at #R$6C5D during normal speed
@@ -188,6 +192,20 @@ an explosion and plays no sound.
 67000,97,152,81,136,65,
 67000,49,104,33,88,4113,
 67000,2049,2104,2033,2088,2017
+
+[FireDelays]
+25,[532,50]*7,532,
+65257,25,[532,50]*7,532,
+65257,25,[532,50]*7,532,
+65257,25,[532,50]*7,532,
+65257,25,[532,50]*7,532,
+65257,25,[532,50]*7,532,
+65257,25,[532,50]*7,532,
+65257,25,[532,50]*7,532,
+65257,25,[532,50]*7,532,
+65257,25,[532,50]*7,532,
+65257,25,[532,50]*7,532,
+65257,25,[532,50]*7,532
 
 [ShellWhistleDelays]
 219,[1139]*5,
