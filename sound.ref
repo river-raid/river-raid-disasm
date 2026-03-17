@@ -52,6 +52,29 @@ already full and cannot accept more fuel. It plays a short beep (~1450 Hz,
 
 #AUDIO(fuel-full.wav)(218,[1207]*17)
 
+[Audio:refuel:Refueling]
+This sound effect is produced by the routine at #R$6E50 once per game frame while
+the plane is actively receiving fuel. Uses the ROM BEEPER routine with DE=$0007,
+HL=$0333 (8 cycles, ~516 Hz, ~14.6 ms per call). Repeats each frame until fuel is
+full or the plane leaves the depot.
+
+#AUDIO(refuel.wav)([218,[3391]*15,240000]*3,218,[3391]*15)
+
+[Audio:heli-missile-launch:Helicopter missile launch]
+This sound effect is produced by the routine at #R$73EB when an advanced helicopter
+fires a missile. Uses the ROM BEEPER routine with DE=$0001, HL=$2800 (2 cycles,
+~43 Hz, ~35 ms).
+
+#AUDIO(heli-missile-launch.wav)(218,[41075]*3)
+
+[Audio:shell-whistle:Tank shell whistle]
+This sound effect is produced by the routine at #R$7457 once per game frame while a
+tank shell is in flight. The pitch parameter is HL = step × 256 (DE=$0002, 3 cycles
+per step), producing a descending whistle over trajectory steps 1–7. Step 8 triggers
+an explosion and plays no sound.
+
+#AUDIO(shell-whistle.wav)(#INCLUDE(ShellWhistleDelays))
+
 [ExplosionDelays]
 121,[657,412]*3,657,
 67000,[1169,396]*3,1169,
@@ -165,3 +188,12 @@ already full and cannot accept more fuel. It plays a short beep (~1450 Hz,
 67000,97,152,81,136,65,
 67000,49,104,33,88,4113,
 67000,2049,2104,2033,2088,2017
+
+[ShellWhistleDelays]
+219,[1139]*5,
+270000,219,[2163]*5,
+270000,219,[3187]*5,
+270000,219,[4211]*5,
+270000,219,[5235]*5,
+270000,219,[6259]*5,
+270000,219,[7283]*5
