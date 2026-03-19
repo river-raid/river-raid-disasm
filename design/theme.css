@@ -1,0 +1,778 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
+
+/* ── Reset & variables ───────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg:          #070d1a;
+  --river:       #0d2757;
+  --river-mid:   #1040a0;
+  --bank:        #0a2e0a;
+  --bank-light:  #1a5c1a;
+  --yellow:      #f5c518;
+  --cyan:        #18d4f5;
+  --magenta:     #e040b0;
+  --green:       #50c050;
+  --red:         #e85050;
+  --text:        #c8d8f0;
+  --text-dim:    #4a6080;
+  --border:      #162448;
+}
+
+html {
+  scrollbar-color: var(--river-mid) var(--bg);
+}
+
+/* ── Body ────────────────────────────────── */
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+}
+
+/* Riverbank strips — index page only */
+body.GameIndex::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    var(--bank)       0%,
+    var(--bank-light) 6%,
+    transparent       18%,
+    transparent       82%,
+    var(--bank-light) 94%,
+    var(--bank)       100%
+  );
+  z-index: -1;
+  pointer-events: none;
+}
+
+body.GameIndex::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 60% 80% at 50% 40%,
+    rgba(16, 64, 160, 0.15) 0%,
+    transparent 70%
+  );
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ── Header bar (all non-index pages) ───── */
+
+table.header {
+  display: block;
+  width: 100%;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(7, 13, 26, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  font-size: inherit;
+  font-weight: normal;
+}
+
+table.header tbody {
+  display: block;
+}
+
+table.header tr {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+table.header td {
+  font-size: inherit;
+  font-weight: normal;
+  padding: 14px 0;
+  vertical-align: middle;
+}
+
+td.logo {
+  flex: 0 0 auto;
+  margin-right: auto;
+}
+
+td.logo a {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--yellow);
+  text-decoration: none;
+  text-shadow: 0 0 10px rgba(245, 197, 24, 0.4);
+}
+
+td.page-header {
+  flex: 0 0 auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* ── Page content wrapper ────────────────── */
+
+.page-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 32px 0;
+}
+
+/* ── Index layout ────────────────────────── */
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+header {
+  padding: 72px 0 48px;
+  text-align: center;
+}
+
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--cyan);
+  opacity: 0.7;
+  margin-bottom: 28px;
+}
+
+.game-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(24px, 5.5vw, 52px);
+  color: var(--yellow);
+  text-shadow:
+    0 0 24px rgba(245, 197, 24, 0.55),
+    0 0 64px rgba(245, 197, 24, 0.18),
+    3px 3px 0 rgba(0, 0, 0, 0.7);
+  line-height: 1.4;
+}
+
+.subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 22px;
+}
+
+.river-divider {
+  position: relative;
+  height: 2px;
+  margin: 48px 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--river-mid) 20%,
+    var(--cyan) 50%,
+    var(--river-mid) 80%,
+    transparent 100%
+  );
+}
+
+.river-divider::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  background: var(--cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--cyan);
+}
+
+/* ── Index navigation ────────────────────── */
+
+nav {
+  padding-bottom: 72px;
+}
+
+.section {
+  --section-color: var(--cyan);
+  margin-bottom: 40px;
+}
+
+nav .section:nth-child(1) { --section-color: var(--cyan); }
+nav .section:nth-child(2) { --section-color: var(--magenta); }
+nav .section:nth-child(3) { --section-color: var(--yellow); }
+nav .section:nth-child(4) { --section-color: var(--green); }
+
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--section-color);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--section-color), transparent);
+  opacity: 0.3;
+}
+
+.link-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+}
+
+.link-card {
+  display: block;
+  padding: 16px 18px;
+  background: rgba(13, 39, 87, 0.45);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.12s, border-color 0.12s, transform 0.12s;
+  position: relative;
+  overflow: hidden;
+}
+
+.link-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--section-color);
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform 0.12s;
+  border-radius: 6px 0 0 6px;
+}
+
+.link-card:hover {
+  background: rgba(20, 55, 130, 0.65);
+  border-color: var(--section-color);
+  color: var(--text);
+  transform: translateX(5px);
+}
+
+.link-card:hover::before {
+  transform: scaleY(1);
+}
+
+/* ── ASM navigation ──────────────────────── */
+
+table.asm-navigation {
+  width: 100%;
+  margin-bottom: 0;
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  border-collapse: collapse;
+}
+
+table.asm-navigation td {
+  background: transparent;
+  padding: 8px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+table.asm-navigation a {
+  color: var(--cyan);
+}
+
+table.asm-navigation td.prev { width: 30%; text-align: left; }
+table.asm-navigation td.up   { width: 40%; text-align: center; }
+table.asm-navigation td.next { width: 30%; text-align: right; }
+
+/* ── Routine description ─────────────────── */
+
+div.description {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--yellow);
+  margin: 24px 0 0;
+  padding: 11px 16px;
+  background: rgba(13, 39, 87, 0.35);
+  border-left: 3px solid var(--yellow);
+  border-radius: 0 4px 4px 0;
+}
+
+div.details {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-dim);
+  padding: 4px 0;
+}
+
+div.comments {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text);
+  padding: 8px 0 4px;
+}
+
+div.paragraph {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+/* ── Disassembly table ───────────────────── */
+
+table.disassembly {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+td.routine-comment {
+  padding: 4px 0;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  border: none;
+}
+
+td.address-1 {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+  vertical-align: top;
+  padding: 1px 14px 1px 0;
+  white-space: pre;
+  font-size: 12px;
+}
+
+td.address-2 {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--red);
+  font-weight: 700;
+  vertical-align: top;
+  padding: 1px 14px 1px 0;
+  white-space: pre;
+  font-size: 12px;
+}
+
+td.asm-label {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cyan);
+  font-weight: 700;
+  vertical-align: top;
+  padding: 1px 14px 1px 0;
+  white-space: pre;
+}
+
+td.bytes {
+  font-family: 'JetBrains Mono', monospace;
+  color: #787840;
+  vertical-align: top;
+  padding: 1px 14px 1px 0;
+  white-space: pre;
+  font-size: 11px;
+}
+
+td.instruction {
+  font-family: 'JetBrains Mono', monospace;
+  color: #5a7868; /* punctuation / unrecognised tokens */
+  vertical-align: top;
+  padding: 1px 14px 1px 0;
+  white-space: pre;
+}
+
+/* Z80 syntax highlighting tokens */
+td.instruction .hljs-keyword  { color: #6fdd8f; } /* mnemonics  */
+td.instruction .hljs-built_in { color: var(--cyan); }   /* registers  */
+td.instruction .hljs-number   { color: var(--yellow); } /* immediates */
+td.instruction .hljs-string   { color: var(--magenta); }
+td.instruction .hljs-comment  { color: var(--text-dim); font-style: italic; }
+
+td.comment-0 {
+  color: var(--text-dim);
+  vertical-align: top;
+  padding: 1px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-style: italic;
+  font-size: 12px;
+}
+
+td.comment-1 {
+  color: var(--text);
+  background: rgba(13, 39, 87, 0.25);
+  border-left: 1px solid rgba(24, 212, 245, 0.12);
+  border-top: 1px solid rgba(24, 212, 245, 0.1);
+  border-bottom: 1px solid rgba(24, 212, 245, 0.1);
+  padding: 1px 14px;
+  vertical-align: top;
+  width: 45%;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+table.disassembly tr.asm-group-hover > td {
+  background: rgba(24, 212, 245, 0.05);
+}
+
+table.disassembly tr.asm-group-hover > td.comment-1 {
+  background: rgba(24, 212, 245, 0.1);
+  border-left-color: rgba(24, 212, 245, 0.45);
+}
+
+span.register {
+  color: var(--cyan);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Input/output register tables ─────────── */
+
+table.input,
+table.output {
+  border-collapse: collapse;
+  margin-bottom: 14px;
+}
+
+table.input th,
+table.output th {
+  background: rgba(13, 39, 87, 0.6);
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  text-align: left;
+}
+
+table.input td,
+table.output td {
+  background: rgba(13, 39, 87, 0.3);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 4px 12px;
+}
+
+td.register {
+  color: var(--cyan);
+  width: auto;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* ── Memory map tables ───────────────────── */
+
+div.map-intro {
+  margin-bottom: 16px;
+}
+
+table.map {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.map th {
+  background: rgba(13, 39, 87, 0.6);
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+table.map th.map-length {
+  text-align: center;
+}
+
+table.map tr:nth-child(odd)  td { background: rgba(10, 20, 50, 0.35); }
+table.map tr:nth-child(even) td { background: rgba(13, 39, 87, 0.35); }
+
+table.map td {
+  padding: 7px 16px;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(22, 36, 72, 0.4);
+  font-size: 14px;
+}
+
+/* Address cells by entry type */
+td.map-c, td.map-g, td.map-b, td.map-w, td.map-s, td.map-u,
+td.map-page, td.map-byte {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+td.map-c { color: var(--cyan); }
+td.map-g { color: var(--yellow); }
+td.map-b, td.map-w { color: var(--green); }
+td.map-s, td.map-u { color: var(--text-dim); }
+td.map-page, td.map-byte { color: var(--text-dim); text-align: center; }
+
+td.map-length {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Description cells — color only applied to address column above;
+   description text uses consistent neutral tone */
+td.map-c-desc,
+td.map-g-desc,
+td.map-b-desc,
+td.map-w-desc,
+td.map-s-desc,
+td.map-u-desc,
+td.map-t-desc { color: var(--text); }
+
+div.map-entry-title-10 {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+div.map-entry-title-11 {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+div.map-entry-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+
+/* ── Box entries (facts, notes, bugs…) ───── */
+
+div.box {
+  background: rgba(13, 39, 87, 0.3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 14px;
+  width: auto;
+}
+
+div.box-1 {
+  background: rgba(13, 39, 87, 0.3);
+}
+
+div.box-2 {
+  background: rgba(8, 18, 50, 0.4);
+  border-color: rgba(22, 36, 72, 0.7);
+}
+
+div.box-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--yellow);
+  margin-bottom: 10px;
+  letter-spacing: 0.3px;
+}
+
+div.box p {
+  margin-bottom: 0;
+}
+
+/* ── List entries (graphics…) ────────────── */
+
+div.list-entry {
+  background: rgba(13, 39, 87, 0.3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 14px;
+  width: auto;
+}
+
+div.list-entry-1 { background: rgba(13, 39, 87, 0.3); }
+div.list-entry-2 { background: rgba(8, 18, 50, 0.4); }
+
+div.list-entry-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--yellow);
+  margin-bottom: 8px;
+}
+
+div.list-entry-desc {
+  font-size: 14px;
+  color: var(--text);
+  margin-top: 6px;
+  line-height: 1.6;
+}
+
+ul.list-entry {
+  margin-top: 8px;
+  margin-bottom: 0;
+  padding-left: 20px;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+/* ── Default content tables ──────────────── */
+
+table.default {
+  border-collapse: collapse;
+  margin: 10px 0;
+}
+
+table table.default th,
+table.default th {
+  background: rgba(13, 39, 87, 0.6);
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 7px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+table table.default td,
+table.default td {
+  background: rgba(13, 39, 87, 0.25);
+  color: var(--text);
+  font-size: 13px;
+  padding: 6px 14px;
+  border-bottom: 1px solid rgba(22, 36, 72, 0.35);
+}
+
+td.centre { text-align: center; }
+
+/* ── Contents list ───────────────────────── */
+
+ul.contents {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+ul.contents li a {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--cyan);
+  text-decoration: none;
+  padding: 5px 11px;
+  background: rgba(13, 39, 87, 0.4);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  display: block;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+ul.contents li a:hover {
+  background: rgba(20, 55, 130, 0.6);
+  border-color: var(--cyan);
+  color: var(--yellow);
+}
+
+/* ── Images (sprites) ────────────────────── */
+
+img {
+  border: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* ── Audio controls ──────────────────────── */
+
+audio {
+  display: block;
+  width: 100%;
+  max-width: 380px;
+  height: 36px;
+  margin: 10px 0;
+  accent-color: var(--cyan);
+  filter: invert(1) hue-rotate(165deg) brightness(0.85);
+}
+
+/* ── Links ───────────────────────────────── */
+
+a {
+  color: var(--cyan);
+  text-decoration: none;
+  transition: color 0.1s;
+}
+
+a:hover,
+a.map-entry-title:hover {
+  color: var(--yellow);
+}
+
+a.map-entry-title {
+  color: inherit;
+}
+
+/* ── Footer ──────────────────────────────── */
+
+footer {
+  clear: both;
+  margin-top: 48px;
+  padding: 20px 0 32px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+footer .release,
+footer .copyright {
+  display: none;
+}
+
+footer a {
+  color: var(--cyan);
+}
+
+footer a:hover {
+  color: var(--yellow);
+}

@@ -1,5 +1,5 @@
 [Config]
-RefFiles=sound.ref;graphics.ref;levels.ref;facts.ref;bugs.ref;notes.ref;glossary.ref
+RefFiles=sound.ref;graphics.ref;levels.ref;facts.ref;bugs.ref;notes.ref;glossary.ref;design.ref
 GameDir=river-raid
 
 [Game]

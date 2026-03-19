@@ -1,0 +1,77 @@
+[Game]
+Logo=River Raid
+StyleSheet=skoolkit.css;design/theme.css
+JavaScript=design/theme.js
+
+[Template:Layout]
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>{Game[Game]}: {SkoolKit[title]}</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<# foreach($css,SkoolKit[stylesheets]) #>
+<link rel="stylesheet" type="text/css" href="{$css[href]}" />
+<# endfor #>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<# foreach($js,SkoolKit[javascripts]) #>
+<script type="text/javascript" src="{$js[src]}"></script>
+<# endfor #>
+</head>
+<body class="{SkoolKit[page_id]}">
+<table class="header">
+<tr>
+<# if(SkoolKit[page_header][0]) #>
+<td class="page-header">{SkoolKit[page_header][0]}</td>
+<# endif #>
+<# if(SkoolKit[page_id]=='GameIndex') #>
+<td class="logo">{Game[Logo]}</td>
+<# else #>
+<td class="logo"><a href="{SkoolKit[index_href]}">{Game[Logo]}</a></td>
+<# endif #>
+<td class="page-header">{SkoolKit[page_header][1]}</td>
+</tr>
+</table>
+<div class="page-content">
+<# include({SkoolKit[include]}) #>
+<# include(footer) #>
+</div>
+</body>
+</html>
+
+[Template:GameIndex]
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>{Game[Game]}: {SkoolKit[title]}</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="stylesheet" type="text/css" href="theme.css" />
+</head>
+<body class="{SkoolKit[page_id]}">
+<div class="container">
+<header>
+<div class="eyebrow">ZX Spectrum 48K &nbsp;&middot;&nbsp; 1984 &nbsp;&middot;&nbsp; Activision</div>
+<div class="game-title">River Raid</div>
+<div class="subtitle">Complete RAM Disassembly</div>
+</header>
+<div class="river-divider"></div>
+<# include({SkoolKit[include]}) #>
+<# include(footer) #>
+</div>
+</body>
+</html>
+
+[Template:GameIndex-home]
+<nav>
+<# foreach($section,sections) #>
+<div class="section">
+<div class="section-label">{$section[header]}</div>
+<div class="link-grid">
+<# foreach($item,$section[items]) #>
+<a class="link-card" href="{$item[href]}">{$item[link_text]}</a>
+<# endfor #>
+</div>
+</div>
+<# endfor #>
+</nav>
