@@ -2,6 +2,8 @@
 
 This project reverse engineers [River Raid](http://www.worldofspectrum.org/infoseekid.cgi?id=0004154), a classic game for [ZX Spectrum](http://en.wikipedia.org/wiki/ZX_Spectrum) 48K published by [Activision](https://en.wikipedia.org/wiki/Activision), from the original tape image using [SkoolKit](http://skoolkit.ca/).
 
+The annotated disassembly is available [here](https://river-raid.github.io/river-raid-disasm/).
+
 <p align="center">
     <img src="https://raw.githubusercontent.com/morozov/river-raid-disasm/master/png/screen.png" width="512" height="384" alt="River Raid">
 </p>
