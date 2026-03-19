@@ -21,13 +21,20 @@
 <li><a href="#low-fuel">Low fuel warning</a></li>
 <li><a href="#bonus-life">Bonus life</a></li>
 <li><a href="#fuel-full">Tank full</a></li>
+<li><a href="#refuel">Refueling</a></li>
+<li><a href="#heli-missile-launch">Helicopter missile launch</a></li>
+<li><a href="#shell-whistle">Tank shell whistle</a></li>
 </ul>
 <div><span id="fire"></span></div>
 <div class="box box-1">
 <div class="box-title">Missile fire</div>
 <div class="paragraph">
-This sound effect is produced by the routine at <a href="../asm/35330.html">8A02</a> when the player fires a
-missile.
+This sound effect is produced by the routine at <a href="../asm/35330.html">8A02</a>. The routine plays 8
+speaker pulses (~1.3 ms) per interrupt. The CONTROLS_BIT_FIRE_SOUND flag is set
+when the missile is created and cleared by the game loop when missile Y drops to
+$70 (112). Starting from Y=$7E (126) and moving -6 pixels per game frame, this
+takes 3 game frames (~12 interrupts at 50 Hz). The audio below shows 12
+consecutive interrupt calls with ~18.7 ms gaps between them.
 </div>
 <div class="paragraph">
 <audio controls="" src="../audio/fire.wav">
@@ -129,6 +136,50 @@ already full and cannot accept more fuel. It plays a short beep (~1450 Hz,
 <div class="paragraph">
 <audio controls="" src="../audio/fuel-full.wav">
 <p>Your browser doesn't support HTML5 audio. Here is a <a href="../audio/fuel-full.wav">link to the audio</a> instead.</p>
+</audio>
+</div>
+</div>
+<div><span id="refuel"></span></div>
+<div class="box box-1">
+<div class="box-title">Refueling</div>
+<div class="paragraph">
+This sound effect is produced by the routine at <a href="../asm/28224.html#28240">6E50</a> once per game frame while
+the plane is actively receiving fuel. Uses the ROM BEEPER routine with DE=$0007,
+HL=$0333 (8 cycles, ~516 Hz, ~14.6 ms per call). Repeats each frame until fuel is
+full or the plane leaves the depot.
+</div>
+<div class="paragraph">
+<audio controls="" src="../audio/refuel.wav">
+<p>Your browser doesn't support HTML5 audio. Here is a <a href="../audio/refuel.wav">link to the audio</a> instead.</p>
+</audio>
+</div>
+</div>
+<div><span id="heli-missile-launch"></span></div>
+<div class="box box-2">
+<div class="box-title">Helicopter missile launch</div>
+<div class="paragraph">
+This sound effect is produced by the routine at <a href="../asm/29661.html#29675">73EB</a> when an advanced helicopter
+fires a missile. Uses the ROM BEEPER routine with DE=$0001, HL=$2800 (2 cycles,
+~43 Hz, ~35 ms).
+</div>
+<div class="paragraph">
+<audio controls="" src="../audio/heli-missile-launch.wav">
+<p>Your browser doesn't support HTML5 audio. Here is a <a href="../audio/heli-missile-launch.wav">link to the audio</a> instead.</p>
+</audio>
+</div>
+</div>
+<div><span id="shell-whistle"></span></div>
+<div class="box box-1">
+<div class="box-title">Tank shell whistle</div>
+<div class="paragraph">
+This sound effect is produced by the routine at <a href="../asm/29761.html#29783">7457</a> once per game frame while a
+tank shell is in flight. The pitch parameter is HL = step × 256 (DE=$0002, 3 cycles
+per step), producing a descending whistle over trajectory steps 1–7. Step 8 triggers
+an explosion and plays no sound.
+</div>
+<div class="paragraph">
+<audio controls="" src="../audio/shell-whistle.wav">
+<p>Your browser doesn't support HTML5 audio. Here is a <a href="../audio/shell-whistle.wav">link to the audio</a> instead.</p>
 </audio>
 </div>
 </div>

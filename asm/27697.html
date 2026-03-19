@@ -29,11 +29,11 @@ Next: <a href="27730.html">6C52</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Generates a rising pitch sound effect when player earns an extra life. Called once per frame while CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 frames.
+Generates a rising pitch sound effect when player earns an extra life. Called once per interrupt while CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 interrupts (~1.28 seconds).
 </div>
 <div class="paragraph">
 <ul class="">
-<li>Counter increments from 0 to 64 over successive frames</li>
+<li>Counter increments from 0 to 64 over successive interrupts</li>
 <li>Pitch = ($40 - counter) &gt;&gt; 3, giving values 7→0 as counter increases</li>
 <li>Lower pitch values = higher frequency, so sound rises in pitch</li>
 <li>Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001</li>
@@ -58,7 +58,7 @@ Generates a rising pitch sound effect when player earns an extra life. Called on
 <tr>
 <td class="address-1"><span id="27704"></span>6C38</td>
 <td class="instruction">CP $40</td>
-<td class="comment-1" rowspan="2">Check if counter reached BONUS_LIFE_SOUND_FRAMES. If done, finish sound sequence.</td>
+<td class="comment-1" rowspan="2">Check if counter reached BONUS_LIFE_SOUND_TICKS. If done, finish sound sequence.</td>
 </tr>
 <tr>
 <td class="address-1"><span id="27706"></span>6C3A</td>
@@ -67,7 +67,7 @@ Generates a rising pitch sound effect when player earns an extra life. Called on
 <tr>
 <td class="address-1"><span id="27709"></span>6C3D</td>
 <td class="instruction">LD B,A</td>
-<td class="comment-1" rowspan="3">Calculate pitch: pitch = BONUS_LIFE_SOUND_FRAMES - counter.</td>
+<td class="comment-1" rowspan="3">Calculate pitch: pitch = BONUS_LIFE_SOUND_TICKS - counter.</td>
 </tr>
 <tr>
 <td class="address-1"><span id="27710"></span>6C3E</td>
