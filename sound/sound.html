@@ -52,7 +52,8 @@ consecutive interrupt calls with ~18.7 ms gaps between them.
 <div class="box-title">Engine (normal speed)</div>
 <div class="paragraph">
 This sound effect is produced by the routine at <a href="../asm/27741.html">beep_engine_normal</a> during normal speed
-flight (player not pressing up or down).
+flight (player not pressing up or down). Called once per interrupt (~50 Hz);
+each call plays 8 speaker pulses (~9.5 kHz).
 </div>
 <div class="paragraph">
 <audio controls="" src="../audio/engine-normal.wav">
@@ -65,7 +66,8 @@ flight (player not pressing up or down).
 <div class="box-title">Engine (fast speed)</div>
 <div class="paragraph">
 This sound effect is produced by the routine at <a href="../asm/27832.html">beep_engine_fast</a> when the player holds
-up to accelerate.
+up to accelerate. Called once per interrupt (~50 Hz); each call plays 8
+speaker pulses (~16.6 kHz).
 </div>
 <div class="paragraph">
 <audio controls="" src="../audio/engine-fast.wav">
@@ -78,7 +80,8 @@ up to accelerate.
 <div class="box-title">Engine (slow speed)</div>
 <div class="paragraph">
 This sound effect is produced by the routine at <a href="../asm/27862.html">beep_engine_slow</a> when the player holds
-down to decelerate.
+down to decelerate. Called once per interrupt (~50 Hz); each call plays 8
+speaker pulses (~10.3 kHz).
 </div>
 <div class="paragraph">
 <audio controls="" src="../audio/engine-slow.wav">
@@ -135,8 +138,8 @@ BEEPER routine at $03B5 with decreasing pitch values.
 <div class="box-title">Tank full</div>
 <div class="paragraph">
 This sound effect is produced by the routine at <a href="../asm/28306.html">signal_fuel_level_excessive</a> when the fuel tank is
-already full and cannot accept more fuel. It plays a short beep (~1450 Hz,
-~6ms) via the ROM BEEPER routine.
+already full and cannot accept more fuel. Called once per game frame (~12 FPS);
+plays a short beep (~1450 Hz, ~6 ms) via the ROM BEEPER routine.
 </div>
 <div class="paragraph">
 <audio controls="" src="../audio/fuel-full.wav">
@@ -148,10 +151,9 @@ already full and cannot accept more fuel. It plays a short beep (~1450 Hz,
 <div class="box box-1">
 <div class="box-title">Refueling</div>
 <div class="paragraph">
-This sound effect is produced by the routine at <a href="../asm/28224.html#28240">6E50</a> once per game frame while
-the plane is actively receiving fuel. Uses the ROM BEEPER routine with DE=$0007,
-HL=$0333 (8 cycles, ~516 Hz, ~14.6 ms per call). Repeats each frame until fuel is
-full or the plane leaves the depot.
+This sound effect is produced by the routine at <a href="../asm/28224.html#28240">6E50</a> while the plane is
+actively receiving fuel. Called once per game frame (~12 FPS); uses the ROM
+BEEPER routine with DE=$0007, HL=$0333 (8 cycles, ~516 Hz, ~14.6 ms per call).
 </div>
 <div class="paragraph">
 <audio controls="" src="../audio/refuel.wav">
