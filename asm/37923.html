@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 9423</title>
+<title>river-raid: Routine at 9423</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -44,29 +49,35 @@ Returns HL pointing to player 1's lives by default. If current player is player 
 </td>
 </tr>
 <tr>
+<td class="asm-label">ld_lives</td>
 <td class="address-2"><span id="37923"></span>9423</td>
 <td class="instruction">LD HL,$923B</td>
-<td class="comment-1" rowspan="1">Load address of player 1 lives (<a href="37435.html">923B</a>) into HL.</td>
+<td class="comment-1" rowspan="1">Load address of player 1 lives (<a href="37435.html">state_lives_player_1</a>) into HL.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37926"></span>9426</td>
 <td class="instruction">LD A,($923D)</td>
 <td class="comment-1" rowspan="2">If current player is not PLAYER_2, return with player 1 address.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37929"></span>9429</td>
 <td class="instruction">CP $02</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37931"></span>942B</td>
 <td class="instruction">RET NZ</td>
-<td class="comment-1" rowspan="2">Otherwise load player 2 lives address (<a href="37436.html">923C</a>) and return.</td>
+<td class="comment-1" rowspan="2">Otherwise load player 2 lives address (<a href="37436.html">state_lives_player_2</a>) and return.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37932"></span>942C</td>
 <td class="instruction">LD HL,$923C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37935"></span>942F</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -88,5 +99,6 @@ Next: <a href="37936.html">9430</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

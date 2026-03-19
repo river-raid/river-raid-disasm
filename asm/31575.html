@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 7B57</title>
+<title>river-raid: Routine at 7B57</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,20 +40,24 @@ Called when the control selection timer expires without user input.
 </td>
 </tr>
 <tr>
+<td class="asm-label">switch_to_overview_mode</td>
 <td class="address-2"><span id="31575"></span>7B57</td>
 <td class="instruction">LD A,$01</td>
 <td class="comment-1" rowspan="2">Set overview mode flag to $01 (enabled).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31577"></span>7B59</td>
 <td class="instruction">LD ($7801),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31580"></span>7B5C</td>
 <td class="instruction">LD SP,($7810)</td>
 <td class="comment-1" rowspan="2">Restore stack pointer and return to caller.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31584"></span>7B60</td>
 <td class="instruction">RET</td>
 </tr>
@@ -69,5 +78,6 @@ Next: <a href="31585.html">7B61</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

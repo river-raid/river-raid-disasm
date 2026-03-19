@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6BB1</title>
+<title>river-raid: Routine at 6BB1</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,33 +34,38 @@ Next: <a href="27583.html">6BBF</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Used by the routine at <a href="27611.html">6BDB</a>.
+Used by the routine at <a href="27611.html">int_handler</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">pause</td>
 <td class="address-2"><span id="27569"></span>6BB1</td>
 <td class="instruction">CALL $02BF</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27572"></span>6BB4</td>
 <td class="instruction">LD A,($5C08)</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27575"></span>6BB7</td>
 <td class="instruction">CP $68</td>
 <td class="comment-1" rowspan="2">Loop until anything else than H is pressed</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27577"></span>6BB9</td>
-<td class="instruction">JP Z,$6BB1</td>
+<td class="instruction">JP Z,<a href="27569.html#27569">pause</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27580"></span>6BBC</td>
-<td class="instruction">JP <a href="27629.html">$6BED</a></td>
+<td class="instruction">JP <a href="27629.html">handle_controls</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 </table>
@@ -75,5 +85,6 @@ Next: <a href="27583.html">6BBF</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

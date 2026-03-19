@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 64BC</title>
+<title>river-raid: Routine at 64BC</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="25829.html">64E5</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Used by the routines at <a href="23974.html">5DA6</a>, <a href="25019.html">61BB</a>, <a href="25161.html">6249</a>, <a href="25991.html">6587</a> and <a href="27927.html">6D17</a>.
+Used by the routines at <a href="23974.html">play</a>, <a href="25019.html">check_collision</a>, <a href="25161.html">next_bridge_player_2</a>, <a href="25991.html">setup_overview_status_player_2</a> and <a href="27927.html">overview</a>.
 </div>
 </div>
 </td>
@@ -48,81 +53,99 @@ Uses ROM routine at $203C to print status line text and $1A1B (OUT_NUM_1) to pri
 </td>
 </tr>
 <tr>
+<td class="asm-label">print_bridge</td>
 <td class="address-2"><span id="25788"></span>64BC</td>
 <td class="instruction">LD A,($923D)</td>
-<td class="comment-1" rowspan="2">If Player 2, jump to <a href="25829.html">64E5</a>.</td>
+<td class="comment-1" rowspan="2">If Player 2, jump to <a href="25829.html">print_bridge_player_2</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25791"></span>64BF</td>
 <td class="instruction">CP $02</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25793"></span>64C1</td>
-<td class="instruction">JP Z,<a href="25829.html">$64E5</a></td>
+<td class="instruction">JP Z,<a href="25829.html">print_bridge_player_2</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25796"></span>64C4</td>
 <td class="instruction">LD A,$10</td>
 <td class="comment-1" rowspan="4">INK PLAYER_1</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25798"></span>64C6</td>
 <td class="instruction">RST $10</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25799"></span>64C7</td>
 <td class="instruction">LD A,$06</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25801"></span>64C9</td>
 <td class="instruction">RST $10</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25802"></span>64CA</td>
 <td class="instruction">LD DE,$804F</td>
-<td class="comment-1" rowspan="3">Print <a href="32847.html">804F</a> (11 bytes) to position cursor.</td>
+<td class="comment-1" rowspan="3">Print <a href="32847.html">status_line_3</a> (11 bytes) to position cursor.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25805"></span>64CD</td>
 <td class="instruction">LD BC,$000B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25808"></span>64D0</td>
 <td class="instruction">CALL $203C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25811"></span>64D3</td>
 <td class="instruction">LD A,($5F6A)</td>
 <td class="comment-1" rowspan="2">If bridge count &lt; 10, print leading space.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25814"></span>64D6</td>
 <td class="instruction">SUB $0A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25816"></span>64D8</td>
-<td class="instruction">CALL M,<a href="25862.html">$6506</a></td>
+<td class="instruction">CALL M,<a href="25862.html">print_space</a></td>
 <td class="comment-1" rowspan="1">(continued).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25819"></span>64DB</td>
 <td class="instruction">LD A,($5F6A)</td>
-<td class="comment-1" rowspan="4">Print bridge count from <a href="24426.html">5F6A</a>.</td>
+<td class="comment-1" rowspan="4">Print bridge count from <a href="24426.html">state_bridge_player_1</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25822"></span>64DE</td>
 <td class="instruction">LD B,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25824"></span>64E0</td>
 <td class="instruction">LD C,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25825"></span>64E1</td>
 <td class="instruction">CALL $1A1B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25828"></span>64E4</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -144,5 +167,6 @@ Next: <a href="25829.html">64E5</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

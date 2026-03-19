@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6FE6</title>
+<title>river-raid: Routine at 6FE6</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="28650.html">6FEA</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Returns pointer to sprite array for enemies facing right. Used by <a href="30138.html">75BA</a> to select sprite direction based on enemy movement.
+Returns pointer to sprite array for enemies facing right. Used by <a href="30138.html">ld_enemy_sprites</a> to select sprite direction based on enemy movement.
 </div>
 </div>
 <table class="output">
@@ -38,17 +43,19 @@ Returns pointer to sprite array for enemies facing right. Used by <a href="30138
 </tr>
 <tr>
 <td class="register">HL</td>
-<td class="register-desc">Pointer to right-facing enemy sprite array at <a href="34707.html">8793</a>.</td>
+<td class="register-desc">Pointer to right-facing enemy sprite array at <a href="34707.html">sprite_enemies_right</a>.</td>
 </tr>
 </table>
 </td>
 </tr>
 <tr>
+<td class="asm-label">ld_enemy_sprites_right</td>
 <td class="address-2"><span id="28646"></span>6FE6</td>
 <td class="instruction">LD HL,$8793</td>
-<td class="comment-1" rowspan="2">Load HL with <a href="34707.html">8793</a> (right-facing sprites base address).</td>
+<td class="comment-1" rowspan="2">Load HL with <a href="34707.html">sprite_enemies_right</a> (right-facing sprites base address).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28649"></span>6FE9</td>
 <td class="instruction">RET</td>
 </tr>
@@ -69,5 +76,6 @@ Next: <a href="28650.html">6FEA</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6630</title>
+<title>river-raid: Routine at 6630</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,39 +34,46 @@ Next: <a href="26178.html">6642</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Shared cleanup for <a href="26099.html">65F3</a>, <a href="26178.html">6642</a>, and <a href="26242.html">6682</a>. Restores missile coordinates and sprite bank selector after rendering the plane sprite.
+Shared cleanup for <a href="26099.html">handle_right</a>, <a href="26178.html">handle_left</a>, and <a href="26242.html">render_plane</a>. Restores missile coordinates and sprite bank selector after rendering the plane sprite.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">restore_plane_state_after_render</td>
 <td class="address-2"><span id="26160"></span>6630</td>
 <td class="instruction">LD HL,($5F8F)</td>
 <td class="comment-1" rowspan="2">Restore missile coordinates from backup.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26163"></span>6633</td>
 <td class="instruction">LD ($5EF3),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26166"></span>6636</td>
 <td class="instruction">LD HL,($8B16)</td>
 <td class="comment-1" rowspan="2">Update plane sprite pointer from render output.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26169"></span>6639</td>
 <td class="instruction">LD ($5EF7),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26172"></span>663C</td>
 <td class="instruction">LD A,$04</td>
 <td class="comment-1" rowspan="2">Set sprite bank selector to $04 (select banked plane sprite).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26174"></span>663E</td>
 <td class="instruction">LD ($5F69),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26177"></span>6641</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -83,5 +95,6 @@ Next: <a href="26178.html">6642</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

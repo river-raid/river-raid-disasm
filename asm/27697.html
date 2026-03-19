@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6C31</title>
+<title>river-raid: Routine at 6C31</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -43,75 +48,92 @@ Generates a rising pitch sound effect when player earns an extra life. Called on
 </td>
 </tr>
 <tr>
+<td class="asm-label">do_bonus_life</td>
 <td class="address-2"><span id="27697"></span>6C31</td>
 <td class="instruction">LD A,($6C30)</td>
 <td class="comment-1" rowspan="3">Increment counter and check if reached $40 (64). If so, sound is complete.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27700"></span>6C34</td>
 <td class="instruction">INC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27701"></span>6C35</td>
 <td class="instruction">LD ($6C30),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27704"></span>6C38</td>
 <td class="instruction">CP $40</td>
 <td class="comment-1" rowspan="2">Check if counter reached BONUS_LIFE_SOUND_TICKS. If done, finish sound sequence.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27706"></span>6C3A</td>
-<td class="instruction">JP Z,<a href="27730.html">$6C52</a></td>
+<td class="instruction">JP Z,<a href="27730.html">bonus_life_sound_done</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27709"></span>6C3D</td>
 <td class="instruction">LD B,A</td>
 <td class="comment-1" rowspan="3">Calculate pitch: pitch = BONUS_LIFE_SOUND_TICKS - counter.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27710"></span>6C3E</td>
 <td class="instruction">LD A,$40</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27712"></span>6C40</td>
 <td class="instruction">SUB B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27713"></span>6C41</td>
 <td class="instruction">LD L,$FF</td>
 <td class="comment-1" rowspan="5">Set up BEEPER parameters: H = pitch &gt;&gt; 3 (range 7-0), L = $FF (duration).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27715"></span>6C43</td>
 <td class="instruction">LD H,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27716"></span>6C44</td>
 <td class="instruction">SRL H</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27718"></span>6C46</td>
 <td class="instruction">SRL H</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27720"></span>6C48</td>
 <td class="instruction">SRL H</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27722"></span>6C4A</td>
 <td class="instruction">LD DE,$0001</td>
 <td class="comment-1" rowspan="3">Call ROM BEEPER at $03B5 with DE=$0001 (one iteration). Disable interrupts after.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27725"></span>6C4D</td>
 <td class="instruction">CALL $03B5</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27728"></span>6C50</td>
 <td class="instruction">DI</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27729"></span>6C51</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -133,5 +155,6 @@ Next: <a href="27730.html">6C52</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

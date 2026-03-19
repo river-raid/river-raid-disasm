@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6B5E</title>
+<title>river-raid: Routine at 6B5E</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -57,17 +62,20 @@ For fixed-width river sections. Right edge = C + D where C is the river width an
 </td>
 </tr>
 <tr>
+<td class="asm-label">calc_terrain_right_offset</td>
 <td class="address-2"><span id="27486"></span>6B5E</td>
 <td class="instruction">LD A,C</td>
-<td class="comment-1" rowspan="3">A = C + D (fixed width from left), jump to <a href="27299.html#27424">6B20</a>.</td>
+<td class="comment-1" rowspan="3">A = C + D (fixed width from left), jump to <a href="27299.html#27424">draw_terrain_right_edge</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27487"></span>6B5F</td>
 <td class="instruction">ADD A,D</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27488"></span>6B60</td>
-<td class="instruction">JP <a href="27299.html#27424">$6B20</a></td>
+<td class="instruction">JP <a href="27299.html#27424">draw_terrain_right_edge</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -86,5 +94,6 @@ Next: <a href="27491.html">6B63</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

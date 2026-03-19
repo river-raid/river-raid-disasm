@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 7627</title>
+<title>river-raid: Routine at 7627</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -23,7 +28,7 @@ Next: <a href="30254.html">762E</a>
 </td>
 </tr>
 </table>
-<div class="description">7627: Reset <a href="24416.html">5F60</a> to the start of <a href="24320.html">5F00</a>.</div>
+<div class="description">7627: Reset <a href="24416.html">current_slot_ptr</a> to the start of <a href="24320.html">viewport_slots</a>.</div>
 <table class="disassembly">
 <tr>
 <td class="routine-comment" colspan="5">
@@ -35,15 +40,18 @@ Resets the current slot pointer to the beginning of the viewport slots array.
 </td>
 </tr>
 <tr>
+<td class="asm-label">reset_slot_ptr</td>
 <td class="address-2"><span id="30247"></span>7627</td>
 <td class="instruction">LD HL,$5F00</td>
 <td class="comment-1" rowspan="2">Set current_slot_ptr to start of viewport_slots.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30250"></span>762A</td>
 <td class="instruction">LD ($5F60),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30253"></span>762D</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -65,5 +73,6 @@ Next: <a href="30254.html">762E</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

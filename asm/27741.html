@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6C5D</title>
+<title>river-raid: Routine at 6C5D</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -45,87 +50,104 @@ Generates the engine sound for normal speed. Called when only CONTROLS_BIT_SPEED
 </tr>
 <tr>
 <td class="register">HL</td>
-<td class="register-desc">Pointer to <a href="27568.html">6BB0</a> (controls state byte)</td>
+<td class="register-desc">Pointer to <a href="27568.html">state_controls</a> (controls state byte)</td>
 </tr>
 </table>
 </td>
 </tr>
 <tr>
+<td class="asm-label">beep_engine_normal</td>
 <td class="address-2"><span id="27741"></span>6C5D</td>
 <td class="instruction">LD A,(HL)</td>
 <td class="comment-1" rowspan="3">Extract period from low 4 bits of controls byte. Higher value = lower pitch.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27742"></span>6C5E</td>
 <td class="instruction">AND $0F</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27744"></span>6C60</td>
 <td class="instruction">LD E,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27745"></span>6C61</td>
 <td class="instruction">LD C,$08</td>
 <td class="comment-1" rowspan="1">Loop counter: 8 cycles of the waveform.</td>
 </tr>
 <tr>
+<td class="asm-label">beep_engine_normal_loop</td>
 <td class="address-2"><span id="27747"></span>6C63</td>
 <td class="instruction">LD A,$10</td>
 <td class="comment-1" rowspan="2">Speaker ON.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27749"></span>6C65</td>
 <td class="instruction">OUT ($FE),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27751"></span>6C67</td>
 <td class="instruction">LD D,E</td>
 <td class="comment-1" rowspan="1">Load period into D.</td>
 </tr>
 <tr>
+<td class="asm-label">beep_engine_normal_delay_on</td>
 <td class="address-2"><span id="27752"></span>6C68</td>
 <td class="instruction">DEC D</td>
 <td class="comment-1" rowspan="2">Delay loop for speaker ON phase.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27753"></span>6C69</td>
-<td class="instruction">JR NZ,$6C68</td>
+<td class="instruction">JR NZ,<a href="27741.html#27752">beep_engine_normal_delay_on</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27755"></span>6C6B</td>
 <td class="instruction">LD A,$00</td>
 <td class="comment-1" rowspan="2">Speaker OFF.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27757"></span>6C6D</td>
 <td class="instruction">OUT ($FE),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27759"></span>6C6F</td>
 <td class="instruction">LD D,E</td>
 <td class="comment-1" rowspan="1">Load period into D.</td>
 </tr>
 <tr>
+<td class="asm-label">beep_engine_normal_delay_off</td>
 <td class="address-2"><span id="27760"></span>6C70</td>
 <td class="instruction">DEC D</td>
 <td class="comment-1" rowspan="2">Delay loop for speaker OFF phase.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27761"></span>6C71</td>
-<td class="instruction">JR NZ,$6C70</td>
+<td class="instruction">JR NZ,<a href="27741.html#27760">beep_engine_normal_delay_off</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27763"></span>6C73</td>
 <td class="instruction">DEC C</td>
 <td class="comment-1" rowspan="3">Decrement cycle counter, loop if not zero. Return from interrupt when done.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27764"></span>6C74</td>
-<td class="instruction">JP NZ,$6C63</td>
+<td class="instruction">JP NZ,<a href="27741.html#27747">beep_engine_normal_loop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27767"></span>6C77</td>
-<td class="instruction">JP <a href="27684.html">$6C24</a></td>
+<td class="instruction">JP <a href="27684.html">int_return</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -144,5 +166,6 @@ Next: <a href="27770.html">6C7A</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6C52</title>
+<title>river-raid: Routine at 6C52</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,24 +40,29 @@ Resets the sound counter and clears the CONTROLS_BIT_BONUS_LIFE flag to stop the
 </td>
 </tr>
 <tr>
+<td class="asm-label">bonus_life_sound_done</td>
 <td class="address-2"><span id="27730"></span>6C52</td>
 <td class="instruction">LD A,$00</td>
 <td class="comment-1" rowspan="2">Reset counter to 0.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27732"></span>6C54</td>
 <td class="instruction">LD ($6C30),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27735"></span>6C57</td>
 <td class="instruction">LD HL,$6BB0</td>
-<td class="comment-1" rowspan="2">Clear CONTROLS_BIT_BONUS_LIFE in <a href="27568.html">6BB0</a> to indicate sound is complete.</td>
+<td class="comment-1" rowspan="2">Clear CONTROLS_BIT_BONUS_LIFE in <a href="27568.html">state_controls</a> to indicate sound is complete.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27738"></span>6C5A</td>
 <td class="instruction">RES 4,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27740"></span>6C5C</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -74,5 +84,6 @@ Next: <a href="27741.html">6C5D</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

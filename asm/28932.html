@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 7104</title>
+<title>river-raid: Routine at 7104</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -60,31 +65,37 @@ Animates and moves ships and helicopters. On even ticks, advances the object by 
 </td>
 </tr>
 <tr>
+<td class="asm-label">operate_ship_or_helicopter</td>
 <td class="address-2"><span id="28932"></span>7104</td>
 <td class="instruction">LD A,($5EEF)</td>
 <td class="comment-1" rowspan="3">Skip if odd tick (ships/helicopters move on even ticks).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28935"></span>7107</td>
 <td class="instruction">AND $01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28937"></span>7109</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28939"></span>710B</td>
-<td class="instruction">JP Z,<a href="29260.html">$724C</a></td>
+<td class="instruction">JP Z,<a href="29260.html">animate_object</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28942"></span>710E</td>
 <td class="instruction">BIT 6,D</td>
-<td class="comment-1" rowspan="2">Check orientation: if bit 6 clear (right-facing), jump to <a href="30114.html">75A2</a>.</td>
+<td class="comment-1" rowspan="2">Check orientation: if bit 6 clear (right-facing), jump to <a href="30114.html">ship_or_helicopter_right_advance</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28944"></span>7110</td>
-<td class="instruction">JP Z,<a href="30114.html">$75A2</a></td>
+<td class="instruction">JP Z,<a href="30114.html">ship_or_helicopter_right_advance</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -103,5 +114,6 @@ Next: <a href="28947.html">7113</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

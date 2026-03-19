@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 703E</title>
+<title>river-raid: Routine at 703E</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -53,23 +58,28 @@ Returns tank attributes: $00 normally, $04 if tank is on river bank (bit 5 of D 
 </td>
 </tr>
 <tr>
+<td class="asm-label">ld_attributes_tank</td>
 <td class="address-2"><span id="28734"></span>703E</td>
 <td class="instruction">LD E,$00</td>
 <td class="comment-1" rowspan="5">Load E=$00. If D bit 5 set (tank on bank), load E=$04 instead.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28736"></span>7040</td>
 <td class="instruction">BIT 5,D</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28738"></span>7042</td>
 <td class="instruction">RET Z</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28739"></span>7043</td>
 <td class="instruction">LD E,$04</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28741"></span>7045</td>
 <td class="instruction">RET</td>
 </tr>
@@ -90,5 +100,6 @@ Next: <a href="28742.html">7046</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

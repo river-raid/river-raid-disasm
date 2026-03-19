@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 7290</title>
+<title>river-raid: Routine at 7290</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,21 +34,24 @@ Next: <a href="29334.html">7296</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Sets <a href="24306.html">5EF2</a> to TANK_SHELL_ACTIVE when the road tank reaches the center (X=$80). This suppresses the bank tank shell via <a href="29534.html">735E</a>: if a road tank is at center, the bank tank cancels its shell rather than firing.
+Sets <a href="24306.html">state_tank_shell</a> to TANK_SHELL_ACTIVE when the road tank reaches the center (X=$80). This suppresses the bank tank shell via <a href="29534.html">check_shell_init_condition</a>: if a road tank is at center, the bank tank cancels its shell rather than firing.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">set_tank_shell_active</td>
 <td class="address-2"><span id="29328"></span>7290</td>
 <td class="instruction">LD A,$01</td>
 <td class="comment-1" rowspan="2">Set state_tank_shell to TANK_SHELL_ACTIVE.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29330"></span>7292</td>
 <td class="instruction">LD ($5EF2),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29333"></span>7295</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -65,5 +73,6 @@ Next: <a href="29334.html">7296</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

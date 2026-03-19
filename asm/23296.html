@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Data at 5B00</title>
+<title>river-raid: Data at 5B00</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-b">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Data</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,327 +34,391 @@ Next: <a href="23424.html">5B80</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Pre-computed table mapping row indices (0-63) to screen memory addresses. Used by <a href="26683.html">683B</a> for fast vertical scrolling. This table provides O(1) lookup: screen_addr = screen_row_table[row_index × 2].
+Pre-computed table mapping row indices (0-63) to screen memory addresses. Used by <a href="26683.html">scroll_screen</a> for fast vertical scrolling. This table provides O(1) lookup: screen_addr = screen_row_table[row_index × 2].
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">screen_row_table</td>
 <td class="address-1"><span id="23296"></span>5B00</td>
 <td class="instruction">DEFW $401F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23298"></span>5B02</td>
 <td class="instruction">DEFW $411F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23300"></span>5B04</td>
 <td class="instruction">DEFW $421F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23302"></span>5B06</td>
 <td class="instruction">DEFW $431F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23304"></span>5B08</td>
 <td class="instruction">DEFW $441F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23306"></span>5B0A</td>
 <td class="instruction">DEFW $451F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23308"></span>5B0C</td>
 <td class="instruction">DEFW $461F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23310"></span>5B0E</td>
 <td class="instruction">DEFW $471F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23312"></span>5B10</td>
 <td class="instruction">DEFW $403F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23314"></span>5B12</td>
 <td class="instruction">DEFW $413F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23316"></span>5B14</td>
 <td class="instruction">DEFW $423F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23318"></span>5B16</td>
 <td class="instruction">DEFW $433F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23320"></span>5B18</td>
 <td class="instruction">DEFW $443F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23322"></span>5B1A</td>
 <td class="instruction">DEFW $453F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23324"></span>5B1C</td>
 <td class="instruction">DEFW $463F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23326"></span>5B1E</td>
 <td class="instruction">DEFW $473F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23328"></span>5B20</td>
 <td class="instruction">DEFW $405F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23330"></span>5B22</td>
 <td class="instruction">DEFW $415F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23332"></span>5B24</td>
 <td class="instruction">DEFW $425F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23334"></span>5B26</td>
 <td class="instruction">DEFW $435F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23336"></span>5B28</td>
 <td class="instruction">DEFW $445F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23338"></span>5B2A</td>
 <td class="instruction">DEFW $455F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23340"></span>5B2C</td>
 <td class="instruction">DEFW $465F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23342"></span>5B2E</td>
 <td class="instruction">DEFW $475F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23344"></span>5B30</td>
 <td class="instruction">DEFW $407F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23346"></span>5B32</td>
 <td class="instruction">DEFW $417F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23348"></span>5B34</td>
 <td class="instruction">DEFW $427F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23350"></span>5B36</td>
 <td class="instruction">DEFW $437F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23352"></span>5B38</td>
 <td class="instruction">DEFW $447F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23354"></span>5B3A</td>
 <td class="instruction">DEFW $457F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23356"></span>5B3C</td>
 <td class="instruction">DEFW $467F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23358"></span>5B3E</td>
 <td class="instruction">DEFW $477F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23360"></span>5B40</td>
 <td class="instruction">DEFW $409F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23362"></span>5B42</td>
 <td class="instruction">DEFW $419F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23364"></span>5B44</td>
 <td class="instruction">DEFW $429F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23366"></span>5B46</td>
 <td class="instruction">DEFW $439F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23368"></span>5B48</td>
 <td class="instruction">DEFW $449F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23370"></span>5B4A</td>
 <td class="instruction">DEFW $459F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23372"></span>5B4C</td>
 <td class="instruction">DEFW $469F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23374"></span>5B4E</td>
 <td class="instruction">DEFW $479F</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23376"></span>5B50</td>
 <td class="instruction">DEFW $40BF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23378"></span>5B52</td>
 <td class="instruction">DEFW $41BF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23380"></span>5B54</td>
 <td class="instruction">DEFW $42BF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23382"></span>5B56</td>
 <td class="instruction">DEFW $43BF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23384"></span>5B58</td>
 <td class="instruction">DEFW $44BF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23386"></span>5B5A</td>
 <td class="instruction">DEFW $45BF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23388"></span>5B5C</td>
 <td class="instruction">DEFW $46BF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23390"></span>5B5E</td>
 <td class="instruction">DEFW $47BF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23392"></span>5B60</td>
 <td class="instruction">DEFW $40DF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23394"></span>5B62</td>
 <td class="instruction">DEFW $41DF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23396"></span>5B64</td>
 <td class="instruction">DEFW $42DF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23398"></span>5B66</td>
 <td class="instruction">DEFW $43DF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23400"></span>5B68</td>
 <td class="instruction">DEFW $44DF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23402"></span>5B6A</td>
 <td class="instruction">DEFW $45DF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23404"></span>5B6C</td>
 <td class="instruction">DEFW $46DF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23406"></span>5B6E</td>
 <td class="instruction">DEFW $47DF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23408"></span>5B70</td>
 <td class="instruction">DEFW $40FF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23410"></span>5B72</td>
 <td class="instruction">DEFW $41FF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23412"></span>5B74</td>
 <td class="instruction">DEFW $42FF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23414"></span>5B76</td>
 <td class="instruction">DEFW $43FF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23416"></span>5B78</td>
 <td class="instruction">DEFW $44FF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23418"></span>5B7A</td>
 <td class="instruction">DEFW $45FF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23420"></span>5B7C</td>
 <td class="instruction">DEFW $46FF</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23422"></span>5B7E</td>
 <td class="instruction">DEFW $47FF</td>
 <td class="comment-0" rowspan="1"></td>
@@ -371,5 +440,6 @@ Next: <a href="23424.html">5B80</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

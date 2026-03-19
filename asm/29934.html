@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 74EE</title>
+<title>river-raid: Routine at 74EE</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,183 +34,224 @@ Next: <a href="30022.html">7546</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Called each frame when a road tank's bridge has been destroyed (<a href="24429.html">5F6D</a> != 0). Normal movement is skipped (no rendering), so the tank's sprite stays frozen on screen as a ghost image. This routine checks whether the tank's X position overlaps the river gap ($70-$90). If yes, the slot is cleared, 1 explosion fragment is spawned, and POINTS_TANK are awarded. If no overlap, the slot is either cleared (bridge &lt;= 7) or converted to a bank-tank (bridge &gt; 7); in the cleared case the ghost image persists on screen with no explosion.
+Called each frame when a road tank's bridge has been destroyed (<a href="24429.html">state_bridge_destroyed</a> != 0). Normal movement is skipped (no rendering), so the tank's sprite stays frozen on screen as a ghost image. This routine checks whether the tank's X position overlaps the river gap ($70-$90). If yes, the slot is cleared, 1 explosion fragment is spawned, and POINTS_TANK are awarded. If no overlap, the slot is either cleared (bridge &lt;= 7) or converted to a bank-tank (bridge &gt; 7); in the cleared case the ghost image persists on screen with no explosion.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">handle_tank_at_boundary</td>
 <td class="address-2"><span id="29934"></span>74EE</td>
 <td class="instruction">LD HL,($5F60)</td>
 <td class="comment-1" rowspan="5">Load current_slot_ptr, navigate to X position in current slot.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29937"></span>74F1</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29938"></span>74F2</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29939"></span>74F3</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29940"></span>74F4</td>
 <td class="instruction">LD C,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29941"></span>74F5</td>
 <td class="instruction">LD H,$00</td>
 <td class="comment-1" rowspan="9">If X+10 &lt;= $70 (112): tank is on the left bank, convert to bank-tank.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29943"></span>74F7</td>
 <td class="instruction">LD L,$70</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29945"></span>74F9</td>
 <td class="instruction">LD D,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29947"></span>74FB</td>
 <td class="instruction">LD A,C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29948"></span>74FC</td>
 <td class="instruction">ADD A,$0A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29950"></span>74FE</td>
 <td class="instruction">LD E,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29951"></span>74FF</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29952"></span>7500</td>
 <td class="instruction">SBC HL,DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29954"></span>7502</td>
-<td class="instruction">JP P,$7525</td>
+<td class="instruction">JP P,<a href="29934.html#29989">convert_tank_to_bank</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29957"></span>7505</td>
 <td class="instruction">LD H,$00</td>
 <td class="comment-1" rowspan="7">If X &gt; $90 (144): tank is on the right bank, convert to bank-tank.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29959"></span>7507</td>
 <td class="instruction">LD L,$90</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29961"></span>7509</td>
 <td class="instruction">LD D,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29963"></span>750B</td>
 <td class="instruction">LD E,C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29964"></span>750C</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29965"></span>750D</td>
 <td class="instruction">SBC HL,DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29967"></span>750F</td>
-<td class="instruction">JP M,$7525</td>
+<td class="instruction">JP M,<a href="29934.html#29989">convert_tank_to_bank</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29970"></span>7512</td>
 <td class="instruction">LD HL,($5F60)</td>
 <td class="comment-1" rowspan="3">Tank destroyed: clear X position, set D=$80 (explosion marker).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29973"></span>7515</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29974"></span>7516</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29975"></span>7517</td>
 <td class="instruction">LD B,(HL)</td>
 <td class="comment-1" rowspan="5">Add explosion and award POINTS_TANK.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29976"></span>7518</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29977"></span>7519</td>
 <td class="instruction">LD (HL),$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29979"></span>751B</td>
 <td class="instruction">LD D,$80</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29981"></span>751D</td>
-<td class="instruction">CALL <a href="28316.html">$6E9C</a></td>
+<td class="instruction">CALL <a href="28316.html">spawn_explosion_fragment</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29984"></span>7520</td>
 <td class="instruction">LD A,$25</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29986"></span>7522</td>
-<td class="instruction">CALL <a href="37088.html">$90E0</a></td>
+<td class="instruction">CALL <a href="37088.html">add_points</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label">convert_tank_to_bank</td>
 <td class="address-2"><span id="29989"></span>7525</td>
 <td class="instruction">LD HL,($5F60)</td>
 <td class="comment-1" rowspan="3">Reload current_slot_ptr and convert to bank-tank (SLOT_BIT_ALT_SHELL_INIT + SLOT_BIT_TANK_ON_BANK).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29992"></span>7528</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29993"></span>7529</td>
 <td class="instruction">SET 4,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29995"></span>752B</td>
 <td class="instruction">SET 5,(HL)</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29997"></span>752D</td>
 <td class="instruction">DEC HL</td>
-<td class="comment-1" rowspan="4">Check active player at <a href="37437.html">923D</a>. If player 1, use <a href="24426.html">5F6A</a>.</td>
+<td class="comment-1" rowspan="4">Check active player at <a href="37437.html">state_player</a>. If player 1, use <a href="24426.html">state_bridge_player_1</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29998"></span>752E</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29999"></span>752F</td>
 <td class="instruction">LD A,($923D)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30002"></span>7532</td>
 <td class="instruction">CP $01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30004"></span>7534</td>
-<td class="instruction">JP Z,<a href="30022.html">$7546</a></td>
-<td class="comment-1" rowspan="2">Load bridge number from <a href="24427.html">5F6B</a>.</td>
+<td class="instruction">JP Z,<a href="30022.html">get_bridge_number_player_1</a></td>
+<td class="comment-1" rowspan="2">Load bridge number from <a href="24427.html">state_bridge_player_2</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30007"></span>7537</td>
 <td class="instruction">LD A,($5F6B)</td>
 </tr>
@@ -214,37 +260,43 @@ Called each frame when a road tank's bridge has been destroyed (<a href="24429.h
 <span id="30010"></span>
 <div class="comments">
 <div class="paragraph">
-This entry point is used by the routine at <a href="30022.html">7546</a>.
+This entry point is used by the routine at <a href="30022.html">get_bridge_number_player_1</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">tank_bridge_check</td>
 <td class="address-2"><span id="30010"></span>753A</td>
 <td class="instruction">LD B,A</td>
 <td class="comment-1" rowspan="3">Check if bridge_number &gt; 7.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30011"></span>753B</td>
 <td class="instruction">LD A,$07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30013"></span>753D</td>
 <td class="instruction">SUB B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30014"></span>753E</td>
-<td class="instruction">JP M,<a href="28814.html">$708E</a></td>
-<td class="comment-1" rowspan="1">If so, keep the slot (bank-tank bits already set at <a href="29934.html#29989">7525</a>).</td>
+<td class="instruction">JP M,<a href="28814.html">operate_viewport_slots</a></td>
+<td class="comment-1" rowspan="1">If so, keep the slot (bank-tank bits already set at <a href="29934.html#29989">convert_tank_to_bank</a>).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30017"></span>7541</td>
 <td class="instruction">LD (HL),$00</td>
 <td class="comment-1" rowspan="2">Otherwise, clear slot X byte (ghost image remains on screen).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30019"></span>7543</td>
-<td class="instruction">JP <a href="28814.html">$708E</a></td>
+<td class="instruction">JP <a href="28814.html">operate_viewport_slots</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -263,5 +315,6 @@ Next: <a href="30022.html">7546</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

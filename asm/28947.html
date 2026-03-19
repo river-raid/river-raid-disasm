@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 7113</title>
+<title>river-raid: Routine at 7113</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -52,54 +57,66 @@ Moves a left-facing ship/helicopter 2 pixels left, checking for terrain collisio
 </td>
 </tr>
 <tr>
+<td class="asm-label">ship_or_helicopter_left_advance</td>
 <td class="address-2"><span id="28947"></span>7113</td>
 <td class="instruction">PUSH BC</td>
 <td class="comment-1" rowspan="4">Save BC, calculate terrain check position: C -= 16 pixels.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28948"></span>7114</td>
 <td class="instruction">LD A,C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28949"></span>7115</td>
 <td class="instruction">SUB $10</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28951"></span>7117</td>
 <td class="instruction">LD C,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28952"></span>7118</td>
-<td class="instruction">CALL <a href="35406.html">$8A4E</a></td>
+<td class="instruction">CALL <a href="35406.html">calculate_pixel_address</a></td>
 <td class="comment-1" rowspan="2">Get terrain byte at (C, B). Load result into A.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28955"></span>711B</td>
 <td class="instruction">LD A,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28956"></span>711C</td>
 <td class="instruction">POP BC</td>
 <td class="comment-1" rowspan="3">Restore BC. If terrain != 0, reverse direction.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28957"></span>711D</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28959"></span>711F</td>
-<td class="instruction">CALL NZ,<a href="30160.html">$75D0</a></td>
+<td class="instruction">CALL NZ,<a href="30160.html">reverse_enemy_direction</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28962"></span>7122</td>
 <td class="instruction">LD ($8B0A),BC</td>
-<td class="comment-1" rowspan="3">Store position to <a href="35594.html">8B0A</a>. Advance X position left by 2 pixels (DEC C twice).</td>
+<td class="comment-1" rowspan="3">Store position to <a href="35594.html">previous_object_coordinates</a>. Advance X position left by 2 pixels (DEC C twice).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28966"></span>7126</td>
 <td class="instruction">DEC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28967"></span>7127</td>
 <td class="instruction">DEC C</td>
 </tr>
@@ -120,5 +137,6 @@ Next: <a href="28968.html">7128</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

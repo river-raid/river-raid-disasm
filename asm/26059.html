@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 65CB</title>
+<title>river-raid: Routine at 65CB</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,34 +40,41 @@ This routine is called when Player 2 dies. It checks both players' lives to dete
 </td>
 </tr>
 <tr>
+<td class="asm-label">handle_player_2_death</td>
 <td class="address-2"><span id="26059"></span>65CB</td>
 <td class="instruction">LD A,($923C)</td>
 <td class="comment-1" rowspan="3">If Player 2 has no lives, check Player 1 status.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26062"></span>65CE</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26064"></span>65D0</td>
-<td class="instruction">JP Z,<a href="26078.html#26083">$65E3</a></td>
+<td class="instruction">JP Z,<a href="26078.html#26083">check_player_1_lives</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26067"></span>65D3</td>
 <td class="instruction">LD A,($923B)</td>
 <td class="comment-1" rowspan="4">If Player 1 has lives, switch to Player 1; otherwise restart Player 2.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26070"></span>65D6</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26072"></span>65D8</td>
-<td class="instruction">JP NZ,<a href="26078.html">$65DE</a></td>
+<td class="instruction">JP NZ,<a href="26078.html">switch_to_player_1</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26075"></span>65DB</td>
-<td class="instruction">JP <a href="25960.html">$6568</a></td>
+<td class="instruction">JP <a href="25960.html">restart_current_player</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -81,5 +93,6 @@ Next: <a href="26078.html">65DE</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 696B</title>
+<title>river-raid: Routine at 696B</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -44,86 +49,106 @@ Called when terrain data indicates an island should appear. Looks up island para
 </td>
 </tr>
 <tr>
+<td class="asm-label">handle_island</td>
 <td class="address-2"><span id="26987"></span>696B</td>
 <td class="instruction">LD HL,$C600</td>
 <td class="comment-1" rowspan="6">Convert input to island table index and prepare lookup.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26990"></span>696E</td>
 <td class="instruction">LD DE,$0003</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26993"></span>6971</td>
 <td class="instruction">SRL A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26995"></span>6973</td>
 <td class="instruction">SRL A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26997"></span>6975</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26998"></span>6976</td>
 <td class="instruction">SBC HL,DE</td>
 </tr>
 <tr>
+<td class="asm-label">locate_island_element</td>
 <td class="address-1"><span id="27000"></span>6978</td>
 <td class="instruction">ADD HL,DE</td>
 <td class="comment-1" rowspan="3">Locate island entry in data_islands (3 bytes per entry).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27001"></span>6979</td>
 <td class="instruction">DEC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27002"></span>697A</td>
 <td class="instruction">JR NZ,$6977</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27004"></span>697C</td>
 <td class="instruction">LD A,(HL)</td>
 <td class="comment-1" rowspan="6">Store island profile index and width offset to state.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27005"></span>697D</td>
 <td class="instruction">LD ($5EFA),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27008"></span>6980</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27009"></span>6981</td>
 <td class="instruction">LD A,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27010"></span>6982</td>
 <td class="instruction">LD ($5EFB),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27013"></span>6985</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27014"></span>6986</td>
 <td class="instruction">LD A,(HL)</td>
 <td class="comment-1" rowspan="4">Store extra byte and reset island line counter.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27015"></span>6987</td>
 <td class="instruction">LD ($5EFC),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27018"></span>698A</td>
 <td class="instruction">LD A,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27020"></span>698C</td>
 <td class="instruction">LD ($5EFD),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27023"></span>698F</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -145,5 +170,6 @@ Next: <a href="27024.html">6990</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

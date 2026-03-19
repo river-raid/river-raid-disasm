@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6EAB</title>
+<title>river-raid: Routine at 6EAB</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -62,43 +67,52 @@ Finds an empty slot or end-of-set marker in the object set and writes a 3-byte e
 </td>
 </tr>
 <tr>
+<td class="asm-label">add_object_to_set</td>
 <td class="address-2"><span id="28331"></span>6EAB</td>
 <td class="instruction">LD A,(HL)</td>
 <td class="comment-1" rowspan="3">Load current entry's first byte. If empty slot, jump to write.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28332"></span>6EAC</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28334"></span>6EAE</td>
-<td class="instruction">JP Z,<a href="28348.html">$6EBC</a></td>
+<td class="instruction">JP Z,<a href="28348.html">write_object_to_set</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28337"></span>6EB1</td>
 <td class="instruction">CP $FF</td>
 <td class="comment-1" rowspan="2">If end-of-set marker, jump to write (will extend set).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28339"></span>6EB3</td>
-<td class="instruction">JP Z,<a href="28348.html">$6EBC</a></td>
+<td class="instruction">JP Z,<a href="28348.html">write_object_to_set</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28342"></span>6EB6</td>
 <td class="instruction">INC HL</td>
 <td class="comment-1" rowspan="4">Entry occupied: advance HL by 3 bytes and loop.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28343"></span>6EB7</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28344"></span>6EB8</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28345"></span>6EB9</td>
-<td class="instruction">JP $6EAB</td>
+<td class="instruction">JP <a href="28331.html#28331">add_object_to_set</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -117,5 +131,6 @@ Next: <a href="28348.html">6EBC</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

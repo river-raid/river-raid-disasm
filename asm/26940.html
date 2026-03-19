@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 693C</title>
+<title>river-raid: Routine at 693C</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,24 +40,29 @@ Called when terrain profile byte is $03, indicating the start of a bridge approa
 </td>
 </tr>
 <tr>
+<td class="asm-label">init_bridge_approach</td>
 <td class="address-2"><span id="26940"></span>693C</td>
 <td class="instruction">LD A,$01</td>
 <td class="comment-1" rowspan="2">Mark bridge approaching (Y position = 1).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26942"></span>693E</td>
 <td class="instruction">LD ($5F6E),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26945"></span>6941</td>
 <td class="instruction">LD A,$06</td>
 <td class="comment-1" rowspan="2">Start 6-fragment countdown to bridge.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26947"></span>6943</td>
 <td class="instruction">LD ($5EEE),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26950"></span>6946</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -74,5 +84,6 @@ Next: <a href="26951.html">6947</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6256</title>
+<title>river-raid: Routine at 6256</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="25192.html">6268</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Used by the routine at <a href="24886.html">6136</a>.
+Used by the routine at <a href="24886.html">collision_dispatcher</a>.
 </div>
 </div>
 </td>
@@ -42,40 +47,47 @@ Used by the routine at <a href="24886.html">6136</a>.
 Called from the collision dispatcher when COLLISION_MODE_FUEL_DEPOT is detected. Sets gameplay mode to GAMEPLAY_MODE_REFUEL and uses the plane's coordinates (instead of missile coordinates) for collision detection.
 </div>
 <div class="paragraph">
-This allows the plane itself to interact with fuel depots via <a href="25019.html">61BB</a>.
+This allows the plane itself to interact with fuel depots via <a href="25019.html">check_collision</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">handle_collision_mode_fuel_depot</td>
 <td class="address-2"><span id="25174"></span>6256</td>
 <td class="instruction">LD A,$06</td>
-<td class="comment-1" rowspan="2">Set gameplay mode to GAMEPLAY_MODE_REFUEL in <a href="24424.html">5F68</a>.</td>
+<td class="comment-1" rowspan="2">Set gameplay mode to GAMEPLAY_MODE_REFUEL in <a href="24424.html">state_gameplay_mode</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25176"></span>6258</td>
 <td class="instruction">LD ($5F68),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25179"></span>625B</td>
 <td class="instruction">LD B,$80</td>
-<td class="comment-1" rowspan="4">Load plane coordinates (Y=$80, X from <a href="24434.html">5F72</a>) into <a href="24307.html">5EF3</a>.</td>
+<td class="comment-1" rowspan="4">Load plane coordinates (Y=$80, X from <a href="24434.html">state_plane_x</a>) into <a href="24307.html">state_plane_missile_y</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25181"></span>625D</td>
 <td class="instruction">LD A,($5F72)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25184"></span>6260</td>
 <td class="instruction">LD C,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25185"></span>6261</td>
 <td class="instruction">LD ($5EF3),BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25189"></span>6265</td>
-<td class="instruction">JP <a href="25019.html">$61BB</a></td>
+<td class="instruction">JP <a href="25019.html">check_collision</a></td>
 <td class="comment-1" rowspan="1">Check for collision with fuel depot.</td>
 </tr>
 </table>
@@ -95,5 +107,6 @@ Next: <a href="25192.html">6268</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

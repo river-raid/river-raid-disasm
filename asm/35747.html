@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 8BA3</title>
+<title>river-raid: Routine at 8BA3</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,68 +40,83 @@ Similar boundary handling for the old (erasure) position.
 </td>
 </tr>
 <tr>
+<td class="asm-label">adjust_old_position</td>
 <td class="address-2"><span id="35747"></span>8BA3</td>
 <td class="instruction">LD BC,($8B0A)</td>
 <td class="comment-1" rowspan="4">Check if old Y position crosses a character row boundary.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35751"></span>8BA7</td>
 <td class="instruction">LD A,B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35752"></span>8BA8</td>
 <td class="instruction">AND $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35754"></span>8BAA</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35756"></span>8BAC</td>
-<td class="instruction">JP NZ,<a href="35782.html#35794">$8BD2</a></td>
+<td class="instruction">JP NZ,<a href="35782.html#35794">adjust_old_screen_third_loop</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35759"></span>8BAF</td>
 <td class="instruction">LD A,B</td>
 <td class="comment-1" rowspan="4">If at a third-of-screen boundary, jump to subtract $00E0 instead.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35760"></span>8BB0</td>
 <td class="instruction">AND $3F</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35762"></span>8BB2</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35764"></span>8BB4</td>
-<td class="instruction">JP Z,<a href="35782.html">$8BC6</a></td>
+<td class="instruction">JP Z,<a href="35782.html">adjust_old_screen_third</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35767"></span>8BB7</td>
 <td class="instruction">LD HL,($8B14)</td>
 <td class="comment-1" rowspan="5">Subtract $07E0 from old screen address for character row crossing.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35770"></span>8BBA</td>
 <td class="instruction">LD DE,$07E0</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35773"></span>8BBD</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35774"></span>8BBE</td>
 <td class="instruction">SBC HL,DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35776"></span>8BC0</td>
 <td class="instruction">LD ($8B14),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35779"></span>8BC3</td>
-<td class="instruction">JP <a href="35782.html#35794">$8BD2</a></td>
+<td class="instruction">JP <a href="35782.html#35794">adjust_old_screen_third_loop</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 </table>
@@ -116,5 +136,6 @@ Next: <a href="35782.html">8BC6</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

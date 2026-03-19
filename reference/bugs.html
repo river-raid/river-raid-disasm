@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Bugs</title>
+<title>river-raid: Bugs</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Bugs">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Bugs</td>
 </tr>
 </table>
+<div class="page-content">
 <ul class="contents">
 <li><a href="#planeSprite">Plane sprite has misplaced pixels</a></li>
 <li><a href="#fighterSprite">Fighter sprite has wrong pixels in multiple frames</a></li>
@@ -57,7 +62,7 @@ fighter's wing and fuselage outline in certain animation frames.
 <div class="paragraph">
 The game detects collisions during the sprite rendering phase by checking
 whether OR-ing a new sprite's pixels onto the screen encounters any non-zero
-existing pixels (see <a href="../asm/35644.html">8B3C</a> and <a href="../asm/35909.html">8C45</a>). There is no separate collision
+existing pixels (see <a href="../asm/35644.html">render_object</a> and <a href="../asm/35909.html">jp_collision_dispatcher</a>). There is no separate collision
 map — the framebuffer itself serves as the collision surface.
 </div>
 <div class="paragraph">
@@ -84,15 +89,15 @@ the right pixel position to overlap with the plane sprite. Most of the time,
 the fragments fly past harmlessly.
 </div>
 <div class="paragraph">
-See <a href="../asm/25720.html">6478</a> (fuel depot collision handler), <a href="../asm/25174.html">6256</a> (fuel depot collision
-mode setup), <a href="../asm/35644.html">8B3C</a> (render with collision detection).
+See <a href="../asm/25720.html">hit_fuel</a> (fuel depot collision handler), <a href="../asm/25174.html">handle_collision_mode_fuel_depot</a> (fuel depot collision
+mode setup), <a href="../asm/35644.html">render_object</a> (render with collision detection).
 </div>
 </div>
 <div><span id="islandLoop"></span></div>
 <div class="box box-1">
 <div class="box-title">Off-by-one in island element lookup</div>
 <div class="paragraph">
-The island element search loop at <a href="../asm/26987.html#27000">6978</a> has an incorrect branch condition,
+The island element search loop at <a href="../asm/26987.html#27000">locate_island_element</a> has an incorrect branch condition,
 corrected by the <code>ofix</code> at $697A (JR NZ with corrected target).
 The original code can skip past the intended island entry under certain
 conditions.
@@ -105,7 +110,7 @@ conditions.
 The terrain rendering routine (<a href="../asm/24741.html#24777">60C9</a>) computes the plane's Y position as
 $88 minus the current speed setting, which would place the plane 1-3 pixels
 lower at higher speeds. However, all three movement handlers — handle_right
-(<a href="../asm/26099.html">65F3</a>), handle_left (<a href="../asm/26178.html">6642</a>), and render_plane (<a href="../asm/26242.html">6682</a>) — immediately
+(<a href="../asm/26099.html">handle_right</a>), handle_left (<a href="../asm/26178.html">handle_left</a>), and render_plane (<a href="../asm/26242.html">render_plane</a>) — immediately
 overwrite this with the fixed PLANE_COORDINATE_Y ($80), making the
 speed-dependent calculation dead code with no visible effect.
 </div>
@@ -115,12 +120,12 @@ speed-dependent calculation dead code with no visible effect.
 <div class="box-title">Pressing left and right simultaneously shows banked plane sprite</div>
 <div class="paragraph">
 When both left and right are held at the same time, the plane appears banked
-despite no net movement. Both <a href="../asm/26099.html">65F3</a> (handle_right) and <a href="../asm/26178.html">6642</a> (handle_left)
+despite no net movement. Both <a href="../asm/26099.html">handle_right</a> (handle_right) and <a href="../asm/26178.html">handle_left</a> (handle_left)
 are called in sequence: handle_right moves the plane +2 pixels and renders the
 banked sprite, then handle_left moves it −2 pixels and renders the banked sprite
 again, leaving the plane at its original position. However, both handlers always
-set <a href="../asm/24425.html">5F69</a> (state_plane_sprite_bank) to $04, which causes the main render pass
-in <a href="../asm/26242.html">6682</a> to select the banked sprite rather than the centered one. Since neither
+set <a href="../asm/24425.html">state_plane_sprite_bank</a> (state_plane_sprite_bank) to $04, which causes the main render pass
+in <a href="../asm/26242.html">render_plane</a> to select the banked sprite rather than the centered one. Since neither
 handler checks whether the opposing direction is also active, there is no way for
 the net-zero input to produce the level sprite. Contrast with up+down, where the
 last-evaluated key wins outright — see <a href="bugs.html#bothUpDown">Pressing up and down simultaneously always results in slow speed</a>.
@@ -131,8 +136,8 @@ last-evaluated key wins outright — see <a href="bugs.html#bothUpDown">Pressing
 <div class="box-title">Pressing up and down simultaneously always results in slow speed</div>
 <div class="paragraph">
 When both up and down are held at the same time, the plane always slows down.
-<a href="../asm/24680.html">6068</a> (scan_keyboard) evaluates up before down: <a href="../asm/26378.html">670A</a> (handle_up) writes
-SPEED_FAST and clears CONTROLS_BIT_SPEED_NOT_FAST, then <a href="../asm/26391.html">6717</a> (handle_down)
+<a href="../asm/24680.html">scan_keyboard</a> (scan_keyboard) evaluates up before down: <a href="../asm/26378.html">handle_up</a> (handle_up) writes
+SPEED_FAST and clears CONTROLS_BIT_SPEED_NOT_FAST, then <a href="../asm/26391.html">handle_down</a> (handle_down)
 immediately overwrites with SPEED_SLOW and sets both speed control bits. Last
 writer wins unconditionally.
 </div>
@@ -158,5 +163,6 @@ these values to properly copy the status line text.
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

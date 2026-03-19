@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6414</title>
+<title>river-raid: Routine at 6414</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="25635.html">6423</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Used by the routine at <a href="25320.html">62E8</a>.
+Used by the routine at <a href="25320.html">check_missile_vs_objects</a>.
 </div>
 </div>
 </td>
@@ -45,26 +50,31 @@ Awards POINTS_HELICOPTER_REG and spawns 1 explosion fragment at the object coord
 </td>
 </tr>
 <tr>
+<td class="asm-label">hit_helicopter_reg</td>
 <td class="address-2"><span id="25620"></span>6414</td>
 <td class="instruction">LD A,$06</td>
 <td class="comment-1" rowspan="2">Award POINTS_HELICOPTER_REG to player.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25622"></span>6416</td>
-<td class="instruction">CALL <a href="37088.html">$90E0</a></td>
+<td class="instruction">CALL <a href="37088.html">add_points</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25625"></span>6419</td>
 <td class="instruction">LD BC,($5F8B)</td>
-<td class="comment-1" rowspan="2">Spawn explosion at object coordinates from <a href="24459.html">5F8B</a>.</td>
+<td class="comment-1" rowspan="2">Spawn explosion at object coordinates from <a href="24459.html">collision_coordinates</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25629"></span>641D</td>
-<td class="instruction">CALL <a href="28316.html">$6E9C</a></td>
+<td class="instruction">CALL <a href="28316.html">spawn_explosion_fragment</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25632"></span>6420</td>
-<td class="instruction">JP <a href="25320.html#25565">$63DD</a></td>
+<td class="instruction">JP <a href="25320.html#25565">process_collision_hit</a></td>
 <td class="comment-1" rowspan="1">Finalize collision.</td>
 </tr>
 </table>
@@ -84,5 +94,6 @@ Next: <a href="25635.html">6423</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

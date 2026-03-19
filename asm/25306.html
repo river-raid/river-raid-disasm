@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 62DA</title>
+<title>river-raid: Routine at 62DA</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -23,7 +28,7 @@ Next: <a href="25312.html">62E0</a>
 </td>
 </tr>
 </table>
-<div class="description">62DA: Increase vertical coordinate of the object by the value of <a href="24420.html">5F64</a>.</div>
+<div class="description">62DA: Increase vertical coordinate of the object by the value of <a href="24420.html">state_speed</a>.</div>
 <table class="disassembly">
 <tr>
 <td class="routine-comment" colspan="5">
@@ -53,19 +58,23 @@ Adds the current scroll delta to an object's Y coordinate. Used during refueling
 </td>
 </tr>
 <tr>
+<td class="asm-label">advance_object</td>
 <td class="address-2"><span id="25306"></span>62DA</td>
 <td class="instruction">LD A,($5F64)</td>
-<td class="comment-1" rowspan="3">Load scroll delta from <a href="24420.html">5F64</a> and add to B.</td>
+<td class="comment-1" rowspan="3">Load scroll delta from <a href="24420.html">state_speed</a> and add to B.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25309"></span>62DD</td>
 <td class="instruction">ADD A,B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25310"></span>62DE</td>
 <td class="instruction">LD B,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25311"></span>62DF</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -87,5 +96,6 @@ Next: <a href="25312.html">62E0</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

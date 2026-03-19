@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 5D06</title>
+<title>river-raid: Routine at 5D06</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="23824.html">5D10</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Used by the routines at <a href="27602.html">6BD2</a> and <a href="27927.html">6D17</a>.
+Used by the routines at <a href="27602.html">select_controls</a> and <a href="27927.html">overview</a>.
 </div>
 </div>
 </td>
@@ -39,37 +44,42 @@ Used by the routines at <a href="27602.html">6BD2</a> and <a href="27927.html">6
 <span id="23814"></span>
 <div class="comments">
 <div class="paragraph">
-This entry point is used when returning to the control selection dialog from the game (via <a href="27602.html">6BD2</a>) or from the overview mode. It switches back to IM 1, then calls clear_and_setup to display the control selection dialog.
+This entry point is used when returning to the control selection dialog from the game (via <a href="27602.html">select_controls</a>) or from the overview mode. It switches back to IM 1, then calls clear_and_setup to display the control selection dialog.
 </div>
 <div class="paragraph">
-After the user selects controls and game mode, execution continues at <a href="23824.html">5D10</a>.
+After the user selects controls and game mode, execution continues at <a href="23824.html">start_gameplay_or_overview</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">return_to_control_selection</td>
 <td class="address-2"><span id="23814"></span>5D06</td>
 <td class="instruction">LD A,$3F</td>
 <td class="comment-1" rowspan="1">Restore standard IM 1 interrupt vector table.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23816"></span>5D08</td>
 <td class="instruction">LD I,A</td>
 <td class="comment-1" rowspan="1">Set the I register to $3F for IM 1 mode.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23818"></span>5D0A</td>
 <td class="instruction">IM 1</td>
 <td class="comment-1" rowspan="1">Set interrupt mode 1.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23820"></span>5D0C</td>
 <td class="instruction">EI</td>
 <td class="comment-1" rowspan="1">Enable interrupts.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23821"></span>5D0D</td>
-<td class="instruction">CALL <a href="30724.html">$7804</a></td>
+<td class="instruction">CALL <a href="30724.html">clear_and_setup</a></td>
 <td class="comment-1" rowspan="1">Display the control selection dialog.</td>
 </tr>
 </table>
@@ -89,5 +99,6 @@ Next: <a href="23824.html">5D10</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

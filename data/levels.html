@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Level data</title>
+<title>river-raid: Level data</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Levels">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Level data</td>
 </tr>
 </table>
+<div class="page-content">
 <ul class="contents">
 <li><a href="#terrainProfiles">Terrain profiles</a></li>
 <li><a href="#islands">Island shapes</a></li>
@@ -28,7 +33,7 @@ left bank edge at that line. The right bank is computed as a mirror.
 </div>
 <div class="paragraph">
 Profiles 1-2 have bit 7 set, which triggers special bridge/road rendering
-in <a href="../asm/27299.html">6AA3</a>.
+in <a href="../asm/27299.html">render_terrain_fragment</a>.
 </div>
 <div class="paragraph">
 <table class="default">
@@ -80,7 +85,7 @@ in <a href="../asm/27299.html">6AA3</a>.
 </table>
 </div>
 <div class="paragraph">
-Profile data: <a href="../asm/32867.html">8063</a> (240 bytes total).
+Profile data: <a href="../asm/32867.html">data_terrain_profiles</a> (240 bytes total).
 </div>
 </div>
 <div><span id="islands"></span></div>
@@ -98,7 +103,7 @@ within the river, splitting it into channels.
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">0</td>
-<td class="" colspan="1" rowspan="1">Profile index (0-14): selects shape from <a href="../asm/32867.html">8063</a></td>
+<td class="" colspan="1" rowspan="1">Profile index (0-14): selects shape from <a href="../asm/32867.html">data_terrain_profiles</a></td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">1</td>
@@ -111,8 +116,8 @@ within the river, splitting it into channels.
 </table>
 </div>
 <div class="paragraph">
-Island data: <a href="../asm/50688.html">C600</a> (108 bytes total). Referenced from terrain fragment
-byte 3 (upper 6 bits = island index x 4). Initialized by <a href="../asm/26987.html">696B</a>.
+Island data: <a href="../asm/50688.html">data_islands</a> (108 bytes total). Referenced from terrain fragment
+byte 3 (upper 6 bits = island index x 4). Initialized by <a href="../asm/26987.html">handle_island</a>.
 </div>
 </div>
 <div><span id="terrainFragments"></span></div>
@@ -121,7 +126,7 @@ byte 3 (upper 6 bits = island index x 4). Initialized by <a href="../asm/26987.h
 <div class="paragraph">
 Each of the 48 game levels (bridge sections) is defined by 64 terrain
 fragments, stored as 4 bytes each (256 bytes per level). Fragments are loaded
-sequentially by <a href="../asm/27215.html">6A4F</a> as the terrain scrolls.
+sequentially by <a href="../asm/27215.html">render_terrain_row</a> as the terrain scrolls.
 </div>
 <div class="paragraph">
 <table class="default">
@@ -131,7 +136,7 @@ sequentially by <a href="../asm/27215.html">6A4F</a> as the terrain scrolls.
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">0</td>
-<td class="" colspan="1" rowspan="1">Profile (0-14): index into terrain profiles at <a href="../asm/32867.html">8063</a>. Values 1-3 mark bridge approach, bridge, and post-bridge</td>
+<td class="" colspan="1" rowspan="1">Profile (0-14): index into terrain profiles at <a href="../asm/32867.html">data_terrain_profiles</a>. Values 1-3 mark bridge approach, bridge, and post-bridge</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">1-2</td>
@@ -139,12 +144,12 @@ sequentially by <a href="../asm/27215.html">6A4F</a> as the terrain scrolls.
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">3</td>
-<td class="" colspan="1" rowspan="1">Bits 0-1: edge mode. Bits 2-7: island index (divide by 4 for <a href="../asm/50688.html">C600</a> lookup)</td>
+<td class="" colspan="1" rowspan="1">Bits 0-1: edge mode. Bits 2-7: island index (divide by 4 for <a href="../asm/50688.html">data_islands</a> lookup)</td>
 </tr>
 </table>
 </div>
 <div class="paragraph">
-Terrain data: <a href="../asm/38144.html">9500</a> (48 levels x 256 bytes = 12,288 bytes).
+Terrain data: <a href="../asm/38144.html">level_terrains</a> (48 levels x 256 bytes = 12,288 bytes).
 </div>
 </div>
 <div><span id="objectSpawns"></span></div>
@@ -152,7 +157,7 @@ Terrain data: <a href="../asm/38144.html">9500</a> (48 levels x 256 bytes = 12,2
 <div class="box-title">Object spawn tables</div>
 <div class="paragraph">
 Each level has 128 spawn slots (2 bytes each, 256 bytes per level) that define
-which objects appear at each scroll position. Read by <a href="../asm/28544.html">6F80</a> during scroll.
+which objects appear at each scroll position. Read by <a href="../asm/28544.html">spawn_objects_from_level_slot</a> during scroll.
 </div>
 <div class="paragraph">
 <table class="default">
@@ -175,7 +180,7 @@ When the rock flag is set, bits 0-1 select rock variant (0-3). Most slots are
 empty (X = $00), making this a sparse encoding.
 </div>
 <div class="paragraph">
-Object data: <a href="../asm/51200.html">C800</a> (48 levels x 256 bytes = 12,288 bytes).
+Object data: <a href="../asm/51200.html">level_objects</a> (48 levels x 256 bytes = 12,288 bytes).
 </div>
 </div>
 <footer>
@@ -183,5 +188,6 @@ Object data: <a href="../asm/51200.html">C800</a> (48 levels x 256 bytes = 12,28
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

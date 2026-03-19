@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 600A</title>
+<title>river-raid: Routine at 600A</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,81 +40,99 @@ Reads Kempston joystick port $1F. Unlike keyboard, Kempston uses active-high bit
 </td>
 </tr>
 <tr>
+<td class="asm-label">scan_kempston</td>
 <td class="address-2"><span id="24586"></span>600A</td>
 <td class="instruction">LD A,$FE</td>
 <td class="comment-1" rowspan="5">Scan RIGHT</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24588"></span>600C</td>
 <td class="instruction">IN A,($1F)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24590"></span>600E</td>
 <td class="instruction">LD ($5EF1),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24593"></span>6011</td>
 <td class="instruction">BIT 0,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24595"></span>6013</td>
-<td class="instruction">CALL NZ,<a href="26099.html">$65F3</a></td>
+<td class="instruction">CALL NZ,<a href="26099.html">handle_right</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24598"></span>6016</td>
 <td class="instruction">LD A,($5EF1)</td>
 <td class="comment-1" rowspan="3">Scan LEFT</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24601"></span>6019</td>
 <td class="instruction">BIT 1,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24603"></span>601B</td>
-<td class="instruction">CALL NZ,<a href="26178.html">$6642</a></td>
+<td class="instruction">CALL NZ,<a href="26178.html">handle_left</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24606"></span>601E</td>
 <td class="instruction">LD A,($5EF1)</td>
 <td class="comment-1" rowspan="3">Scan DOWN</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24609"></span>6021</td>
 <td class="instruction">BIT 2,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24611"></span>6023</td>
-<td class="instruction">CALL NZ,<a href="26391.html">$6717</a></td>
+<td class="instruction">CALL NZ,<a href="26391.html">handle_down</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24614"></span>6026</td>
 <td class="instruction">LD A,($5EF1)</td>
 <td class="comment-1" rowspan="3">Scan UP</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24617"></span>6029</td>
 <td class="instruction">BIT 3,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24619"></span>602B</td>
-<td class="instruction">CALL NZ,<a href="26378.html">$670A</a></td>
+<td class="instruction">CALL NZ,<a href="26378.html">handle_up</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24622"></span>602E</td>
 <td class="instruction">LD A,($5EF1)</td>
 <td class="comment-1" rowspan="4">Scan FIRE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24625"></span>6031</td>
 <td class="instruction">BIT 4,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24627"></span>6033</td>
-<td class="instruction">CALL NZ,<a href="26404.html">$6724</a></td>
+<td class="instruction">CALL NZ,<a href="26404.html">handle_fire</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24630"></span>6036</td>
-<td class="instruction">JP <a href="24465.html">$5F91</a></td>
+<td class="instruction">JP <a href="24465.html">main_loop</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -128,5 +151,6 @@ Next: <a href="24633.html">6039</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

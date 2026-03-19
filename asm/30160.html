@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 75D0</title>
+<title>river-raid: Routine at 75D0</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -44,188 +49,229 @@ Reverses the direction of a ship or helicopter when it approaches a river bank. 
 </td>
 </tr>
 <tr>
+<td class="asm-label">reverse_enemy_direction</td>
 <td class="address-2"><span id="30160"></span>75D0</td>
 <td class="instruction">LD ($8B0A),BC</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30164"></span>75D4</td>
 <td class="instruction">LD A,B</td>
 <td class="comment-1" rowspan="3">Return if Y &gt;= $80 (object in top half, might be player).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30165"></span>75D5</td>
 <td class="instruction">SUB $80</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30167"></span>75D7</td>
 <td class="instruction">RET P</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30168"></span>75D8</td>
 <td class="instruction">LD BC,($8B0A)</td>
 <td class="comment-1" rowspan="5">Reload position, pop return address, load current_slot_ptr, get object definition.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30172"></span>75DC</td>
 <td class="instruction">POP HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30173"></span>75DD</td>
 <td class="instruction">LD HL,($5F60)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30176"></span>75E0</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30177"></span>75E1</td>
 <td class="instruction">LD D,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30178"></span>75E2</td>
-<td class="instruction">CALL <a href="30138.html">$75BA</a></td>
+<td class="instruction">CALL <a href="30138.html">ld_enemy_sprites</a></td>
 <td class="comment-1" rowspan="2">Get sprite pointer, reload position.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30181"></span>75E5</td>
 <td class="instruction">LD BC,($8B0A)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30185"></span>75E9</td>
 <td class="instruction">LD A,C</td>
 <td class="comment-1" rowspan="2">Calculate animation frame offset from X position.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30186"></span>75EA</td>
 <td class="instruction">AND $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30188"></span>75EC</td>
 <td class="instruction">LD BC,$0018</td>
 <td class="comment-1" rowspan="4">Set frame size, shift and increment offset.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30191"></span>75EF</td>
 <td class="instruction">SRL A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30193"></span>75F1</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30194"></span>75F2</td>
 <td class="instruction">INC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30195"></span>75F3</td>
 <td class="instruction">SBC HL,BC</td>
 <td class="comment-1" rowspan="1">Subtract frame size for pre-decrement.</td>
 </tr>
 <tr>
+<td class="asm-label">reverse_enemy_direction_frame_loop</td>
 <td class="address-2"><span id="30197"></span>75F5</td>
 <td class="instruction">ADD HL,BC</td>
-<td class="comment-1" rowspan="4">Loop to add frame offset to sprite pointer, store to <a href="35598.html">8B0E</a>.</td>
+<td class="comment-1" rowspan="4">Loop to add frame offset to sprite pointer, store to <a href="35598.html">render_sprite_ptr</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30198"></span>75F6</td>
 <td class="instruction">DEC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30199"></span>75F7</td>
-<td class="instruction">JR NZ,$75F5</td>
+<td class="instruction">JR NZ,<a href="30160.html#30197">reverse_enemy_direction_frame_loop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30201"></span>75F9</td>
 <td class="instruction">LD ($8B0E),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30204"></span>75FC</td>
 <td class="instruction">LD BC,($8B0A)</td>
-<td class="comment-1" rowspan="2">Reload position, store to <a href="35596.html">8B0C</a>.</td>
+<td class="comment-1" rowspan="2">Reload position, store to <a href="35596.html">object_coordinates</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30208"></span>7600</td>
 <td class="instruction">LD ($8B0C),BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30212"></span>7604</td>
 <td class="instruction">LD A,D</td>
 <td class="comment-1" rowspan="3">Invert object orientation.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30213"></span>7605</td>
 <td class="instruction">XOR $40</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30215"></span>7607</td>
 <td class="instruction">LD D,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30216"></span>7608</td>
 <td class="instruction">LD HL,($5F60)</td>
 <td class="comment-1" rowspan="4">Update orientation in viewport array, get new sprite pointer.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30219"></span>760B</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30220"></span>760C</td>
 <td class="instruction">LD (HL),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30221"></span>760D</td>
-<td class="instruction">CALL <a href="30138.html">$75BA</a></td>
+<td class="instruction">CALL <a href="30138.html">ld_enemy_sprites</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30224"></span>7610</td>
 <td class="instruction">LD E,$0E</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30226"></span>7612</td>
 <td class="instruction">LD A,D</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30227"></span>7613</td>
 <td class="instruction">AND $07</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30229"></span>7615</td>
 <td class="instruction">CP $02</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30231"></span>7617</td>
-<td class="instruction">CALL Z,<a href="28728.html">$7038</a></td>
+<td class="instruction">CALL Z,<a href="28728.html">ld_attributes_ship</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30234"></span>761A</td>
 <td class="instruction">LD D,$08</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30236"></span>761C</td>
 <td class="instruction">LD A,$03</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30238"></span>761E</td>
 <td class="instruction">LD BC,$0018</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30241"></span>7621</td>
-<td class="instruction">CALL <a href="35644.html">$8B3C</a></td>
+<td class="instruction">CALL <a href="35644.html">render_object</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30244"></span>7624</td>
-<td class="instruction">JP <a href="28814.html">$708E</a></td>
+<td class="instruction">JP <a href="28814.html">operate_viewport_slots</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 </table>
@@ -245,5 +291,6 @@ Next: <a href="30247.html">7627</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

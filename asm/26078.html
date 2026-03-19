@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 65DE</title>
+<title>river-raid: Routine at 65DE</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,11 +40,13 @@ This routine is called when Player 2 dies and Player 1 has lives remaining. It s
 </td>
 </tr>
 <tr>
+<td class="asm-label">switch_to_player_1</td>
 <td class="address-2"><span id="26078"></span>65DE</td>
 <td class="instruction">LD A,$01</td>
 <td class="comment-1" rowspan="2">Set current player to PLAYER_1.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26080"></span>65E0</td>
 <td class="instruction">LD ($923D),A</td>
 </tr>
@@ -48,36 +55,42 @@ This routine is called when Player 2 dies and Player 1 has lives remaining. It s
 <span id="26083"></span>
 <div class="comments">
 <div class="paragraph">
-This entry point is used by the routine at <a href="26059.html">65CB</a>.
+This entry point is used by the routine at <a href="26059.html">handle_player_2_death</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">check_player_1_lives</td>
 <td class="address-2"><span id="26083"></span>65E3</td>
 <td class="instruction">LD A,($923B)</td>
 <td class="comment-1" rowspan="3">If Player 1 has no lives, trigger game over.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26086"></span>65E6</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26088"></span>65E8</td>
-<td class="instruction">JP Z,<a href="25975.html">$6577</a></td>
+<td class="instruction">JP Z,<a href="25975.html">game_over</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26091"></span>65EB</td>
 <td class="instruction">LD A,$01</td>
 <td class="comment-1" rowspan="3">Set current player to PLAYER_1 and restart gameplay.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26093"></span>65ED</td>
 <td class="instruction">LD ($923D),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26096"></span>65F0</td>
-<td class="instruction">JP <a href="25960.html">$6568</a></td>
+<td class="instruction">JP <a href="25960.html">restart_current_player</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -96,5 +109,6 @@ Next: <a href="26099.html">65F3</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

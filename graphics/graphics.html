@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Sprite graphics</title>
+<title>river-raid: Sprite graphics</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Graphics">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Sprite graphics</td>
 </tr>
 </table>
+<div class="page-content">
 <ul class="contents">
 <li><a href="#plane">Player plane</a></li>
 <li><a href="#helicopter">Helicopter</a></li>
@@ -52,7 +57,7 @@ the plane turns left or right.
 </table>
 </div>
 <div class="paragraph">
-Sprite data: <a href="../asm/33713.html">83B1</a> (centered), <a href="../asm/33777.html">83F1</a> (banked).
+Sprite data: <a href="../asm/33713.html">sprite_plane</a> (centered), <a href="../asm/33777.html">sprite_plane_banked</a> (banked).
 </div>
 </div>
 <div><span id="helicopter"></span></div>
@@ -83,7 +88,7 @@ missiles at the player.
 </table>
 </div>
 <div class="paragraph">
-Sprite data: <a href="../asm/34227.html">85B3</a> (left-facing), <a href="../asm/34707.html">8793</a> (right-facing).
+Sprite data: <a href="../asm/34227.html">sprite_enemies_left</a> (left-facing), <a href="../asm/34707.html">sprite_enemies_right</a> (right-facing).
 </div>
 </div>
 <div><span id="rotor"></span></div>
@@ -111,7 +116,7 @@ animation as the helicopter moves horizontally.
 </table>
 </div>
 <div class="paragraph">
-Sprite data: <a href="../asm/35512.html">8AB8</a> (left), <a href="../asm/35528.html">8AC8</a> (right).
+Sprite data: <a href="../asm/35512.html">sprite_helicopter_rotor_left</a> (left), <a href="../asm/35528.html">sprite_helicopter_rotor_right</a> (right).
 </div>
 </div>
 <div><span id="ship"></span></div>
@@ -186,7 +191,7 @@ vertically.
 </table>
 </div>
 <div class="paragraph">
-Sprite data: <a href="../asm/35186.html">8972</a>.
+Sprite data: <a href="../asm/35186.html">sprite_balloon</a>.
 </div>
 </div>
 <div><span id="fuelDepot"></span></div>
@@ -204,7 +209,7 @@ object in the game.
 </table>
 </div>
 <div class="paragraph">
-Sprite data: <a href="../asm/35462.html">8A86</a>.
+Sprite data: <a href="../asm/35462.html">sprite_fuel</a>.
 </div>
 </div>
 <div><span id="rock"></span></div>
@@ -224,7 +229,7 @@ Rocks are 3x2 tile (24x16 pixel) static decorations with 4 variants.
 </table>
 </div>
 <div class="paragraph">
-Sprite data: <a href="../asm/33953.html">84A1</a>.
+Sprite data: <a href="../asm/33953.html">sprite_rock</a>.
 </div>
 </div>
 <div><span id="explosion"></span></div>
@@ -242,7 +247,7 @@ played back in a 1-2-3-2 loop.
 </table>
 </div>
 <div class="paragraph">
-Sprite data: <a href="../asm/33905.html">8471</a> (frame 1), <a href="../asm/33921.html">8481</a> (frame 2), <a href="../asm/33937.html">8491</a> (frame 3).
+Sprite data: <a href="../asm/33905.html">sprite_explosion_f1</a> (frame 1), <a href="../asm/33921.html">sprite_explosion_f2</a> (frame 2), <a href="../asm/33937.html">sprite_explosion_f3</a> (frame 3).
 </div>
 </div>
 <div><span id="missile"></span></div>
@@ -269,12 +274,12 @@ frames and a separate trail sprite drawn below it.
 </table>
 </div>
 <div class="paragraph">
-Sprite data: <a href="../asm/33841.html">8431</a> (missile), <a href="../asm/33873.html">8451</a> (trail).
+Sprite data: <a href="../asm/33841.html">sprite_missile</a> (missile), <a href="../asm/33873.html">sprite_missile_trail</a> (trail).
 </div>
 <div class="paragraph">
 Tank shells reuse the missile sprite data but render only 1 pixel height
 (SPRITE_SHELL_HEIGHT_PIXELS). The shell explosion is a 2x2 tile (16x16 pixel)
-sprite at <a href="../asm/36860.html">8FFC</a>.
+sprite at <a href="../asm/36860.html">sprite_tank_shell_explosion</a>.
 </div>
 </div>
 <div><span id="tankShellExplosion"></span></div>
@@ -293,16 +298,16 @@ or player.
 </table>
 </div>
 <div class="paragraph">
-Sprite data: <a href="../asm/36860.html">8FFC</a>.
+Sprite data: <a href="../asm/36860.html">sprite_tank_shell_explosion</a>.
 </div>
 </div>
 <div><span id="unusedExplosion"></span></div>
 <div class="box box-1">
 <div class="box-title">Unused explosion (prototype)</div>
 <div class="paragraph">
-An unused 6-frame animation at <a href="../asm/35544.html">8AD8</a> showing a diamond shape expanding from
+An unused 6-frame animation at <a href="../asm/35544.html">sprite_unused_explosion</a> showing a diamond shape expanding from
 a single pixel to a full diamond. Each frame is 1x1 tile (8x8 pixels) — half
-the size of the tank shell explosion at <a href="../asm/36860.html">8FFC</a>. This appears to be an early
+the size of the tank shell explosion at <a href="../asm/36860.html">sprite_tank_shell_explosion</a>. This appears to be an early
 prototype that was replaced with the larger 16x16 pixel version for better
 visibility.
 </div>
@@ -314,7 +319,7 @@ visibility.
 </table>
 </div>
 <div class="paragraph">
-Sprite data: <a href="../asm/35544.html">8AD8</a>.
+Sprite data: <a href="../asm/35544.html">sprite_unused_explosion</a>.
 </div>
 </div>
 <footer>
@@ -322,5 +327,6 @@ Sprite data: <a href="../asm/35544.html">8AD8</a>.
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 935D</title>
+<title>river-raid: Routine at 935D</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,23 +40,28 @@ Restores registers and returns without filling any attributes. Called when sprit
 </td>
 </tr>
 <tr>
+<td class="asm-label">handle_zero_attributes</td>
 <td class="address-2"><span id="37725"></span>935D</td>
 <td class="instruction">LD A,($928B)</td>
-<td class="comment-1" rowspan="4">Restore width from <a href="37515.html">928B</a>, pop BC and HL, load new coordinates from <a href="35596.html">8B0C</a> into DE, return.</td>
+<td class="comment-1" rowspan="4">Restore width from <a href="37515.html">attr_sprite_width</a>, pop BC and HL, load new coordinates from <a href="35596.html">object_coordinates</a> into DE, return.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37728"></span>9360</td>
 <td class="instruction">POP BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37729"></span>9361</td>
 <td class="instruction">POP HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37730"></span>9362</td>
 <td class="instruction">LD DE,($8B0C)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37734"></span>9366</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -73,5 +83,6 @@ Next: <a href="37735.html">9367</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

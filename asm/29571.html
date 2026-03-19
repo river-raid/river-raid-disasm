@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Game status buffer entry at 7383</title>
+<title>river-raid: Game status buffer entry at 7383</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-g">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Game status buffer</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -56,12 +61,13 @@ Controls tank shell behavior during flight and explosion.
 </table>
 </div>
 <div class="paragraph">
-Speed is pseudo-random (1-4), set when shell is fired at <a href="29442.html#29486">732E</a>.
+Speed is pseudo-random (1-4), set when shell is fired at <a href="29442.html#29486">tank_fire_shell_entry</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">tank_shell_state</td>
 <td class="address-1"><span id="29571"></span>7383</td>
 <td class="instruction">DEFB $00</td>
 <td class="comment-0" rowspan="1"></td>
@@ -83,5 +89,6 @@ Next: <a href="29572.html">7384</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

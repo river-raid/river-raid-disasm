@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routines</title>
+<title>river-raid: Routines</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="RoutinesMap">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <div class="map-intro"></div>
 <table class="map">
 <tr>
@@ -165,13 +170,13 @@
 <tr>
 <td class="map-c"><span id="25306"></span><a href="../asm/25306.html">62DA</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25306.html">Increase vertical coordinate of the object by the value of <a href="../asm/24420.html">5F64</a>.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25306.html">Increase vertical coordinate of the object by the value of <a href="../asm/24420.html">state_speed</a>.</a></div>
 </td>
 </tr>
 <tr>
 <td class="map-c"><span id="25312"></span><a href="../asm/25312.html">62E0</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25312.html">Decrease vertical coordinate of the object by the value of <a href="../asm/24420.html">5F64</a>.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25312.html">Decrease vertical coordinate of the object by the value of <a href="../asm/24420.html">state_speed</a>.</a></div>
 </td>
 </tr>
 <tr>
@@ -645,7 +650,7 @@
 <tr>
 <td class="map-c"><span id="28139"></span><a href="../asm/28139.html">6DEB</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28139.html">Initializes the starting bridge based on the value of <a href="../asm/37434.html">923A</a> using <a href="../asm/23871.html">5D3F</a> for the lookup.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28139.html">Initializes the starting bridge based on the value of <a href="../asm/37434.html">state_game_mode</a> using <a href="../asm/23871.html">starting_bridges</a> for the lookup.</a></div>
 </td>
 </tr>
 <tr>
@@ -1077,7 +1082,7 @@
 <tr>
 <td class="map-c"><span id="30247"></span><a href="../asm/30247.html">7627</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30247.html">Reset <a href="../asm/24416.html">5F60</a> to the start of <a href="../asm/24320.html">5F00</a>.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30247.html">Reset <a href="../asm/24416.html">current_slot_ptr</a> to the start of <a href="../asm/24320.html">viewport_slots</a>.</a></div>
 </td>
 </tr>
 <tr>
@@ -1095,7 +1100,7 @@
 <tr>
 <td class="map-c"><span id="30380"></span><a href="../asm/30380.html">76AC</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30380.html">A useless procedure that unconditionally jumps to <a href="../asm/28814.html">708E</a>.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30380.html">A useless procedure that unconditionally jumps to <a href="../asm/28814.html">operate_viewport_slots</a>.</a></div>
 </td>
 </tr>
 <tr>
@@ -1167,7 +1172,7 @@
 <tr>
 <td class="map-c"><span id="35614"></span><a href="../asm/35614.html">8B1E</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35614.html">Render a sprite at position from <a href="../asm/35594.html">8B0A</a>.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35614.html">Render a sprite at position from <a href="../asm/35594.html">previous_object_coordinates</a>.</a></div>
 </td>
 </tr>
 <tr>
@@ -1311,7 +1316,7 @@
 <tr>
 <td class="map-c"><span id="37495"></span><a href="../asm/37495.html">9277</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37495.html">Player 2 branch of <a href="../asm/37438.html">923E</a>.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37495.html">Player 2 branch of <a href="../asm/37438.html">print_lives</a>.</a></div>
 </td>
 </tr>
 <tr>
@@ -1398,5 +1403,6 @@
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

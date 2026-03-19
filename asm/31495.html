@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 7B07</title>
+<title>river-raid: Routine at 7B07</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -32,78 +37,94 @@ Next: <a href="31575.html">7B57</a>
 </td>
 </tr>
 <tr>
+<td class="asm-label">game_mode_input</td>
 <td class="address-2"><span id="31495"></span>7B07</td>
 <td class="instruction">LD A,($5C08)</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31498"></span>7B0A</td>
 <td class="instruction">CALL $02BF</td>
 <td class="comment-1" rowspan="2">Scan keyboard</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31501"></span>7B0D</td>
 <td class="instruction">EI</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31502"></span>7B0E</td>
 <td class="instruction">SUB $31</td>
 <td class="comment-1" rowspan="1">Subtract "1" from the pressed key ASCII code, mapping "1" to 0, "2" to 1, etc.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31504"></span>7B10</td>
 <td class="instruction">LD ($923A),A</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31507"></span>7B13</td>
 <td class="instruction">AND $F8</td>
 <td class="comment-1" rowspan="2">Validate the pressed key by making sure that none of the bits older than the first three are set, effectively allowing values 0 through 7.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31509"></span>7B15</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31511"></span>7B17</td>
-<td class="instruction">JP NZ,$7B07</td>
+<td class="instruction">JP NZ,<a href="31495.html#31495">game_mode_input</a></td>
 <td class="comment-1" rowspan="1">Repeat if a valid key was not pressed.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31514"></span>7B1A</td>
 <td class="instruction">LD D,$07</td>
 <td class="comment-1" rowspan="1">PAPER BLACK; INK WHITE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31516"></span>7B1C</td>
-<td class="instruction">CALL <a href="37898.html">$940A</a></td>
+<td class="instruction">CALL <a href="37898.html">clear_screen</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31519"></span>7B1F</td>
 <td class="instruction">LD A,($7800)</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31522"></span>7B22</td>
 <td class="instruction">CP $00</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31524"></span>7B24</td>
-<td class="instruction">JP NZ,$7B30</td>
+<td class="instruction">JP NZ,<a href="31495.html#31536">instructions_print</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31527"></span>7B27</td>
 <td class="instruction">LD DE,$7812</td>
 <td class="comment-1" rowspan="3">Print keyboard configuration</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31530"></span>7B2A</td>
 <td class="instruction">LD BC,$0070</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31533"></span>7B2D</td>
 <td class="instruction">CALL $203C</td>
 </tr>
@@ -118,24 +139,29 @@ Print instructions and wait for Enter key.
 </td>
 </tr>
 <tr>
+<td class="asm-label">instructions_print</td>
 <td class="address-2"><span id="31536"></span>7B30</td>
 <td class="instruction">LD DE,$7882</td>
-<td class="comment-1" rowspan="3">Print instructions text (<a href="30738.html#30850">7882</a>, 168 bytes) via ROM PR_STRING.</td>
+<td class="comment-1" rowspan="3">Print instructions text (<a href="30738.html#30850">msg_instructions</a>, 168 bytes) via ROM PR_STRING.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31539"></span>7B33</td>
 <td class="instruction">LD BC,$00A8</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31542"></span>7B36</td>
 <td class="instruction">CALL $203C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31545"></span>7B39</td>
 <td class="instruction">LD A," "</td>
 <td class="comment-1" rowspan="1">Initialize LAST_K to space character.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31547"></span>7B3B</td>
 <td class="instruction">LD ($5C08),A</td>
 <td class="comment-1" rowspan="1"></td>
@@ -151,48 +177,58 @@ Wait for user to press Enter.
 </td>
 </tr>
 <tr>
+<td class="asm-label">instructions_input</td>
 <td class="address-2"><span id="31550"></span>7B3E</td>
 <td class="instruction">LD A,($5C08)</td>
 <td class="comment-1" rowspan="1">Read last key pressed from LAST_K.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31553"></span>7B41</td>
 <td class="instruction">CALL $02BF</td>
 <td class="comment-1" rowspan="2">Scan keyboard via ROM routine.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31556"></span>7B44</td>
 <td class="instruction">EI</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31557"></span>7B45</td>
 <td class="instruction">LD A,($5C08)</td>
 <td class="comment-1" rowspan="2">Loop until Enter is pressed.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31560"></span>7B48</td>
 <td class="instruction">CP $0D</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31562"></span>7B4A</td>
-<td class="instruction">JP NZ,$7B3E</td>
+<td class="instruction">JP NZ,<a href="31495.html#31550">instructions_input</a></td>
 <td class="comment-1" rowspan="1">Exit loop when Enter detected.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31565"></span>7B4D</td>
 <td class="instruction">LD A,$00</td>
 <td class="comment-1" rowspan="2">Clear overview mode flag (start game).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31567"></span>7B4F</td>
 <td class="instruction">LD ($7801),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31570"></span>7B52</td>
 <td class="instruction">LD SP,($7810)</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31574"></span>7B56</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -214,5 +250,6 @@ Next: <a href="31575.html">7B57</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

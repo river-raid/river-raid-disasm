@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 735E</title>
+<title>river-raid: Routine at 735E</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,80 +40,98 @@ Alternative shell initialization when bit 4 is set. Checks if tank can fire base
 </td>
 </tr>
 <tr>
+<td class="asm-label">check_shell_init_condition</td>
 <td class="address-2"><span id="29534"></span>735E</td>
 <td class="instruction">LD A,($5EF2)</td>
-<td class="comment-1" rowspan="3">If TANK_SHELL_ACTIVE, cancel shell via <a href="29528.html">7358</a>.</td>
+<td class="comment-1" rowspan="3">If TANK_SHELL_ACTIVE, cancel shell via <a href="29528.html">cancel_and_remove_shell</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29537"></span>7361</td>
 <td class="instruction">CP $01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29539"></span>7363</td>
-<td class="instruction">JP Z,<a href="29528.html">$7358</a></td>
+<td class="instruction">JP Z,<a href="29528.html">cancel_and_remove_shell</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29542"></span>7366</td>
 <td class="instruction">PUSH BC</td>
-<td class="comment-1" rowspan="7">Push BC, check X position sign bit, invert if positive via <a href="29568.html">7380</a>.</td>
+<td class="comment-1" rowspan="7">Push BC, check X position sign bit, invert if positive via <a href="29568.html">invert_coordinate_sign</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29543"></span>7367</td>
 <td class="instruction">LD A,C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29544"></span>7368</td>
 <td class="instruction">BIT 7,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29546"></span>736A</td>
-<td class="instruction">CALL Z,<a href="29568.html">$7380</a></td>
+<td class="instruction">CALL Z,<a href="29568.html">invert_coordinate_sign</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29549"></span>736D</td>
 <td class="instruction">RES 7,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29551"></span>736F</td>
 <td class="instruction">SRL A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29553"></span>7371</td>
 <td class="instruction">SRL A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29555"></span>7373</td>
 <td class="instruction">SRL A</td>
 <td class="comment-1" rowspan="5">Shift right 4 times to get upper nibble.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29557"></span>7375</td>
 <td class="instruction">SRL A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29559"></span>7377</td>
 <td class="instruction">LD B,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29560"></span>7378</td>
 <td class="instruction">LD A,D</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29561"></span>7379</td>
 <td class="instruction">AND $40</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29563"></span>737B</td>
 <td class="instruction">ADD A,B</td>
 <td class="comment-1" rowspan="3">Combine with orientation, pop BC, continue to fire shell.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29564"></span>737C</td>
 <td class="instruction">POP BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29565"></span>737D</td>
-<td class="instruction">JP <a href="29442.html#29486">$732E</a></td>
+<td class="instruction">JP <a href="29442.html#29486">tank_fire_shell_entry</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -127,5 +150,6 @@ Next: <a href="29568.html">7380</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

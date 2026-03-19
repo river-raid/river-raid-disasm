@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 93A1</title>
+<title>river-raid: Routine at 93A1</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -57,60 +62,74 @@ Compares score at HL with score at DE, digit by digit.
 </td>
 </tr>
 <tr>
+<td class="asm-label">compare_scores</td>
 <td class="address-2"><span id="37793"></span>93A1</td>
 <td class="instruction">LD C,$06</td>
 <td class="comment-1" rowspan="1">Initialize digit counter to SCORE_DIGIT_COUNT.</td>
 </tr>
 <tr>
+<td class="asm-label">compare_scores_loop</td>
 <td class="address-2"><span id="37795"></span>93A3</td>
 <td class="instruction">LD A,(HL)</td>
 <td class="comment-1" rowspan="12">Compare digits, return if different, advance pointers, loop.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37796"></span>93A4</td>
 <td class="instruction">LD B,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37797"></span>93A5</td>
 <td class="instruction">LD A,(DE)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37798"></span>93A6</td>
 <td class="instruction">SUB B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37799"></span>93A7</td>
-<td class="instruction">JP M,<a href="37816.html">$93B8</a></td>
+<td class="instruction">JP M,<a href="37816.html">compare_scores_less</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37802"></span>93AA</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37804"></span>93AC</td>
-<td class="instruction">JP NZ,<a href="37819.html">$93BB</a></td>
+<td class="instruction">JP NZ,<a href="37819.html">compare_scores_greater</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37807"></span>93AF</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37808"></span>93B0</td>
 <td class="instruction">INC DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37809"></span>93B1</td>
 <td class="instruction">DEC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37810"></span>93B2</td>
-<td class="instruction">JP NZ,$93A3</td>
+<td class="instruction">JP NZ,<a href="37793.html#37795">compare_scores_loop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37813"></span>93B5</td>
 <td class="instruction">LD A,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37815"></span>93B7</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1">Return 0 (scores equal).</td>
@@ -132,5 +151,6 @@ Next: <a href="37816.html">93B8</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

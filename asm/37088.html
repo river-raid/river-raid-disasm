@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 90E0</title>
+<title>river-raid: Routine at 90E0</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -44,104 +49,128 @@ Adds points to the current player's score. The value in A is BCD-encoded as scor
 </td>
 </tr>
 <tr>
+<td class="asm-label">add_points</td>
 <td class="address-2"><span id="37088"></span>90E0</td>
 <td class="instruction">PUSH AF</td>
 <td class="comment-1" rowspan="6">Extract high nibble (hundreds digit), skip if zero.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37089"></span>90E1</td>
 <td class="instruction">SRL A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37091"></span>90E3</td>
 <td class="instruction">SRL A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37093"></span>90E5</td>
 <td class="instruction">SRL A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37095"></span>90E7</td>
 <td class="instruction">SRL A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37097"></span>90E9</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37099"></span>90EB</td>
-<td class="instruction">JP Z,$90F8</td>
+<td class="instruction">JP Z,<a href="37088.html#37112">add_points_units_entry</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label">add_points_tens_loop</td>
 <td class="address-2"><span id="37102"></span>90EE</td>
 <td class="instruction">PUSH AF</td>
 <td class="comment-1" rowspan="5">Increment 10s score digit once per high-nibble unit.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37103"></span>90EF</td>
 <td class="instruction">LD A,$02</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37105"></span>90F1</td>
-<td class="instruction">CALL <a href="37154.html">$9122</a></td>
+<td class="instruction">CALL <a href="37154.html">update_score</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37108"></span>90F4</td>
 <td class="instruction">POP AF</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37109"></span>90F5</td>
 <td class="instruction">DEC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37110"></span>90F6</td>
-<td class="instruction">JR NZ,$90EE</td>
+<td class="instruction">JR NZ,<a href="37088.html#37102">add_points_tens_loop</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label">add_points_units_entry</td>
 <td class="address-2"><span id="37112"></span>90F8</td>
 <td class="instruction">POP AF</td>
 <td class="comment-1" rowspan="4">Extract low nibble (tens digit), return if zero.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37113"></span>90F9</td>
 <td class="instruction">AND $0F</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37115"></span>90FB</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37117"></span>90FD</td>
 <td class="instruction">RET Z</td>
 </tr>
 <tr>
+<td class="asm-label">add_points_units_loop</td>
 <td class="address-2"><span id="37118"></span>90FE</td>
 <td class="instruction">PUSH AF</td>
 <td class="comment-1" rowspan="6">Increment 1s score digit once per low-nibble unit.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37119"></span>90FF</td>
 <td class="instruction">LD A,$01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37121"></span>9101</td>
-<td class="instruction">CALL <a href="37154.html">$9122</a></td>
+<td class="instruction">CALL <a href="37154.html">update_score</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37124"></span>9104</td>
 <td class="instruction">POP AF</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37125"></span>9105</td>
 <td class="instruction">DEC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37126"></span>9106</td>
-<td class="instruction">JR NZ,$90FE</td>
+<td class="instruction">JR NZ,<a href="37088.html#37118">add_points_units_loop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37128"></span>9108</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -163,5 +192,6 @@ Next: <a href="37129.html">9109</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

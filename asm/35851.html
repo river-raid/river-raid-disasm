@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 8C0B</title>
+<title>river-raid: Routine at 8C0B</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,19 +40,23 @@ XORs erasure pixels, then ORs new pixels, checking for collision.
 </td>
 </tr>
 <tr>
+<td class="asm-label">render_sprite_row</td>
 <td class="address-2"><span id="35851"></span>8C0B</td>
 <td class="instruction">LD A,($8B1A)</td>
 <td class="comment-1" rowspan="4">Get width, load screen addresses for new and old positions.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35854"></span>8C0E</td>
 <td class="instruction">LD C,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35855"></span>8C0F</td>
 <td class="instruction">LD HL,($8B14)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35858"></span>8C12</td>
 <td class="instruction">LD DE,($8B0E)</td>
 </tr>
@@ -62,19 +71,23 @@ First pass: erase old sprite (XOR with screen).
 </td>
 </tr>
 <tr>
+<td class="asm-label">render_erase_loop</td>
 <td class="address-2"><span id="35862"></span>8C16</td>
 <td class="instruction">LD A,(DE)</td>
 <td class="comment-1" rowspan="4">Read sprite byte, XOR $FF, combine with screen.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35863"></span>8C17</td>
 <td class="instruction">LD B,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35864"></span>8C18</td>
 <td class="instruction">LD A,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35865"></span>8C19</td>
 <td class="instruction">XOR $FF</td>
 </tr>
@@ -95,5 +108,6 @@ Next: <a href="35867.html">8C1B</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

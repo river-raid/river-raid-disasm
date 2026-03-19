@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Text at 8153</title>
+<title>river-raid: Text at 8153</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-t">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Messages</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,12 +34,13 @@ Next: <a href="33154.html">8182</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Set as the scroller start by <a href="25975.html">6577</a> on game over. Immediately followed by <a href="33154.html">8182</a> with no $FF separator, so the ticker falls through into the credits after the GAME OVER text. The scroller resets to <a href="33154.html">8182</a> (not here) on $FF, so GAME OVER appears only once.
+Set as the scroller start by <a href="25975.html">game_over</a> on game over. Immediately followed by <a href="33154.html">msg_credits</a> with no $FF separator, so the ticker falls through into the credits after the GAME OVER text. The scroller resets to <a href="33154.html">msg_credits</a> (not here) on $FF, so GAME OVER appears only once.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">msg_game_over</td>
 <td class="address-1"><span id="33107"></span>8153</td>
 <td class="instruction">DEFM " .....GAME OVER.....                           "</td>
 <td class="comment-0" rowspan="1"></td>
@@ -56,5 +62,6 @@ Next: <a href="33154.html">8182</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

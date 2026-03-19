@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 683B</title>
+<title>river-raid: Routine at 683B</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="26785.html">68A1</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Core vertical scroll engine. Scrolls all screen content by copying pixel data between screen lines. Called every frame from <a href="24741.html">60A5</a>.
+Core vertical scroll engine. Scrolls all screen content by copying pixel data between screen lines. Called every frame from <a href="24741.html">render_plane_and_terrain</a>.
 </div>
 </div>
 </td>
@@ -51,223 +56,275 @@ Performance note: This is the game's hottest code path, executing 144 iterations
 </td>
 </tr>
 <tr>
+<td class="asm-label">scroll_screen</td>
 <td class="address-2"><span id="26683"></span>683B</td>
 <td class="instruction">LD A,$8F</td>
 <td class="comment-1" rowspan="2">Initialize line counter to $8F (143 lines to process).</td>
 </tr>
 <tr>
+<td class="asm-label">scroll_screen_line</td>
 <td class="address-2"><span id="26685"></span>683D</td>
 <td class="instruction">LD ($5EF9),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26688"></span>6840</td>
 <td class="instruction">AND $3F</td>
 <td class="comment-1" rowspan="1">Mask lower 6 bits for table index (0-63).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26690"></span>6842</td>
 <td class="instruction">LD HL,$5B00</td>
-<td class="comment-1" rowspan="9">Look up destination address in table at <a href="23296.html">5B00</a>.</td>
+<td class="comment-1" rowspan="9">Look up destination address in table at <a href="23296.html">screen_row_table</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26693"></span>6845</td>
 <td class="instruction">LD C,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26694"></span>6846</td>
 <td class="instruction">SLA C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26696"></span>6848</td>
 <td class="instruction">LD B,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26698"></span>684A</td>
 <td class="instruction">ADD HL,BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26699"></span>684B</td>
 <td class="instruction">LD E,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26700"></span>684C</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26701"></span>684D</td>
 <td class="instruction">LD D,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26702"></span>684E</td>
 <td class="instruction">EX DE,HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26703"></span>684F</td>
 <td class="instruction">LD A,($5EF9)</td>
 <td class="comment-1" rowspan="5">Apply bank offset based on bits 7-6.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26706"></span>6852</td>
 <td class="instruction">BIT 7,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26708"></span>6854</td>
-<td class="instruction">CALL NZ,<a href="26678.html">$6836</a></td>
+<td class="instruction">CALL NZ,<a href="26678.html">add_screen_bank_1000</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26711"></span>6857</td>
 <td class="instruction">BIT 6,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26713"></span>6859</td>
-<td class="instruction">CALL NZ,<a href="26673.html">$6831</a></td>
+<td class="instruction">CALL NZ,<a href="26673.html">add_screen_bank_800</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26716"></span>685C</td>
 <td class="instruction">PUSH HL</td>
 <td class="comment-1" rowspan="1">Save destination pointer.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26717"></span>685D</td>
 <td class="instruction">LD HL,$5B00</td>
 <td class="comment-1" rowspan="14">Look up source address (counter - speed).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26720"></span>6860</td>
 <td class="instruction">LD A,($5F64)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26723"></span>6863</td>
 <td class="instruction">LD B,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26724"></span>6864</td>
 <td class="instruction">LD A,($5EF9)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26727"></span>6867</td>
 <td class="instruction">SUB B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26728"></span>6868</td>
 <td class="instruction">AND $3F</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26730"></span>686A</td>
 <td class="instruction">LD B,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26732"></span>686C</td>
 <td class="instruction">LD C,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26733"></span>686D</td>
 <td class="instruction">SLA C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26735"></span>686F</td>
 <td class="instruction">ADD HL,BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26736"></span>6870</td>
 <td class="instruction">LD E,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26737"></span>6871</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26738"></span>6872</td>
 <td class="instruction">LD D,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26739"></span>6873</td>
 <td class="instruction">EX DE,HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26740"></span>6874</td>
 <td class="instruction">LD A,($5F64)</td>
 <td class="comment-1" rowspan="8">Apply bank offset to source pointer.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26743"></span>6877</td>
 <td class="instruction">LD D,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26744"></span>6878</td>
 <td class="instruction">LD A,($5EF9)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26747"></span>687B</td>
 <td class="instruction">SUB D</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26748"></span>687C</td>
 <td class="instruction">BIT 7,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26750"></span>687E</td>
-<td class="instruction">CALL NZ,<a href="26678.html">$6836</a></td>
+<td class="instruction">CALL NZ,<a href="26678.html">add_screen_bank_1000</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26753"></span>6881</td>
 <td class="instruction">BIT 6,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26755"></span>6883</td>
-<td class="instruction">CALL NZ,<a href="26673.html">$6831</a></td>
+<td class="instruction">CALL NZ,<a href="26673.html">add_screen_bank_800</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26758"></span>6886</td>
 <td class="instruction">POP DE</td>
 <td class="comment-1" rowspan="3">Copy 32 bytes from source to destination (LDDR).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26759"></span>6887</td>
 <td class="instruction">LD BC,$0020</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26762"></span>688A</td>
 <td class="instruction">LDDR</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26764"></span>688C</td>
 <td class="instruction">LD A,($5EF9)</td>
-<td class="comment-1" rowspan="4">If counter reached 0, jump to <a href="26785.html">68A1</a> to clear top rows.</td>
+<td class="comment-1" rowspan="4">If counter reached 0, jump to <a href="26785.html">clear_top_rows</a> to clear top rows.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26767"></span>688F</td>
 <td class="instruction">DEC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26768"></span>6890</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26770"></span>6892</td>
-<td class="instruction">JP Z,<a href="26785.html">$68A1</a></td>
+<td class="instruction">JP Z,<a href="26785.html">clear_top_rows</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26773"></span>6895</td>
 <td class="instruction">CP $7F</td>
 <td class="comment-1" rowspan="2">At counter $7F, render plane sprite mid-scroll.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26775"></span>6897</td>
-<td class="instruction">CALL Z,<a href="26242.html">$6682</a></td>
+<td class="instruction">CALL Z,<a href="26242.html">render_plane</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26778"></span>689A</td>
 <td class="instruction">LD A,($5EF9)</td>
 <td class="comment-1" rowspan="3">Decrement and continue loop.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26781"></span>689D</td>
 <td class="instruction">DEC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26782"></span>689E</td>
-<td class="instruction">JP $683D</td>
+<td class="instruction">JP <a href="26683.html#26685">scroll_screen_line</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -286,5 +343,6 @@ Next: <a href="26785.html">68A1</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

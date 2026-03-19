@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 7158</title>
+<title>river-raid: Routine at 7158</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -60,47 +65,57 @@ Operates fighter jets that fly horizontally across the screen. Fighters move 4 p
 </td>
 </tr>
 <tr>
+<td class="asm-label">operate_fighter</td>
 <td class="address-2"><span id="29016"></span>7158</td>
 <td class="instruction">LD ($8B0A),BC</td>
-<td class="comment-1" rowspan="1">Store current position to <a href="35594.html">8B0A</a> for rendering.</td>
+<td class="comment-1" rowspan="1">Store current position to <a href="35594.html">previous_object_coordinates</a> for rendering.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29020"></span>715C</td>
 <td class="instruction">BIT 6,D</td>
-<td class="comment-1" rowspan="2">Check orientation: if bit 6 clear (right-facing), jump to <a href="29074.html">7192</a>.</td>
+<td class="comment-1" rowspan="2">Check orientation: if bit 6 clear (right-facing), jump to <a href="29074.html">fighter_right_advance</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29022"></span>715E</td>
-<td class="instruction">JP Z,<a href="29074.html">$7192</a></td>
+<td class="instruction">JP Z,<a href="29074.html">fighter_right_advance</a></td>
 </tr>
 <tr>
+<td class="asm-label">fighter_left_advance</td>
 <td class="address-1"><span id="29025"></span>7161</td>
 <td class="instruction">DEC C</td>
-<td class="comment-1" rowspan="6">Move left 4 pixels (DEC C × 4). If C == 0, reset via <a href="29013.html">7155</a>.</td>
+<td class="comment-1" rowspan="6">Move left 4 pixels (DEC C × 4). If C == 0, reset via <a href="29013.html">fighter_left_reset</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29026"></span>7162</td>
 <td class="instruction">DEC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29027"></span>7163</td>
 <td class="instruction">DEC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29028"></span>7164</td>
 <td class="instruction">DEC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29029"></span>7165</td>
 <td class="instruction">LD A,C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29030"></span>7166</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29032"></span>7168</td>
-<td class="instruction">CALL Z,<a href="29013.html">$7155</a></td>
+<td class="instruction">CALL Z,<a href="29013.html">fighter_left_reset</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 </table>
@@ -120,5 +135,6 @@ Next: <a href="29035.html">716B</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

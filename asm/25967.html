@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 656F</title>
+<title>river-raid: Routine at 656F</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,17 +40,20 @@ This routine is called when Player 1 has no lives left. In two-player mode, it c
 </td>
 </tr>
 <tr>
+<td class="asm-label">check_player_2_lives</td>
 <td class="address-2"><span id="25967"></span>656F</td>
 <td class="instruction">LD A,($923A)</td>
 <td class="comment-1" rowspan="3">If two-player mode, switch to Player 2.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25970"></span>6572</td>
 <td class="instruction">BIT 0,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25972"></span>6574</td>
-<td class="instruction">JP NZ,<a href="26027.html">$65AB</a></td>
+<td class="instruction">JP NZ,<a href="26027.html">switch_to_player_2</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -64,5 +72,6 @@ Next: <a href="25975.html">6577</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

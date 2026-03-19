@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 68E9</title>
+<title>river-raid: Routine at 68E9</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -38,136 +43,167 @@ Bridge progression algorithm: The game has 48 unique bridge sections (1-48). Eac
 </td>
 </tr>
 <tr>
+<td class="asm-label">init_current_bridge</td>
 <td class="address-2"><span id="26857"></span>68E9</td>
 <td class="instruction">LD HL,$5800</td>
 <td class="comment-1" rowspan="2">Initialize to clear top attribute row (32 bytes).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26860"></span>68EC</td>
 <td class="instruction">LD B,$20</td>
 </tr>
 <tr>
+<td class="asm-label">clear_top_attributes_loop</td>
 <td class="address-2"><span id="26862"></span>68EE</td>
 <td class="instruction">LD (HL),$00</td>
 <td class="comment-1" rowspan="3">Clear byte, advance pointer, loop 32 times.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26864"></span>68F0</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26865"></span>68F1</td>
-<td class="instruction">DJNZ $68EE</td>
+<td class="instruction">DJNZ <a href="26857.html#26862">clear_top_attributes_loop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26867"></span>68F3</td>
-<td class="instruction">CALL <a href="29924.html">$74E4</a></td>
+<td class="instruction">CALL <a href="29924.html">remove_tank_shell</a></td>
 <td class="comment-1" rowspan="2">Clear tank shell and helicopter missile state.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26870"></span>68F6</td>
 <td class="instruction">LD ($5F73),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26873"></span>68F9</td>
 <td class="instruction">LD A,($5F6A)</td>
 <td class="comment-1" rowspan="5">Load current player's bridge progress (swaps for player 2).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26876"></span>68FC</td>
 <td class="instruction">LD B,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26877"></span>68FD</td>
 <td class="instruction">LD A,($923D)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26880"></span>6900</td>
 <td class="instruction">CP $02</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26882"></span>6902</td>
-<td class="instruction">CALL Z,<a href="27210.html">$6A4A</a></td>
+<td class="instruction">CALL Z,<a href="27210.html">get_player_2_bridge</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26885"></span>6905</td>
 <td class="instruction">LD A,B</td>
 <td class="comment-1" rowspan="8">Check if progress exceeds initial section threshold (48).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26886"></span>6906</td>
 <td class="instruction">DEC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26887"></span>6907</td>
 <td class="instruction">LD DE,$0030</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26890"></span>690A</td>
 <td class="instruction">LD H,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26892"></span>690C</td>
 <td class="instruction">LD L,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26893"></span>690D</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26894"></span>690E</td>
 <td class="instruction">SBC HL,DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26896"></span>6910</td>
-<td class="instruction">JP M,$691E</td>
+<td class="instruction">JP M,<a href="26857.html#26910">finalize_bridge_index</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26899"></span>6913</td>
 <td class="instruction">LD E,$0F</td>
 <td class="comment-1" rowspan="1">Load section size (15) for division.</td>
 </tr>
 <tr>
+<td class="asm-label">divide_progress_loop</td>
 <td class="address-2"><span id="26901"></span>6915</td>
 <td class="instruction">OR A</td>
 <td class="comment-1" rowspan="5">Divide excess progress by 15 to find wraparound offset.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26902"></span>6916</td>
 <td class="instruction">SBC HL,DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26904"></span>6918</td>
-<td class="instruction">JP P,$6915</td>
+<td class="instruction">JP P,<a href="26857.html#26901">divide_progress_loop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26907"></span>691B</td>
 <td class="instruction">ADD HL,DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26908"></span>691C</td>
 <td class="instruction">LD E,$21</td>
 </tr>
 <tr>
+<td class="asm-label">finalize_bridge_index</td>
 <td class="address-2"><span id="26910"></span>691E</td>
 <td class="instruction">ADD HL,DE</td>
 <td class="comment-1" rowspan="5">Calculate final bridge index and fill river attributes.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26911"></span>691F</td>
 <td class="instruction">LD A,L</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26912"></span>6920</td>
 <td class="instruction">INC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26913"></span>6921</td>
 <td class="instruction">LD ($5EF0),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26916"></span>6924</td>
-<td class="instruction">JP <a href="26821.html#26842">$68DA</a></td>
+<td class="instruction">JP <a href="26821.html#26842">fill_river_attributes</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -186,5 +222,6 @@ Next: <a href="26919.html">6927</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 8B3C</title>
+<title>river-raid: Routine at 8B3C</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="35696.html">8B70</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Two-phase rendering pipeline: (1) erase old sprite at <a href="35594.html">8B0A</a> using XOR blending, (2) draw new sprite at <a href="35596.html">8B0C</a> using OR blending, checking for pixel collisions during the draw phase. Sprite frame is selected from E's lower bits for sub-pixel alignment.
+Two-phase rendering pipeline: (1) erase old sprite at <a href="35594.html">previous_object_coordinates</a> using XOR blending, (2) draw new sprite at <a href="35596.html">object_coordinates</a> using OR blending, checking for pixel collisions during the draw phase. Sprite frame is selected from E's lower bits for sub-pixel alignment.
 </div>
 </div>
 <table class="input">
@@ -60,70 +65,86 @@ Two-phase rendering pipeline: (1) erase old sprite at <a href="35594.html">8B0A<
 </td>
 </tr>
 <tr>
+<td class="asm-label">render_object</td>
 <td class="address-2"><span id="35644"></span>8B3C</td>
 <td class="instruction">PUSH DE</td>
 <td class="comment-1" rowspan="3">Store width and set screen attributes for the sprite area.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35645"></span>8B3D</td>
 <td class="instruction">LD ($8B1A),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35648"></span>8B40</td>
 <td class="instruction">NOP</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35649"></span>8B41</td>
-<td class="instruction">CALL <a href="37517.html">$928D</a></td>
+<td class="instruction">CALL <a href="37517.html">set_sprite_attributes</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35652"></span>8B44</td>
 <td class="instruction">LD A,E</td>
 <td class="comment-1" rowspan="9">Select sprite frame from E's lower bits (sub-pixel alignment).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35653"></span>8B45</td>
 <td class="instruction">AND $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35655"></span>8B47</td>
 <td class="instruction">SRL A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35657"></span>8B49</td>
 <td class="instruction">INC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35658"></span>8B4A</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35659"></span>8B4B</td>
 <td class="instruction">SBC HL,BC</td>
 </tr>
 <tr>
+<td class="asm-label">render_object_frame_loop</td>
 <td class="address-2"><span id="35661"></span>8B4D</td>
 <td class="instruction">ADD HL,BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35662"></span>8B4E</td>
 <td class="instruction">DEC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35663"></span>8B4F</td>
-<td class="instruction">JR NZ,$8B4D</td>
+<td class="instruction">JR NZ,<a href="35644.html#35661">render_object_frame_loop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35665"></span>8B51</td>
 <td class="instruction">LD ($8B10),HL</td>
 <td class="comment-1" rowspan="2">Store selected frame pointer for both erase and draw passes.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35668"></span>8B54</td>
 <td class="instruction">LD ($8B16),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35671"></span>8B57</td>
 <td class="instruction">POP DE</td>
 <td class="comment-1" rowspan="1"></td>
@@ -133,43 +154,51 @@ Two-phase rendering pipeline: (1) erase old sprite at <a href="35594.html">8B0A<
 <span id="35672"></span>
 <div class="comments">
 <div class="paragraph">
-This entry point is used by the routine at <a href="28360.html">6EC8</a>.
+This entry point is used by the routine at <a href="28360.html">render_explosions</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">render_object_entry</td>
 <td class="address-2"><span id="35672"></span>8B58</td>
 <td class="instruction">PUSH DE</td>
 <td class="comment-1" rowspan="7">Calculate screen addresses for new and old positions.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35673"></span>8B59</td>
 <td class="instruction">LD BC,($8B0C)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35677"></span>8B5D</td>
-<td class="instruction">CALL <a href="35406.html">$8A4E</a></td>
+<td class="instruction">CALL <a href="35406.html">calculate_pixel_address</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35680"></span>8B60</td>
 <td class="instruction">LD ($8B12),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35683"></span>8B63</td>
 <td class="instruction">LD BC,($8B0A)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35687"></span>8B67</td>
-<td class="instruction">CALL <a href="35406.html">$8A4E</a></td>
+<td class="instruction">CALL <a href="35406.html">calculate_pixel_address</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35690"></span>8B6A</td>
 <td class="instruction">LD ($8B14),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35693"></span>8B6D</td>
-<td class="instruction">JP <a href="35782.html#35794">$8BD2</a></td>
+<td class="instruction">JP <a href="35782.html#35794">adjust_old_screen_third_loop</a></td>
 <td class="comment-1" rowspan="1">Jump to render loop.</td>
 </tr>
 </table>
@@ -189,5 +218,6 @@ Next: <a href="35696.html">8B70</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

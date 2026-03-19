@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6FF6</title>
+<title>river-raid: Routine at 6FF6</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -33,9 +38,9 @@ Creates a new enemy from level data and renders it. Handles different enemy type
 </div>
 <div class="paragraph">
 <ul class="">
-<li>Balloon (type 6) uses separate routine <a href="28780.html">706C</a></li>
+<li>Balloon (type 6) uses separate routine <a href="28780.html">render_balloon</a></li>
 <li>Fighter/Tank (types 4,5) need XOR blending mode setup</li>
-<li>Adds enemy to active objects set at <a href="24320.html">5F00</a></li>
+<li>Adds enemy to active objects set at <a href="24320.html">viewport_slots</a></li>
 <li>Sprite size: 3 tiles wide, 8 pixels high ($18 bytes per frame)</li>
 </ul>
 </div>
@@ -60,128 +65,157 @@ Creates a new enemy from level data and renders it. Handles different enemy type
 </td>
 </tr>
 <tr>
+<td class="asm-label">render_enemy</td>
 <td class="address-2"><span id="28662"></span>6FF6</td>
 <td class="instruction">CP $06</td>
-<td class="comment-1" rowspan="2">If balloon (type 6), use separate balloon renderer at <a href="28780.html">706C</a>.</td>
+<td class="comment-1" rowspan="2">If balloon (type 6), use separate balloon renderer at <a href="28780.html">render_balloon</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28664"></span>6FF8</td>
-<td class="instruction">JP Z,<a href="28780.html">$706C</a></td>
+<td class="instruction">JP Z,<a href="28780.html">render_balloon</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28667"></span>6FFB</td>
 <td class="instruction">CP $05</td>
 <td class="comment-1" rowspan="2">If fighter (type 5), set XOR blending mode.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28669"></span>6FFD</td>
-<td class="instruction">CALL Z,<a href="28742.html">$7046</a></td>
+<td class="instruction">CALL Z,<a href="28742.html">blending_mode_xor_nop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28672"></span>7000</td>
 <td class="instruction">CP $04</td>
 <td class="comment-1" rowspan="2">If tank (type 4), set XOR blending mode.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28674"></span>7002</td>
-<td class="instruction">CALL Z,<a href="28742.html">$7046</a></td>
+<td class="instruction">CALL Z,<a href="28742.html">blending_mode_xor_nop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28677"></span>7005</td>
-<td class="instruction">CALL <a href="30138.html">$75BA</a></td>
+<td class="instruction">CALL <a href="30138.html">ld_enemy_sprites</a></td>
 <td class="comment-1" rowspan="1">Get sprite pointer based on enemy direction.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28680"></span>7008</td>
 <td class="instruction">LD B,$00</td>
-<td class="comment-1" rowspan="5">Add enemy to active objects set: BC = (0, X_pos), call <a href="28331.html">6EAB</a> with HL = <a href="24320.html">5F00</a>.</td>
+<td class="comment-1" rowspan="5">Add enemy to active objects set: BC = (0, X_pos), call <a href="28331.html">add_object_to_set</a> with HL = <a href="24320.html">viewport_slots</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28682"></span>700A</td>
 <td class="instruction">LD C,E</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28683"></span>700B</td>
 <td class="instruction">PUSH HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28684"></span>700C</td>
 <td class="instruction">LD HL,$5F00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28687"></span>700F</td>
-<td class="instruction">CALL <a href="28331.html">$6EAB</a></td>
+<td class="instruction">CALL <a href="28331.html">add_object_to_set</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28690"></span>7012</td>
 <td class="instruction">POP HL</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28691"></span>7013</td>
-<td class="instruction">CALL <a href="28650.html">$6FEA</a></td>
+<td class="instruction">CALL <a href="28650.html">setup_object_position</a></td>
 <td class="comment-1" rowspan="1">Set up screen position.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28694"></span>7016</td>
 <td class="instruction">LD BC,$0018</td>
 <td class="comment-1" rowspan="2">Set sprite frame size ($18 = 24 bytes) and default attributes ($0E).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28697"></span>7019</td>
 <td class="instruction">LD E,$0E</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28699"></span>701B</td>
 <td class="instruction">LD A,D</td>
-<td class="comment-1" rowspan="8">Get object type (D AND $07). Load type-specific attributes: ship=<a href="28728.html">7038</a> ($0D), fighter=<a href="28731.html">703B</a> ($00), tank=<a href="28734.html">703E</a> ($00/$04).</td>
+<td class="comment-1" rowspan="8">Get object type (D AND $07). Load type-specific attributes: ship=<a href="28728.html">ld_attributes_ship</a> ($0D), fighter=<a href="28731.html">ld_attributes_fighter</a> ($00), tank=<a href="28734.html">ld_attributes_tank</a> ($00/$04).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28700"></span>701C</td>
 <td class="instruction">AND $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28702"></span>701E</td>
 <td class="instruction">CP $02</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28704"></span>7020</td>
-<td class="instruction">CALL Z,<a href="28728.html">$7038</a></td>
+<td class="instruction">CALL Z,<a href="28728.html">ld_attributes_ship</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28707"></span>7023</td>
 <td class="instruction">CP $05</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28709"></span>7025</td>
-<td class="instruction">CALL Z,<a href="28731.html">$703B</a></td>
+<td class="instruction">CALL Z,<a href="28731.html">ld_attributes_fighter</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28712"></span>7028</td>
 <td class="instruction">CP $04</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28714"></span>702A</td>
-<td class="instruction">CALL Z,<a href="28734.html">$703E</a></td>
+<td class="instruction">CALL Z,<a href="28734.html">ld_attributes_tank</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28717"></span>702D</td>
 <td class="instruction">LD A,$03</td>
 <td class="comment-1" rowspan="4">Set sprite dimensions: A=3 (width tiles), D=8 (height pixels). Render enemy.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28719"></span>702F</td>
 <td class="instruction">LD D,$08</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28721"></span>7031</td>
-<td class="instruction">CALL <a href="35614.html">$8B1E</a></td>
+<td class="instruction">CALL <a href="35614.html">render_sprite</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28724"></span>7034</td>
-<td class="instruction">CALL <a href="29423.html">$72EF</a></td>
+<td class="instruction">CALL <a href="29423.html">blending_mode_or_or</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28727"></span>7037</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -203,5 +237,6 @@ Next: <a href="28728.html">7038</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

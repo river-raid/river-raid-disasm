@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 754C</title>
+<title>river-raid: Routine at 754C</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -43,116 +48,142 @@ Processes fuel station rendering with animated lights. Blinks every 4 frames by 
 </td>
 </tr>
 <tr>
+<td class="asm-label">operate_fuel</td>
 <td class="address-2"><span id="30028"></span>754C</td>
 <td class="instruction">LD ($8B0A),BC</td>
-<td class="comment-1" rowspan="2">Store position to <a href="35594.html">8B0A</a> and <a href="35596.html">8B0C</a>. Set height=$19.</td>
+<td class="comment-1" rowspan="2">Store position to <a href="35594.html">previous_object_coordinates</a> and <a href="35596.html">object_coordinates</a>. Set height=$19.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30032"></span>7550</td>
 <td class="instruction">LD ($8B0C),BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30036"></span>7554</td>
 <td class="instruction">LD D,$19</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30038"></span>7556</td>
 <td class="instruction">LD A,B</td>
 <td class="comment-1" rowspan="4">Check if Y+$19 is off-screen (boundary check).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30039"></span>7557</td>
 <td class="instruction">ADD A,$19</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30041"></span>7559</td>
 <td class="instruction">AND $90</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30043"></span>755B</td>
 <td class="instruction">CP $90</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30045"></span>755D</td>
-<td class="instruction">CALL Z,<a href="30090.html">$758A</a></td>
+<td class="instruction">CALL Z,<a href="30090.html">handle_fuel_off_viewport</a></td>
 <td class="comment-1" rowspan="5">If off-screen, return to main loop.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30048"></span>7560</td>
 <td class="instruction">LD BC,($8B0A)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30052"></span>7564</td>
 <td class="instruction">LD A,B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30053"></span>7565</td>
 <td class="instruction">AND $88</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30055"></span>7567</td>
 <td class="instruction">CP $88</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30057"></span>7569</td>
-<td class="instruction">JP Z,<a href="28814.html">$708E</a></td>
-<td class="comment-1" rowspan="5">Load fuel sprite <a href="35462.html">8A86</a>, get sprite pointer.</td>
+<td class="instruction">JP Z,<a href="28814.html">operate_viewport_slots</a></td>
+<td class="comment-1" rowspan="5">Load fuel sprite <a href="35462.html">sprite_fuel</a>, get sprite pointer.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30060"></span>756C</td>
 <td class="instruction">LD A,B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30061"></span>756D</td>
 <td class="instruction">AND $87</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30063"></span>756F</td>
 <td class="instruction">CP $87</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30065"></span>7571</td>
-<td class="instruction">JP Z,<a href="28814.html">$708E</a></td>
+<td class="instruction">JP Z,<a href="28814.html">operate_viewport_slots</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30068"></span>7574</td>
 <td class="instruction">LD HL,$8A86</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30071"></span>7577</td>
 <td class="instruction">LD BC,$0000</td>
 <td class="comment-1" rowspan="5">Set frame size=0, calculate animated attributes from tick.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30074"></span>757A</td>
 <td class="instruction">LD A,($5EEF)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30077"></span>757D</td>
 <td class="instruction">AND $04</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30079"></span>757F</td>
 <td class="instruction">ADD A,$0B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30081"></span>7581</td>
 <td class="instruction">LD E,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30082"></span>7582</td>
 <td class="instruction">LD A,$02</td>
 <td class="comment-1" rowspan="3">Render fuel station: width=2.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30084"></span>7584</td>
-<td class="instruction">CALL <a href="35614.html">$8B1E</a></td>
+<td class="instruction">CALL <a href="35614.html">render_sprite</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30087"></span>7587</td>
-<td class="instruction">JP <a href="28814.html">$708E</a></td>
+<td class="instruction">JP <a href="28814.html">operate_viewport_slots</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -171,5 +202,6 @@ Next: <a href="30090.html">758A</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

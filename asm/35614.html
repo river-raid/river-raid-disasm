@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 8B1E</title>
+<title>river-raid: Routine at 8B1E</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -23,7 +28,7 @@ Next: <a href="35644.html">8B3C</a>
 </td>
 </tr>
 </table>
-<div class="description">8B1E: Render a sprite at position from <a href="35594.html">8B0A</a>.</div>
+<div class="description">8B1E: Render a sprite at position from <a href="35594.html">previous_object_coordinates</a>.</div>
 <table class="disassembly">
 <tr>
 <td class="routine-comment" colspan="5">
@@ -60,77 +65,94 @@ Selects the pre-shifted sprite frame based on X position bits 1-2 (4 frames at 2
 </td>
 </tr>
 <tr>
+<td class="asm-label">render_sprite</td>
 <td class="address-2"><span id="35614"></span>8B1E</td>
 <td class="instruction">PUSH DE</td>
 <td class="comment-1" rowspan="2">Save attributes/height, store sprite width.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35615"></span>8B1F</td>
 <td class="instruction">LD ($8B1A),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35618"></span>8B22</td>
 <td class="instruction">LD DE,($8B0A)</td>
 <td class="comment-1" rowspan="4">Calculate animation frame index from X position bits 1-2.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35622"></span>8B26</td>
 <td class="instruction">LD A,E</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35623"></span>8B27</td>
 <td class="instruction">AND $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35625"></span>8B29</td>
 <td class="instruction">SRL A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35627"></span>8B2B</td>
 <td class="instruction">INC A</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35628"></span>8B2C</td>
 <td class="instruction">PUSH HL</td>
 <td class="comment-1" rowspan="3">Prepare for frame calculation loop.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35629"></span>8B2D</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35630"></span>8B2E</td>
 <td class="instruction">SBC HL,BC</td>
 </tr>
 <tr>
+<td class="asm-label">render_sprite_frame_loop</td>
 <td class="address-2"><span id="35632"></span>8B30</td>
 <td class="instruction">ADD HL,BC</td>
 <td class="comment-1" rowspan="3">Add frame offset to sprite pointer, loop until done.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35633"></span>8B31</td>
 <td class="instruction">DEC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35634"></span>8B32</td>
-<td class="instruction">JR NZ,$8B30</td>
+<td class="instruction">JR NZ,<a href="35614.html#35632">render_sprite_frame_loop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35636"></span>8B34</td>
 <td class="instruction">LD ($8B0E),HL</td>
-<td class="comment-1" rowspan="1">Store result to <a href="35598.html">8B0E</a>.</td>
+<td class="comment-1" rowspan="1">Store result to <a href="35598.html">render_sprite_ptr</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35639"></span>8B37</td>
 <td class="instruction">POP HL</td>
 <td class="comment-1" rowspan="2">Reload width and restore attributes/height, fall through to render_object.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35640"></span>8B38</td>
 <td class="instruction">LD A,($8B1A)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35643"></span>8B3B</td>
 <td class="instruction">POP DE</td>
 <td class="comment-1" rowspan="1"></td>
@@ -152,5 +174,6 @@ Next: <a href="35644.html">8B3C</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

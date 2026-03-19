@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 9367</title>
+<title>river-raid: Routine at 9367</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,19 +34,21 @@ Next: <a href="37739.html">936B</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Called when old position boundary check detects HL &gt;= <a href="23072.html">5A20</a> (past visible attribute area).
+Called when old position boundary check detects HL &gt;= <a href="23072.html">screen_attributes_row_16</a> (past visible attribute area).
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">attr_old_exit_early</td>
 <td class="address-2"><span id="37735"></span>9367</td>
 <td class="instruction">POP BC</td>
-<td class="comment-1" rowspan="1">Pop BC (discard saved counter) and continue to new position processing at <a href="37517.html#37631">92FF</a>.</td>
+<td class="comment-1" rowspan="1">Pop BC (discard saved counter) and continue to new position processing at <a href="37517.html#37631">set_attr_new_position_entry</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37736"></span>9368</td>
-<td class="instruction">JP <a href="37517.html#37631">$92FF</a></td>
+<td class="instruction">JP <a href="37517.html#37631">set_attr_new_position_entry</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 </table>
@@ -61,5 +68,6 @@ Next: <a href="37739.html">936B</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

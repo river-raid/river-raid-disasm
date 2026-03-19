@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 73D8</title>
+<title>river-raid: Routine at 73D8</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,19 +40,23 @@ Adds $08 to X position for spawning missile from right-facing helicopter.
 </td>
 </tr>
 <tr>
+<td class="asm-label">add_missile_x_offset</td>
 <td class="address-2"><span id="29656"></span>73D8</td>
 <td class="instruction">LD A,C</td>
 <td class="comment-1" rowspan="3">C = C + $08.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29657"></span>73D9</td>
 <td class="instruction">ADD A,$08</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29659"></span>73DB</td>
 <td class="instruction">LD C,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29660"></span>73DC</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -69,5 +78,6 @@ Next: <a href="29661.html">73DD</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

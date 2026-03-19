@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6A4F</title>
+<title>river-raid: Routine at 6A4F</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -39,7 +44,7 @@ Called when a terrain fragment finishes (after 16 pixel lines). Loads the next 4
 <span id="27215"></span>
 <div class="comments">
 <div class="paragraph">
-Terrain fragment format (4 bytes): byte 0 = profile number (index into <a href="32867.html">8063</a>), bytes 1-2 = row offset (added to profile values), byte 3 = upper 6 bits: island index (0=no island), lower 2 bits: edge calculation mode.
+Terrain fragment format (4 bytes): byte 0 = profile number (index into <a href="32867.html">data_terrain_profiles</a>), bytes 1-2 = row offset (added to profile values), byte 3 = upper 6 bits: island index (0=no island), lower 2 bits: edge calculation mode.
 </div>
 <div class="paragraph">
 Profile numbers 2 and 3 have special meaning: 2 = bridge structure (clears destroyed flag), 3 = bridge approach (sets countdown). Fragment number wraps at 64, incrementing bridge_index.
@@ -48,189 +53,232 @@ Profile numbers 2 and 3 have special meaning: 2 = bridge structure (clears destr
 </td>
 </tr>
 <tr>
+<td class="asm-label">render_terrain_row</td>
 <td class="address-2"><span id="27215"></span>6A4F</td>
 <td class="instruction">LD A,$FF</td>
 <td class="comment-1" rowspan="2">Reset state_terrain_position to $FF (will be incremented to 0).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27217"></span>6A51</td>
 <td class="instruction">LD ($5F7D),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27220"></span>6A54</td>
 <td class="instruction">LD HL,$9500</td>
-<td class="comment-1" rowspan="4">Set up level_terrains lookup: HL = <a href="38144.html">9500</a>, DE = $100 (level size).</td>
+<td class="comment-1" rowspan="4">Set up level_terrains lookup: HL = <a href="38144.html">level_terrains</a>, DE = $100 (level size).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27223"></span>6A57</td>
 <td class="instruction">LD DE,$0100</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27226"></span>6A5A</td>
 <td class="instruction">LD A,($5EF0)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27229"></span>6A5D</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27230"></span>6A5E</td>
 <td class="instruction">SBC HL,DE</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label">locate_level_terrain</td>
 <td class="address-2"><span id="27232"></span>6A60</td>
 <td class="instruction">ADD HL,DE</td>
 <td class="comment-1" rowspan="3">Locate level_terrains[state_bridge_index] (256 bytes per level).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27233"></span>6A61</td>
 <td class="instruction">DEC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27234"></span>6A62</td>
-<td class="instruction">JR NZ,$6A60</td>
+<td class="instruction">JR NZ,<a href="27215.html#27232">locate_level_terrain</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27236"></span>6A64</td>
 <td class="instruction">LD A,($5F76)</td>
 <td class="comment-1" rowspan="4">Increment fragment number (0-63), store to state_level_fragment_number.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27239"></span>6A67</td>
 <td class="instruction">INC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27240"></span>6A68</td>
 <td class="instruction">AND $3F</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27242"></span>6A6A</td>
 <td class="instruction">LD ($5F76),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27245"></span>6A6D</td>
 <td class="instruction">CP $00</td>
-<td class="comment-1" rowspan="2">If fragment wrapped to 0, call <a href="26957.html">694D</a> to advance to next bridge/level.</td>
+<td class="comment-1" rowspan="2">If fragment wrapped to 0, call <a href="26957.html">increase_bridge_index</a> to advance to next bridge/level.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27247"></span>6A6F</td>
-<td class="instruction">CALL Z,<a href="26957.html">$694D</a></td>
+<td class="instruction">CALL Z,<a href="26957.html">increase_bridge_index</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27250"></span>6A72</td>
 <td class="instruction">LD DE,$0004</td>
 <td class="comment-1" rowspan="4">Set up fragment lookup: DE = 4 (fragment size).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27253"></span>6A75</td>
 <td class="instruction">INC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27254"></span>6A76</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27255"></span>6A77</td>
 <td class="instruction">SBC HL,DE</td>
 </tr>
 <tr>
+<td class="asm-label">locate_level_terrain_fragment</td>
 <td class="address-2"><span id="27257"></span>6A79</td>
 <td class="instruction">ADD HL,DE</td>
 <td class="comment-1" rowspan="3">Locate fragment within level: level_terrains[bridge][fragment].</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27258"></span>6A7A</td>
 <td class="instruction">DEC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27259"></span>6A7B</td>
-<td class="instruction">JR NZ,$6A79</td>
+<td class="instruction">JR NZ,<a href="27215.html#27257">locate_level_terrain_fragment</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27261"></span>6A7D</td>
 <td class="instruction">LD A,(HL)</td>
 <td class="comment-1" rowspan="4">Load byte 0 (profile number) to state_terrain_profile_number. Handle special values.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27262"></span>6A7E</td>
 <td class="instruction">LD ($5F77),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27265"></span>6A81</td>
 <td class="instruction">CP $03</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27267"></span>6A83</td>
-<td class="instruction">CALL Z,<a href="26940.html">$693C</a></td>
+<td class="instruction">CALL Z,<a href="26940.html">init_bridge_approach</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27270"></span>6A86</td>
 <td class="instruction">CP $02</td>
 <td class="comment-1" rowspan="2">Load bytes 1-2 (row offset) to state_terrain_element_23.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27272"></span>6A88</td>
-<td class="instruction">CALL Z,<a href="26951.html">$6947</a></td>
+<td class="instruction">CALL Z,<a href="26951.html">clear_bridge_destroyed</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27275"></span>6A8B</td>
 <td class="instruction">INC HL</td>
-<td class="comment-1" rowspan="6">Byte 3: if upper 6 bits non-zero, call <a href="26987.html">696B</a> to initialize island.</td>
+<td class="comment-1" rowspan="6">Byte 3: if upper 6 bits non-zero, call <a href="26987.html">handle_island</a> to initialize island.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27276"></span>6A8C</td>
 <td class="instruction">LD C,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27277"></span>6A8D</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27278"></span>6A8E</td>
 <td class="instruction">LD B,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27279"></span>6A8F</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27280"></span>6A90</td>
 <td class="instruction">LD ($5F78),BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27284"></span>6A94</td>
 <td class="instruction">LD A,(HL)</td>
 <td class="comment-1" rowspan="4">Store lower 2 bits of byte 3 to state_terrain_extras (edge mode: 0=direct, 1=mirrored, 2=offset).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27285"></span>6A95</td>
 <td class="instruction">PUSH AF</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27286"></span>6A96</td>
 <td class="instruction">AND $FC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27288"></span>6A98</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27290"></span>6A9A</td>
-<td class="instruction">CALL NZ,<a href="26987.html">$696B</a></td>
+<td class="instruction">CALL NZ,<a href="26987.html">handle_island</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27293"></span>6A9D</td>
 <td class="instruction">POP AF</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27294"></span>6A9E</td>
 <td class="instruction">AND $03</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27296"></span>6AA0</td>
 <td class="instruction">LD ($5F7A),A</td>
 <td class="comment-1" rowspan="1"></td>
@@ -252,5 +300,6 @@ Next: <a href="27299.html">6AA3</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

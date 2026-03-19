@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 62E0</title>
+<title>river-raid: Routine at 62E0</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -23,13 +28,13 @@ Next: <a href="25320.html">62E8</a>
 </td>
 </tr>
 </table>
-<div class="description">62E0: Decrease vertical coordinate of the object by the value of <a href="24420.html">5F64</a>.</div>
+<div class="description">62E0: Decrease vertical coordinate of the object by the value of <a href="24420.html">state_speed</a>.</div>
 <table class="disassembly">
 <tr>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Subtracts the current scroll delta from an object's Y coordinate. Used to reverse the adjustment made by <a href="25306.html">62DA</a> after collision checking.
+Subtracts the current scroll delta from an object's Y coordinate. Used to reverse the adjustment made by <a href="25306.html">advance_object</a> after collision checking.
 </div>
 </div>
 <table class="input">
@@ -53,27 +58,33 @@ Subtracts the current scroll delta from an object's Y coordinate. Used to revers
 </td>
 </tr>
 <tr>
+<td class="asm-label">retract_object</td>
 <td class="address-2"><span id="25312"></span>62E0</td>
 <td class="instruction">LD A,($5F64)</td>
-<td class="comment-1" rowspan="5">Load scroll delta from <a href="24420.html">5F64</a> and subtract from B.</td>
+<td class="comment-1" rowspan="5">Load scroll delta from <a href="24420.html">state_speed</a> and subtract from B.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25315"></span>62E3</td>
 <td class="instruction">LD H,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25316"></span>62E4</td>
 <td class="instruction">LD A,B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25317"></span>62E5</td>
 <td class="instruction">SUB H</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25318"></span>62E6</td>
 <td class="instruction">LD B,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25319"></span>62E7</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -95,5 +106,6 @@ Next: <a href="25320.html">62E8</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

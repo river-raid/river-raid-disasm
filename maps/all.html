@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Memory map</title>
+<title>river-raid: Memory map</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="MemoryMap">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Memory map</td>
 </tr>
 </table>
+<div class="page-content">
 <div class="map-intro"></div>
 <table class="map">
 <tr>
@@ -249,7 +254,7 @@
 <td class="map-byte">247</td>
 <td class="map-g"><span id="24311"></span><a href="../asm/24311.html">5EF7</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24311.html">Pointer to current plane sprite data. Points into <a href="../asm/33477.html">82C5</a> sprite bank, offset by speed for animation frame selection.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24311.html">Pointer to current plane sprite data. Points into <a href="../asm/33477.html">all_ff</a> sprite bank, offset by speed for animation frame selection.</a></div>
 </td>
 </tr>
 <tr>
@@ -265,7 +270,7 @@
 <td class="map-byte">250</td>
 <td class="map-g"><span id="24314"></span><a href="../asm/24314.html">5EFA</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24314.html">Island terrain profile index (0-7). Selects which of 8 island shapes from <a href="../asm/32867.html">8063</a> to render.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24314.html">Island terrain profile index (0-7). Selects which of 8 island shapes from <a href="../asm/32867.html">data_terrain_profiles</a> to render.</a></div>
 </td>
 </tr>
 <tr>
@@ -273,7 +278,7 @@
 <td class="map-byte">251</td>
 <td class="map-g"><span id="24315"></span><a href="../asm/24315.html">5EFB</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24315.html">Island definition byte 2. Second byte from island data at <a href="../asm/50688.html">C600</a>, controls island width/shape.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24315.html">Island definition byte 2. Second byte from island data at <a href="../asm/50688.html">data_islands</a>, controls island width/shape.</a></div>
 </td>
 </tr>
 <tr>
@@ -281,7 +286,7 @@
 <td class="map-byte">252</td>
 <td class="map-g"><span id="24316"></span><a href="../asm/24316.html">5EFC</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24316.html">Island definition byte 3. Third byte from island data at <a href="../asm/50688.html">C600</a>, controls island rendering parameters.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24316.html">Island definition byte 3. Third byte from island data at <a href="../asm/50688.html">data_islands</a>, controls island rendering parameters.</a></div>
 </td>
 </tr>
 <tr>
@@ -329,7 +334,7 @@
 <td class="map-byte">96</td>
 <td class="map-g"><span id="24416"></span><a href="../asm/24416.html">5F60</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24416.html">Current slot pointer. Iterator for traversing <a href="../asm/24320.html">5F00</a> during object processing.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24416.html">Current slot pointer. Iterator for traversing <a href="../asm/24320.html">viewport_slots</a> during object processing.</a></div>
 </td>
 </tr>
 <tr>
@@ -337,7 +342,7 @@
 <td class="map-byte">98</td>
 <td class="map-g"><span id="24418"></span><a href="../asm/24418.html">5F62</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24418.html">Pointer to a slot from <a href="../asm/24366.html">5F2E</a></a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24418.html">Pointer to a slot from <a href="../asm/24366.html">exploding_fragments</a></a></div>
 </td>
 </tr>
 <tr>
@@ -385,7 +390,7 @@
 <td class="map-byte">105</td>
 <td class="map-g"><span id="24425"></span><a href="../asm/24425.html">5F69</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24425.html">Plane sprite bank offset. $00=centered, $04=banked left/right. Reset to $00 at the start of each frame, then set to $04 by <a href="../asm/26160.html">6630</a> after the banked sprite is rendered. Read by <a href="../asm/28224.html">6E40</a>, but always $00 at that call site — the check is dead code.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24425.html">Plane sprite bank offset. $00=centered, $04=banked left/right. Reset to $00 at the start of each frame, then set to $04 by <a href="../asm/26160.html">restore_plane_state_after_render</a> after the banked sprite is rendered. Read by <a href="../asm/28224.html">add_fuel</a>, but always $00 at that call site — the check is dead code.</a></div>
 </td>
 </tr>
 <tr>
@@ -473,7 +478,7 @@
 <td class="map-byte">118</td>
 <td class="map-g"><span id="24438"></span><a href="../asm/24438.html">5F76</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24438.html">Current level terrain array index (1-255). Points to current element in level definition at <a href="../asm/38144.html">9500</a>. Incremented as terrain scrolls.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24438.html">Current level terrain array index (1-255). Points to current element in level definition at <a href="../asm/38144.html">level_terrains</a>. Incremented as terrain scrolls.</a></div>
 </td>
 </tr>
 <tr>
@@ -481,7 +486,7 @@
 <td class="map-byte">119</td>
 <td class="map-b"><span id="24439"></span><a href="../asm/24439.html">5F77</a></td>
 <td class="map-b-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24439.html">Current terrain profile number (0-7). Index into terrain sprite table at <a href="../asm/32867.html">8063</a>. Loaded from first byte of level element at <a href="../asm/38144.html">9500</a>.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24439.html">Current terrain profile number (0-7). Index into terrain sprite table at <a href="../asm/32867.html">data_terrain_profiles</a>. Loaded from first byte of level element at <a href="../asm/38144.html">level_terrains</a>.</a></div>
 </td>
 </tr>
 <tr>
@@ -745,7 +750,7 @@
 <td class="map-byte">218</td>
 <td class="map-c"><span id="25306"></span><a href="../asm/25306.html">62DA</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25306.html">Increase vertical coordinate of the object by the value of <a href="../asm/24420.html">5F64</a>.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25306.html">Increase vertical coordinate of the object by the value of <a href="../asm/24420.html">state_speed</a>.</a></div>
 </td>
 </tr>
 <tr>
@@ -753,7 +758,7 @@
 <td class="map-byte">224</td>
 <td class="map-c"><span id="25312"></span><a href="../asm/25312.html">62E0</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25312.html">Decrease vertical coordinate of the object by the value of <a href="../asm/24420.html">5F64</a>.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/25312.html">Decrease vertical coordinate of the object by the value of <a href="../asm/24420.html">state_speed</a>.</a></div>
 </td>
 </tr>
 <tr>
@@ -1441,7 +1446,7 @@
 <td class="map-byte">235</td>
 <td class="map-c"><span id="28139"></span><a href="../asm/28139.html">6DEB</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28139.html">Initializes the starting bridge based on the value of <a href="../asm/37434.html">923A</a> using <a href="../asm/23871.html">5D3F</a> for the lookup.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28139.html">Initializes the starting bridge based on the value of <a href="../asm/37434.html">state_game_mode</a> using <a href="../asm/23871.html">starting_bridges</a> for the lookup.</a></div>
 </td>
 </tr>
 <tr>
@@ -2041,7 +2046,7 @@
 <td class="map-byte">39</td>
 <td class="map-c"><span id="30247"></span><a href="../asm/30247.html">7627</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30247.html">Reset <a href="../asm/24416.html">5F60</a> to the start of <a href="../asm/24320.html">5F00</a>.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30247.html">Reset <a href="../asm/24416.html">current_slot_ptr</a> to the start of <a href="../asm/24320.html">viewport_slots</a>.</a></div>
 </td>
 </tr>
 <tr>
@@ -2065,7 +2070,7 @@
 <td class="map-byte">172</td>
 <td class="map-c"><span id="30380"></span><a href="../asm/30380.html">76AC</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30380.html">A useless procedure that unconditionally jumps to <a href="../asm/28814.html">708E</a>.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/30380.html">A useless procedure that unconditionally jumps to <a href="../asm/28814.html">operate_viewport_slots</a>.</a></div>
 </td>
 </tr>
 <tr>
@@ -2497,7 +2502,7 @@
 <td class="map-byte">8</td>
 <td class="map-g"><span id="35592"></span><a href="../asm/35592.html">8B08</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35592.html">Pointer to collision handler routine at <a href="../asm/24886.html">6136</a>. Called when sprite rendering detects pixel overlap.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35592.html">Pointer to collision handler routine at <a href="../asm/24886.html">collision_dispatcher</a>. Called when sprite rendering detects pixel overlap.</a></div>
 </td>
 </tr>
 <tr>
@@ -2585,7 +2590,7 @@
 <td class="map-byte">30</td>
 <td class="map-c"><span id="35614"></span><a href="../asm/35614.html">8B1E</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35614.html">Render a sprite at position from <a href="../asm/35594.html">8B0A</a>.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35614.html">Render a sprite at position from <a href="../asm/35594.html">previous_object_coordinates</a>.</a></div>
 </td>
 </tr>
 <tr>
@@ -2841,7 +2846,7 @@
 <td class="map-byte">59</td>
 <td class="map-g"><span id="37435"></span><a href="../asm/37435.html">923B</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37435.html">Player 1 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the end of the first scroll-in (<a href="../asm/23974.html">5DA6</a>). Decremented again at the end of each subsequent scroll-in after a death. Game over is triggered when 0 at the time of the player's next death.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37435.html">Player 1 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the end of the first scroll-in (<a href="../asm/23974.html">play</a>). Decremented again at the end of each subsequent scroll-in after a death. Game over is triggered when 0 at the time of the player's next death.</a></div>
 </td>
 </tr>
 <tr>
@@ -2849,7 +2854,7 @@
 <td class="map-byte">60</td>
 <td class="map-g"><span id="37436"></span><a href="../asm/37436.html">923C</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37436.html">Player 2 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the end of the first scroll-in (<a href="../asm/23974.html">5DA6</a>). Decremented again at the end of each subsequent scroll-in after a death. Game over is triggered when 0 at the time of the player's next death.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37436.html">Player 2 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the end of the first scroll-in (<a href="../asm/23974.html">play</a>). Decremented again at the end of each subsequent scroll-in after a death. Game over is triggered when 0 at the time of the player's next death.</a></div>
 </td>
 </tr>
 <tr>
@@ -2889,7 +2894,7 @@
 <td class="map-byte">119</td>
 <td class="map-c"><span id="37495"></span><a href="../asm/37495.html">9277</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37495.html">Player 2 branch of <a href="../asm/37438.html">923E</a>.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37495.html">Player 2 branch of <a href="../asm/37438.html">print_lives</a>.</a></div>
 </td>
 </tr>
 <tr>
@@ -2897,7 +2902,7 @@
 <td class="map-byte">131</td>
 <td class="map-g"><span id="37507"></span><a href="../asm/37507.html">9283</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37507.html">Pointer to state_controls at <a href="../asm/27568.html">6BB0</a>. Allows indirect access to control state bitmask.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37507.html">Pointer to state_controls at <a href="../asm/27568.html">state_controls</a>. Allows indirect access to control state bitmask.</a></div>
 </td>
 </tr>
 <tr>
@@ -3082,5 +3087,6 @@
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

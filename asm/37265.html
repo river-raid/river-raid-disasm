@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 9191</title>
+<title>river-raid: Routine at 9191</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -48,66 +53,80 @@ When a digit overflows past '9', this routine sets it to '0' and propagates the 
 </td>
 </tr>
 <tr>
+<td class="asm-label">carry_player_1_score_digit</td>
 <td class="address-2"><span id="37265"></span>9191</td>
 <td class="instruction">LD (HL),$30</td>
 <td class="comment-1" rowspan="1">Write '0' to the overflowed digit.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37267"></span>9193</td>
 <td class="instruction">LD A,$06</td>
 <td class="comment-1" rowspan="4">Check if this is the leftmost digit (offset 0): A = SCORE_DIGIT_COUNT - D + 1.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37269"></span>9195</td>
 <td class="instruction">SUB D</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37270"></span>9196</td>
 <td class="instruction">INC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37271"></span>9197</td>
 <td class="instruction">CP $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37273"></span>9199</td>
 <td class="instruction">RET Z</td>
 <td class="comment-1" rowspan="1">Return if leftmost digit (no more digits to carry into).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37274"></span>919A</td>
 <td class="instruction">PUSH HL</td>
-<td class="comment-1" rowspan="3">Save HL/DE, call <a href="37154.html">9122</a> to increment next higher digit.</td>
+<td class="comment-1" rowspan="3">Save HL/DE, call <a href="37154.html">update_score</a> to increment next higher digit.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37275"></span>919B</td>
 <td class="instruction">PUSH DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37276"></span>919C</td>
-<td class="instruction">CALL <a href="37154.html">$9122</a></td>
+<td class="instruction">CALL <a href="37154.html">update_score</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37279"></span>919F</td>
 <td class="instruction">LD A,$01</td>
 <td class="comment-1" rowspan="2">Open channel 1 (upper screen) for printing.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37281"></span>91A1</td>
 <td class="instruction">CALL $1601</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37284"></span>91A4</td>
 <td class="instruction">POP DE</td>
-<td class="comment-1" rowspan="3">Restore HL/DE, jump to <a href="37195.html">914B</a> to print the '0' digit.</td>
+<td class="comment-1" rowspan="3">Restore HL/DE, jump to <a href="37195.html">print_player_1_score_digit</a> to print the '0' digit.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37285"></span>91A5</td>
 <td class="instruction">POP HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37286"></span>91A6</td>
-<td class="instruction">JP <a href="37195.html">$914B</a></td>
+<td class="instruction">JP <a href="37195.html">print_player_1_score_digit</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -126,5 +145,6 @@ Next: <a href="37289.html">91A9</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

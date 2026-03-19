@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6249</title>
+<title>river-raid: Routine at 6249</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,27 +34,31 @@ Next: <a href="25171.html">6253</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Used by the routine at <a href="25019.html">61BB</a>.
+Used by the routine at <a href="25019.html">check_collision</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">next_bridge_player_2</td>
 <td class="address-2"><span id="25161"></span>6249</td>
 <td class="instruction">LD HL,$5F6B</td>
-<td class="comment-1" rowspan="3">Increment player 2 bridge counter at <a href="24427.html">5F6B</a> and print.</td>
+<td class="comment-1" rowspan="3">Increment player 2 bridge counter at <a href="24427.html">state_bridge_player_2</a> and print.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25164"></span>624C</td>
 <td class="instruction">INC (HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25165"></span>624D</td>
-<td class="instruction">CALL <a href="25788.html">$64BC</a></td>
+<td class="instruction">CALL <a href="25788.html">print_bridge</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25168"></span>6250</td>
-<td class="instruction">JP <a href="26516.html">$6794</a></td>
+<td class="instruction">JP <a href="26516.html">finalize_collision</a></td>
 <td class="comment-1" rowspan="1">Finalize collision.</td>
 </tr>
 </table>
@@ -69,5 +78,6 @@ Next: <a href="25171.html">6253</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

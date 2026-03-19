@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 7259</title>
+<title>river-raid: Routine at 7259</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,103 +34,125 @@ Next: <a href="29323.html">728B</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Renders the helicopter rotor sprite based on orientation. Uses left-facing (<a href="35512.html">8AB8</a>) or right-facing (<a href="35528.html">8AC8</a>) rotor sprite.
+Renders the helicopter rotor sprite based on orientation. Uses left-facing (<a href="35512.html">sprite_helicopter_rotor_left</a>) or right-facing (<a href="35528.html">sprite_helicopter_rotor_right</a>) rotor sprite.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">animate_helicopter</td>
 <td class="address-2"><span id="29273"></span>7259</td>
 <td class="instruction">LD HL,($5F60)</td>
 <td class="comment-1" rowspan="7">Load current_slot_ptr, extract [D, B, C] from current slot.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29276"></span>725C</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29277"></span>725D</td>
 <td class="instruction">LD D,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29278"></span>725E</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29279"></span>725F</td>
 <td class="instruction">LD B,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29280"></span>7260</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29281"></span>7261</td>
 <td class="instruction">LD C,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29282"></span>7262</td>
 <td class="instruction">LD HL,$8AB8</td>
-<td class="comment-1" rowspan="3">Load left rotor sprite <a href="35512.html">8AB8</a>. If right-facing (bit 6 clear), load <a href="35528.html">8AC8</a>.</td>
+<td class="comment-1" rowspan="3">Load left rotor sprite <a href="35512.html">sprite_helicopter_rotor_left</a>. If right-facing (bit 6 clear), load <a href="35528.html">sprite_helicopter_rotor_right</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29285"></span>7265</td>
 <td class="instruction">BIT 6,D</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29287"></span>7267</td>
-<td class="instruction">CALL Z,<a href="29256.html">$7248</a></td>
+<td class="instruction">CALL Z,<a href="29256.html">ld_sprite_helicopter_rotor_right</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29290"></span>726A</td>
 <td class="instruction">LD ($8B0C),BC</td>
-<td class="comment-1" rowspan="4">Store positions to <a href="35596.html">8B0C</a> and <a href="35594.html">8B0A</a>. Push rotor sprite, get main sprite pointer.</td>
+<td class="comment-1" rowspan="4">Store positions to <a href="35596.html">object_coordinates</a> and <a href="35594.html">previous_object_coordinates</a>. Push rotor sprite, get main sprite pointer.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29294"></span>726E</td>
 <td class="instruction">LD ($8B0A),BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29298"></span>7272</td>
 <td class="instruction">PUSH HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29299"></span>7273</td>
-<td class="instruction">CALL <a href="30138.html">$75BA</a></td>
+<td class="instruction">CALL <a href="30138.html">ld_enemy_sprites</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29302"></span>7276</td>
 <td class="instruction">LD HL,$82C5</td>
-<td class="comment-1" rowspan="3">Store erase sprite <a href="33477.html">82C5</a> to <a href="35598.html">8B0E</a>. Pop rotor sprite.</td>
+<td class="comment-1" rowspan="3">Store erase sprite <a href="33477.html">all_ff</a> to <a href="35598.html">render_sprite_ptr</a>. Pop rotor sprite.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29305"></span>7279</td>
 <td class="instruction">LD ($8B0E),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29308"></span>727C</td>
 <td class="instruction">POP HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29309"></span>727D</td>
 <td class="instruction">LD DE,$020E</td>
 <td class="comment-1" rowspan="4">Render rotor: height=2, attributes=$0E, frame size=4, width=2.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29312"></span>7280</td>
 <td class="instruction">LD BC,$0004</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29315"></span>7283</td>
 <td class="instruction">LD A,$02</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29317"></span>7285</td>
-<td class="instruction">CALL <a href="35644.html">$8B3C</a></td>
+<td class="instruction">CALL <a href="35644.html">render_object</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29320"></span>7288</td>
-<td class="instruction">JP <a href="28814.html">$708E</a></td>
+<td class="instruction">JP <a href="28814.html">operate_viewport_slots</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 </table>
@@ -145,5 +172,6 @@ Next: <a href="29323.html">728B</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

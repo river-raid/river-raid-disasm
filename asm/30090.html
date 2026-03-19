@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 758A</title>
+<title>river-raid: Routine at 758A</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -64,65 +69,80 @@ Called when the fuel station extends past the viewport bottom. Calculates the vi
 </td>
 </tr>
 <tr>
+<td class="asm-label">handle_fuel_off_viewport</td>
 <td class="address-2"><span id="30090"></span>758A</td>
 <td class="instruction">LD H,$00</td>
 <td class="comment-1" rowspan="7">Calculate overflow: HL = (Y + height) - $90.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30092"></span>758C</td>
 <td class="instruction">LD L,B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30093"></span>758D</td>
 <td class="instruction">LD BC,$0019</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30096"></span>7590</td>
 <td class="instruction">ADD HL,BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30097"></span>7591</td>
 <td class="instruction">LD BC,$0090</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30100"></span>7594</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30101"></span>7595</td>
 <td class="instruction">SBC HL,BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30103"></span>7597</td>
 <td class="instruction">LD B,$00</td>
 <td class="comment-1" rowspan="6">Calculate visible height: D = $19 - overflow.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30105"></span>7599</td>
 <td class="instruction">LD C,L</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30106"></span>759A</td>
 <td class="instruction">LD H,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30108"></span>759C</td>
 <td class="instruction">LD L,D</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30109"></span>759D</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30110"></span>759E</td>
 <td class="instruction">SBC HL,BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30112"></span>75A0</td>
 <td class="instruction">LD D,L</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30113"></span>75A1</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -144,5 +164,6 @@ Next: <a href="30114.html">75A2</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

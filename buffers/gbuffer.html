@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Game status buffer</title>
+<title>river-raid: Game status buffer</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="GameStatusBuffer">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Game status buffer</td>
 </tr>
 </table>
+<div class="page-content">
 <div class="map-intro"></div>
 <table class="map">
 <tr>
@@ -122,7 +127,7 @@
 <td class="map-g"><span id="24311"></span><a href="../asm/24311.html">5EF7</a></td>
 <td class="map-length">2</td>
 <td class="map-g-desc">
-<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24311.html">Pointer to current plane sprite data. Points into <a href="../asm/33477.html">82C5</a> sprite bank, offset by speed for animation frame selection.</a></div>
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24311.html">Pointer to current plane sprite data. Points into <a href="../asm/33477.html">all_ff</a> sprite bank, offset by speed for animation frame selection.</a></div>
 <div class="map-entry-desc">
 </div>
 </td>
@@ -140,7 +145,7 @@
 <td class="map-g"><span id="24314"></span><a href="../asm/24314.html">5EFA</a></td>
 <td class="map-length">1</td>
 <td class="map-g-desc">
-<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24314.html">Island terrain profile index (0-7). Selects which of 8 island shapes from <a href="../asm/32867.html">8063</a> to render.</a></div>
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24314.html">Island terrain profile index (0-7). Selects which of 8 island shapes from <a href="../asm/32867.html">data_terrain_profiles</a> to render.</a></div>
 <div class="map-entry-desc">
 </div>
 </td>
@@ -149,7 +154,7 @@
 <td class="map-g"><span id="24315"></span><a href="../asm/24315.html">5EFB</a></td>
 <td class="map-length">1</td>
 <td class="map-g-desc">
-<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24315.html">Island definition byte 2. Second byte from island data at <a href="../asm/50688.html">C600</a>, controls island width/shape.</a></div>
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24315.html">Island definition byte 2. Second byte from island data at <a href="../asm/50688.html">data_islands</a>, controls island width/shape.</a></div>
 <div class="map-entry-desc">
 </div>
 </td>
@@ -158,7 +163,7 @@
 <td class="map-g"><span id="24316"></span><a href="../asm/24316.html">5EFC</a></td>
 <td class="map-length">1</td>
 <td class="map-g-desc">
-<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24316.html">Island definition byte 3. Third byte from island data at <a href="../asm/50688.html">C600</a>, controls island rendering parameters.</a></div>
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24316.html">Island definition byte 3. Third byte from island data at <a href="../asm/50688.html">data_islands</a>, controls island rendering parameters.</a></div>
 <div class="map-entry-desc">
 </div>
 </td>
@@ -179,7 +184,7 @@
 <div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24320.html">Viewport slots array (15 slots for active game objects).</a></div>
 <div class="map-entry-desc">
 <div class="paragraph">
-Each slot is a 3-byte entry that can hold one game object (enemy, fuel depot, etc.). Iterated by <a href="../asm/28814.html">708E</a> (operate) and <a href="../asm/25320.html">62E8</a> (collision). New objects added via <a href="../asm/28331.html">6EAB</a>. See Glossary for terminology.
+Each slot is a 3-byte entry that can hold one game object (enemy, fuel depot, etc.). Iterated by <a href="../asm/28814.html">operate_viewport_slots</a> (operate) and <a href="../asm/25320.html">check_missile_vs_objects</a> (collision). New objects added via <a href="../asm/28331.html">add_object_to_set</a>. See Glossary for terminology.
 </div>
 <div class="paragraph">
 <table class="default">
@@ -230,7 +235,7 @@ Each slot is a 3-byte entry that can hold one game object (enemy, fuel depot, et
 <div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24366.html">Explosion animation fragments array.</a></div>
 <div class="map-entry-desc">
 <div class="paragraph">
-Array of up to 16 explosion fragments. Each entry is 3 bytes. Animated by <a href="../asm/28360.html">6EC8</a>. New explosions added via <a href="../asm/28331.html">6EAB</a>.
+Array of up to 16 explosion fragments. Each entry is 3 bytes. Animated by <a href="../asm/28360.html">render_explosions</a>. New explosions added via <a href="../asm/28331.html">add_object_to_set</a>.
 </div>
 <div class="paragraph">
 <table class="default">
@@ -253,7 +258,7 @@ Array of up to 16 explosion fragments. Each entry is 3 bytes. Animated by <a hre
 </table>
 </div>
 <div class="paragraph">
-Explosion frames: 1,5=<a href="../asm/33905.html">8471</a> (small), 2,4=<a href="../asm/33921.html">8481</a> (medium), 3=<a href="../asm/33937.html">8491</a> (large), 6=<a href="../asm/33525.html">82F5</a> (erase).
+Explosion frames: 1,5=<a href="../asm/33905.html">sprite_explosion_f1</a> (small), 2,4=<a href="../asm/33921.html">sprite_explosion_f2</a> (medium), 3=<a href="../asm/33937.html">sprite_explosion_f3</a> (large), 6=<a href="../asm/33525.html">sprite_erasure</a> (erase).
 </div>
 </div>
 </td>
@@ -265,7 +270,7 @@ Explosion frames: 1,5=<a href="../asm/33905.html">8471</a> (small), 2,4=<a href=
 <div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24415.html">Object activation interval bitmask</a></div>
 <div class="map-entry-desc">
 <div class="paragraph">
-Controls when newly spawned objects become active (start moving/shooting). Objects spawn inactive (bit 7 clear in slot definition) and activate when (interrupt_counter AND mask) == 0. Checked in <a href="../asm/28814.html">708E</a>.
+Controls when newly spawned objects become active (start moving/shooting). Objects spawn inactive (bit 7 clear in slot definition) and activate when (interrupt_counter AND mask) == 0. Checked in <a href="../asm/28814.html">operate_viewport_slots</a>.
 </div>
 <div class="paragraph">
 <table class="default">
@@ -293,7 +298,7 @@ Controls when newly spawned objects become active (start moving/shooting). Objec
 <td class="map-g"><span id="24416"></span><a href="../asm/24416.html">5F60</a></td>
 <td class="map-length">2</td>
 <td class="map-g-desc">
-<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24416.html">Current slot pointer. Iterator for traversing <a href="../asm/24320.html">5F00</a> during object processing.</a></div>
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24416.html">Current slot pointer. Iterator for traversing <a href="../asm/24320.html">viewport_slots</a> during object processing.</a></div>
 <div class="map-entry-desc">
 </div>
 </td>
@@ -302,7 +307,7 @@ Controls when newly spawned objects become active (start moving/shooting). Objec
 <td class="map-g"><span id="24418"></span><a href="../asm/24418.html">5F62</a></td>
 <td class="map-length">2</td>
 <td class="map-g-desc">
-<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24418.html">Pointer to a slot from <a href="../asm/24366.html">5F2E</a></a></div>
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24418.html">Pointer to a slot from <a href="../asm/24366.html">exploding_fragments</a></a></div>
 <div class="map-entry-desc">
 </div>
 </td>
@@ -450,7 +455,7 @@ During SCROLL_IN and OVERVIEW, player input is ignored and no collision occurs. 
 <td class="map-g"><span id="24425"></span><a href="../asm/24425.html">5F69</a></td>
 <td class="map-length">1</td>
 <td class="map-g-desc">
-<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24425.html">Plane sprite bank offset. $00=centered, $04=banked left/right. Reset to $00 at the start of each frame, then set to $04 by <a href="../asm/26160.html">6630</a> after the banked sprite is rendered. Read by <a href="../asm/28224.html">6E40</a>, but always $00 at that call site — the check is dead code.</a></div>
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24425.html">Plane sprite bank offset. $00=centered, $04=banked left/right. Reset to $00 at the start of each frame, then set to $04 by <a href="../asm/26160.html">restore_plane_state_after_render</a> after the banked sprite is rendered. Read by <a href="../asm/28224.html">add_fuel</a>, but always $00 at that call site — the check is dead code.</a></div>
 <div class="map-entry-desc">
 </div>
 </td>
@@ -549,7 +554,7 @@ During SCROLL_IN and OVERVIEW, player input is ignored and no collision occurs. 
 <td class="map-g"><span id="24438"></span><a href="../asm/24438.html">5F76</a></td>
 <td class="map-length">1</td>
 <td class="map-g-desc">
-<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24438.html">Current level terrain array index (1-255). Points to current element in level definition at <a href="../asm/38144.html">9500</a>. Incremented as terrain scrolls.</a></div>
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/24438.html">Current level terrain array index (1-255). Points to current element in level definition at <a href="../asm/38144.html">level_terrains</a>. Incremented as terrain scrolls.</a></div>
 <div class="map-entry-desc">
 </div>
 </td>
@@ -741,7 +746,7 @@ Controls tank shell behavior during flight and explosion.
 </table>
 </div>
 <div class="paragraph">
-Speed is pseudo-random (1-4), set when shell is fired at <a href="../asm/29442.html#29486">732E</a>.
+Speed is pseudo-random (1-4), set when shell is fired at <a href="../asm/29442.html#29486">tank_fire_shell_entry</a>.
 </div>
 </div>
 </td>
@@ -753,7 +758,7 @@ Speed is pseudo-random (1-4), set when shell is fired at <a href="../asm/29442.h
 <div class="map-entry-title-11"><a class="map-entry-title" href="../asm/29572.html">Tank shell trajectory step (0-7)</a></div>
 <div class="map-entry-desc">
 <div class="paragraph">
-Current step in the shell's parabolic arc. Incremented each frame while flying. At step 8, shell explodes via <a href="../asm/29894.html">74C6</a>.
+Current step in the shell's parabolic arc. Incremented each frame while flying. At step 8, shell explodes via <a href="../asm/29894.html">render_tank_shell_explosion</a>.
 </div>
 <div class="paragraph">
 Higher steps produce lower-pitched whistle sounds (BEEPER with HL = step × 256).
@@ -777,7 +782,7 @@ Current screen position of the flying shell. Updated each frame based on speed a
 <td class="map-g"><span id="35592"></span><a href="../asm/35592.html">8B08</a></td>
 <td class="map-length">2</td>
 <td class="map-g-desc">
-<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/35592.html">Pointer to collision handler routine at <a href="../asm/24886.html">6136</a>. Called when sprite rendering detects pixel overlap.</a></div>
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/35592.html">Pointer to collision handler routine at <a href="../asm/24886.html">collision_dispatcher</a>. Called when sprite rendering detects pixel overlap.</a></div>
 <div class="map-entry-desc">
 </div>
 </td>
@@ -858,7 +863,7 @@ Current screen position of the flying shell. Updated each frame based on speed a
 <td class="map-g"><span id="37435"></span><a href="../asm/37435.html">923B</a></td>
 <td class="map-length">1</td>
 <td class="map-g-desc">
-<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/37435.html">Player 1 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the end of the first scroll-in (<a href="../asm/23974.html">5DA6</a>). Decremented again at the end of each subsequent scroll-in after a death. Game over is triggered when 0 at the time of the player's next death.</a></div>
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/37435.html">Player 1 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the end of the first scroll-in (<a href="../asm/23974.html">play</a>). Decremented again at the end of each subsequent scroll-in after a death. Game over is triggered when 0 at the time of the player's next death.</a></div>
 <div class="map-entry-desc">
 </div>
 </td>
@@ -867,7 +872,7 @@ Current screen position of the flying shell. Updated each frame based on speed a
 <td class="map-g"><span id="37436"></span><a href="../asm/37436.html">923C</a></td>
 <td class="map-length">1</td>
 <td class="map-g-desc">
-<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/37436.html">Player 2 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the end of the first scroll-in (<a href="../asm/23974.html">5DA6</a>). Decremented again at the end of each subsequent scroll-in after a death. Game over is triggered when 0 at the time of the player's next death.</a></div>
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/37436.html">Player 2 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the end of the first scroll-in (<a href="../asm/23974.html">play</a>). Decremented again at the end of each subsequent scroll-in after a death. Game over is triggered when 0 at the time of the player's next death.</a></div>
 <div class="map-entry-desc">
 </div>
 </td>
@@ -876,7 +881,7 @@ Current screen position of the flying shell. Updated each frame based on speed a
 <td class="map-g"><span id="37507"></span><a href="../asm/37507.html">9283</a></td>
 <td class="map-length">2</td>
 <td class="map-g-desc">
-<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/37507.html">Pointer to state_controls at <a href="../asm/27568.html">6BB0</a>. Allows indirect access to control state bitmask.</a></div>
+<div class="map-entry-title-11"><a class="map-entry-title" href="../asm/37507.html">Pointer to state_controls at <a href="../asm/27568.html">state_controls</a>. Allows indirect access to control state bitmask.</a></div>
 <div class="map-entry-desc">
 </div>
 </td>
@@ -923,5 +928,6 @@ Current screen position of the flying shell. Updated each frame based on speed a
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6C7B</title>
+<title>river-raid: Routine at 6C7B</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -53,122 +58,149 @@ Generates an explosion sound that plays over 24 interrupts ($18). Called once pe
 </td>
 </tr>
 <tr>
+<td class="asm-label">beep_explosion</td>
 <td class="address-2"><span id="27771"></span>6C7B</td>
 <td class="instruction">LD A,($6C7A)</td>
 <td class="comment-1" rowspan="2">Decrement explosion counter.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27774"></span>6C7E</td>
 <td class="instruction">DEC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27775"></span>6C7F</td>
 <td class="instruction">LD ($6C7A),A</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27778"></span>6C82</td>
 <td class="instruction">CP $00</td>
-<td class="comment-1" rowspan="2">If counter reached 0, jump to <a href="27821.html">6CAD</a> to finish.</td>
+<td class="comment-1" rowspan="2">If counter reached 0, jump to <a href="27821.html">explosion_render_finish</a> to finish.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27780"></span>6C84</td>
-<td class="instruction">JP Z,<a href="27821.html">$6CAD</a></td>
+<td class="instruction">JP Z,<a href="27821.html">explosion_render_finish</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27783"></span>6C87</td>
 <td class="instruction">LD A,(DE)</td>
 <td class="comment-1" rowspan="6">Calculate ON delay: ((DE) AND $07) &lt;&lt; 3 + $10. Gives value $10-$48 based on low 3 bits of (DE).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27784"></span>6C88</td>
 <td class="instruction">AND $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27786"></span>6C8A</td>
 <td class="instruction">SLA A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27788"></span>6C8C</td>
 <td class="instruction">SLA A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27790"></span>6C8E</td>
 <td class="instruction">SLA A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27792"></span>6C90</td>
 <td class="instruction">ADD A,$10</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27794"></span>6C92</td>
 <td class="instruction">LD E,A</td>
 <td class="comment-1" rowspan="2">Set ON delay in E, loop counter = 4 cycles.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27795"></span>6C93</td>
 <td class="instruction">LD C,$04</td>
 </tr>
 <tr>
+<td class="asm-label">beep_explosion_loop</td>
 <td class="address-2"><span id="27797"></span>6C95</td>
 <td class="instruction">LD A,$10</td>
 <td class="comment-1" rowspan="2">Speaker ON.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27799"></span>6C97</td>
 <td class="instruction">OUT ($FE),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27801"></span>6C99</td>
 <td class="instruction">LD D,E</td>
 <td class="comment-1" rowspan="1">Load ON delay into D.</td>
 </tr>
 <tr>
+<td class="asm-label">beep_explosion_delay_on</td>
 <td class="address-2"><span id="27802"></span>6C9A</td>
 <td class="instruction">DEC D</td>
 <td class="comment-1" rowspan="2">Delay loop for speaker ON phase.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27803"></span>6C9B</td>
-<td class="instruction">JR NZ,$6C9A</td>
+<td class="instruction">JR NZ,<a href="27771.html#27802">beep_explosion_delay_on</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27805"></span>6C9D</td>
 <td class="instruction">LD A,$00</td>
 <td class="comment-1" rowspan="2">Speaker OFF.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27807"></span>6C9F</td>
 <td class="instruction">OUT ($FE),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27809"></span>6CA1</td>
 <td class="instruction">LD A,($6C7A)</td>
 <td class="comment-1" rowspan="2">Load counter value as OFF delay.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27812"></span>6CA4</td>
 <td class="instruction">LD D,A</td>
 </tr>
 <tr>
+<td class="asm-label">beep_explosion_delay_off</td>
 <td class="address-2"><span id="27813"></span>6CA5</td>
 <td class="instruction">DEC D</td>
 <td class="comment-1" rowspan="2">Delay loop for speaker OFF phase (speeds up as counter decreases).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27814"></span>6CA6</td>
-<td class="instruction">JR NZ,$6CA5</td>
+<td class="instruction">JR NZ,<a href="27771.html#27813">beep_explosion_delay_off</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27816"></span>6CA8</td>
 <td class="instruction">DEC C</td>
 <td class="comment-1" rowspan="3">Decrement cycle counter, loop for 4 cycles per interrupt.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27817"></span>6CA9</td>
-<td class="instruction">JP NZ,$6C95</td>
+<td class="instruction">JP NZ,<a href="27771.html#27797">beep_explosion_loop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27820"></span>6CAC</td>
 <td class="instruction">RET</td>
 </tr>
@@ -189,5 +221,6 @@ Next: <a href="27821.html">6CAD</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

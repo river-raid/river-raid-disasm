@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Data at 923D</title>
+<title>river-raid: Data at 923D</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-b">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Data</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,12 +34,13 @@ Next: <a href="37438.html">923E</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Determines which player's state to use for: score (<a href="37052.html">90BC</a> vs <a href="37058.html">90C2</a>), lives (<a href="37435.html">923B</a> vs <a href="37436.html">923C</a>), bridge progress (<a href="24426.html">5F6A</a> vs <a href="24427.html">5F6B</a>). Players alternate turns in two-player mode, switching when one dies if the other has lives. Colors: P1=yellow ($06), P2=cyan ($05).
+Determines which player's state to use for: score (<a href="37052.html">state_score_player_1_low</a> vs <a href="37058.html">state_score_player_2_low</a>), lives (<a href="37435.html">state_lives_player_1</a> vs <a href="37436.html">state_lives_player_2</a>), bridge progress (<a href="24426.html">state_bridge_player_1</a> vs <a href="24427.html">state_bridge_player_2</a>). Players alternate turns in two-player mode, switching when one dies if the other has lives. Colors: P1=yellow ($06), P2=cyan ($05).
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">state_player</td>
 <td class="address-1"><span id="37437"></span>923D</td>
 <td class="instruction">DEFB $00</td>
 <td class="comment-0" rowspan="1"></td>
@@ -56,5 +62,6 @@ Next: <a href="37438.html">923E</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

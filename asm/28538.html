@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6F7A</title>
+<title>river-raid: Routine at 6F7A</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -44,17 +49,20 @@ Called when explosion animation reaches frame 7 (complete). Marks the entry as e
 </td>
 </tr>
 <tr>
+<td class="asm-label">remove_explosion_entry</td>
 <td class="address-2"><span id="28538"></span>6F7A</td>
 <td class="instruction">DEC HL</td>
 <td class="comment-1" rowspan="2">Move back to frame counter byte and mark entry as empty.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28539"></span>6F7B</td>
 <td class="instruction">LD (HL),$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28541"></span>6F7D</td>
-<td class="instruction">JP <a href="28360.html">$6EC8</a></td>
+<td class="instruction">JP <a href="28360.html">render_explosions</a></td>
 <td class="comment-1" rowspan="1">Continue processing remaining explosions.</td>
 </tr>
 </table>
@@ -74,5 +82,6 @@ Next: <a href="28544.html">6F80</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

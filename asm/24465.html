@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 5F91</title>
+<title>river-raid: Routine at 5F91</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -34,13 +39,13 @@ Central game loop that runs continuously during active gameplay. Orchestrates al
 <div class="paragraph">
 <ul class="">
 <li>Input: Check Enter key (Caps+Enter → restart, Symbol+Enter → control select)</li>
-<li>Timing: Increment tick counter (<a href="24303.html">5EEF</a>)</li>
+<li>Timing: Increment tick counter (<a href="24303.html">state_tick</a>)</li>
 <li>Render: Explosions, plane/terrain, viewport objects</li>
 <li>Missiles: Two-pass player missile (erase then draw)</li>
 <li>Projectiles: Tank shells, helicopter missiles</li>
-<li>Scroll: Advance game world (<a href="26320.html">66D0</a>)</li>
-<li>Fuel: Consume fuel (<a href="28159.html">6DFF</a>)</li>
-<li>Controls: Dispatch to input handler based on <a href="24423.html">5F67</a></li>
+<li>Scroll: Advance game world (<a href="26320.html">advance_scroll</a>)</li>
+<li>Fuel: Consume fuel (<a href="28159.html">consume_fuel</a>)</li>
+<li>Controls: Dispatch to input handler based on <a href="24423.html">state_input_interface</a></li>
 </ul>
 </div>
 </div>
@@ -51,135 +56,163 @@ Central game loop that runs continuously during active gameplay. Orchestrates al
 <span id="24465"></span>
 <div class="comments">
 <div class="paragraph">
-The loop is infinite. It terminates only via: game over (fuel empty, collision) or player death (jumps to death handler). Pressing Enter calls <a href="27583.html">6BBF</a> (Caps+Enter → <a href="23861.html">5D35</a> to restart gameplay; Symbol+Enter → <a href="27602.html">6BD2</a> to return to control selection). The H key pause is handled entirely by the interrupt handler (<a href="27611.html">6BDB</a>) and does not exit the loop.
+The loop is infinite. It terminates only via: game over (fuel empty, collision) or player death (jumps to death handler). Pressing Enter calls <a href="27583.html">handle_enter</a> (Caps+Enter → <a href="23861.html">start_gameplay</a> to restart gameplay; Symbol+Enter → <a href="27602.html">select_controls</a> to return to control selection). The H key pause is handled entirely by the interrupt handler (<a href="27611.html">int_handler</a>) and does not exit the loop.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">main_loop</td>
 <td class="address-2"><span id="24465"></span>5F91</td>
 <td class="instruction">LD A,$BF</td>
 <td class="comment-1" rowspan="4">Check Enter key for mode transitions.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24467"></span>5F93</td>
 <td class="instruction">IN A,($FE)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24469"></span>5F95</td>
 <td class="instruction">BIT 0,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24471"></span>5F97</td>
-<td class="instruction">CALL Z,<a href="27583.html">$6BBF</a></td>
+<td class="instruction">CALL Z,<a href="27583.html">handle_enter</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24474"></span>5F9A</td>
 <td class="instruction">LD HL,$5EEF</td>
-<td class="comment-1" rowspan="2">Increment tick counter at <a href="24303.html">5EEF</a>.</td>
+<td class="comment-1" rowspan="2">Increment tick counter at <a href="24303.html">state_tick</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24477"></span>5F9D</td>
 <td class="instruction">INC (HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24478"></span>5F9E</td>
-<td class="instruction">CALL <a href="28360.html">$6EC8</a></td>
+<td class="instruction">CALL <a href="28360.html">render_explosions</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24481"></span>5FA1</td>
-<td class="instruction">CALL <a href="24741.html">$60A5</a></td>
+<td class="instruction">CALL <a href="24741.html">render_plane_and_terrain</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24484"></span>5FA4</td>
-<td class="instruction">CALL <a href="28814.html">$708E</a></td>
+<td class="instruction">CALL <a href="28814.html">operate_viewport_slots</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24487"></span>5FA7</td>
 <td class="instruction">LD A,$01</td>
 <td class="comment-1" rowspan="3">Player missile pass 1: erase at old position.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24489"></span>5FA9</td>
 <td class="instruction">LD ($673C),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24492"></span>5FAC</td>
-<td class="instruction">CALL <a href="26429.html">$673D</a></td>
+<td class="instruction">CALL <a href="26429.html">animate_plane_missile</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24495"></span>5FAF</td>
 <td class="instruction">LD A,$00</td>
 <td class="comment-1" rowspan="3">Player missile pass 2: draw at new position.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24497"></span>5FB1</td>
 <td class="instruction">LD ($673C),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24500"></span>5FB4</td>
-<td class="instruction">CALL <a href="26429.html">$673D</a></td>
+<td class="instruction">CALL <a href="26429.html">animate_plane_missile</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24503"></span>5FB7</td>
-<td class="instruction">CALL <a href="29761.html">$7441</a></td>
+<td class="instruction">CALL <a href="29761.html">operate_tank_shell</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24506"></span>5FBA</td>
-<td class="instruction">CALL <a href="29587.html">$7393</a></td>
+<td class="instruction">CALL <a href="29587.html">operate_helicopter_missile</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24509"></span>5FBD</td>
-<td class="instruction">CALL <a href="26320.html">$66D0</a></td>
+<td class="instruction">CALL <a href="26320.html">advance_scroll</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24512"></span>5FC0</td>
-<td class="instruction">CALL <a href="28159.html">$6DFF</a></td>
+<td class="instruction">CALL <a href="28159.html">consume_fuel</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24515"></span>5FC3</td>
 <td class="instruction">LD A,$00</td>
 <td class="comment-1" rowspan="2">Reset plane sprite bank.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24517"></span>5FC5</td>
 <td class="instruction">LD ($5F69),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24520"></span>5FC8</td>
 <td class="instruction">LD A,($5F67)</td>
 <td class="comment-1" rowspan="7">Dispatch to input handler.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24523"></span>5FCB</td>
 <td class="instruction">CP $02</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24525"></span>5FCD</td>
-<td class="instruction">JP Z,<a href="24586.html">$600A</a></td>
+<td class="instruction">JP Z,<a href="24586.html">scan_kempston</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24528"></span>5FD0</td>
 <td class="instruction">CP $01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24530"></span>5FD2</td>
-<td class="instruction">JP Z,<a href="24633.html">$6039</a></td>
+<td class="instruction">JP Z,<a href="24633.html">scan_sinclair</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24533"></span>5FD5</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24535"></span>5FD7</td>
-<td class="instruction">JP Z,<a href="24680.html">$6068</a></td>
+<td class="instruction">JP Z,<a href="24680.html">scan_keyboard</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -198,5 +231,6 @@ Next: <a href="24538.html">5FDA</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

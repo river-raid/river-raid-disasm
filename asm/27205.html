@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6A45</title>
+<title>river-raid: Routine at 6A45</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,17 +40,20 @@ For offset islands (state_island_byte_3=2). Right edge = $3C + left. This create
 </td>
 </tr>
 <tr>
+<td class="asm-label">calc_offset_edge</td>
 <td class="address-2"><span id="27205"></span>6A45</td>
 <td class="instruction">LD A,C</td>
 <td class="comment-1" rowspan="3">A = C + D = 60 + left_x, then jump to draw_right_edge.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27206"></span>6A46</td>
 <td class="instruction">ADD A,D</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27207"></span>6A47</td>
-<td class="instruction">JP <a href="27024.html#27146">$6A0A</a></td>
+<td class="instruction">JP <a href="27024.html#27146">draw_right_edge</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -64,5 +72,6 @@ Next: <a href="27210.html">6A4A</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

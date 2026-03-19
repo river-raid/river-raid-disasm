@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 64A1</title>
+<title>river-raid: Routine at 64A1</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="25780.html">64B4</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Used by the routine at <a href="25720.html">6478</a>.
+Used by the routine at <a href="25720.html">hit_fuel</a>.
 </div>
 </div>
 </td>
@@ -45,35 +50,42 @@ Called when the plane touches a fuel depot during REFUEL mode. Marks the depot s
 </td>
 </tr>
 <tr>
+<td class="asm-label">refuel_from_depot</td>
 <td class="address-2"><span id="25761"></span>64A1</td>
 <td class="instruction">LD (HL),C</td>
 <td class="comment-1" rowspan="1">Mark depot slot as empty.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25762"></span>64A2</td>
 <td class="instruction">LD HL,$5F00</td>
-<td class="comment-1" rowspan="4">Reset <a href="24416.html">5F60</a> and <a href="24418.html">5F62</a> to list starts.</td>
+<td class="comment-1" rowspan="4">Reset <a href="24416.html">current_slot_ptr</a> and <a href="24418.html">exploding_fragments_ptr</a> to list starts.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25765"></span>64A5</td>
 <td class="instruction">LD ($5F60),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25768"></span>64A8</td>
 <td class="instruction">LD HL,$5F2E</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25771"></span>64AB</td>
 <td class="instruction">LD ($5F62),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25774"></span>64AE</td>
-<td class="instruction">CALL <a href="28224.html">$6E40</a></td>
-<td class="comment-1" rowspan="2">Add fuel and jump to <a href="25596.html">63FC</a> to reset gameplay mode.</td>
+<td class="instruction">CALL <a href="28224.html">add_fuel</a></td>
+<td class="comment-1" rowspan="2">Add fuel and jump to <a href="25596.html">reset_gameplay_mode</a> to reset gameplay mode.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25777"></span>64B1</td>
-<td class="instruction">JP <a href="25596.html">$63FC</a></td>
+<td class="instruction">JP <a href="25596.html">reset_gameplay_mode</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -92,5 +104,6 @@ Next: <a href="25780.html">64B4</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

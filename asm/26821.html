@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 68C5</title>
+<title>river-raid: Routine at 68C5</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,81 +40,97 @@ Copies the bottom attribute row to row 1, then fills the bottom row with either 
 </td>
 </tr>
 <tr>
+<td class="asm-label">update_top_visible_row_and_refill_bottom</td>
 <td class="address-2"><span id="26821"></span>68C5</td>
 <td class="instruction">LD DE,$5820</td>
-<td class="comment-1" rowspan="3">Copy bottom attribute row to row 1 (<a href="22560.html">5820</a>).</td>
+<td class="comment-1" rowspan="3">Copy bottom attribute row to row 1 (<a href="22560.html">screen_attributes_row_1</a>).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26824"></span>68C8</td>
 <td class="instruction">LD BC,$0020</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26827"></span>68CB</td>
 <td class="instruction">LDIR</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26829"></span>68CD</td>
 <td class="instruction">LD A,($5F6C)</td>
 <td class="comment-1" rowspan="5">If bridge section 1 or 2, jump to render bridge attributes.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26832"></span>68D0</td>
 <td class="instruction">CP $01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26834"></span>68D2</td>
-<td class="instruction">JP Z,<a href="26919.html">$6927</a></td>
+<td class="instruction">JP Z,<a href="26919.html">render_bridge_attributes</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26837"></span>68D5</td>
 <td class="instruction">CP $02</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26839"></span>68D7</td>
-<td class="instruction">JP Z,<a href="26919.html">$6927</a></td>
+<td class="instruction">JP Z,<a href="26919.html">render_bridge_attributes</a></td>
 </tr>
 <tr>
 <td class="routine-comment" colspan="5">
 <span id="26842"></span>
 <div class="comments">
 <div class="paragraph">
-This entry point is used by the routine at <a href="26857.html">68E9</a>.
+This entry point is used by the routine at <a href="26857.html">init_current_bridge</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">fill_river_attributes</td>
 <td class="address-2"><span id="26842"></span>68DA</td>
 <td class="instruction">LD DE,$5BDF</td>
 <td class="comment-1" rowspan="3">Initialize bottom row fill with river attribute (green).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26845"></span>68DD</td>
 <td class="instruction">LD A,$0C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26847"></span>68DF</td>
 <td class="instruction">LD B,$20</td>
 </tr>
 <tr>
+<td class="asm-label">fill_attribute_loop</td>
 <td class="address-2"><span id="26849"></span>68E1</td>
 <td class="instruction">LD (DE),A</td>
 <td class="comment-1" rowspan="3">Store attribute, advance pointer, loop 32 times.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26850"></span>68E2</td>
 <td class="instruction">INC DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26851"></span>68E3</td>
-<td class="instruction">DJNZ $68E1</td>
+<td class="instruction">DJNZ <a href="26821.html#26849">fill_attribute_loop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26853"></span>68E5</td>
-<td class="instruction">CALL <a href="28544.html">$6F80</a></td>
+<td class="instruction">CALL <a href="28544.html">spawn_objects_from_level_slot</a></td>
 <td class="comment-1" rowspan="1">Process objects for new row.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26856"></span>68E8</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -131,5 +152,6 @@ Next: <a href="26857.html">68E9</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

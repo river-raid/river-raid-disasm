@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6BED</title>
+<title>river-raid: Routine at 6BED</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="27684.html">6C24</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Sound processing dispatcher called from interrupt handler. Reads <a href="27568.html">6BB0</a> control flags and calls appropriate sound routines. Multiple sounds can trigger simultaneously (e.g., fire + low fuel).
+Sound processing dispatcher called from interrupt handler. Reads <a href="27568.html">state_controls</a> control flags and calls appropriate sound routines. Multiple sounds can trigger simultaneously (e.g., fire + low fuel).
 </div>
 <div class="paragraph">
 <table class="default">
@@ -41,37 +46,37 @@ Sound processing dispatcher called from interrupt handler. Reads <a href="27568.
 <tr>
 <td class="" colspan="1" rowspan="1">0</td>
 <td class="" colspan="1" rowspan="1">FIRE_SOUND</td>
-<td class="" colspan="1" rowspan="1"><a href="35330.html">8A02</a> (fire)</td>
+<td class="" colspan="1" rowspan="1"><a href="35330.html">do_fire</a> (fire)</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">1</td>
 <td class="" colspan="1" rowspan="1">SPEED_NOT_FAST</td>
-<td class="" colspan="1" rowspan="1"><a href="27741.html">6C5D</a> (normal speed)</td>
+<td class="" colspan="1" rowspan="1"><a href="27741.html">beep_engine_normal</a> (normal speed)</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">2</td>
 <td class="" colspan="1" rowspan="1">SPEED_CHANGED</td>
-<td class="" colspan="1" rowspan="1"><a href="27832.html">6CB8</a> (fast speed)</td>
+<td class="" colspan="1" rowspan="1"><a href="27832.html">beep_engine_fast</a> (fast speed)</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">1+2</td>
 <td class="" colspan="1" rowspan="1">Both speed bits</td>
-<td class="" colspan="1" rowspan="1"><a href="27862.html">6CD6</a> (slow speed)</td>
+<td class="" colspan="1" rowspan="1"><a href="27862.html">beep_engine_slow</a> (slow speed)</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">3</td>
 <td class="" colspan="1" rowspan="1">LOW_FUEL</td>
-<td class="" colspan="1" rowspan="1"><a href="27892.html">6CF4</a> (warning)</td>
+<td class="" colspan="1" rowspan="1"><a href="27892.html">do_low_fuel</a> (warning)</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">4</td>
 <td class="" colspan="1" rowspan="1">BONUS_LIFE</td>
-<td class="" colspan="1" rowspan="1"><a href="27697.html">6C31</a> (jingle)</td>
+<td class="" colspan="1" rowspan="1"><a href="27697.html">do_bonus_life</a> (jingle)</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">5</td>
 <td class="" colspan="1" rowspan="1">EXPLODING</td>
-<td class="" colspan="1" rowspan="1"><a href="27771.html">6C7B</a> (explosion)</td>
+<td class="" colspan="1" rowspan="1"><a href="27771.html">beep_explosion</a> (explosion)</td>
 </tr>
 </table>
 </div>
@@ -89,101 +94,123 @@ Flags are set by game logic (input handlers, collision, fuel system) and cleared
 </td>
 </tr>
 <tr>
+<td class="asm-label">handle_controls</td>
 <td class="address-2"><span id="27629"></span>6BED</td>
 <td class="instruction">LD A,($5C08)</td>
 <td class="comment-1" rowspan="3">Skip if LAST_K is 'h'.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27632"></span>6BF0</td>
 <td class="instruction">CP $68</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27634"></span>6BF2</td>
-<td class="instruction">JP Z,<a href="27684.html">$6C24</a></td>
+<td class="instruction">JP Z,<a href="27684.html">int_return</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27637"></span>6BF5</td>
 <td class="instruction">LD HL,$6BB0</td>
-<td class="comment-1" rowspan="3">Check FIRE_SOUND → <a href="35330.html">8A02</a>.</td>
+<td class="comment-1" rowspan="3">Check FIRE_SOUND → <a href="35330.html">do_fire</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27640"></span>6BF8</td>
 <td class="instruction">BIT 0,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27642"></span>6BFA</td>
-<td class="instruction">CALL NZ,<a href="35330.html">$8A02</a></td>
+<td class="instruction">CALL NZ,<a href="35330.html">do_fire</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27645"></span>6BFD</td>
 <td class="instruction">BIT 4,(HL)</td>
-<td class="comment-1" rowspan="3">Check BONUS_LIFE → <a href="27697.html">6C31</a>.</td>
+<td class="comment-1" rowspan="3">Check BONUS_LIFE → <a href="27697.html">do_bonus_life</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27647"></span>6BFF</td>
-<td class="instruction">CALL NZ,<a href="27697.html">$6C31</a></td>
+<td class="instruction">CALL NZ,<a href="27697.html">do_bonus_life</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27650"></span>6C02</td>
 <td class="instruction">LD HL,$6BB0</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27653"></span>6C05</td>
 <td class="instruction">BIT 5,(HL)</td>
-<td class="comment-1" rowspan="3">Check EXPLODING → <a href="27771.html">6C7B</a>.</td>
+<td class="comment-1" rowspan="3">Check EXPLODING → <a href="27771.html">beep_explosion</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27655"></span>6C07</td>
-<td class="instruction">CALL NZ,<a href="27771.html">$6C7B</a></td>
+<td class="instruction">CALL NZ,<a href="27771.html">beep_explosion</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27658"></span>6C0A</td>
 <td class="instruction">LD HL,$6BB0</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27661"></span>6C0D</td>
 <td class="instruction">BIT 3,(HL)</td>
-<td class="comment-1" rowspan="3">Check LOW_FUEL → <a href="27892.html">6CF4</a>.</td>
+<td class="comment-1" rowspan="3">Check LOW_FUEL → <a href="27892.html">do_low_fuel</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27663"></span>6C0F</td>
-<td class="instruction">JP NZ,<a href="27892.html">$6CF4</a></td>
+<td class="instruction">JP NZ,<a href="27892.html">do_low_fuel</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27666"></span>6C12</td>
 <td class="instruction">LD A,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27667"></span>6C13</td>
 <td class="instruction">AND $06</td>
 <td class="comment-1" rowspan="1">Mask speed bits.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27669"></span>6C15</td>
 <td class="instruction">CP $02</td>
-<td class="comment-1" rowspan="2">Normal speed → <a href="27741.html">6C5D</a>.</td>
+<td class="comment-1" rowspan="2">Normal speed → <a href="27741.html">beep_engine_normal</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27671"></span>6C17</td>
-<td class="instruction">JP Z,<a href="27741.html">$6C5D</a></td>
+<td class="instruction">JP Z,<a href="27741.html">beep_engine_normal</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27674"></span>6C1A</td>
 <td class="instruction">CP $04</td>
-<td class="comment-1" rowspan="2">Fast speed → <a href="27832.html">6CB8</a>.</td>
+<td class="comment-1" rowspan="2">Fast speed → <a href="27832.html">beep_engine_fast</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27676"></span>6C1C</td>
-<td class="instruction">JP Z,<a href="27832.html">$6CB8</a></td>
+<td class="instruction">JP Z,<a href="27832.html">beep_engine_fast</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27679"></span>6C1F</td>
 <td class="instruction">CP $06</td>
-<td class="comment-1" rowspan="2">Slow speed → <a href="27862.html">6CD6</a>.</td>
+<td class="comment-1" rowspan="2">Slow speed → <a href="27862.html">beep_engine_slow</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27681"></span>6C21</td>
-<td class="instruction">JP Z,<a href="27862.html">$6CD6</a></td>
+<td class="instruction">JP Z,<a href="27862.html">beep_engine_slow</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -202,5 +229,6 @@ Next: <a href="27684.html">6C24</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 5D2B</title>
+<title>river-raid: Routine at 5D2B</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="23861.html">5D35</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Used by the routines at <a href="23824.html">5D10</a> and <a href="25975.html">6577</a>.
+Used by the routines at <a href="23824.html">start_gameplay_or_overview</a> and <a href="25975.html">game_over</a>.
 </div>
 </div>
 </td>
@@ -45,18 +50,21 @@ This routine is called when overview mode is selected (either from the control s
 </td>
 </tr>
 <tr>
+<td class="asm-label">start_overview</td>
 <td class="address-2"><span id="23851"></span>5D2B</td>
 <td class="instruction">LD SP,($5F83)</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23855"></span>5D2F</td>
-<td class="instruction">CALL <a href="23876.html">$5D44</a></td>
+<td class="instruction">CALL <a href="23876.html">init_state</a></td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23858"></span>5D32</td>
-<td class="instruction">JP <a href="27927.html">$6D17</a></td>
+<td class="instruction">JP <a href="27927.html">overview</a></td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 </table>
@@ -76,5 +84,6 @@ Next: <a href="23861.html">5D35</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

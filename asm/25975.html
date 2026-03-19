@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6577</title>
+<title>river-raid: Routine at 6577</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,26 +40,31 @@ This routine displays the "GAME OVER" message, plays the game over sequence, and
 </td>
 </tr>
 <tr>
+<td class="asm-label">game_over</td>
 <td class="address-2"><span id="25975"></span>6577</td>
 <td class="instruction">LD HL,$8153</td>
 <td class="comment-1" rowspan="2">Set scroller to "GAME OVER" message.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25978"></span>657A</td>
 <td class="instruction">LD ($5F7E),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25981"></span>657D</td>
-<td class="instruction">CALL <a href="37822.html">$93BE</a></td>
+<td class="instruction">CALL <a href="37822.html">update_high_score</a></td>
 <td class="comment-1" rowspan="3">Update high score, restore stack, and return to overview mode.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25984"></span>6580</td>
 <td class="instruction">LD SP,($5F83)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25988"></span>6584</td>
-<td class="instruction">JP <a href="23851.html">$5D2B</a></td>
+<td class="instruction">JP <a href="23851.html">start_overview</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -73,5 +83,6 @@ Next: <a href="25991.html">6587</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

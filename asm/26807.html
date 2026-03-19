@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 68B7</title>
+<title>river-raid: Routine at 68B7</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,23 +40,28 @@ This routine is called every 8 terrain fragments to scroll the screen attributes
 </td>
 </tr>
 <tr>
+<td class="asm-label">scroll_attributes</td>
 <td class="address-2"><span id="26807"></span>68B7</td>
 <td class="instruction">LD HL,$5A1F</td>
 <td class="comment-1" rowspan="4">Copy 524 attribute bytes backward, scrolling all rows up by one.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26810"></span>68BA</td>
 <td class="instruction">LD DE,$5A3F</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26813"></span>68BD</td>
 <td class="instruction">LD BC,$020C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26816"></span>68C0</td>
 <td class="instruction">LDDR</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26818"></span>68C2</td>
 <td class="instruction">LD HL,$5BDF</td>
 <td class="comment-1" rowspan="1">Point HL at the bottom attribute row.</td>
@@ -73,5 +83,6 @@ Next: <a href="26821.html">68C5</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6B7B</title>
+<title>river-raid: Routine at 6B7B</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -45,36 +50,44 @@ After copying the 32-byte sprite to screen, sets state_bridge_section for attrib
 </td>
 </tr>
 <tr>
+<td class="asm-label">handle_special_terrain_fragment</td>
 <td class="address-2"><span id="27515"></span>6B7B</td>
 <td class="instruction">CP $80</td>
-<td class="comment-1" rowspan="6">Dispatch: $80=<a href="27491.html">6B63</a>, $E0=<a href="27499.html">6B6B</a>, $F0=<a href="27507.html">6B73</a>, else=bridge (A=1).</td>
+<td class="comment-1" rowspan="6">Dispatch: $80=<a href="27491.html">load_canal_river_side</a>, $E0=<a href="27499.html">load_canal_road_side</a>, $F0=<a href="27507.html">load_road_sprite</a>, else=bridge (A=1).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27517"></span>6B7D</td>
-<td class="instruction">JP Z,<a href="27491.html">$6B63</a></td>
+<td class="instruction">JP Z,<a href="27491.html">load_canal_river_side</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27520"></span>6B80</td>
 <td class="instruction">CP $E0</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27522"></span>6B82</td>
-<td class="instruction">JP Z,<a href="27499.html">$6B6B</a></td>
+<td class="instruction">JP Z,<a href="27499.html">load_canal_road_side</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27525"></span>6B85</td>
 <td class="instruction">CP $F0</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27527"></span>6B87</td>
-<td class="instruction">JP Z,<a href="27507.html">$6B73</a></td>
+<td class="instruction">JP Z,<a href="27507.html">load_road_sprite</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27530"></span>6B8A</td>
 <td class="instruction">LD A,$01</td>
 <td class="comment-1" rowspan="2">Load bridge sprite (sprite_road_and_bridge_pixels), A = 1 (bridge section).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27532"></span>6B8C</td>
 <td class="instruction">LD HL,$8351</td>
 </tr>
@@ -83,42 +96,50 @@ After copying the 32-byte sprite to screen, sets state_bridge_section for attrib
 <span id="27535"></span>
 <div class="comments">
 <div class="paragraph">
-This entry point is used by the routines at <a href="27491.html">6B63</a>, <a href="27499.html">6B6B</a> and <a href="27507.html">6B73</a>.
+This entry point is used by the routines at <a href="27491.html">load_canal_river_side</a>, <a href="27499.html">load_canal_road_side</a> and <a href="27507.html">load_road_sprite</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">handle_special_terrain_fragment_continue</td>
 <td class="address-2"><span id="27535"></span>6B8F</td>
 <td class="instruction">LD DE,($5F7B)</td>
 <td class="comment-1" rowspan="3">Copy 32-byte sprite row to screen via LDIR. Store A to state_bridge_section.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27539"></span>6B93</td>
 <td class="instruction">LD BC,$0020</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27542"></span>6B96</td>
 <td class="instruction">LDIR</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27544"></span>6B98</td>
 <td class="instruction">LD ($5F6C),A</td>
 <td class="comment-1" rowspan="4">If state_bridge_destroyed = 0, return (bridge intact).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27547"></span>6B9B</td>
 <td class="instruction">LD A,($5F6D)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27550"></span>6B9E</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27552"></span>6BA0</td>
 <td class="instruction">RET Z</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27553"></span>6BA1</td>
 <td class="instruction">LD HL,($5F7B)</td>
 <td class="comment-1" rowspan="1">Load screen_ptr for destroyed bridge clearing.</td>
@@ -128,38 +149,45 @@ This entry point is used by the routines at <a href="27491.html">6B63</a>, <a hr
 <span id="27556"></span>
 <div class="comments">
 <div class="paragraph">
-This entry point is used by the routine at <a href="25019.html">61BB</a>.
+This entry point is used by the routine at <a href="25019.html">check_collision</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">clear_destroyed_bridge</td>
 <td class="address-2"><span id="27556"></span>6BA4</td>
 <td class="instruction">LD DE,$000E</td>
 <td class="comment-1" rowspan="3">Set up loop to clear 4 bytes at offset $0E.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27559"></span>6BA7</td>
 <td class="instruction">LD B,$04</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27561"></span>6BA9</td>
 <td class="instruction">ADD HL,DE</td>
 </tr>
 <tr>
+<td class="asm-label">clear_bridge_bytes_loop</td>
 <td class="address-2"><span id="27562"></span>6BAA</td>
 <td class="instruction">LD (HL),$00</td>
 <td class="comment-1" rowspan="4">Clear byte, advance pointer, loop 4 times.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27564"></span>6BAC</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27565"></span>6BAD</td>
-<td class="instruction">DJNZ $6BAA</td>
+<td class="instruction">DJNZ <a href="27515.html#27562">clear_bridge_bytes_loop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27567"></span>6BAF</td>
 <td class="instruction">RET</td>
 </tr>
@@ -180,5 +208,6 @@ Next: <a href="27568.html">6BB0</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

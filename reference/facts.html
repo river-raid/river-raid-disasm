@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Trivia</title>
+<title>river-raid: Trivia</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Facts">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Trivia</td>
 </tr>
 </table>
+<div class="page-content">
 <ul class="contents">
 <li><a href="#targets">Targets</a></li>
 <li><a href="#bonusLife">Bonus life every 10,000 points</a></li>
@@ -91,17 +96,17 @@ mobile enemies, one is a static facility, and one is a terrain structure:
 <div class="paragraph">
 Ships, helicopters, and balloons share basic patrol movement: they advance 2
 pixels per frame toward the opposite river bank and reverse direction when
-they get within 16 pixels of the edge (see <a href="../asm/28932.html">7104</a>, <a href="../asm/30114.html">75A2</a>, <a href="../asm/30160.html">75D0</a>).
+they get within 16 pixels of the edge (see <a href="../asm/28932.html">operate_ship_or_helicopter</a>, <a href="../asm/30114.html">ship_or_helicopter_right_advance</a>, <a href="../asm/30160.html">reverse_enemy_direction</a>).
 Fighters are the fastest enemy at 4 pixels per frame and wrap around the
-screen edges instead of reversing (<a href="../asm/29016.html">7158</a>). Tanks on river banks check
-terrain ahead and fire shells when the path is clear (<a href="../asm/29442.html">7302</a>).
+screen edges instead of reversing (<a href="../asm/29016.html">operate_fighter</a>). Tanks on river banks check
+terrain ahead and fire shells when the path is clear (<a href="../asm/29442.html">operate_tank_on_bank</a>).
 </div>
 <div class="paragraph">
 All displayed scores are multiples of 10. Internally, point values are stored
 as BCD divided by 10: each nibble encodes a decimal digit, with the low
 nibble representing tens and the high nibble representing hundreds. For
 example, POINTS_TANK is encoded as BCD 25 (two in the high nibble, five in
-the low nibble), which <a href="../asm/37088.html">90E0</a> adds as 250 displayed points. The trailing
+the low nibble), which <a href="../asm/37088.html">add_points</a> adds as 250 displayed points. The trailing
 zero in the score display is purely cosmetic.
 </div>
 <div class="paragraph">
@@ -116,9 +121,9 @@ digit is always zero.
 <div class="box-title">Bonus life every 10,000 points</div>
 <div class="paragraph">
 A bonus life is awarded every 10,000 points. This is triggered when a carry
-propagates to the 10,000s digit (update_type=4) in <a href="../asm/37154.html">9122</a>, which calls
-<a href="../asm/37129.html">9109</a> to increment the life counter and trigger the bonus life sound. The
-jingle plays over 64 frames via <a href="../asm/27697.html">6C31</a>.
+propagates to the 10,000s digit (update_type=4) in <a href="../asm/37154.html">update_score</a>, which calls
+<a href="../asm/37129.html">add_life</a> to increment the life counter and trigger the bonus life sound. The
+jingle plays over 64 frames via <a href="../asm/27697.html">do_bonus_life</a>.
 </div>
 <div class="paragraph">
 This is easy to miss during casual play since reaching 10,000 points requires
@@ -148,7 +153,7 @@ updating a single digit is fast, but there is no efficient way to add
 arbitrary values — each point increment requires individual digit updates.
 </div>
 <div class="paragraph">
-See <a href="../asm/37179.html">913B</a> (player 1 digit increment) and <a href="../asm/37225.html">9169</a> (player 2 digit
+See <a href="../asm/37179.html">inc_player_1_score_digit</a> (player 1 digit increment) and <a href="../asm/37225.html">inc_player_2_score_digit</a> (player 2 digit
 increment).
 </div>
 </div>
@@ -185,11 +190,11 @@ Key details:
 <li>Fuel consumption does NOT vary with scroll speed</li>
 <li>The plane must be centered (not banking left/right) to refuel</li>
 <li>Low fuel warning triggers when fuel drops below $40</li>
-<li>A "tank full" beep (<a href="../asm/28306.html">6E92</a>) plays when fuel reaches $FC</li>
+<li>A "tank full" beep (<a href="../asm/28306.html">signal_fuel_level_excessive</a>) plays when fuel reaches $FC</li>
 </ul>
 </div>
 <div class="paragraph">
-See <a href="../asm/28159.html">6DFF</a> (consumption), <a href="../asm/28224.html">6E40</a> (refueling), <a href="../asm/24422.html">5F66</a> (fuel state
+See <a href="../asm/28159.html">consume_fuel</a> (consumption), <a href="../asm/28224.html">add_fuel</a> (refueling), <a href="../asm/24422.html">state_fuel</a> (fuel state
 variable).
 </div>
 </div>
@@ -227,8 +232,8 @@ The game has three speed settings that control how fast the terrain scrolls:
 Horizontal movement is always 2 pixels per input.
 </div>
 <div class="paragraph">
-See <a href="../asm/24420.html">5F64</a> (speed state), <a href="../asm/26378.html">670A</a> (accelerate), <a href="../asm/26391.html">6717</a> (decelerate),
-<a href="../asm/26320.html">66D0</a> (scroll update).
+See <a href="../asm/24420.html">state_speed</a> (speed state), <a href="../asm/26378.html">handle_up</a> (accelerate), <a href="../asm/26391.html">handle_down</a> (decelerate),
+<a href="../asm/26320.html">advance_scroll</a> (scroll update).
 </div>
 </div>
 <div><span id="bridgeProgression"></span></div>
@@ -244,7 +249,7 @@ new_bridge = ((progress - 48) mod 15) + 33
 </div>
 <div class="paragraph">
 This creates an infinite loop through bridges 33-48 (the hardest 15 bridges),
-making the game theoretically endless. See <a href="../asm/26857.html">68E9</a> for the wraparound
+making the game theoretically endless. See <a href="../asm/26857.html">init_current_bridge</a> for the wraparound
 algorithm.
 </div>
 </div>
@@ -255,7 +260,7 @@ algorithm.
 Newly spawned objects start in an inactive state (bit 7 clear in the viewport
 objects array). They become active — able to move and shoot — only when
 (interrupt_counter AND activation_interval) equals zero, as checked in
-<a href="../asm/28814.html">708E</a>. The activation interval stored at <a href="../asm/24415.html">5F5F</a> controls the delay between
+<a href="../asm/28814.html">operate_viewport_slots</a>. The activation interval stored at <a href="../asm/24415.html">state_activation_interval</a> controls the delay between
 spawn and activation.
 </div>
 </div>
@@ -268,14 +273,14 @@ independently tracked:
 </div>
 <div class="paragraph">
 <ul class="">
-<li>Bridge progress: <a href="../asm/24426.html">5F6A</a> (player 1), <a href="../asm/24427.html">5F6B</a> (player 2)</li>
-<li>Score: <a href="../asm/37052.html">90BC</a> (player 1), <a href="../asm/37058.html">90C2</a> (player 2)</li>
+<li>Bridge progress: <a href="../asm/24426.html">state_bridge_player_1</a> (player 1), <a href="../asm/24427.html">state_bridge_player_2</a> (player 2)</li>
+<li>Score: <a href="../asm/37052.html">state_score_player_1_low</a> (player 1), <a href="../asm/37058.html">state_score_player_2_low</a> (player 2)</li>
 <li>Fuel level: saved and restored on switch</li>
 </ul>
 </div>
 <div class="paragraph">
-The switching logic is handled by multiple routines including <a href="../asm/26027.html">65AB</a> and
-<a href="../asm/26043.html">65BB</a>.
+The switching logic is handled by multiple routines including <a href="../asm/26027.html">switch_to_player_2</a> and
+<a href="../asm/26043.html">switch_to_player_2_in_two_player_mode</a>.
 </div>
 </div>
 <div><span id="shipColorIsPlayer2Color"></span></div>
@@ -283,9 +288,9 @@ The switching logic is handled by multiple routines including <a href="../asm/26
 <div class="box-title">Ship color doubles as Player 2 color</div>
 <div class="paragraph">
 Player 2's plane is rendered in cyan — the same color as enemy ships. This is
-not a coincidence: the plane rendering code (at <a href="../asm/26099.html">65F3</a>, <a href="../asm/26178.html">6642</a>, <a href="../asm/26242.html">6682</a>)
+not a coincidence: the plane rendering code (at <a href="../asm/26099.html">handle_right</a>, <a href="../asm/26178.html">handle_left</a>, <a href="../asm/26242.html">render_plane</a>)
 checks for Player 2 with <code>CP PLAYER_2</code> and, if true, calls
-<a href="../asm/28728.html">7038</a> — the same routine that loads ship attributes — to get the color.
+<a href="../asm/28728.html">ld_attributes_ship</a> — the same routine that loads ship attributes — to get the color.
 </div>
 <div class="paragraph">
 With only 8 colors available on the ZX Spectrum, reusing the ship's cyan for
@@ -298,5 +303,6 @@ distinction between players without requiring additional sprite data.
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

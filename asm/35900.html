@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 8C3C</title>
+<title>river-raid: Routine at 8C3C</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,35 +40,43 @@ This byte is patched to change blending mode: OR B for OR mode, XOR B for XOR mo
 </td>
 </tr>
 <tr>
+<td class="asm-label">sprite_draw_op</td>
 <td class="address-2"><span id="35900"></span>8C3C</td>
 <td class="instruction">OR B</td>
 <td class="comment-1" rowspan="7">Apply blend, store result, advance pointers, loop.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35901"></span>8C3D</td>
 <td class="instruction">LD (HL),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35902"></span>8C3E</td>
 <td class="instruction">POP DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35903"></span>8C3F</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35904"></span>8C40</td>
 <td class="instruction">INC DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35905"></span>8C41</td>
 <td class="instruction">DEC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35906"></span>8C42</td>
-<td class="instruction">JR NZ,<a href="35867.html#35887">$8C2F</a></td>
+<td class="instruction">JR NZ,<a href="35867.html#35887">sprite_draw_loop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35908"></span>8C44</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -85,5 +98,6 @@ Next: <a href="35909.html">8C45</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

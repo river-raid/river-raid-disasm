@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6E9C</title>
+<title>river-raid: Routine at 6E9C</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,14 +34,14 @@ Next: <a href="28331.html">6EAB</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Called when an enemy is destroyed or the player collides. Sets up explosion state and adds an explosion entry to the explosions set at <a href="24366.html">5F2E</a>.
+Called when an enemy is destroyed or the player collides. Sets up explosion state and adds an explosion entry to the explosions set at <a href="24366.html">exploding_fragments</a>.
 </div>
 <div class="paragraph">
 <ul class="">
 <li>Sets CONTROLS_BIT_EXPLODING to trigger explosion sound</li>
 <li>Clears CONTROLS_BIT_FIRE_SOUND to stop the fire sound during explosion</li>
-<li>Resets <a href="27770.html">6C7A</a> (explosion counter) to EXPLOSION_SOUND_TICKS</li>
-<li>Falls through to <a href="28331.html">6EAB</a> to add explosion to set</li>
+<li>Resets <a href="27770.html">explosion_counter</a> (explosion counter) to EXPLOSION_SOUND_TICKS</li>
+<li>Falls through to <a href="28331.html">add_object_to_set</a> to add explosion to set</li>
 </ul>
 </div>
 </div>
@@ -56,32 +61,38 @@ Called when an enemy is destroyed or the player collides. Sets up explosion stat
 </td>
 </tr>
 <tr>
+<td class="asm-label">spawn_explosion_fragment</td>
 <td class="address-2"><span id="28316"></span>6E9C</td>
 <td class="instruction">LD HL,$6BB0</td>
-<td class="comment-1" rowspan="2">Set CONTROLS_BIT_EXPLODING in <a href="27568.html">6BB0</a>.</td>
+<td class="comment-1" rowspan="2">Set CONTROLS_BIT_EXPLODING in <a href="27568.html">state_controls</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28319"></span>6E9F</td>
 <td class="instruction">SET 5,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28321"></span>6EA1</td>
 <td class="instruction">RES 0,(HL)</td>
 <td class="comment-1" rowspan="1">Clear CONTROLS_BIT_FIRE_SOUND.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28323"></span>6EA3</td>
 <td class="instruction">LD A,$18</td>
 <td class="comment-1" rowspan="2">Reset explosion counter.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28325"></span>6EA5</td>
 <td class="instruction">LD ($6C7A),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28328"></span>6EA8</td>
 <td class="instruction">LD HL,$5F2E</td>
-<td class="comment-1" rowspan="1">Point HL to explosions set at <a href="24366.html">5F2E</a>, fall through to add_object_to_set.</td>
+<td class="comment-1" rowspan="1">Point HL to explosions set at <a href="24366.html">exploding_fragments</a>, fall through to add_object_to_set.</td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -100,5 +111,6 @@ Next: <a href="28331.html">6EAB</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

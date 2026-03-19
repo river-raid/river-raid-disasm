@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6CF4</title>
+<title>river-raid: Routine at 6CF4</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -33,7 +38,7 @@ Generates a warbling warning sound when fuel is low. Called once per interrupt w
 </div>
 <div class="paragraph">
 <ul class="">
-<li>Decrements <a href="24421.html">5F65</a> each interrupt, wrapping at $7F (0-127 range)</li>
+<li>Decrements <a href="24421.html">low_fuel_sound_period</a> each interrupt, wrapping at $7F (0-127 range)</li>
 <li>Uses this value as period for symmetric square wave</li>
 <li>3 cycles of waveform per invocation</li>
 <li>As period decrements, pitch rises then resets, creating warble</li>
@@ -43,89 +48,108 @@ Generates a warbling warning sound when fuel is low. Called once per interrupt w
 </td>
 </tr>
 <tr>
+<td class="asm-label">do_low_fuel</td>
 <td class="address-2"><span id="27892"></span>6CF4</td>
 <td class="instruction">LD C,$03</td>
 <td class="comment-1" rowspan="1">Loop counter: 3 cycles of waveform.</td>
 </tr>
 <tr>
+<td class="asm-label">do_low_fuel_loop</td>
 <td class="address-2"><span id="27894"></span>6CF6</td>
 <td class="instruction">LD A,($5F65)</td>
-<td class="comment-1" rowspan="4">Decrement period (<a href="24421.html">5F65</a>), wrap at $7F. Store new period in E.</td>
+<td class="comment-1" rowspan="4">Decrement period (<a href="24421.html">low_fuel_sound_period</a>), wrap at $7F. Store new period in E.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27897"></span>6CF9</td>
 <td class="instruction">DEC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27898"></span>6CFA</td>
 <td class="instruction">AND $7F</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27900"></span>6CFC</td>
 <td class="instruction">LD ($5F65),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27903"></span>6CFF</td>
 <td class="instruction">LD E,A</td>
 <td class="comment-1" rowspan="3">Speaker ON.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27904"></span>6D00</td>
 <td class="instruction">LD A,$10</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27906"></span>6D02</td>
 <td class="instruction">OUT ($FE),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27908"></span>6D04</td>
 <td class="instruction">LD D,E</td>
 <td class="comment-1" rowspan="1">Load period into D.</td>
 </tr>
 <tr>
+<td class="asm-label">do_low_fuel_delay_on</td>
 <td class="address-2"><span id="27909"></span>6D05</td>
 <td class="instruction">DEC D</td>
 <td class="comment-1" rowspan="2">Delay loop for speaker ON phase.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27910"></span>6D06</td>
-<td class="instruction">JR NZ,$6D05</td>
+<td class="instruction">JR NZ,<a href="27892.html#27909">do_low_fuel_delay_on</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27912"></span>6D08</td>
 <td class="instruction">LD A,$00</td>
 <td class="comment-1" rowspan="2">Speaker OFF.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27914"></span>6D0A</td>
 <td class="instruction">OUT ($FE),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27916"></span>6D0C</td>
 <td class="instruction">LD D,E</td>
 <td class="comment-1" rowspan="1">Load period into D.</td>
 </tr>
 <tr>
+<td class="asm-label">do_low_fuel_delay_off</td>
 <td class="address-2"><span id="27917"></span>6D0D</td>
 <td class="instruction">DEC D</td>
 <td class="comment-1" rowspan="2">Delay loop for speaker OFF phase.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27918"></span>6D0E</td>
-<td class="instruction">JR NZ,$6D0D</td>
+<td class="instruction">JR NZ,<a href="27892.html#27917">do_low_fuel_delay_off</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27920"></span>6D10</td>
 <td class="instruction">DEC C</td>
 <td class="comment-1" rowspan="3">Decrement cycle counter, loop for 3 cycles. Return from interrupt when done.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27921"></span>6D11</td>
-<td class="instruction">JP NZ,$6CF6</td>
+<td class="instruction">JP NZ,<a href="27892.html#27894">do_low_fuel_loop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27924"></span>6D14</td>
-<td class="instruction">JP <a href="27684.html">$6C24</a></td>
+<td class="instruction">JP <a href="27684.html">int_return</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -144,5 +168,6 @@ Next: <a href="27927.html">6D17</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

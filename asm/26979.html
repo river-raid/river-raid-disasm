@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6963</title>
+<title>river-raid: Routine at 6963</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,26 +34,30 @@ Next: <a href="26987.html">696B</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Resets bridge index to 1 when it would exceed 48. Note: player progress at <a href="24426.html">5F6A</a> is not reset, allowing the wraparound algorithm to work.
+Resets bridge index to 1 when it would exceed 48. Note: player progress at <a href="24426.html">state_bridge_player_1</a> is not reset, allowing the wraparound algorithm to work.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">next_bridge_index_overflow</td>
 <td class="address-2"><span id="26979"></span>6963</td>
 <td class="instruction">LD A,$01</td>
 <td class="comment-1" rowspan="2">Reset bridge index to 1.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26981"></span>6965</td>
 <td class="instruction">LD ($5EF0),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26984"></span>6968</td>
 <td class="instruction">LD A,$00</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26986"></span>696A</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -70,5 +79,6 @@ Next: <a href="26987.html">696B</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

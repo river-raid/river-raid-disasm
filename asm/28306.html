@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6E92</title>
+<title>river-raid: Routine at 6E92</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,19 +40,23 @@ Plays a short beep (~1450 Hz, ~6ms) when fuel tank is already full and cannot ac
 </td>
 </tr>
 <tr>
+<td class="asm-label">signal_fuel_level_excessive</td>
 <td class="address-2"><span id="28306"></span>6E92</td>
 <td class="instruction">LD DE,$0008</td>
 <td class="comment-1" rowspan="3">Play tank full sound: BEEPER with DE=$0008, HL=$0111.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28309"></span>6E95</td>
 <td class="instruction">LD HL,$0111</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28312"></span>6E98</td>
 <td class="instruction">CALL $03B5</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28315"></span>6E9B</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -69,5 +78,6 @@ Next: <a href="28316.html">6E9C</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

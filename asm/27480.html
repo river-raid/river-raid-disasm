@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6B58</title>
+<title>river-raid: Routine at 6B58</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -57,21 +62,25 @@ For symmetric river sections. Right edge = 2*C - D where C is the default river 
 </td>
 </tr>
 <tr>
+<td class="asm-label">calc_terrain_right_mirrored</td>
 <td class="address-2"><span id="27480"></span>6B58</td>
 <td class="instruction">LD A,C</td>
-<td class="comment-1" rowspan="4">A = 2*C - D (mirror left around center), jump to <a href="27299.html#27424">6B20</a>.</td>
+<td class="comment-1" rowspan="4">A = 2*C - D (mirror left around center), jump to <a href="27299.html#27424">draw_terrain_right_edge</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27481"></span>6B59</td>
 <td class="instruction">SUB D</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27482"></span>6B5A</td>
 <td class="instruction">ADD A,C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27483"></span>6B5B</td>
-<td class="instruction">JP <a href="27299.html#27424">$6B20</a></td>
+<td class="instruction">JP <a href="27299.html#27424">draw_terrain_right_edge</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -90,5 +99,6 @@ Next: <a href="27486.html">6B5E</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

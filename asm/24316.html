@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Game status buffer entry at 5EFC</title>
+<title>river-raid: Game status buffer entry at 5EFC</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-g">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Game status buffer</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -23,7 +28,7 @@ Next: <a href="24317.html">5EFD</a>
 </td>
 </tr>
 </table>
-<div class="description">5EFC: Island definition byte 3. Third byte from island data at <a href="50688.html">C600</a>, controls island rendering parameters.</div>
+<div class="description">5EFC: Island definition byte 3. Third byte from island data at <a href="50688.html">data_islands</a>, controls island rendering parameters.</div>
 <table class="disassembly">
 <tr>
 <td class="routine-comment" colspan="5">
@@ -32,6 +37,7 @@ Next: <a href="24317.html">5EFD</a>
 </td>
 </tr>
 <tr>
+<td class="asm-label">state_island_byte_3</td>
 <td class="address-1"><span id="24316"></span>5EFC</td>
 <td class="instruction">DEFB $00</td>
 <td class="comment-0" rowspan="1"></td>
@@ -53,5 +59,6 @@ Next: <a href="24317.html">5EFD</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

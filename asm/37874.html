@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 93F2</title>
+<title>river-raid: Routine at 93F2</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,45 +40,55 @@ For 2-player games, compares scores and copies player 2 score to player 1 slot i
 </td>
 </tr>
 <tr>
+<td class="asm-label">check_player2_high_score</td>
 <td class="address-2"><span id="37874"></span>93F2</td>
 <td class="instruction">LD HL,$90BC</td>
-<td class="comment-1" rowspan="3">Compare player 1 score (<a href="37052.html">90BC</a>) with player 2 score (<a href="37058.html">90C2</a>).</td>
+<td class="comment-1" rowspan="3">Compare player 1 score (<a href="37052.html">state_score_player_1_low</a>) with player 2 score (<a href="37058.html">state_score_player_2_low</a>).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37877"></span>93F5</td>
 <td class="instruction">LD DE,$90C2</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37880"></span>93F8</td>
-<td class="instruction">CALL <a href="37793.html">$93A1</a></td>
+<td class="instruction">CALL <a href="37793.html">compare_scores</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37883"></span>93FB</td>
 <td class="instruction">CP $FF</td>
 <td class="comment-1" rowspan="2">Return if player 2 score is not greater.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37885"></span>93FD</td>
 <td class="instruction">RET NZ</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37886"></span>93FE</td>
 <td class="instruction">LD HL,$90C2</td>
 <td class="comment-1" rowspan="4">Copy player 2 score to player 1 score slot (6 bytes).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37889"></span>9401</td>
 <td class="instruction">LD DE,$90BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37892"></span>9404</td>
 <td class="instruction">LD BC,$0006</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37895"></span>9407</td>
 <td class="instruction">LDIR</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37897"></span>9409</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -95,5 +110,6 @@ Next: <a href="37898.html">940A</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

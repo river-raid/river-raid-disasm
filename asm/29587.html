@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 7393</title>
+<title>river-raid: Routine at 7393</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -33,7 +38,7 @@ Advances the helicopter missile position and renders it. Missiles move down and 
 </div>
 <div class="paragraph">
 <ul class="">
-<li>Loads position from <a href="24435.html">5F73</a></li>
+<li>Loads position from <a href="24435.html">helicopter_missile_coordinates_ptr</a></li>
 <li>Advances Y position</li>
 <li>Moves X position by HELICOPTER_MISSILE_STEP ($08)</li>
 <li>Removed at VIEWPORT_HEIGHT boundary</li>
@@ -44,116 +49,142 @@ Advances the helicopter missile position and renders it. Missiles move down and 
 </td>
 </tr>
 <tr>
+<td class="asm-label">operate_helicopter_missile</td>
 <td class="address-2"><span id="29587"></span>7393</td>
 <td class="instruction">LD BC,($5F73)</td>
-<td class="comment-1" rowspan="3">Load missile coordinates from <a href="24435.html">5F73</a>. Return if B==0 (no missile).</td>
+<td class="comment-1" rowspan="3">Load missile coordinates from <a href="24435.html">helicopter_missile_coordinates_ptr</a>. Return if B==0 (no missile).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29591"></span>7397</td>
 <td class="instruction">LD A,B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29592"></span>7398</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29594"></span>739A</td>
 <td class="instruction">RET Z</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29595"></span>739B</td>
-<td class="instruction">CALL <a href="25306.html">$62DA</a></td>
-<td class="comment-1" rowspan="2">Advance Y position, store to <a href="35594.html">8B0A</a>, move X left by $08.</td>
+<td class="instruction">CALL <a href="25306.html">advance_object</a></td>
+<td class="comment-1" rowspan="2">Advance Y position, store to <a href="35594.html">previous_object_coordinates</a>, move X left by $08.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29598"></span>739E</td>
 <td class="instruction">LD ($8B0A),BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29602"></span>73A2</td>
 <td class="instruction">LD A,C</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29603"></span>73A3</td>
 <td class="instruction">SUB $08</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29605"></span>73A5</td>
 <td class="instruction">LD C,A</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29606"></span>73A6</td>
 <td class="instruction">LD A,B</td>
-<td class="comment-1" rowspan="4">Check viewport boundary. If off-screen, remove missile via <a href="29648.html">73D0</a>.</td>
+<td class="comment-1" rowspan="4">Check viewport boundary. If off-screen, remove missile via <a href="29648.html">remove_helicopter_missile</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29607"></span>73A7</td>
 <td class="instruction">AND $88</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29609"></span>73A9</td>
 <td class="instruction">CP $88</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29611"></span>73AB</td>
-<td class="instruction">JP Z,<a href="29648.html">$73D0</a></td>
+<td class="instruction">JP Z,<a href="29648.html">remove_helicopter_missile</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29614"></span>73AE</td>
 <td class="instruction">LD A,($5F75)</td>
-<td class="comment-1" rowspan="3">If right-facing (from <a href="24437.html">5F75</a>), adjust X offset via <a href="29582.html">738E</a>.</td>
+<td class="comment-1" rowspan="3">If right-facing (from <a href="24437.html">helicopter_missile_state</a>), adjust X offset via <a href="29582.html">invert_helicopter_missile_offset</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29617"></span>73B1</td>
 <td class="instruction">BIT 6,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29619"></span>73B3</td>
-<td class="instruction">CALL Z,<a href="29582.html">$738E</a></td>
+<td class="instruction">CALL Z,<a href="29582.html">invert_helicopter_missile_offset</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29622"></span>73B6</td>
 <td class="instruction">LD ($8B0C),BC</td>
-<td class="comment-1" rowspan="2">Store position to <a href="35596.html">8B0C</a> and <a href="24435.html">5F73</a>.</td>
+<td class="comment-1" rowspan="2">Store position to <a href="35596.html">object_coordinates</a> and <a href="24435.html">helicopter_missile_coordinates_ptr</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29626"></span>73BA</td>
 <td class="instruction">LD ($5F73),BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29630"></span>73BE</td>
 <td class="instruction">LD A,$04</td>
 <td class="comment-1" rowspan="7">Render missile: collision mode=$04, width=1, attributes=$00, height=1.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29632"></span>73C0</td>
 <td class="instruction">LD ($5EF5),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29635"></span>73C3</td>
 <td class="instruction">LD A,$01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29637"></span>73C5</td>
 <td class="instruction">LD E,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29639"></span>73C7</td>
 <td class="instruction">LD D,$01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29641"></span>73C9</td>
 <td class="instruction">LD HL,$82C5</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29644"></span>73CC</td>
-<td class="instruction">CALL <a href="35614.html">$8B1E</a></td>
+<td class="instruction">CALL <a href="35614.html">render_sprite</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29647"></span>73CF</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -175,5 +206,6 @@ Next: <a href="29648.html">73D0</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

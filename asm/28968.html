@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 7128</title>
+<title>river-raid: Routine at 7128</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,95 +40,116 @@ Updates the object's position in the viewport array and renders the sprite.
 </td>
 </tr>
 <tr>
+<td class="asm-label">operate_ship_or_helicopter_continue</td>
 <td class="address-2"><span id="28968"></span>7128</td>
 <td class="instruction">LD HL,($5F60)</td>
 <td class="comment-1" rowspan="7">Load current_slot_ptr, navigate back to current slot, update [X, Y, D] values.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28971"></span>712B</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28972"></span>712C</td>
 <td class="instruction">LD D,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28973"></span>712D</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28974"></span>712E</td>
 <td class="instruction">LD (HL),B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28975"></span>712F</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28976"></span>7130</td>
 <td class="instruction">LD (HL),C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28977"></span>7131</td>
 <td class="instruction">LD ($8B0C),BC</td>
-<td class="comment-1" rowspan="3">Store position to <a href="35596.html">8B0C</a>, sprite address <a href="33477.html">82C5</a> to <a href="35598.html">8B0E</a>. Get sprite pointer.</td>
+<td class="comment-1" rowspan="3">Store position to <a href="35596.html">object_coordinates</a>, sprite address <a href="33477.html">all_ff</a> to <a href="35598.html">render_sprite_ptr</a>. Get sprite pointer.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28981"></span>7135</td>
 <td class="instruction">LD HL,$82C5</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28984"></span>7138</td>
 <td class="instruction">LD ($8B0E),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28987"></span>713B</td>
-<td class="instruction">CALL <a href="30138.html">$75BA</a></td>
+<td class="instruction">CALL <a href="30138.html">ld_enemy_sprites</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28990"></span>713E</td>
 <td class="instruction">LD BC,$0018</td>
 <td class="comment-1" rowspan="2">Set frame size=$18, default attributes=$0E.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28993"></span>7141</td>
 <td class="instruction">LD E,$0E</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28995"></span>7143</td>
 <td class="instruction">LD A,D</td>
-<td class="comment-1" rowspan="3">If object type is OBJECT_SHIP, load ship attributes via <a href="28728.html">7038</a>.</td>
+<td class="comment-1" rowspan="3">If object type is OBJECT_SHIP, load ship attributes via <a href="28728.html">ld_attributes_ship</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28996"></span>7144</td>
 <td class="instruction">AND $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28998"></span>7146</td>
 <td class="instruction">CP $02</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29000"></span>7148</td>
-<td class="instruction">CALL Z,<a href="28728.html">$7038</a></td>
+<td class="instruction">CALL Z,<a href="28728.html">ld_attributes_ship</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29003"></span>714B</td>
 <td class="instruction">LD A,$03</td>
 <td class="comment-1" rowspan="3">Render sprite: width=3 tiles, height=8 pixels.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29005"></span>714D</td>
 <td class="instruction">LD D,$08</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29007"></span>714F</td>
-<td class="instruction">CALL <a href="35644.html">$8B3C</a></td>
+<td class="instruction">CALL <a href="35644.html">render_object</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29010"></span>7152</td>
-<td class="instruction">JP <a href="28814.html">$708E</a></td>
+<td class="instruction">JP <a href="28814.html">operate_viewport_slots</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 </table>
@@ -143,5 +169,6 @@ Next: <a href="29013.html">7155</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

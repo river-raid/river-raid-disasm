@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6039</title>
+<title>river-raid: Routine at 6039</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,81 +40,99 @@ Reads half-row $EF (keys 6-0) via port $FE. Maps Sinclair Interface 2 joystick 1
 </td>
 </tr>
 <tr>
+<td class="asm-label">scan_sinclair</td>
 <td class="address-2"><span id="24633"></span>6039</td>
 <td class="instruction">LD A,$EF</td>
 <td class="comment-1" rowspan="5">Scan "0" (FIRE)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24635"></span>603B</td>
 <td class="instruction">IN A,($FE)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24637"></span>603D</td>
 <td class="instruction">LD ($5EF1),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24640"></span>6040</td>
 <td class="instruction">BIT 0,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24642"></span>6042</td>
-<td class="instruction">CALL Z,<a href="26404.html">$6724</a></td>
+<td class="instruction">CALL Z,<a href="26404.html">handle_fire</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24645"></span>6045</td>
 <td class="instruction">LD A,($5EF1)</td>
 <td class="comment-1" rowspan="3">Scan "9" (UP)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24648"></span>6048</td>
 <td class="instruction">BIT 1,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24650"></span>604A</td>
-<td class="instruction">CALL Z,<a href="26378.html">$670A</a></td>
+<td class="instruction">CALL Z,<a href="26378.html">handle_up</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24653"></span>604D</td>
 <td class="instruction">LD A,($5EF1)</td>
 <td class="comment-1" rowspan="3">Scan "8" (DOWN)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24656"></span>6050</td>
 <td class="instruction">BIT 2,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24658"></span>6052</td>
-<td class="instruction">CALL Z,<a href="26391.html">$6717</a></td>
+<td class="instruction">CALL Z,<a href="26391.html">handle_down</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24661"></span>6055</td>
 <td class="instruction">LD A,($5EF1)</td>
 <td class="comment-1" rowspan="3">Scan "7" (RIGHT)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24664"></span>6058</td>
 <td class="instruction">BIT 3,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24666"></span>605A</td>
-<td class="instruction">CALL Z,<a href="26099.html">$65F3</a></td>
+<td class="instruction">CALL Z,<a href="26099.html">handle_right</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24669"></span>605D</td>
 <td class="instruction">LD A,($5EF1)</td>
 <td class="comment-1" rowspan="4">Scan "6" (LEFT)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24672"></span>6060</td>
 <td class="instruction">BIT 4,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24674"></span>6062</td>
-<td class="instruction">CALL Z,<a href="26178.html">$6642</a></td>
+<td class="instruction">CALL Z,<a href="26178.html">handle_left</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24677"></span>6065</td>
-<td class="instruction">JP <a href="24465.html">$5F91</a></td>
+<td class="instruction">JP <a href="24465.html">main_loop</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -128,5 +151,6 @@ Next: <a href="24680.html">6068</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

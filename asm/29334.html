@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 7296</title>
+<title>river-raid: Routine at 7296</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,12 +34,12 @@ Next: <a href="29414.html">72E6</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Operates tanks on the river. Tanks move 2 pixels per frame and signal their center position ($80) to suppress the bank tank shell. Tanks on the river bank are handled separately via <a href="29442.html">7302</a>.
+Operates tanks on the river. Tanks move 2 pixels per frame and signal their center position ($80) to suppress the bank tank shell. Tanks on the river bank are handled separately via <a href="29442.html">operate_tank_on_bank</a>.
 </div>
 <div class="paragraph">
 <ul class="">
 <li>Skips processing every other frame (tick check)</li>
-<li>Tanks on bank (bit 5 set) handled via <a href="29442.html">7302</a></li>
+<li>Tanks on bank (bit 5 set) handled via <a href="29442.html">operate_tank_on_bank</a></li>
 <li>River tanks move left/right, set TANK_SHELL_ACTIVE at X=$80</li>
 <li>Uses XOR blending mode for rendering</li>
 </ul>
@@ -60,174 +65,211 @@ Operates tanks on the river. Tanks move 2 pixels per frame and signal their cent
 </td>
 </tr>
 <tr>
+<td class="asm-label">operate_tank</td>
 <td class="address-2"><span id="29334"></span>7296</td>
 <td class="instruction">LD A,($5EEF)</td>
 <td class="comment-1" rowspan="3">Skip if odd tick (tanks move on even ticks).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29337"></span>7299</td>
 <td class="instruction">AND $01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29339"></span>729B</td>
 <td class="instruction">CP $01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29341"></span>729D</td>
-<td class="instruction">JP Z,<a href="28814.html">$708E</a></td>
+<td class="instruction">JP Z,<a href="28814.html">operate_viewport_slots</a></td>
 <td class="comment-1" rowspan="3">Store position, check bank bit, handle terrain check.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29344"></span>72A0</td>
 <td class="instruction">LD ($8B0A),BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29348"></span>72A4</td>
 <td class="instruction">PUSH DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29349"></span>72A5</td>
 <td class="instruction">PUSH BC</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29350"></span>72A6</td>
 <td class="instruction">BIT 5,D</td>
-<td class="comment-1" rowspan="2">If SLOT_BIT_TANK_ON_BANK set, handle via <a href="29442.html">7302</a>.</td>
+<td class="comment-1" rowspan="2">If SLOT_BIT_TANK_ON_BANK set, handle via <a href="29442.html">operate_tank_on_bank</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29352"></span>72A8</td>
-<td class="instruction">JP NZ,<a href="29442.html">$7302</a></td>
+<td class="instruction">JP NZ,<a href="29442.html">operate_tank_on_bank</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29355"></span>72AB</td>
 <td class="instruction">POP BC</td>
-<td class="comment-1" rowspan="5">Pop regs. If <a href="24429.html">5F6D</a> != 0, jump to <a href="29934.html">74EE</a>.</td>
+<td class="comment-1" rowspan="5">Pop regs. If <a href="24429.html">state_bridge_destroyed</a> != 0, jump to <a href="29934.html">handle_tank_at_boundary</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29356"></span>72AC</td>
 <td class="instruction">POP DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29357"></span>72AD</td>
 <td class="instruction">LD A,($5F6D)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29360"></span>72B0</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29362"></span>72B2</td>
-<td class="instruction">JP NZ,<a href="29934.html">$74EE</a></td>
+<td class="instruction">JP NZ,<a href="29934.html">handle_tank_at_boundary</a></td>
 </tr>
 <tr>
 <td class="routine-comment" colspan="5">
 <span id="29365"></span>
 <div class="comments">
 <div class="paragraph">
-This entry point is used by the routine at <a href="29442.html">7302</a>.
+This entry point is used by the routine at <a href="29442.html">operate_tank_on_bank</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">tank_move_entry</td>
 <td class="address-2"><span id="29365"></span>72B5</td>
 <td class="instruction">DEC C</td>
 <td class="comment-1" rowspan="4">Move tank: DEC C twice (left), then INC C × 4 if right-facing.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29366"></span>72B6</td>
 <td class="instruction">DEC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29367"></span>72B7</td>
 <td class="instruction">BIT 6,D</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29369"></span>72B9</td>
-<td class="instruction">CALL Z,<a href="29323.html">$728B</a></td>
+<td class="instruction">CALL Z,<a href="29323.html">tank_advance_right</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29372"></span>72BC</td>
 <td class="instruction">LD A,C</td>
-<td class="comment-1" rowspan="2">If X == $80 (center), signal road tank at center via <a href="29328.html">7290</a>.</td>
+<td class="comment-1" rowspan="2">If X == $80 (center), signal road tank at center via <a href="29328.html">set_tank_shell_active</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29373"></span>72BD</td>
 <td class="instruction">CP $80</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29375"></span>72BF</td>
-<td class="instruction">CALL Z,<a href="29328.html">$7290</a></td>
+<td class="instruction">CALL Z,<a href="29328.html">set_tank_shell_active</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29378"></span>72C2</td>
 <td class="instruction">LD HL,($5F60)</td>
-<td class="comment-1" rowspan="8">Update position in viewport array, store to <a href="35596.html">8B0C</a>, get sprite pointer.</td>
+<td class="comment-1" rowspan="8">Update position in viewport array, store to <a href="35596.html">object_coordinates</a>, get sprite pointer.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29381"></span>72C5</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29382"></span>72C6</td>
 <td class="instruction">LD D,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29383"></span>72C7</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29384"></span>72C8</td>
 <td class="instruction">LD (HL),B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29385"></span>72C9</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29386"></span>72CA</td>
 <td class="instruction">LD (HL),C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29387"></span>72CB</td>
 <td class="instruction">LD ($8B0C),BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29391"></span>72CF</td>
-<td class="instruction">CALL <a href="30138.html">$75BA</a></td>
+<td class="instruction">CALL <a href="30138.html">ld_enemy_sprites</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29394"></span>72D2</td>
 <td class="instruction">LD BC,$0018</td>
-<td class="comment-1" rowspan="2">Set frame size=$18, enable XOR blending via <a href="29414.html">72E6</a>.</td>
+<td class="comment-1" rowspan="2">Set frame size=$18, enable XOR blending via <a href="29414.html">blending_mode_xor_xor</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29397"></span>72D5</td>
-<td class="instruction">CALL <a href="29414.html">$72E6</a></td>
+<td class="instruction">CALL <a href="29414.html">blending_mode_xor_xor</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29400"></span>72D8</td>
 <td class="instruction">LD A,$03</td>
 <td class="comment-1" rowspan="4">Render sprite: width=3, height=8, attributes=$00. Restore blending.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29402"></span>72DA</td>
 <td class="instruction">LD DE,$0800</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29405"></span>72DD</td>
-<td class="instruction">CALL <a href="35614.html">$8B1E</a></td>
+<td class="instruction">CALL <a href="35614.html">render_sprite</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29408"></span>72E0</td>
-<td class="instruction">CALL <a href="29423.html">$72EF</a></td>
+<td class="instruction">CALL <a href="29423.html">blending_mode_or_or</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29411"></span>72E3</td>
-<td class="instruction">JP <a href="28814.html">$708E</a></td>
+<td class="instruction">JP <a href="28814.html">operate_viewport_slots</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 </table>
@@ -247,5 +289,6 @@ Next: <a href="29414.html">72E6</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

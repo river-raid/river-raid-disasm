@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 913B</title>
+<title>river-raid: Routine at 913B</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -53,46 +58,56 @@ Increments the ASCII digit at the specified offset in the score buffer. If the d
 </td>
 </tr>
 <tr>
+<td class="asm-label">inc_player_1_score_digit</td>
 <td class="address-2"><span id="37179"></span>913B</td>
 <td class="instruction">LD HL,$90BC</td>
 <td class="comment-1" rowspan="2">Point HL at the target digit in player 1's score.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37182"></span>913E</td>
 <td class="instruction">LD B,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37184"></span>9140</td>
 <td class="instruction">LD A,C</td>
 <td class="comment-1" rowspan="5">Save offset to D, load digit, increment it.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37185"></span>9141</td>
 <td class="instruction">ADD HL,BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37186"></span>9142</td>
 <td class="instruction">LD D,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37187"></span>9143</td>
 <td class="instruction">LD A,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37188"></span>9144</td>
 <td class="instruction">INC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37189"></span>9145</td>
 <td class="instruction">CP ":"</td>
-<td class="comment-1" rowspan="1">If digit overflows past '9', jump to <a href="37265.html">9191</a> for carry.</td>
+<td class="comment-1" rowspan="1">If digit overflows past '9', jump to <a href="37265.html">carry_player_1_score_digit</a> for carry.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37191"></span>9147</td>
-<td class="instruction">JP Z,<a href="37265.html">$9191</a></td>
+<td class="instruction">JP Z,<a href="37265.html">carry_player_1_score_digit</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37194"></span>914A</td>
 <td class="instruction">LD (HL),A</td>
 <td class="comment-1" rowspan="1">Store incremented digit, fall through to print.</td>
@@ -114,5 +129,6 @@ Next: <a href="37195.html">914B</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

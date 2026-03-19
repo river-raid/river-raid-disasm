@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 72FD</title>
+<title>river-raid: Routine at 72FD</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -53,19 +58,23 @@ Adds $28 to X position for right-facing tank shell spawn point.
 </td>
 </tr>
 <tr>
+<td class="asm-label">add_tank_offset_delta</td>
 <td class="address-2"><span id="29437"></span>72FD</td>
 <td class="instruction">LD A,C</td>
 <td class="comment-1" rowspan="3">C = C + $28.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29438"></span>72FE</td>
 <td class="instruction">ADD A,$28</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29440"></span>7300</td>
 <td class="instruction">LD C,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29441"></span>7301</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -87,5 +96,6 @@ Next: <a href="29442.html">7302</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

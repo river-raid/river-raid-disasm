@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 615E</title>
+<title>river-raid: Routine at 615E</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="25019.html">61BB</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Used by the routine at <a href="24886.html">6136</a>.
+Used by the routine at <a href="24886.html">collision_dispatcher</a>.
 </div>
 </div>
 </td>
@@ -39,26 +44,28 @@ Used by the routine at <a href="24886.html">6136</a>.
 <span id="24926"></span>
 <div class="comments">
 <div class="paragraph">
-Checks if the player's missile has collided with a fighter aircraft. Uses bounding box collision detection by comparing the missile coordinates (from <a href="24307.html">5EF3</a>) with the fighter's coordinates (from <a href="35596.html">8B0C</a>).
+Checks if the player's missile has collided with a fighter aircraft. Uses bounding box collision detection by comparing the missile coordinates (from <a href="24307.html">state_plane_missile_y</a>) with the fighter's coordinates (from <a href="35596.html">object_coordinates</a>).
 </div>
 <div class="paragraph">
 The collision box is 6 pixels wide (horizontally) and uses vertical bounds of +10 and +1 pixels.
 </div>
 <div class="paragraph">
-If no collision is detected (any boundary check fails), jumps to <a href="25596.html#25601">6401</a> to reset collision mode and return.
+If no collision is detected (any boundary check fails), jumps to <a href="25596.html#25601">no_collision_exit</a> to reset collision mode and return.
 </div>
 <div class="paragraph">
-On collision: removes the fighter from the viewport, triggers two explosion fragments, awards POINTS_FIGHTER, and continues to post-collision processing at <a href="26516.html">6794</a>.
+On collision: removes the fighter from the viewport, triggers two explosion fragments, awards POINTS_FIGHTER, and continues to post-collision processing at <a href="26516.html">finalize_collision</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">handle_collision_mode_fighter</td>
 <td class="address-2"><span id="24926"></span>615E</td>
 <td class="instruction">LD BC,($5EF3)</td>
-<td class="comment-1" rowspan="2">Load missile coordinates from <a href="24307.html">5EF3</a> and fighter coordinates from <a href="35596.html">8B0C</a>.</td>
+<td class="comment-1" rowspan="2">Load missile coordinates from <a href="24307.html">state_plane_missile_y</a> and fighter coordinates from <a href="35596.html">object_coordinates</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24930"></span>6162</td>
 <td class="instruction">LD DE,($8B0C)</td>
 </tr>
@@ -73,38 +80,46 @@ Y-axis collision check.
 </td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24934"></span>6166</td>
 <td class="instruction">LD A,B</td>
-<td class="comment-1" rowspan="4">Check if missile_Y + 6 &gt;= fighter_Y; exit to <a href="25596.html#25601">6401</a> if not.</td>
+<td class="comment-1" rowspan="4">Check if missile_Y + 6 &gt;= fighter_Y; exit to <a href="25596.html#25601">no_collision_exit</a> if not.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24935"></span>6167</td>
 <td class="instruction">ADD A,$06</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24937"></span>6169</td>
 <td class="instruction">SUB D</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24938"></span>616A</td>
-<td class="instruction">JP M,<a href="25596.html#25601">$6401</a></td>
+<td class="instruction">JP M,<a href="25596.html#25601">no_collision_exit</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24941"></span>616D</td>
 <td class="instruction">LD A,D</td>
-<td class="comment-1" rowspan="4">Check if fighter_Y + 6 &gt;= missile_Y; exit to <a href="25596.html#25601">6401</a> if not.</td>
+<td class="comment-1" rowspan="4">Check if fighter_Y + 6 &gt;= missile_Y; exit to <a href="25596.html#25601">no_collision_exit</a> if not.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24942"></span>616E</td>
 <td class="instruction">ADD A,$06</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24944"></span>6170</td>
 <td class="instruction">SUB B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24945"></span>6171</td>
-<td class="instruction">JP M,<a href="25596.html#25601">$6401</a></td>
+<td class="instruction">JP M,<a href="25596.html#25601">no_collision_exit</a></td>
 </tr>
 <tr>
 <td class="routine-comment" colspan="5">
@@ -117,78 +132,96 @@ X-axis collision check.
 </td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24948"></span>6174</td>
 <td class="instruction">LD H,$00</td>
-<td class="comment-1" rowspan="8">Check if fighter_X + 10 &gt;= missile_X; exit to <a href="25596.html#25601">6401</a> if not.</td>
+<td class="comment-1" rowspan="8">Check if fighter_X + 10 &gt;= missile_X; exit to <a href="25596.html#25601">no_collision_exit</a> if not.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24950"></span>6176</td>
 <td class="instruction">LD A,E</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24951"></span>6177</td>
 <td class="instruction">ADD A,$0A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24953"></span>6179</td>
 <td class="instruction">LD L,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24954"></span>617A</td>
 <td class="instruction">LD B,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24956"></span>617C</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24957"></span>617D</td>
 <td class="instruction">SBC HL,BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24959"></span>617F</td>
-<td class="instruction">JP M,<a href="25596.html#25601">$6401</a></td>
+<td class="instruction">JP M,<a href="25596.html#25601">no_collision_exit</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24962"></span>6182</td>
 <td class="instruction">LD H,$00</td>
-<td class="comment-1" rowspan="10">Check if missile_X + 1 &gt;= fighter_X; exit to <a href="25596.html#25601">6401</a> if not.</td>
+<td class="comment-1" rowspan="10">Check if missile_X + 1 &gt;= fighter_X; exit to <a href="25596.html#25601">no_collision_exit</a> if not.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24964"></span>6184</td>
 <td class="instruction">LD BC,($5EF3)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24968"></span>6188</td>
 <td class="instruction">LD A,C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24969"></span>6189</td>
 <td class="instruction">INC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24970"></span>618A</td>
 <td class="instruction">LD L,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24971"></span>618B</td>
 <td class="instruction">LD B,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24973"></span>618D</td>
 <td class="instruction">LD C,E</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24974"></span>618E</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24975"></span>618F</td>
 <td class="instruction">SBC HL,BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24977"></span>6191</td>
-<td class="instruction">JP M,<a href="25596.html#25601">$6401</a></td>
+<td class="instruction">JP M,<a href="25596.html#25601">no_collision_exit</a></td>
 </tr>
 <tr>
 <td class="routine-comment" colspan="5">
@@ -201,105 +234,129 @@ Collision detected - process hit.
 </td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24980"></span>6194</td>
 <td class="instruction">POP DE</td>
 <td class="comment-1" rowspan="3">Clean up stack (3x POP DE).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24981"></span>6195</td>
 <td class="instruction">POP DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24982"></span>6196</td>
 <td class="instruction">POP DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24983"></span>6197</td>
 <td class="instruction">LD A,D</td>
-<td class="comment-1" rowspan="2">Store fighter Y coordinate to <a href="24310.html">5EF6</a>.</td>
+<td class="comment-1" rowspan="2">Store fighter Y coordinate to <a href="24310.html">state_collision_y</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24984"></span>6198</td>
 <td class="instruction">LD ($5EF6),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24987"></span>619B</td>
 <td class="instruction">LD HL,($5F60)</td>
 <td class="comment-1" rowspan="7">Get object coordinates from viewport and mark slot as empty.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24990"></span>619E</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24991"></span>619F</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24992"></span>61A0</td>
 <td class="instruction">LD B,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24993"></span>61A1</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24994"></span>61A2</td>
 <td class="instruction">LD C,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24995"></span>61A3</td>
 <td class="instruction">LD (HL),$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24997"></span>61A5</td>
 <td class="instruction">LD D,$00</td>
 <td class="comment-1" rowspan="9">Spawn two explosion fragments (second offset by X-6).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24999"></span>61A7</td>
-<td class="instruction">CALL <a href="28316.html">$6E9C</a></td>
+<td class="instruction">CALL <a href="28316.html">spawn_explosion_fragment</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25002"></span>61AA</td>
 <td class="instruction">DEC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25003"></span>61AB</td>
 <td class="instruction">DEC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25004"></span>61AC</td>
 <td class="instruction">DEC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25005"></span>61AD</td>
 <td class="instruction">DEC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25006"></span>61AE</td>
 <td class="instruction">DEC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25007"></span>61AF</td>
 <td class="instruction">DEC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25008"></span>61B0</td>
-<td class="instruction">CALL <a href="28316.html">$6E9C</a></td>
+<td class="instruction">CALL <a href="28316.html">spawn_explosion_fragment</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25011"></span>61B3</td>
 <td class="instruction">LD A,$10</td>
 <td class="comment-1" rowspan="2">Award POINTS_FIGHTER to player.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25013"></span>61B5</td>
-<td class="instruction">CALL <a href="37088.html">$90E0</a></td>
+<td class="instruction">CALL <a href="37088.html">add_points</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25016"></span>61B8</td>
-<td class="instruction">JP <a href="26516.html">$6794</a></td>
+<td class="instruction">JP <a href="26516.html">finalize_collision</a></td>
 <td class="comment-1" rowspan="1">Finalize collision.</td>
 </tr>
 </table>
@@ -319,5 +376,6 @@ Next: <a href="25019.html">61BB</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

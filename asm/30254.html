@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 762E</title>
+<title>river-raid: Routine at 762E</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -48,58 +53,70 @@ Clears the object's slot marker and handles tank shell cleanup if the object was
 </td>
 </tr>
 <tr>
+<td class="asm-label">remove_object_from_viewport</td>
 <td class="address-2"><span id="30254"></span>762E</td>
 <td class="instruction">DEC HL</td>
 <td class="comment-1" rowspan="2">Decrement to definition byte and mark slot as empty.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30255"></span>762F</td>
 <td class="instruction">LD (HL),$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30257"></span>7631</td>
 <td class="instruction">LD A,D</td>
 <td class="comment-1" rowspan="3">Extract object type. If not OBJECT_TANK, continue main loop.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30258"></span>7632</td>
 <td class="instruction">AND $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30260"></span>7634</td>
 <td class="instruction">CP $04</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30262"></span>7636</td>
-<td class="instruction">JP NZ,<a href="28814.html">$708E</a></td>
+<td class="instruction">JP NZ,<a href="28814.html">operate_viewport_slots</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30265"></span>7639</td>
 <td class="instruction">LD A,$00</td>
 <td class="comment-1" rowspan="2">Mark tank shell as inactive.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30267"></span>763B</td>
 <td class="instruction">LD ($5EF2),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30270"></span>763E</td>
 <td class="instruction">BIT 5,D</td>
 <td class="comment-1" rowspan="2">Check if tank was on right bank.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30272"></span>7640</td>
-<td class="instruction">JP Z,<a href="28814.html">$708E</a></td>
+<td class="instruction">JP Z,<a href="28814.html">operate_viewport_slots</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30275"></span>7643</td>
-<td class="instruction">CALL <a href="29924.html">$74E4</a></td>
-<td class="comment-1" rowspan="2">If so, call <a href="29924.html">74E4</a> for right-bank tank shell removal.</td>
+<td class="instruction">CALL <a href="29924.html">remove_tank_shell</a></td>
+<td class="comment-1" rowspan="2">If so, call <a href="29924.html">remove_tank_shell</a> for right-bank tank shell removal.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30278"></span>7646</td>
-<td class="instruction">JP <a href="28814.html">$708E</a></td>
+<td class="instruction">JP <a href="28814.html">operate_viewport_slots</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -118,5 +135,6 @@ Next: <a href="30281.html">7649</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

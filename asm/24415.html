@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Game status buffer entry at 5F5F</title>
+<title>river-raid: Game status buffer entry at 5F5F</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-g">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Game status buffer</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="24416.html">5F60</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Controls when newly spawned objects become active (start moving/shooting). Objects spawn inactive (bit 7 clear in slot definition) and activate when (interrupt_counter AND mask) == 0. Checked in <a href="28814.html">708E</a>.
+Controls when newly spawned objects become active (start moving/shooting). Objects spawn inactive (bit 7 clear in slot definition) and activate when (interrupt_counter AND mask) == 0. Checked in <a href="28814.html">operate_viewport_slots</a>.
 </div>
 <div class="paragraph">
 <table class="default">
@@ -54,6 +59,7 @@ Controls when newly spawned objects become active (start moving/shooting). Objec
 </td>
 </tr>
 <tr>
+<td class="asm-label">state_activation_interval</td>
 <td class="address-1"><span id="24415"></span>5F5F</td>
 <td class="instruction">DEFB $04</td>
 <td class="comment-0" rowspan="1"></td>
@@ -75,5 +81,6 @@ Next: <a href="24416.html">5F60</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

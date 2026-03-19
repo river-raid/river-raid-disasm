@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 936F</title>
+<title>river-raid: Routine at 936F</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,75 +40,92 @@ When Y AND $F8 = 0, the sprite is in attribute row 0 (pixel rows 0-7). Instead o
 </td>
 </tr>
 <tr>
+<td class="asm-label">set_attr_wrap_old</td>
 <td class="address-2"><span id="37743"></span>936F</td>
 <td class="instruction">LD BC,$03DF</td>
 <td class="comment-1" rowspan="4">Add $03DF to HL to correct wrapped address. Restore and re-save BC.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37746"></span>9372</td>
 <td class="instruction">ADD HL,BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37747"></span>9373</td>
 <td class="instruction">POP BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37748"></span>9374</td>
 <td class="instruction">PUSH BC</td>
 </tr>
 <tr>
+<td class="asm-label">set_attr_wrap_old_loop</td>
 <td class="address-2"><span id="37749"></span>9375</td>
 <td class="instruction">LD (HL),A</td>
 <td class="comment-1" rowspan="4">Inner loop: write attribute A to HL, increment HL, decrement C, repeat for row width.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37750"></span>9376</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37751"></span>9377</td>
 <td class="instruction">DEC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37752"></span>9378</td>
-<td class="instruction">JR NZ,$9375</td>
+<td class="instruction">JR NZ,<a href="37743.html#37749">set_attr_wrap_old_loop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37754"></span>937A</td>
 <td class="instruction">POP BC</td>
-<td class="comment-1" rowspan="9">After row: restore BC, add stride DE, decrement B, re-save BC. Subtract $03DF from HL to maintain wrap. Jump back to <a href="37517.html#37610">92EA</a> for next row.</td>
+<td class="comment-1" rowspan="9">After row: restore BC, add stride DE, decrement B, re-save BC. Subtract $03DF from HL to maintain wrap. Jump back to <a href="37517.html#37610">set_attr_old_outer_loop</a> for next row.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37755"></span>937B</td>
 <td class="instruction">ADD HL,DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37756"></span>937C</td>
 <td class="instruction">DEC B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37757"></span>937D</td>
 <td class="instruction">PUSH BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37758"></span>937E</td>
 <td class="instruction">LD BC,$03DF</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37761"></span>9381</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37762"></span>9382</td>
 <td class="instruction">SBC HL,BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37764"></span>9384</td>
 <td class="instruction">POP BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37765"></span>9385</td>
-<td class="instruction">JP <a href="37517.html#37610">$92EA</a></td>
+<td class="instruction">JP <a href="37517.html#37610">set_attr_old_outer_loop</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -122,5 +144,6 @@ Next: <a href="37768.html">9388</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 72EF</title>
+<title>river-raid: Routine at 72EF</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,21 +40,25 @@ Patches sprite renderer to use OR for both mask and sprite operations. Restores 
 </td>
 </tr>
 <tr>
+<td class="asm-label">blending_mode_or_or</td>
 <td class="address-2"><span id="29423"></span>72EF</td>
 <td class="instruction">LD A,$B0</td>
 <td class="comment-1" rowspan="1">Load OPCODE_OR_B.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29425"></span>72F1</td>
 <td class="instruction">LD ($8C1B),A</td>
-<td class="comment-1" rowspan="1">Patch OR B into <a href="35867.html">8C1B</a>.</td>
+<td class="comment-1" rowspan="1">Patch OR B into <a href="35867.html">sprite_erase_op</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29428"></span>72F4</td>
 <td class="instruction">LD ($8C3C),A</td>
-<td class="comment-1" rowspan="1">Patch OR B into <a href="35900.html">8C3C</a>.</td>
+<td class="comment-1" rowspan="1">Patch OR B into <a href="35900.html">sprite_draw_op</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29431"></span>72F7</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -71,5 +80,6 @@ Next: <a href="29432.html">72F8</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

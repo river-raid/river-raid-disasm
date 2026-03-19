@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Text at 90BC</title>
+<title>river-raid: Text at 90BC</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-t">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Messages</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,12 +34,13 @@ Next: <a href="37054.html">90BE</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Score storage as 6 ASCII digit characters. Each player's score spans 6 bytes at offsets 0-5 (leftmost to rightmost). Offset is calculated as (6 - update_type) in <a href="37154.html">9122</a>. Bonus life is awarded when digit offset 2 (update_type=4, the 10,000s place) is incremented.
+Score storage as 6 ASCII digit characters. Each player's score spans 6 bytes at offsets 0-5 (leftmost to rightmost). Offset is calculated as (6 - update_type) in <a href="37154.html">update_score</a>. Bonus life is awarded when digit offset 2 (update_type=4, the 10,000s place) is incremented.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">state_score_player_1_low</td>
 <td class="address-1"><span id="37052"></span>90BC</td>
 <td class="instruction">DEFM "00"</td>
 <td class="comment-0" rowspan="1"></td>
@@ -56,5 +62,6 @@ Next: <a href="37054.html">90BE</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Data</title>
+<title>river-raid: Data</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="DataMap">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Data</td>
 </tr>
 </table>
+<div class="page-content">
 <div class="map-intro"></div>
 <table class="map">
 <tr>
@@ -81,7 +86,7 @@
 <td class="map-byte">119</td>
 <td class="map-b"><span id="24439"></span><a href="../asm/24439.html">5F77</a></td>
 <td class="map-b-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24439.html">Current terrain profile number (0-7). Index into terrain sprite table at <a href="../asm/32867.html">8063</a>. Loaded from first byte of level element at <a href="../asm/38144.html">9500</a>.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24439.html">Current terrain profile number (0-7). Index into terrain sprite table at <a href="../asm/32867.html">data_terrain_profiles</a>. Loaded from first byte of level element at <a href="../asm/38144.html">level_terrains</a>.</a></div>
 </td>
 </tr>
 <tr>
@@ -362,5 +367,6 @@
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

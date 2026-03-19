@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 75A2</title>
+<title>river-raid: Routine at 75A2</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -52,61 +57,74 @@ Moves a right-facing ship/helicopter 2 pixels right, checking for terrain collis
 </td>
 </tr>
 <tr>
+<td class="asm-label">ship_or_helicopter_right_advance</td>
 <td class="address-2"><span id="30114"></span>75A2</td>
 <td class="instruction">PUSH BC</td>
 <td class="comment-1" rowspan="4">Save BC, calculate terrain check position: C += $20 pixels.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30115"></span>75A3</td>
 <td class="instruction">LD A,C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30116"></span>75A4</td>
 <td class="instruction">ADD A,$20</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30118"></span>75A6</td>
 <td class="instruction">LD C,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30119"></span>75A7</td>
-<td class="instruction">CALL <a href="35406.html">$8A4E</a></td>
+<td class="instruction">CALL <a href="35406.html">calculate_pixel_address</a></td>
 <td class="comment-1" rowspan="2">Get terrain byte at (C, B). Load result into A.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30122"></span>75AA</td>
 <td class="instruction">LD A,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30123"></span>75AB</td>
 <td class="instruction">POP BC</td>
 <td class="comment-1" rowspan="3">Restore BC. If terrain != 0, reverse direction.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30124"></span>75AC</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30126"></span>75AE</td>
-<td class="instruction">CALL NZ,<a href="30160.html">$75D0</a></td>
+<td class="instruction">CALL NZ,<a href="30160.html">reverse_enemy_direction</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30129"></span>75B1</td>
 <td class="instruction">LD ($8B0A),BC</td>
-<td class="comment-1" rowspan="3">Store position to <a href="35594.html">8B0A</a>. Advance X position right by 2 pixels (INC C twice).</td>
+<td class="comment-1" rowspan="3">Store position to <a href="35594.html">previous_object_coordinates</a>. Advance X position right by 2 pixels (INC C twice).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30133"></span>75B5</td>
 <td class="instruction">INC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30134"></span>75B6</td>
 <td class="instruction">INC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="30135"></span>75B7</td>
-<td class="instruction">JP <a href="28968.html">$7128</a></td>
-<td class="comment-1" rowspan="1">Continue to <a href="28968.html">7128</a> for rendering.</td>
+<td class="instruction">JP <a href="28968.html">operate_ship_or_helicopter_continue</a></td>
+<td class="comment-1" rowspan="1">Continue to <a href="28968.html">operate_ship_or_helicopter_continue</a> for rendering.</td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -125,5 +143,6 @@ Next: <a href="30138.html">75BA</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

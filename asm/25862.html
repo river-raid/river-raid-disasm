@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6506</title>
+<title>river-raid: Routine at 6506</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,22 +34,25 @@ Next: <a href="25866.html">650A</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Used by the routines at <a href="25788.html">64BC</a> and <a href="25841.html">64F1</a>.
+Used by the routines at <a href="25788.html">print_bridge</a> and <a href="25841.html">print_bridge_player_2_common</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">print_space</td>
 <td class="address-2"><span id="25862"></span>6506</td>
 <td class="instruction">LD A," "</td>
 <td class="comment-1" rowspan="1">Output space via RST $10.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25864"></span>6508</td>
 <td class="instruction">RST $10</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="25865"></span>6509</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -66,5 +74,6 @@ Next: <a href="25866.html">650A</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

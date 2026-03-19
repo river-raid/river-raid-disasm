@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 7AB9</title>
+<title>river-raid: Routine at 7AB9</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,39 +34,46 @@ Next: <a href="31437.html">7ACD</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Displays the control selection dialog, waits for user input (or times out to overview mode), then shows the game mode dialog. Stores the selected control type in <a href="30720.html">7800</a>, overview flag in <a href="30721.html">7801</a>, and game mode in <a href="37434.html">923A</a>. Uses a stack trick: sets SP to <a href="30736.html">7810</a> so RET jumps to <a href="23824.html">5D10</a>.
+Displays the control selection dialog, waits for user input (or times out to overview mode), then shows the game mode dialog. Stores the selected control type in <a href="30720.html">tmp_control_type</a>, overview flag in <a href="30721.html">state_overview_mode</a>, and game mode in <a href="37434.html">state_game_mode</a>. Uses a stack trick: sets SP to <a href="30736.html">setup_sp</a> so RET jumps to <a href="23824.html">start_gameplay_or_overview</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">setup</td>
 <td class="address-2"><span id="31417"></span>7AB9</td>
 <td class="instruction">LD DE,$7A2E</td>
 <td class="comment-1" rowspan="3">Print control types dialog</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31420"></span>7ABC</td>
 <td class="instruction">LD BC,$008B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31423"></span>7ABF</td>
 <td class="instruction">CALL $203C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31426"></span>7AC2</td>
 <td class="instruction">LD HL,$FFFF</td>
 <td class="comment-1" rowspan="2">Initialize timer</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31429"></span>7AC5</td>
 <td class="instruction">LD ($7802),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31432"></span>7AC8</td>
 <td class="instruction">LD A,$0D</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="31434"></span>7ACA</td>
 <td class="instruction">LD ($5C08),A</td>
 <td class="comment-1" rowspan="1"></td>
@@ -83,5 +95,6 @@ Next: <a href="31437.html">7ACD</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Implementation notes</title>
+<title>river-raid: Implementation notes</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Notes">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Implementation notes</td>
 </tr>
 </table>
+<div class="page-content">
 <ul class="contents">
 <li><a href="#player2Afterthought">Player 2 logic was a late addition</a></li>
 <li><a href="#duplicatedRendering">Island and bank rendering heavily duplicated</a></li>
@@ -42,10 +47,10 @@ bridge display, status line, or death handling has a
 </div>
 <div class="paragraph">
 <ul class="">
-<li>Score increment: <a href="../asm/37179.html">913B</a> (player 1) vs <a href="../asm/37225.html">9169</a> (player 2)</li>
-<li>Score printing: <a href="../asm/37195.html">914B</a> (player 1) vs <a href="../asm/37225.html#37240">9178</a> (player 2)</li>
-<li>Bridge display: <a href="../asm/25788.html">64BC</a> (player 1) vs <a href="../asm/25829.html">64E5</a> (player 2)</li>
-<li>Plane movement: <a href="../asm/26099.html">65F3</a> and <a href="../asm/26178.html">6642</a> both branch for player 2 attributes</li>
+<li>Score increment: <a href="../asm/37179.html">inc_player_1_score_digit</a> (player 1) vs <a href="../asm/37225.html">inc_player_2_score_digit</a> (player 2)</li>
+<li>Score printing: <a href="../asm/37195.html">print_player_1_score_digit</a> (player 1) vs <a href="../asm/37225.html#37240">9178</a> (player 2)</li>
+<li>Bridge display: <a href="../asm/25788.html">print_bridge</a> (player 1) vs <a href="../asm/25829.html">print_bridge_player_2</a> (player 2)</li>
+<li>Plane movement: <a href="../asm/26099.html">handle_right</a> and <a href="../asm/26178.html">handle_left</a> both branch for player 2 attributes</li>
 <li>Death handling: multiple routines with <code>CP PLAYER_2</code> forks</li>
 </ul>
 </div>
@@ -59,7 +64,7 @@ mode was developed first and two-player support was bolted on afterward.
 <div class="box box-2">
 <div class="box-title">Island and bank rendering heavily duplicated</div>
 <div class="paragraph">
-Left bank and right bank rendering in <a href="../asm/27024.html">6990</a> (island edges) and <a href="../asm/27299.html">6AA3</a>
+Left bank and right bank rendering in <a href="../asm/27024.html">render_island_line</a> (island edges) and <a href="../asm/27299.html">render_terrain_fragment</a>
 (terrain fragments) follow identical logic but are implemented as separate
 code paths with only operand differences. The duplication is remarkably
 regular — same structure, same control flow, different constants.
@@ -87,12 +92,12 @@ program size:
 <tr>
 <td class="" colspan="1" rowspan="1">Terrain shapes</td>
 <td class="" colspan="1" rowspan="1">48 levels x 256 bytes = 12,288 bytes</td>
-<td class="" colspan="1" rowspan="1"><a href="../asm/38144.html">9500</a></td>
+<td class="" colspan="1" rowspan="1"><a href="../asm/38144.html">level_terrains</a></td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">Object spawns</td>
 <td class="" colspan="1" rowspan="1">48 levels x 256 bytes = 12,288 bytes</td>
-<td class="" colspan="1" rowspan="1"><a href="../asm/51200.html">C800</a></td>
+<td class="" colspan="1" rowspan="1"><a href="../asm/51200.html">level_objects</a></td>
 </tr>
 </table>
 </div>
@@ -112,9 +117,9 @@ an external tool that prioritized simplicity over compactness.
 <div class="box box-2">
 <div class="box-title">Unused control selection screen at $8561</div>
 <div class="paragraph">
-Text data at <a href="../asm/34145.html">8561</a> contains a formatted control selection menu that is
+Text data at <a href="../asm/34145.html">msg_control_menu</a> contains a formatted control selection menu that is
 never displayed by the game code. It appears to be a remnant of an earlier
-UI design, replaced by the current menu system implemented at <a href="../asm/31417.html">7AB9</a>.
+UI design, replaced by the current menu system implemented at <a href="../asm/31417.html">setup</a>.
 </div>
 </div>
 <div><span id="preShiftedSprites"></span></div>
@@ -122,7 +127,7 @@ UI design, replaced by the current menu system implemented at <a href="../asm/31
 <div class="box-title">Pre-shifted sprites (and wasted fighter frames)</div>
 <div class="paragraph">
 All sprites exist in 4 copies, each shifted by 2 pixels. The rendering
-routine at <a href="../asm/35614.html">8B1E</a> picks the correct pre-shifted frame based on the object's
+routine at <a href="../asm/35614.html">render_sprite</a> picks the correct pre-shifted frame based on the object's
 X position bits 1-2. This trades memory for speed: a single table lookup
 replaces what would otherwise be 0-6 bit-shift operations per scanline during
 rendering.
@@ -140,16 +145,16 @@ are wasted memory.
 <div class="paragraph">
 The sprite renderer uses self-modifying code to switch between blending modes
 at runtime. The opcodes OPCODE_XOR_B and OPCODE_OR_B are patched into the
-instruction addresses <a href="../asm/35900.html">8C3C</a> and <a href="../asm/35867.html">8C1B</a>:
+instruction addresses <a href="../asm/35900.html">sprite_draw_op</a> and <a href="../asm/35867.html">sprite_erase_op</a>:
 </div>
 <div class="paragraph">
 <ul class="">
-<li><a href="../asm/28742.html">7046</a> patches in XOR mode (for fighters and tanks)</li>
-<li><a href="../asm/29423.html">72EF</a> restores OR mode (default blending)</li>
+<li><a href="../asm/28742.html">blending_mode_xor_nop</a> patches in XOR mode (for fighters and tanks)</li>
+<li><a href="../asm/29423.html">blending_mode_or_or</a> restores OR mode (default blending)</li>
 </ul>
 </div>
 <div class="paragraph">
-Self-modifying code is also used for the fuel gauge at <a href="../asm/24868.html">6124</a>, where a
+Self-modifying code is also used for the fuel gauge at <a href="../asm/24868.html">calculate_fuel_gauge_offset</a>, where a
 computed sprite data offset is patched into an RLC instruction's operand.
 </div>
 </div>
@@ -157,7 +162,7 @@ computed sprite data offset is patched into an RLC instruction's operand.
 <div class="box box-1">
 <div class="box-title">Pixel-perfect collision via rendering pipeline</div>
 <div class="paragraph">
-The two-phase render pipeline at <a href="../asm/35644.html">8B3C</a> serves double duty — it both renders
+The two-phase render pipeline at <a href="../asm/35644.html">render_object</a> serves double duty — it both renders
 sprites and detects collisions in a single pass:
 </div>
 <div class="paragraph">
@@ -168,7 +173,7 @@ sprites and detects collisions in a single pass:
 </div>
 <div class="paragraph">
 If OR-ing a sprite pixel onto non-zero screen data, a collision is flagged
-and dispatched via <a href="../asm/24886.html">6136</a>. This eliminates the need for a separate collision
+and dispatched via <a href="../asm/24886.html">collision_dispatcher</a>. This eliminates the need for a separate collision
 map, but it also means that any non-zero screen content — including attribute
 artifacts, explosion debris, or even POKEd data — acts as a collision
 surface. See also <a href="bugs.html#screenCollision">Collision detection works on
@@ -179,9 +184,9 @@ raw screen pixels</a>.
 <div class="box box-2">
 <div class="box-title">Multi-channel interrupt-driven sound</div>
 <div class="paragraph">
-Sound routines are called from the ~50 Hz interrupt handler at <a href="../asm/27611.html">6BDB</a>, one
+Sound routines are called from the ~50 Hz interrupt handler at <a href="../asm/27611.html">int_handler</a>, one
 frame of audio output per interrupt. Multiple sounds can play simultaneously
-via a 6-bit bitmask at <a href="../asm/27568.html">6BB0</a> (fire, speed modes, low fuel, bonus life,
+via a 6-bit bitmask at <a href="../asm/27568.html">state_controls</a> (fire, speed modes, low fuel, bonus life,
 explosion).
 </div>
 <div class="paragraph">
@@ -197,7 +202,7 @@ explosion effect.
 <div class="box-title">Arithmetic directly on ASCII digit strings</div>
 <div class="paragraph">
 Instead of binary addition followed by BCD-to-ASCII conversion, the game
-manipulates score characters directly. The algorithm at <a href="../asm/37179.html">913B</a> works like
+manipulates score characters directly. The algorithm at <a href="../asm/37179.html">inc_player_1_score_digit</a> works like
 schoolbook long addition:
 </div>
 <div class="paragraph">
@@ -282,7 +287,7 @@ shift-and-subtract algorithm.
 <div class="box box-1">
 <div class="box-title">Increment-then-correct for bidirectional movement</div>
 <div class="paragraph">
-When a tank on a river bank moves (<a href="../asm/29432.html">72F8</a>, <a href="../asm/29442.html">7302</a>), the code always
+When a tank on a river bank moves (<a href="../asm/29432.html">invert_tank_offset_delta</a>, <a href="../asm/29442.html">operate_tank_on_bank</a>), the code always
 increments the coordinate first, then checks which bank the tank is on. If
 it is on the right bank, it subtracts twice the increment to effectively
 decrement:
@@ -301,10 +306,10 @@ looks counterintuitive when reading the code.
 <div class="box box-2">
 <div class="box-title">Stack pointer tricks for computed jumps</div>
 <div class="paragraph">
-The menu system at <a href="../asm/31417.html">7AB9</a> manipulates the stack pointer directly: it sets SP
-to point at <a href="../asm/30736.html">7810</a>, a table of return addresses. Each subsequent RET
+The menu system at <a href="../asm/31417.html">setup</a> manipulates the stack pointer directly: it sets SP
+to point at <a href="../asm/30736.html">setup_sp</a>, a table of return addresses. Each subsequent RET
 instruction pops an address from this table and jumps to it, creating a chain
-of computed GOTOs. The original stack pointer is saved at <a href="../asm/24451.html">5F83</a> and
+of computed GOTOs. The original stack pointer is saved at <a href="../asm/24451.html">saved_stack_pointer</a> and
 restored after the menu sequence completes.
 </div>
 </div>
@@ -312,9 +317,9 @@ restored after the menu sequence completes.
 <div class="box box-1">
 <div class="box-title">Useless trampoline at $76AC</div>
 <div class="paragraph">
-The routine at <a href="../asm/30380.html">76AC</a> (<code>jp_operate_viewport_slots</code>) is a single
-unconditional <code>JP <a href="../asm/28814.html">708E</a></code> instruction. It adds no logic —
-callers could jump to <a href="../asm/28814.html">708E</a> directly. This is likely a remnant of
+The routine at <a href="../asm/30380.html">jp_operate_viewport_slots</a> (<code>jp_operate_viewport_slots</code>) is a single
+unconditional <code>JP <a href="../asm/28814.html">operate_viewport_slots</a></code> instruction. It adds no logic —
+callers could jump to <a href="../asm/28814.html">operate_viewport_slots</a> directly. This is likely a remnant of
 refactoring where an intermediate routine was removed but its entry point was
 preserved.
 </div>
@@ -334,7 +339,7 @@ balloons only.
 <div class="box box-1">
 <div class="box-title">Unused explosion animation at $8AD8</div>
 <div class="paragraph">
-A 6-frame animation at <a href="../asm/35544.html">8AD8</a> shows a diamond shape expanding from a single
+A 6-frame animation at <a href="../asm/35544.html">sprite_unused_explosion</a> shows a diamond shape expanding from a single
 pixel to a full diamond (48 bytes total). This appears to be an
 early or alternate explosion effect that was cut from the final game. The
 sprites are already rendered as UDGs in the disassembly listing.
@@ -354,35 +359,35 @@ code:
 <th colspan="1" rowspan="1">Description</th>
 </tr>
 <tr>
-<td class="" colspan="1" rowspan="1"><a href="../asm/24431.html">5F6F</a></td>
+<td class="" colspan="1" rowspan="1"><a href="../asm/24431.html">state_unused_5F6F</a></td>
 <td class="" colspan="1" rowspan="1">State variable: cleared during init but never read</td>
 </tr>
 <tr>
-<td class="" colspan="1" rowspan="1"><a href="../asm/25780.html">64B4</a></td>
+<td class="" colspan="1" rowspan="1"><a href="../asm/25780.html">data_unused_64B4</a></td>
 <td class="" colspan="1" rowspan="1">Data area (purpose unknown)</td>
 </tr>
 <tr>
-<td class="" colspan="1" rowspan="1"><a href="../asm/27691.html">6C2B</a></td>
+<td class="" colspan="1" rowspan="1"><a href="../asm/27691.html">data_unused_6C2B</a></td>
 <td class="" colspan="1" rowspan="1">Data area (purpose unknown)</td>
 </tr>
 <tr>
-<td class="" colspan="1" rowspan="1"><a href="../asm/30503.html">7727</a></td>
+<td class="" colspan="1" rowspan="1"><a href="../asm/30503.html">data_unused_7727</a></td>
 <td class="" colspan="1" rowspan="1">Data area (purpose unknown)</td>
 </tr>
 <tr>
-<td class="" colspan="1" rowspan="1"><a href="../asm/33681.html">8391</a></td>
+<td class="" colspan="1" rowspan="1"><a href="../asm/33681.html">data_unused_8391</a></td>
 <td class="" colspan="1" rowspan="1">32-byte alternate road attributes using $3F/$C0 values (flash + invisible); possibly a debug or early version of the road rendering</td>
 </tr>
 <tr>
-<td class="" colspan="1" rowspan="1"><a href="../asm/35608.html">8B18</a></td>
+<td class="" colspan="1" rowspan="1"><a href="../asm/35608.html">data_unused_8B18</a></td>
 <td class="" colspan="1" rowspan="1">Data area in sprite renderer</td>
 </tr>
 <tr>
-<td class="" colspan="1" rowspan="1"><a href="../asm/35611.html">8B1B</a></td>
+<td class="" colspan="1" rowspan="1"><a href="../asm/35611.html">data_unused_8B1B</a></td>
 <td class="" colspan="1" rowspan="1">Data area in sprite renderer</td>
 </tr>
 <tr>
-<td class="" colspan="1" rowspan="1"><a href="../asm/35914.html">8C4A</a></td>
+<td class="" colspan="1" rowspan="1"><a href="../asm/35914.html">data_unused_8C4A</a></td>
 <td class="" colspan="1" rowspan="1">Data area in sprite renderer</td>
 </tr>
 </table>
@@ -392,7 +397,7 @@ code:
 <div class="box box-1">
 <div class="box-title">RETN instead of RETI in interrupt handler</div>
 <div class="paragraph">
-The interrupt handler at <a href="../asm/27611.html">6BDB</a> uses RETN (return from non-maskable
+The interrupt handler at <a href="../asm/27611.html">int_handler</a> uses RETN (return from non-maskable
 interrupt, opcode $ED $45) instead of RETI (return from maskable interrupt,
 opcode $ED $4D). On a standard ZX Spectrum without daisy-chained Z80
 peripherals, these are functionally equivalent — both copy IFF2 to IFF1 and
@@ -406,5 +411,6 @@ manage their interrupt priority chains.
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

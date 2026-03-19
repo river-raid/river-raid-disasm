@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6E86</title>
+<title>river-raid: Routine at 6E86</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,21 +34,24 @@ Next: <a href="28300.html">6E8C</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Sets CONTROLS_BIT_LOW_FUEL in <a href="27568.html">6BB0</a> to trigger the warbling low fuel warning sound.
+Sets CONTROLS_BIT_LOW_FUEL in <a href="27568.html">state_controls</a> to trigger the warbling low fuel warning sound.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">register_low_fuel</td>
 <td class="address-2"><span id="28294"></span>6E86</td>
 <td class="instruction">LD HL,$6BB0</td>
 <td class="comment-1" rowspan="2">Set CONTROLS_BIT_LOW_FUEL in controls state.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28297"></span>6E89</td>
 <td class="instruction">SET 3,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28299"></span>6E8B</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -65,5 +73,6 @@ Next: <a href="28300.html">6E8C</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

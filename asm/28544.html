@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6F80</title>
+<title>river-raid: Routine at 6F80</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -33,7 +38,7 @@ Called when a new attribute row scrolls into view (every 8 terrain fragments). R
 </div>
 <div class="paragraph">
 <ul class="">
-<li>Level data starts at <a href="51200.html">C800</a>, with SIZE_LEVEL_SLOTS ($100) bytes per level</li>
+<li>Level data starts at <a href="51200.html">level_objects</a>, with SIZE_LEVEL_SLOTS ($100) bytes per level</li>
 <li>Slot format: 2 bytes [D, E] where E = X position (0 = empty), D = type/flags</li>
 <li>D bit 3: rock flag, D bits 0-2: object type (7 = fuel depot)</li>
 </ul>
@@ -42,137 +47,167 @@ Called when a new attribute row scrolls into view (every 8 terrain fragments). R
 </td>
 </tr>
 <tr>
+<td class="asm-label">spawn_objects_from_level_slot</td>
 <td class="address-2"><span id="28544"></span>6F80</td>
 <td class="instruction">LD A,$00</td>
-<td class="comment-1" rowspan="2">Clear collision mode (<a href="24309.html">5EF5</a>).</td>
+<td class="comment-1" rowspan="2">Clear collision mode (<a href="24309.html">state_collision_mode</a>).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28546"></span>6F82</td>
 <td class="instruction">LD ($5EF5),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28549"></span>6F85</td>
 <td class="instruction">LD HL,$C800</td>
-<td class="comment-1" rowspan="3">Calculate level base address: HL = <a href="51200.html">C800</a> + (<a href="24304.html">5EF0</a> * SIZE_LEVEL_SLOTS).</td>
+<td class="comment-1" rowspan="3">Calculate level base address: HL = <a href="51200.html">level_objects</a> + (<a href="24304.html">state_bridge_index</a> * SIZE_LEVEL_SLOTS).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28552"></span>6F88</td>
 <td class="instruction">LD DE,$0100</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28555"></span>6F8B</td>
 <td class="instruction">LD A,($5EF0)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28558"></span>6F8E</td>
 <td class="instruction">OR A</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28559"></span>6F8F</td>
 <td class="instruction">SBC HL,DE</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label">locate_level</td>
 <td class="address-2"><span id="28561"></span>6F91</td>
 <td class="instruction">ADD HL,DE</td>
 <td class="comment-1" rowspan="3">Loop: advance HL by SIZE_LEVEL_SLOTS for each level up to current.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28562"></span>6F92</td>
 <td class="instruction">DEC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28563"></span>6F93</td>
-<td class="instruction">JR NZ,$6F91</td>
+<td class="instruction">JR NZ,<a href="28544.html#28561">locate_level</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28565"></span>6F95</td>
 <td class="instruction">LD BC,($5F70)</td>
-<td class="comment-1" rowspan="7">Calculate slot offset: BC = (<a href="24432.html">5F70</a> &gt;&gt; 2) with bit 0 cleared. Read [D, E] from (HL + BC).</td>
+<td class="comment-1" rowspan="7">Calculate slot offset: BC = (<a href="24432.html">state_scroll_offset</a> &gt;&gt; 2) with bit 0 cleared. Read [D, E] from (HL + BC).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28569"></span>6F99</td>
 <td class="instruction">SRL B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28571"></span>6F9B</td>
 <td class="instruction">RR C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28573"></span>6F9D</td>
 <td class="instruction">SRL B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28575"></span>6F9F</td>
 <td class="instruction">RR C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28577"></span>6FA1</td>
 <td class="instruction">RES 0,C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28579"></span>6FA3</td>
 <td class="instruction">ADD HL,BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28580"></span>6FA4</td>
 <td class="instruction">LD D,(HL)</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28581"></span>6FA5</td>
 <td class="instruction">INC HL</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28582"></span>6FA6</td>
 <td class="instruction">LD E,(HL)</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28583"></span>6FA7</td>
 <td class="instruction">LD A,E</td>
 <td class="comment-1" rowspan="3">If E == 0 (empty slot), return.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28584"></span>6FA8</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28586"></span>6FAA</td>
 <td class="instruction">RET Z</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28587"></span>6FAB</td>
 <td class="instruction">BIT 3,D</td>
-<td class="comment-1" rowspan="2">If D bit 3 set (rock), jump to <a href="28603.html">6FBB</a>.</td>
+<td class="comment-1" rowspan="2">If D bit 3 set (rock), jump to <a href="28603.html">render_rock</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28589"></span>6FAD</td>
-<td class="instruction">JP NZ,<a href="28603.html">$6FBB</a></td>
+<td class="instruction">JP NZ,<a href="28603.html">render_rock</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28592"></span>6FB0</td>
 <td class="instruction">LD A,D</td>
-<td class="comment-1" rowspan="3">Get object type (D AND $07). If type == OBJECT_FUEL (7), jump to <a href="28753.html">7051</a>.</td>
+<td class="comment-1" rowspan="3">Get object type (D AND $07). If type == OBJECT_FUEL (7), jump to <a href="28753.html">render_fuel</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28593"></span>6FB1</td>
 <td class="instruction">AND $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28595"></span>6FB3</td>
 <td class="instruction">CP $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28597"></span>6FB5</td>
-<td class="instruction">JP Z,<a href="28753.html">$7051</a></td>
+<td class="instruction">JP Z,<a href="28753.html">render_fuel</a></td>
 <td class="comment-1" rowspan="2">Otherwise render enemy.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28600"></span>6FB8</td>
-<td class="instruction">JP <a href="28662.html">$6FF6</a></td>
+<td class="instruction">JP <a href="28662.html">render_enemy</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -191,5 +226,6 @@ Next: <a href="28603.html">6FBB</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

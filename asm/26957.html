@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 694D</title>
+<title>river-raid: Routine at 694D</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="26979.html">6963</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Called when all 64 terrain fragments of the current bridge are completed. Resets Y-position and advances to the next bridge. Bridge index wraps from 49 back to 1, but the player's progress counter in <a href="24426.html">5F6A</a> continues incrementing for the wraparound calculation in <a href="26857.html">68E9</a>.
+Called when all 64 terrain fragments of the current bridge are completed. Resets Y-position and advances to the next bridge. Bridge index wraps from 49 back to 1, but the player's progress counter in <a href="24426.html">state_bridge_player_1</a> continues incrementing for the wraparound calculation in <a href="26857.html">init_current_bridge</a>.
 </div>
 </div>
 <table class="output">
@@ -44,41 +49,50 @@ Called when all 64 terrain fragments of the current bridge are completed. Resets
 </td>
 </tr>
 <tr>
+<td class="asm-label">increase_bridge_index</td>
 <td class="address-2"><span id="26957"></span>694D</td>
 <td class="instruction">LD DE,$0000</td>
 <td class="comment-1" rowspan="2">Reset Y-position to start of new bridge.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26960"></span>6950</td>
 <td class="instruction">LD ($5F70),DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26964"></span>6954</td>
 <td class="instruction">LD A,($5EF0)</td>
-<td class="comment-1" rowspan="3">Increment bridge index at <a href="24304.html">5EF0</a>.</td>
+<td class="comment-1" rowspan="3">Increment bridge index at <a href="24304.html">state_bridge_index</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26967"></span>6957</td>
 <td class="instruction">INC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26968"></span>6958</td>
 <td class="instruction">LD ($5EF0),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26971"></span>695B</td>
 <td class="instruction">CP $31</td>
 <td class="comment-1" rowspan="4">If index reaches $31 (49), wrap to 1.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26973"></span>695D</td>
-<td class="instruction">JP Z,<a href="26979.html">$6963</a></td>
+<td class="instruction">JP Z,<a href="26979.html">next_bridge_index_overflow</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26976"></span>6960</td>
 <td class="instruction">LD A,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26978"></span>6962</td>
 <td class="instruction">RET</td>
 </tr>
@@ -99,5 +113,6 @@ Next: <a href="26979.html">6963</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

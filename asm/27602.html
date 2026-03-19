@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6BD2</title>
+<title>river-raid: Routine at 6BD2</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,17 +40,20 @@ Resets the scrolling text pointer and jumps back to the title screen.
 </td>
 </tr>
 <tr>
+<td class="asm-label">select_controls</td>
 <td class="address-2"><span id="27602"></span>6BD2</td>
 <td class="instruction">LD HL,$8182</td>
-<td class="comment-1" rowspan="2">Reset text pointer to <a href="33154.html">8182</a> (credits text start).</td>
+<td class="comment-1" rowspan="2">Reset text pointer to <a href="33154.html">msg_credits</a> (credits text start).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27605"></span>6BD5</td>
 <td class="instruction">LD ($5F7E),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27608"></span>6BD8</td>
-<td class="instruction">JP <a href="23814.html">$5D06</a></td>
+<td class="instruction">JP <a href="23814.html">return_to_control_selection</a></td>
 <td class="comment-1" rowspan="1">Jump to title screen initialization.</td>
 </tr>
 </table>
@@ -65,5 +73,6 @@ Next: <a href="27611.html">6BDB</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

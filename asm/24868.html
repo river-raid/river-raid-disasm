@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6124</title>
+<title>river-raid: Routine at 6124</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -57,48 +62,59 @@ Computes a sprite data offset for the fuel gauge display using the formula: offs
 </td>
 </tr>
 <tr>
+<td class="asm-label">calculate_fuel_gauge_offset</td>
 <td class="address-2"><span id="24868"></span>6124</td>
 <td class="instruction">LD A,$07</td>
 <td class="comment-1" rowspan="9">Calculate offset = (7 - B) * 8 + D and patch into next instruction.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24870"></span>6126</td>
 <td class="instruction">PUSH DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24871"></span>6127</td>
 <td class="instruction">SUB B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24872"></span>6128</td>
 <td class="instruction">SLA A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24874"></span>612A</td>
 <td class="instruction">SLA A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24876"></span>612C</td>
 <td class="instruction">SLA A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24878"></span>612E</td>
 <td class="instruction">POP DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24879"></span>612F</td>
 <td class="instruction">ADD A,D</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24880"></span>6130</td>
 <td class="instruction">LD ($6134),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24883"></span>6133</td>
 <td class="instruction">RLC B</td>
 <td class="comment-1" rowspan="1">Rotate B left through carry.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24885"></span>6135</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -120,5 +136,6 @@ Next: <a href="24886.html">6136</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

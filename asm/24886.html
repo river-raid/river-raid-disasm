@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6136</title>
+<title>river-raid: Routine at 6136</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="24926.html">615E</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Central collision handler called during sprite rendering (via <a href="35909.html">8C45</a>) when pixel overlap is detected. Saves registers, reads collision mode from <a href="24309.html">5EF5</a>, and dispatches to the appropriate handler.
+Central collision handler called during sprite rendering (via <a href="35909.html">jp_collision_dispatcher</a>) when pixel overlap is detected. Saves registers, reads collision mode from <a href="24309.html">state_collision_mode</a>, and dispatches to the appropriate handler.
 </div>
 <div class="paragraph">
 <table class="default">
@@ -40,27 +45,27 @@ Central collision handler called during sprite rendering (via <a href="35909.htm
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">COLLISION_MODE_NONE ($00)</td>
-<td class="" colspan="1" rowspan="1"><a href="35867.html#35899">8C3B</a></td>
+<td class="" colspan="1" rowspan="1"><a href="35867.html#35899">handle_collision_mode_none</a></td>
 <td class="" colspan="1" rowspan="1">Rendering only</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">COLLISION_MODE_FUEL_DEPOT ($01)</td>
-<td class="" colspan="1" rowspan="1"><a href="25174.html">6256</a></td>
+<td class="" colspan="1" rowspan="1"><a href="25174.html">handle_collision_mode_fuel_depot</a></td>
 <td class="" colspan="1" rowspan="1">Fuel depot refuel</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">COLLISION_MODE_MISSILE ($02)</td>
-<td class="" colspan="1" rowspan="1"><a href="25019.html">61BB</a></td>
+<td class="" colspan="1" rowspan="1"><a href="25019.html">check_collision</a></td>
 <td class="" colspan="1" rowspan="1">Missile hit</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">COLLISION_MODE_FIGHTER ($03)</td>
-<td class="" colspan="1" rowspan="1"><a href="24926.html">615E</a></td>
+<td class="" colspan="1" rowspan="1"><a href="24926.html">handle_collision_mode_fighter</a></td>
 <td class="" colspan="1" rowspan="1">Fighter hit</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">COLLISION_MODE_HELICOPTER_MISSILE ($04)</td>
-<td class="" colspan="1" rowspan="1"><a href="29717.html">7415</a></td>
+<td class="" colspan="1" rowspan="1"><a href="29717.html">handle_collision_mode_helicopter_missile</a></td>
 <td class="" colspan="1" rowspan="1">Enemy missile</td>
 </tr>
 </table>
@@ -69,66 +74,81 @@ Central collision handler called during sprite rendering (via <a href="35909.htm
 </td>
 </tr>
 <tr>
+<td class="asm-label">collision_dispatcher</td>
 <td class="address-2"><span id="24886"></span>6136</td>
 <td class="instruction">POP HL</td>
-<td class="comment-1" rowspan="4">Save registers: return address to <a href="24453.html">5F85</a>, DE to <a href="24455.html">5F87</a>, BC to <a href="24457.html">5F89</a>.</td>
+<td class="comment-1" rowspan="4">Save registers: return address to <a href="24453.html">collision_saved_hl</a>, DE to <a href="24455.html">collision_saved_de</a>, BC to <a href="24457.html">collision_saved_bc</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24887"></span>6137</td>
 <td class="instruction">LD ($5F85),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24890"></span>613A</td>
 <td class="instruction">LD ($5F87),DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24894"></span>613E</td>
 <td class="instruction">LD ($5F89),BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24898"></span>6142</td>
 <td class="instruction">LD A,($5EF5)</td>
 <td class="comment-1" rowspan="11">Load collision mode and dispatch to handler (see table above).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24901"></span>6145</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24903"></span>6147</td>
-<td class="instruction">JP Z,<a href="35867.html#35899">$8C3B</a></td>
+<td class="instruction">JP Z,<a href="35867.html#35899">handle_collision_mode_none</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24906"></span>614A</td>
 <td class="instruction">CP $01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24908"></span>614C</td>
-<td class="instruction">JP Z,<a href="25174.html">$6256</a></td>
+<td class="instruction">JP Z,<a href="25174.html">handle_collision_mode_fuel_depot</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24911"></span>614F</td>
 <td class="instruction">CP $02</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24913"></span>6151</td>
-<td class="instruction">JP Z,<a href="25019.html">$61BB</a></td>
+<td class="instruction">JP Z,<a href="25019.html">check_collision</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24916"></span>6154</td>
 <td class="instruction">CP $03</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24918"></span>6156</td>
-<td class="instruction">JP Z,<a href="24926.html">$615E</a></td>
+<td class="instruction">JP Z,<a href="24926.html">handle_collision_mode_fighter</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24921"></span>6159</td>
 <td class="instruction">CP $04</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24923"></span>615B</td>
-<td class="instruction">JP Z,<a href="29717.html">$7415</a></td>
+<td class="instruction">JP Z,<a href="29717.html">handle_collision_mode_helicopter_missile</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -147,5 +167,6 @@ Next: <a href="24926.html">615E</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

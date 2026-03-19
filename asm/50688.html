@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Data at C600</title>
+<title>river-raid: Data at C600</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-b">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Data</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="50793.html">C669</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Defines the shape of islands that appear in the river. Each island is 3 bytes. Referenced from terrain fragment byte 3 (upper 6 bits = island index × 4). Initialized by <a href="26987.html">696B</a>.
+Defines the shape of islands that appear in the river. Each island is 3 bytes. Referenced from terrain fragment byte 3 (upper 6 bits = island index × 4). Initialized by <a href="26987.html">handle_island</a>.
 </div>
 <div class="paragraph">
 <table class="default">
@@ -39,7 +44,7 @@ Defines the shape of islands that appear in the river. Each island is 3 bytes. R
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">0</td>
-<td class="" colspan="1" rowspan="1">Profile index (0-14): selects shape from <a href="32867.html">8063</a></td>
+<td class="" colspan="1" rowspan="1">Profile index (0-14): selects shape from <a href="32867.html">data_terrain_profiles</a></td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">1</td>
@@ -52,182 +57,217 @@ Defines the shape of islands that appear in the river. Each island is 3 bytes. R
 </table>
 </div>
 <div class="paragraph">
-Edge mode controls right edge calculation in <a href="27024.html">6990</a>: mode 1 creates symmetric islands (right = 120 - left), mode 2 creates fixed-width channels (right = 60 + left).
+Edge mode controls right edge calculation in <a href="27024.html">render_island_line</a>: mode 1 creates symmetric islands (right = 120 - left), mode 2 creates fixed-width channels (right = 60 + left).
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">data_islands</td>
 <td class="address-1"><span id="50688"></span>C600</td>
 <td class="instruction">DEFB $09,$00,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50691"></span>C603</td>
 <td class="instruction">DEFB $0A,$00,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50694"></span>C606</td>
 <td class="instruction">DEFB $07,$00,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50697"></span>C609</td>
 <td class="instruction">DEFB $08,$00,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50700"></span>C60C</td>
 <td class="instruction">DEFB $0C,$00,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50703"></span>C60F</td>
 <td class="instruction">DEFB $0D,$00,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50706"></span>C612</td>
 <td class="instruction">DEFB $0E,$10,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50709"></span>C615</td>
 <td class="instruction">DEFB $0F,$10,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50712"></span>C618</td>
 <td class="instruction">DEFB $0B,$18,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50715"></span>C61B</td>
 <td class="instruction">DEFB $0E,$18,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50718"></span>C61E</td>
 <td class="instruction">DEFB $0F,$20,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50721"></span>C621</td>
 <td class="instruction">DEFB $0B,$20,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50724"></span>C624</td>
 <td class="instruction">DEFB $05,$10,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50727"></span>C627</td>
 <td class="instruction">DEFB $06,$10,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50730"></span>C62A</td>
 <td class="instruction">DEFB $05,$18,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50733"></span>C62D</td>
 <td class="instruction">DEFB $06,$18,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50736"></span>C630</td>
 <td class="instruction">DEFB $05,$20,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50739"></span>C633</td>
 <td class="instruction">DEFB $06,$20,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50742"></span>C636</td>
 <td class="instruction">DEFB $05,$28,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50745"></span>C639</td>
 <td class="instruction">DEFB $06,$28,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50748"></span>C63C</td>
 <td class="instruction">DEFB $0E,$28,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50751"></span>C63F</td>
 <td class="instruction">DEFB $0F,$28,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50754"></span>C642</td>
 <td class="instruction">DEFB $01,$18,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50757"></span>C645</td>
 <td class="instruction">DEFB $07,$20,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50760"></span>C648</td>
 <td class="instruction">DEFB $08,$20,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50763"></span>C64B</td>
 <td class="instruction">DEFB $09,$20,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50766"></span>C64E</td>
 <td class="instruction">DEFB $0A,$20,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50769"></span>C651</td>
 <td class="instruction">DEFB $05,$08,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50772"></span>C654</td>
 <td class="instruction">DEFB $06,$08,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50775"></span>C657</td>
 <td class="instruction">DEFB $07,$18,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50778"></span>C65A</td>
 <td class="instruction">DEFB $08,$18,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50781"></span>C65D</td>
 <td class="instruction">DEFB $0B,$08,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50784"></span>C660</td>
 <td class="instruction">DEFB $0F,$08,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50787"></span>C663</td>
 <td class="instruction">DEFB $05,$00,$01</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="50790"></span>C666</td>
 <td class="instruction">DEFB $06,$00,$01</td>
 <td class="comment-0" rowspan="1"></td>
@@ -249,5 +289,6 @@ Next: <a href="50793.html">C669</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

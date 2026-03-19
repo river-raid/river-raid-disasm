@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6B6B</title>
+<title>river-raid: Routine at 6B6B</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,17 +40,20 @@ Helper for special terrain: loads canal sprite for the side adjacent to the road
 </td>
 </tr>
 <tr>
+<td class="asm-label">load_canal_road_side</td>
 <td class="address-2"><span id="27499"></span>6B6B</td>
 <td class="instruction">LD A,$02</td>
 <td class="comment-1" rowspan="3">A = 2 (road section), HL = sprite_terrain_pre_post_bridge, jump to continue.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27501"></span>6B6D</td>
 <td class="instruction">LD HL,$8331</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27504"></span>6B70</td>
-<td class="instruction">JP <a href="27515.html#27535">$6B8F</a></td>
+<td class="instruction">JP <a href="27515.html#27535">handle_special_terrain_fragment_continue</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -64,5 +72,6 @@ Next: <a href="27507.html">6B73</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

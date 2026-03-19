@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 5D10</title>
+<title>river-raid: Routine at 5D10</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -42,52 +47,63 @@ This routine is called after the user selects controls and game mode from the co
 </td>
 </tr>
 <tr>
+<td class="asm-label">start_gameplay_or_overview</td>
 <td class="address-2"><span id="23824"></span>5D10</td>
 <td class="instruction">LD A,$FC</td>
 <td class="comment-1" rowspan="3">Restore IM 2 (vectored interrupts) and enable interrupts.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23826"></span>5D12</td>
 <td class="instruction">LD I,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23828"></span>5D14</td>
 <td class="instruction">IM 2</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23830"></span>5D16</td>
 <td class="instruction">EI</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23831"></span>5D17</td>
 <td class="instruction">LD A,($7800)</td>
 <td class="comment-1" rowspan="2">Copy selected control type to state_input_interface.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23834"></span>5D1A</td>
 <td class="instruction">LD ($5F67),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23837"></span>5D1D</td>
 <td class="instruction">LD A,($7801)</td>
 <td class="comment-1" rowspan="5">If overview mode was selected, start overview; otherwise initialize and start gameplay.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23840"></span>5D20</td>
 <td class="instruction">CP $01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23842"></span>5D22</td>
-<td class="instruction">JP Z,<a href="23851.html">$5D2B</a></td>
+<td class="instruction">JP Z,<a href="23851.html">start_overview</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23845"></span>5D25</td>
-<td class="instruction">CALL <a href="23876.html">$5D44</a></td>
+<td class="instruction">CALL <a href="23876.html">init_state</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="23848"></span>5D28</td>
-<td class="instruction">JP <a href="23974.html">$5DA6</a></td>
+<td class="instruction">JP <a href="23974.html">play</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -106,5 +122,6 @@ Next: <a href="23851.html">5D2B</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

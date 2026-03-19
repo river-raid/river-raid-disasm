@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6EC8</title>
+<title>river-raid: Routine at 6EC8</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,350 +34,428 @@ Next: <a href="28515.html">6F63</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Iterates through the explosions set at <a href="24366.html">5F2E</a> via pointer <a href="24418.html">5F62</a>. Each explosion has 6 animation frames before being removed. Adjusts Y position based on scroll speed.
+Iterates through the explosions set at <a href="24366.html">exploding_fragments</a> via pointer <a href="24418.html">exploding_fragments_ptr</a>. Each explosion has 6 animation frames before being removed. Adjusts Y position based on scroll speed.
 </div>
 <div class="paragraph">
 <ul class="">
 <li>Entry format: [X_pos, Y_offset, frame_counter] where frame_counter bits 0-6 = frame (1-6), bit 7 = erase flag</li>
-<li>Frame 1,5: small explosion (<a href="28515.html">6F63</a>)</li>
-<li>Frame 2,4: medium explosion (<a href="28519.html">6F67</a>)</li>
-<li>Frame 3: large explosion (<a href="28523.html">6F6B</a>)</li>
-<li>Frame 6: erase explosion (<a href="28527.html">6F6F</a>) then remove entry</li>
+<li>Frame 1,5: small explosion (<a href="28515.html">ld_sprite_explosion_f1</a>)</li>
+<li>Frame 2,4: medium explosion (<a href="28519.html">ld_sprite_explosion_f2</a>)</li>
+<li>Frame 3: large explosion (<a href="28523.html">ld_sprite_explosion_f3</a>)</li>
+<li>Frame 6: erase explosion (<a href="28527.html">ld_sprite_explosion_erasure</a>) then remove entry</li>
 </ul>
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">render_explosions</td>
 <td class="address-2"><span id="28360"></span>6EC8</td>
 <td class="instruction">LD HL,($5F62)</td>
-<td class="comment-1" rowspan="8">Load 3-byte entry from set: C=X, B=Y offset, D=frame. Advance pointer <a href="24418.html">5F62</a>.</td>
+<td class="comment-1" rowspan="8">Load 3-byte entry from set: C=X, B=Y offset, D=frame. Advance pointer <a href="24418.html">exploding_fragments_ptr</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28363"></span>6ECB</td>
 <td class="instruction">LD C,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28364"></span>6ECC</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28365"></span>6ECD</td>
 <td class="instruction">LD B,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28366"></span>6ECE</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28367"></span>6ECF</td>
 <td class="instruction">LD D,(HL)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28368"></span>6ED0</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28369"></span>6ED1</td>
 <td class="instruction">LD ($5F62),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28372"></span>6ED4</td>
 <td class="instruction">LD A,C</td>
 <td class="comment-1" rowspan="3">Skip empty entries, continue to next.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28373"></span>6ED5</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28375"></span>6ED7</td>
-<td class="instruction">JP Z,$6EC8</td>
+<td class="instruction">JP Z,<a href="28360.html#28360">render_explosions</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28378"></span>6EDA</td>
 <td class="instruction">CP $FF</td>
-<td class="comment-1" rowspan="2">If end-of-set marker, jump to <a href="28531.html">6F73</a> to reset pointer.</td>
+<td class="comment-1" rowspan="2">If end-of-set marker, jump to <a href="28531.html">reset_explosions_pointer</a> to reset pointer.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28380"></span>6EDC</td>
-<td class="instruction">JP Z,<a href="28531.html">$6F73</a></td>
+<td class="instruction">JP Z,<a href="28531.html">reset_explosions_pointer</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28383"></span>6EDF</td>
 <td class="instruction">LD A,($5F64)</td>
-<td class="comment-1" rowspan="5">Add scroll speed (<a href="24420.html">5F64</a>) to Y offset, store back.</td>
+<td class="comment-1" rowspan="5">Add scroll speed (<a href="24420.html">state_speed</a>) to Y offset, store back.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28386"></span>6EE2</td>
 <td class="instruction">ADD A,B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28387"></span>6EE3</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28388"></span>6EE4</td>
 <td class="instruction">DEC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28389"></span>6EE5</td>
 <td class="instruction">LD (HL),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28390"></span>6EE6</td>
 <td class="instruction">LD A,D</td>
 <td class="comment-1" rowspan="5">Extract frame number (bits 0-6), increment. If frame == 7, entry complete.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28391"></span>6EE7</td>
 <td class="instruction">AND $7F</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28393"></span>6EE9</td>
 <td class="instruction">INC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28394"></span>6EEA</td>
 <td class="instruction">CP $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28396"></span>6EEC</td>
-<td class="instruction">JP Z,<a href="28538.html">$6F7A</a></td>
+<td class="instruction">JP Z,<a href="28538.html">remove_explosion_entry</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28399"></span>6EEF</td>
 <td class="instruction">LD A,D</td>
 <td class="comment-1" rowspan="4">Increment frame counter and store back.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28400"></span>6EF0</td>
 <td class="instruction">INC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28401"></span>6EF1</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28402"></span>6EF2</td>
 <td class="instruction">LD (HL),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28403"></span>6EF3</td>
 <td class="instruction">LD A,B</td>
 <td class="comment-1" rowspan="4">Check if Y position is off-screen (AND $88 == $88). Skip if so.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28404"></span>6EF4</td>
 <td class="instruction">AND $88</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28406"></span>6EF6</td>
 <td class="instruction">CP $88</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28408"></span>6EF8</td>
-<td class="instruction">JP Z,$6EC8</td>
+<td class="instruction">JP Z,<a href="28360.html#28360">render_explosions</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28411"></span>6EFB</td>
 <td class="instruction">LD A,B</td>
 <td class="comment-1" rowspan="4">Check if Y position is off-screen (AND $90 == $90). Skip if so.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28412"></span>6EFC</td>
 <td class="instruction">AND $90</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28414"></span>6EFE</td>
 <td class="instruction">CP $90</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28416"></span>6F00</td>
-<td class="instruction">JP Z,$6EC8</td>
+<td class="instruction">JP Z,<a href="28360.html#28360">render_explosions</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28419"></span>6F03</td>
 <td class="instruction">LD A,(HL)</td>
 <td class="comment-1" rowspan="3">Get frame number. Load sprite for frame 1.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28420"></span>6F04</td>
 <td class="instruction">AND $7F</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28422"></span>6F06</td>
 <td class="instruction">CP $01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28424"></span>6F08</td>
-<td class="instruction">CALL Z,<a href="28515.html">$6F63</a></td>
+<td class="instruction">CALL Z,<a href="28515.html">ld_sprite_explosion_f1</a></td>
 <td class="comment-1" rowspan="2">Load sprite for frame 2.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28427"></span>6F0B</td>
 <td class="instruction">CP $02</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28429"></span>6F0D</td>
-<td class="instruction">CALL Z,<a href="28519.html">$6F67</a></td>
+<td class="instruction">CALL Z,<a href="28519.html">ld_sprite_explosion_f2</a></td>
 <td class="comment-1" rowspan="2">Load sprite for frame 3.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28432"></span>6F10</td>
 <td class="instruction">CP $03</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28434"></span>6F12</td>
-<td class="instruction">CALL Z,<a href="28523.html">$6F6B</a></td>
+<td class="instruction">CALL Z,<a href="28523.html">ld_sprite_explosion_f3</a></td>
 <td class="comment-1" rowspan="2">Load sprite for frame 4 (same as 2).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28437"></span>6F15</td>
 <td class="instruction">CP $04</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28439"></span>6F17</td>
-<td class="instruction">CALL Z,<a href="28519.html">$6F67</a></td>
+<td class="instruction">CALL Z,<a href="28519.html">ld_sprite_explosion_f2</a></td>
 <td class="comment-1" rowspan="2">Load sprite for frame 5 (same as 1).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28442"></span>6F1A</td>
 <td class="instruction">CP $05</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28444"></span>6F1C</td>
-<td class="instruction">CALL Z,<a href="28515.html">$6F63</a></td>
+<td class="instruction">CALL Z,<a href="28515.html">ld_sprite_explosion_f1</a></td>
 <td class="comment-1" rowspan="3">Load erasure sprite for frame 6.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28447"></span>6F1F</td>
 <td class="instruction">CP $06</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28449"></span>6F21</td>
-<td class="instruction">CALL Z,<a href="28527.html">$6F6F</a></td>
+<td class="instruction">CALL Z,<a href="28527.html">ld_sprite_explosion_erasure</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28452"></span>6F24</td>
 <td class="instruction">LD A,(HL)</td>
 <td class="comment-1" rowspan="13">Set up sprite rendering: store sprite pointer, set collision mode to none, configure rendering parameters.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28453"></span>6F25</td>
 <td class="instruction">LD HL,$82C5</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28456"></span>6F28</td>
 <td class="instruction">LD ($8B0E),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28459"></span>6F2B</td>
 <td class="instruction">LD ($8B10),DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28463"></span>6F2F</td>
 <td class="instruction">LD D,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28464"></span>6F30</td>
 <td class="instruction">LD A,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28466"></span>6F32</td>
 <td class="instruction">LD ($5EF5),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28469"></span>6F35</td>
 <td class="instruction">LD A,$02</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28471"></span>6F37</td>
 <td class="instruction">LD ($8B1A),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28474"></span>6F3A</td>
 <td class="instruction">LD A,D</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28475"></span>6F3B</td>
 <td class="instruction">LD DE,$080C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28478"></span>6F3E</td>
 <td class="instruction">LD ($8B0A),BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28482"></span>6F42</td>
 <td class="instruction">LD ($8B0C),BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28486"></span>6F46</td>
 <td class="instruction">LD BC,$0000</td>
 <td class="comment-1" rowspan="7">Check bit 7 of frame. If set, skip first render call.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28489"></span>6F49</td>
 <td class="instruction">BIT 7,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28491"></span>6F4B</td>
-<td class="instruction">JP NZ,$6F5B</td>
+<td class="instruction">JP NZ,<a href="28360.html#28507">render_explosions_next</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28494"></span>6F4E</td>
 <td class="instruction">PUSH DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28495"></span>6F4F</td>
 <td class="instruction">PUSH BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28496"></span>6F50</td>
 <td class="instruction">PUSH AF</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28497"></span>6F51</td>
 <td class="instruction">PUSH HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28498"></span>6F52</td>
 <td class="instruction">LD A,$02</td>
 <td class="comment-1" rowspan="2">Call first sprite rendering pass.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28500"></span>6F54</td>
-<td class="instruction">CALL <a href="37517.html">$928D</a></td>
+<td class="instruction">CALL <a href="37517.html">set_sprite_attributes</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28503"></span>6F57</td>
 <td class="instruction">POP HL</td>
 <td class="comment-1" rowspan="4">Restore registers from stack.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28504"></span>6F58</td>
 <td class="instruction">POP AF</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28505"></span>6F59</td>
 <td class="instruction">POP BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28506"></span>6F5A</td>
 <td class="instruction">POP DE</td>
 </tr>
 <tr>
+<td class="asm-label">render_explosions_next</td>
 <td class="address-2"><span id="28507"></span>6F5B</td>
 <td class="instruction">LD A,$02</td>
 <td class="comment-1" rowspan="3">Call second sprite rendering pass, loop to next entry.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28509"></span>6F5D</td>
-<td class="instruction">CALL <a href="35644.html#35672">$8B58</a></td>
+<td class="instruction">CALL <a href="35644.html#35672">render_object_entry</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28512"></span>6F60</td>
-<td class="instruction">JP $6EC8</td>
+<td class="instruction">JP <a href="28360.html#28360">render_explosions</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -391,5 +474,6 @@ Next: <a href="28515.html">6F63</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

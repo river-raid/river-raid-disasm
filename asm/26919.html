@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6927</title>
+<title>river-raid: Routine at 6927</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,36 +40,44 @@ Copies road/bridge attributes to the bottom attribute row and clears the bridge 
 </td>
 </tr>
 <tr>
+<td class="asm-label">render_bridge_attributes</td>
 <td class="address-2"><span id="26919"></span>6927</td>
 <td class="instruction">LD DE,$5BDF</td>
 <td class="comment-1" rowspan="4">Copy bridge/road attributes to bottom row.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26922"></span>692A</td>
 <td class="instruction">LD HL,$8371</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26925"></span>692D</td>
 <td class="instruction">LD BC,$0020</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26928"></span>6930</td>
 <td class="instruction">LDIR</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26930"></span>6932</td>
 <td class="instruction">LD A,$00</td>
 <td class="comment-1" rowspan="3">Clear bridge section flag and spawn objects for new row.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26932"></span>6934</td>
 <td class="instruction">LD ($5F6C),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26935"></span>6937</td>
-<td class="instruction">CALL <a href="28544.html">$6F80</a></td>
+<td class="instruction">CALL <a href="28544.html">spawn_objects_from_level_slot</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="26938"></span>693A</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -86,5 +99,6 @@ Next: <a href="26939.html">693B</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 7224</title>
+<title>river-raid: Routine at 7224</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="29256.html">7248</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Processes objects that haven't been activated yet. Routes balloons to <a href="30380.html">76AC</a>, checks animation timing for helicopter rotor animation.
+Processes objects that haven't been activated yet. Routes balloons to <a href="30380.html">jp_operate_viewport_slots</a>, checks animation timing for helicopter rotor animation.
 </div>
 </div>
 <table class="input">
@@ -52,70 +57,85 @@ Processes objects that haven't been activated yet. Routes balloons to <a href="3
 </td>
 </tr>
 <tr>
+<td class="asm-label">handle_inactive_object</td>
 <td class="address-2"><span id="29220"></span>7224</td>
 <td class="instruction">LD A,D</td>
-<td class="comment-1" rowspan="3">If object is OBJECT_BALLOON, jump to <a href="30380.html">76AC</a>.</td>
+<td class="comment-1" rowspan="3">If object is OBJECT_BALLOON, jump to <a href="30380.html">jp_operate_viewport_slots</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29221"></span>7225</td>
 <td class="instruction">CP $06</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29223"></span>7227</td>
-<td class="instruction">JP Z,<a href="30380.html">$76AC</a></td>
+<td class="instruction">JP Z,<a href="30380.html">jp_operate_viewport_slots</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29226"></span>722A</td>
 <td class="instruction">LD A,($5EEF)</td>
 <td class="comment-1" rowspan="3">Animate on odd ticks only.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29229"></span>722D</td>
 <td class="instruction">AND $01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29231"></span>722F</td>
 <td class="instruction">CP $01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29233"></span>7231</td>
-<td class="instruction">JP Z,<a href="29260.html">$724C</a></td>
+<td class="instruction">JP Z,<a href="29260.html">animate_object</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29236"></span>7234</td>
 <td class="instruction">LD A,D</td>
-<td class="comment-1" rowspan="5">If helicopter (REG or ADV), store position and continue to <a href="28968.html">7128</a>.</td>
+<td class="comment-1" rowspan="5">If helicopter (REG or ADV), store position and continue to <a href="28968.html">operate_ship_or_helicopter_continue</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29237"></span>7235</td>
 <td class="instruction">AND $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29239"></span>7237</td>
 <td class="instruction">CP $01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29241"></span>7239</td>
-<td class="instruction">JP Z,$7241</td>
+<td class="instruction">JP Z,<a href="29220.html#29249">store_and_continue_ship</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29244"></span>723C</td>
 <td class="instruction">CP $03</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29246"></span>723E</td>
-<td class="instruction">JP NZ,<a href="28814.html">$708E</a></td>
+<td class="instruction">JP NZ,<a href="28814.html">operate_viewport_slots</a></td>
 <td class="comment-1" rowspan="1">Not a helicopter: return to main loop.</td>
 </tr>
 <tr>
+<td class="asm-label">store_and_continue_ship</td>
 <td class="address-2"><span id="29249"></span>7241</td>
 <td class="instruction">LD ($8B0A),BC</td>
-<td class="comment-1" rowspan="2">Helicopters store position and jump to <a href="28968.html">7128</a>.</td>
+<td class="comment-1" rowspan="2">Helicopters store position and jump to <a href="28968.html">operate_ship_or_helicopter_continue</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29253"></span>7245</td>
-<td class="instruction">JP <a href="28968.html">$7128</a></td>
+<td class="instruction">JP <a href="28968.html">operate_ship_or_helicopter_continue</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -134,5 +154,6 @@ Next: <a href="29256.html">7248</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

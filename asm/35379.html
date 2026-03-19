@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 8A33</title>
+<title>river-raid: Routine at 8A33</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,53 +40,65 @@ Sets border to black, fills lower screen attributes with white-on-black, and cop
 </td>
 </tr>
 <tr>
+<td class="asm-label">init_udg</td>
 <td class="address-2"><span id="35379"></span>8A33</td>
 <td class="instruction">LD A,$00</td>
 <td class="comment-1" rowspan="2">Set border to black via OUT to port $FE.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35381"></span>8A35</td>
 <td class="instruction">OUT ($FE),A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35383"></span>8A37</td>
 <td class="instruction">LD B,$C0</td>
 <td class="comment-1" rowspan="5">Fill screen attributes starting at screen_attributes_row_17.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35385"></span>8A39</td>
 <td class="instruction">LD HL,$5A40</td>
 </tr>
 <tr>
+<td class="asm-label">init_udg_loop</td>
 <td class="address-2"><span id="35388"></span>8A3C</td>
 <td class="instruction">LD (HL),$07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35390"></span>8A3E</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35391"></span>8A3F</td>
-<td class="instruction">DJNZ $8A3C</td>
+<td class="instruction">DJNZ <a href="35379.html#35388">init_udg_loop</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35393"></span>8A41</td>
 <td class="instruction">LD HL,$825D</td>
-<td class="comment-1" rowspan="4">Copy $68 bytes from <a href="33373.html">825D</a> to UDG area pointed by CHARS system variable.</td>
+<td class="comment-1" rowspan="4">Copy $68 bytes from <a href="33373.html">udg_data</a> to UDG area pointed by CHARS system variable.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35396"></span>8A44</td>
 <td class="instruction">LD DE,($5C7B)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35400"></span>8A48</td>
 <td class="instruction">LD BC,$0068</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35403"></span>8A4B</td>
 <td class="instruction">LDIR</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35405"></span>8A4D</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -103,5 +120,6 @@ Next: <a href="35406.html">8A4E</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

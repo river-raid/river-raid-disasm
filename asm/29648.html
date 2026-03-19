@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 73D0</title>
+<title>river-raid: Routine at 73D0</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,21 +34,24 @@ Next: <a href="29656.html">73D8</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Clears helicopter missile coordinates at <a href="24435.html">5F73</a> to remove it from the game.
+Clears helicopter missile coordinates at <a href="24435.html">helicopter_missile_coordinates_ptr</a> to remove it from the game.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">remove_helicopter_missile</td>
 <td class="address-2"><span id="29648"></span>73D0</td>
 <td class="instruction">LD BC,$0000</td>
-<td class="comment-1" rowspan="2">Set <a href="24435.html">5F73</a> to $0000.</td>
+<td class="comment-1" rowspan="2">Set <a href="24435.html">helicopter_missile_coordinates_ptr</a> to $0000.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29651"></span>73D3</td>
 <td class="instruction">LD ($5F73),BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29655"></span>73D7</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -65,5 +73,6 @@ Next: <a href="29656.html">73D8</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

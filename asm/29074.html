@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 7192</title>
+<title>river-raid: Routine at 7192</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,38 +40,46 @@ Moves right-facing fighter 4 pixels right, wrapping at the right edge.
 </td>
 </tr>
 <tr>
+<td class="asm-label">fighter_right_advance</td>
 <td class="address-2"><span id="29074"></span>7192</td>
 <td class="instruction">INC C</td>
-<td class="comment-1" rowspan="6">Move right 4 pixels (INC C × 4). If C == $E8, reset via <a href="29087.html">719F</a>.</td>
+<td class="comment-1" rowspan="6">Move right 4 pixels (INC C × 4). If C == $E8, reset via <a href="29087.html">fighter_right_reset</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29075"></span>7193</td>
 <td class="instruction">INC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29076"></span>7194</td>
 <td class="instruction">INC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29077"></span>7195</td>
 <td class="instruction">INC C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29078"></span>7196</td>
 <td class="instruction">LD A,C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29079"></span>7197</td>
 <td class="instruction">CP $E8</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29081"></span>7199</td>
-<td class="instruction">CALL Z,<a href="29087.html">$719F</a></td>
-<td class="comment-1" rowspan="2">Continue to <a href="29035.html">716B</a> for rendering.</td>
+<td class="instruction">CALL Z,<a href="29087.html">fighter_right_reset</a></td>
+<td class="comment-1" rowspan="2">Continue to <a href="29035.html">operate_fighter_continue</a> for rendering.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29084"></span>719C</td>
-<td class="instruction">JP <a href="29035.html">$716B</a></td>
+<td class="instruction">JP <a href="29035.html">operate_fighter_continue</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -85,5 +98,6 @@ Next: <a href="29087.html">719F</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

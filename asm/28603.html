@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6FBB</title>
+<title>river-raid: Routine at 6FBB</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,13 +34,13 @@ Next: <a href="28646.html">6FE6</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Renders a rock decoration at the specified position. Uses 3x2 tile sprites (24x16 pixels) stored sequentially at <a href="33953.html">84A1</a> with $30 bytes per frame.
+Renders a rock decoration at the specified position. Uses 3x2 tile sprites (24x16 pixels) stored sequentially at <a href="33953.html">sprite_rock</a> with $30 bytes per frame.
 </div>
 <div class="paragraph">
 <ul class="">
-<li>Sprite address = <a href="33953.html">84A1</a> + (frame_index * $30)</li>
+<li>Sprite address = <a href="33953.html">sprite_rock</a> + (frame_index * $30)</li>
 <li>Frame index from bits 0-2 of D (0-7 rock variants)</li>
-<li>Sprite stored at <a href="35598.html">8B0E</a>, position at <a href="35594.html">8B0A</a> and <a href="35596.html">8B0C</a></li>
+<li>Sprite stored at <a href="35598.html">render_sprite_ptr</a>, position at <a href="35594.html">previous_object_coordinates</a> and <a href="35596.html">object_coordinates</a></li>
 <li>Width=3 tiles, height=16 pixels</li>
 </ul>
 </div>
@@ -56,88 +61,108 @@ Renders a rock decoration at the specified position. Uses 3x2 tile sprites (24x1
 </td>
 </tr>
 <tr>
+<td class="asm-label">render_rock</td>
 <td class="address-2"><span id="28603"></span>6FBB</td>
 <td class="instruction">LD A,D</td>
 <td class="comment-1" rowspan="3">Extract rock frame index: A = D AND $07. Set flags with OR A.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28604"></span>6FBC</td>
 <td class="instruction">AND $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28606"></span>6FBE</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28607"></span>6FBF</td>
 <td class="instruction">LD HL,$84A1</td>
-<td class="comment-1" rowspan="4">Load sprite base address <a href="33953.html">84A1</a> and frame size $30. Prepare loop: INC A, subtract BC once to offset the first ADD.</td>
+<td class="comment-1" rowspan="4">Load sprite base address <a href="33953.html">sprite_rock</a> and frame size $30. Prepare loop: INC A, subtract BC once to offset the first ADD.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28610"></span>6FC2</td>
 <td class="instruction">LD BC,$0030</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28613"></span>6FC5</td>
 <td class="instruction">INC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28614"></span>6FC6</td>
 <td class="instruction">SBC HL,BC</td>
 </tr>
 <tr>
+<td class="asm-label">locate_rock_sprite</td>
 <td class="address-2"><span id="28616"></span>6FC8</td>
 <td class="instruction">ADD HL,BC</td>
-<td class="comment-1" rowspan="3">Loop: HL += $30 for each frame index. Result: HL = <a href="33953.html">84A1</a> + (frame * $30).</td>
+<td class="comment-1" rowspan="3">Loop: HL += $30 for each frame index. Result: HL = <a href="33953.html">sprite_rock</a> + (frame * $30).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28617"></span>6FC9</td>
 <td class="instruction">DEC A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28618"></span>6FCA</td>
-<td class="instruction">JR NZ,$6FC8</td>
+<td class="instruction">JR NZ,<a href="28603.html#28616">locate_rock_sprite</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28620"></span>6FCC</td>
 <td class="instruction">LD B,$00</td>
 <td class="comment-1" rowspan="2">Set BC = X position (B=0, C=E from input).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28622"></span>6FCE</td>
 <td class="instruction">LD C,E</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28623"></span>6FCF</td>
 <td class="instruction">LD ($8B0E),HL</td>
-<td class="comment-1" rowspan="4">Store rendering state: sprite pointer at <a href="35598.html">8B0E</a>, X position at <a href="35596.html">8B0C</a> and <a href="35594.html">8B0A</a> (duplicated). Load erase sprite <a href="33525.html">82F5</a>.</td>
+<td class="comment-1" rowspan="4">Store rendering state: sprite pointer at <a href="35598.html">render_sprite_ptr</a>, X position at <a href="35596.html">object_coordinates</a> and <a href="35594.html">previous_object_coordinates</a> (duplicated). Load erase sprite <a href="33525.html">sprite_erasure</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28626"></span>6FD2</td>
 <td class="instruction">LD HL,$82F5</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28629"></span>6FD5</td>
 <td class="instruction">LD ($8B0C),BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28633"></span>6FD9</td>
 <td class="instruction">LD ($8B0A),BC</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28637"></span>6FDD</td>
 <td class="instruction">LD A,$03</td>
 <td class="comment-1" rowspan="3">Set dimensions: A=3 (width in tiles), D=$10 (height 16 pixels), E=$14 (attributes). Render rock.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28639"></span>6FDF</td>
 <td class="instruction">LD DE,$1014</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28642"></span>6FE2</td>
-<td class="instruction">CALL <a href="35644.html">$8B3C</a></td>
+<td class="instruction">CALL <a href="35644.html">render_object</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28645"></span>6FE5</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -159,5 +184,6 @@ Next: <a href="28646.html">6FE6</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

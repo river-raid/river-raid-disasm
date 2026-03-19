@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6BBF</title>
+<title>river-raid: Routine at 6BBF</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,46 +34,55 @@ Next: <a href="27602.html">6BD2</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Used by the routines at <a href="24465.html">5F91</a> and <a href="27927.html">6D17</a>.
+Used by the routines at <a href="24465.html">main_loop</a> and <a href="27927.html">overview</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">handle_enter</td>
 <td class="address-2"><span id="27583"></span>6BBF</td>
 <td class="instruction">LD A,$FE</td>
 <td class="comment-1" rowspan="4">Scan Caps Shift</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27585"></span>6BC1</td>
 <td class="instruction">IN A,($FE)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27587"></span>6BC3</td>
 <td class="instruction">BIT 0,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27589"></span>6BC5</td>
-<td class="instruction">JP Z,<a href="23861.html">$5D35</a></td>
+<td class="instruction">JP Z,<a href="23861.html">start_gameplay</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27592"></span>6BC8</td>
 <td class="instruction">LD A,$7F</td>
 <td class="comment-1" rowspan="5">Scan Symbol Shift</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27594"></span>6BCA</td>
 <td class="instruction">IN A,($FE)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27596"></span>6BCC</td>
 <td class="instruction">BIT 1,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27598"></span>6BCE</td>
-<td class="instruction">JP Z,<a href="27602.html">$6BD2</a></td>
+<td class="instruction">JP Z,<a href="27602.html">select_controls</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="27601"></span>6BD1</td>
 <td class="instruction">RET</td>
 </tr>
@@ -89,5 +103,6 @@ Next: <a href="27602.html">6BD2</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 7155</title>
+<title>river-raid: Routine at 7155</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,11 +40,13 @@ Resets X position to FIGHTER_POSITION_LEFT_INIT ($E8) when fighter reaches left 
 </td>
 </tr>
 <tr>
+<td class="asm-label">fighter_left_reset</td>
 <td class="address-2"><span id="29013"></span>7155</td>
 <td class="instruction">LD C,$E8</td>
 <td class="comment-1" rowspan="1">Set C = $E8 (initial left position).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29015"></span>7157</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -61,5 +68,6 @@ Next: <a href="29016.html">7158</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

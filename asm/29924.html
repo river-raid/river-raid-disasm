@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 74E4</title>
+<title>river-raid: Routine at 74E4</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,19 +40,23 @@ Clears all tank shell state variables to remove it from the game.
 </td>
 </tr>
 <tr>
+<td class="asm-label">remove_tank_shell</td>
 <td class="address-2"><span id="29924"></span>74E4</td>
 <td class="instruction">LD HL,$0000</td>
-<td class="comment-1" rowspan="3">Clear <a href="29571.html">7383</a> (state) and <a href="29573.html">7385</a> (coordinates) to $0000.</td>
+<td class="comment-1" rowspan="3">Clear <a href="29571.html">tank_shell_state</a> (state) and <a href="29573.html">tank_shell_coordinates</a> (coordinates) to $0000.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29927"></span>74E7</td>
 <td class="instruction">LD ($7383),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29930"></span>74EA</td>
 <td class="instruction">LD ($7385),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29933"></span>74ED</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -69,5 +78,6 @@ Next: <a href="29934.html">74EE</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

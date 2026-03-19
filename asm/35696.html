@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 8B70</title>
+<title>river-raid: Routine at 8B70</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,71 +40,87 @@ Handles screen memory boundary wrapping. The screen address increments by $0100 
 </td>
 </tr>
 <tr>
+<td class="asm-label">render_row_loop</td>
 <td class="address-2"><span id="35696"></span>8B70</td>
 <td class="instruction">PUSH DE</td>
 <td class="comment-1" rowspan="6">Check if new Y position crosses a character row boundary (Y AND $07 = 0).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35697"></span>8B71</td>
 <td class="instruction">LD BC,($8B0C)</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35701"></span>8B75</td>
 <td class="instruction">LD A,B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35702"></span>8B76</td>
 <td class="instruction">AND $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35704"></span>8B78</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35706"></span>8B7A</td>
-<td class="instruction">JP NZ,<a href="35747.html">$8BA3</a></td>
+<td class="instruction">JP NZ,<a href="35747.html">adjust_old_position</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35709"></span>8B7D</td>
 <td class="instruction">LD A,B</td>
 <td class="comment-1" rowspan="4">If at a third-of-screen boundary (Y AND $3F = 0), jump to subtract $00E0 instead.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35710"></span>8B7E</td>
 <td class="instruction">AND $3F</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35712"></span>8B80</td>
 <td class="instruction">CP $00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35714"></span>8B82</td>
-<td class="instruction">JP Z,<a href="35732.html">$8B94</a></td>
+<td class="instruction">JP Z,<a href="35732.html">adjust_new_screen_third</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35717"></span>8B85</td>
 <td class="instruction">LD HL,($8B12)</td>
 <td class="comment-1" rowspan="5">Subtract $07E0 from screen address for character row crossing.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35720"></span>8B88</td>
 <td class="instruction">LD DE,$07E0</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35723"></span>8B8B</td>
 <td class="instruction">OR A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35724"></span>8B8C</td>
 <td class="instruction">SBC HL,DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35726"></span>8B8E</td>
 <td class="instruction">LD ($8B12),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="35729"></span>8B91</td>
-<td class="instruction">JP <a href="35747.html">$8BA3</a></td>
+<td class="instruction">JP <a href="35747.html">adjust_old_position</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 </table>
@@ -119,5 +140,6 @@ Next: <a href="35732.html">8B94</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

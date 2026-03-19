@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6F73</title>
+<title>river-raid: Routine at 6F73</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,21 +34,24 @@ Next: <a href="28538.html">6F7A</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Resets <a href="24418.html">5F62</a> to point to start of explosions set at <a href="24366.html">5F2E</a>.
+Resets <a href="24418.html">exploding_fragments_ptr</a> to point to start of explosions set at <a href="24366.html">exploding_fragments</a>.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">reset_explosions_pointer</td>
 <td class="address-2"><span id="28531"></span>6F73</td>
 <td class="instruction">LD HL,$5F2E</td>
 <td class="comment-1" rowspan="3">Reset pointer and return.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28534"></span>6F76</td>
 <td class="instruction">LD ($5F62),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28537"></span>6F79</td>
 <td class="instruction">RET</td>
 </tr>
@@ -64,5 +72,6 @@ Next: <a href="28538.html">6F7A</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

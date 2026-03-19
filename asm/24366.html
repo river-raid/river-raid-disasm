@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Game status buffer entry at 5F2E</title>
+<title>river-raid: Game status buffer entry at 5F2E</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-g">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Game status buffer</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,7 +34,7 @@ Next: <a href="24415.html">5F5F</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Array of up to 16 explosion fragments. Each entry is 3 bytes. Animated by <a href="28360.html">6EC8</a>. New explosions added via <a href="28331.html">6EAB</a>.
+Array of up to 16 explosion fragments. Each entry is 3 bytes. Animated by <a href="28360.html">render_explosions</a>. New explosions added via <a href="28331.html">add_object_to_set</a>.
 </div>
 <div class="paragraph">
 <table class="default">
@@ -52,92 +57,109 @@ Array of up to 16 explosion fragments. Each entry is 3 bytes. Animated by <a hre
 </table>
 </div>
 <div class="paragraph">
-Explosion frames: 1,5=<a href="33905.html">8471</a> (small), 2,4=<a href="33921.html">8481</a> (medium), 3=<a href="33937.html">8491</a> (large), 6=<a href="33525.html">82F5</a> (erase).
+Explosion frames: 1,5=<a href="33905.html">sprite_explosion_f1</a> (small), 2,4=<a href="33921.html">sprite_explosion_f2</a> (medium), 3=<a href="33937.html">sprite_explosion_f3</a> (large), 6=<a href="33525.html">sprite_erasure</a> (erase).
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">exploding_fragments</td>
 <td class="address-1"><span id="24366"></span>5F2E</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24369"></span>5F31</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24372"></span>5F34</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24375"></span>5F37</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24378"></span>5F3A</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24381"></span>5F3D</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24384"></span>5F40</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24387"></span>5F43</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24390"></span>5F46</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24393"></span>5F49</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24396"></span>5F4C</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24399"></span>5F4F</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24402"></span>5F52</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24405"></span>5F55</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24408"></span>5F58</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24411"></span>5F5B</td>
 <td class="instruction">DEFB $20,$20,$20</td>
 <td class="comment-0" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="24414"></span>5F5E</td>
 <td class="instruction">DEFB $20</td>
 <td class="comment-0" rowspan="1"></td>
@@ -159,5 +181,6 @@ Next: <a href="24415.html">5F5F</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

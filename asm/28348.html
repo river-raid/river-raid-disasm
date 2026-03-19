@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6EBC</title>
+<title>river-raid: Routine at 6EBC</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -60,45 +65,55 @@ Writes a 3-byte object entry at the current position. If replacing the end-of-se
 </td>
 </tr>
 <tr>
+<td class="asm-label">write_object_to_set</td>
 <td class="address-2"><span id="28348"></span>6EBC</td>
 <td class="instruction">LD (HL),C</td>
 <td class="comment-1" rowspan="5">Write 3-byte entry: [C, B, D] = [X, Y_offset, type].</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28349"></span>6EBD</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28350"></span>6EBE</td>
 <td class="instruction">LD (HL),B</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28351"></span>6EBF</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28352"></span>6EC0</td>
 <td class="instruction">LD (HL),D</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28353"></span>6EC1</td>
 <td class="instruction">CP $FF</td>
 <td class="comment-1" rowspan="3">If replacing end marker, write new $FF marker after entry.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28355"></span>6EC3</td>
 <td class="instruction">RET NZ</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28356"></span>6EC4</td>
 <td class="instruction">INC HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28357"></span>6EC5</td>
 <td class="instruction">LD (HL),$FF</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28359"></span>6EC7</td>
 <td class="instruction">RET</td>
 <td class="comment-1" rowspan="1"></td>
@@ -120,5 +135,6 @@ Next: <a href="28360.html">6EC8</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

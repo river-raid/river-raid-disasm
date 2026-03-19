@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 6DDD</title>
+<title>river-raid: Routine at 6DDD</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -29,32 +34,37 @@ Next: <a href="28139.html">6DEB</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Resets the scrolling text pointer to the beginning of the title text at <a href="33154.html">8182</a> and continues the overview loop.
+Resets the scrolling text pointer to the beginning of the title text at <a href="33154.html">msg_credits</a> and continues the overview loop.
 </div>
 </div>
 </td>
 </tr>
 <tr>
+<td class="asm-label">reset_scroll_text</td>
 <td class="address-2"><span id="28125"></span>6DDD</td>
 <td class="instruction">LD HL,$8182</td>
-<td class="comment-1" rowspan="3">Reset text pointer <a href="24446.html">5F7E</a> to <a href="33154.html">8182</a> (start of title text).</td>
+<td class="comment-1" rowspan="3">Reset text pointer <a href="24446.html">ptr_scroller</a> to <a href="33154.html">msg_credits</a> (start of title text).</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28128"></span>6DE0</td>
 <td class="instruction">LD ($5F7E),HL</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28131"></span>6DE3</td>
 <td class="instruction">LD A,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28133"></span>6DE5</td>
 <td class="instruction">LD ($5F6D),A</td>
-<td class="comment-1" rowspan="2">Clear <a href="24429.html">5F6D</a> and jump back to overview_loop.</td>
+<td class="comment-1" rowspan="2">Clear <a href="24429.html">state_bridge_destroyed</a> and jump back to overview_loop.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="28136"></span>6DE8</td>
-<td class="instruction">JP <a href="27927.html#28004">$6D64</a></td>
+<td class="instruction">JP <a href="27927.html#28004">overview_loop</a></td>
 </tr>
 </table>
 <table class="asm-navigation">
@@ -73,5 +83,6 @@ Next: <a href="28139.html">6DEB</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

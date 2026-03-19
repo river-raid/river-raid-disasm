@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Sound</title>
+<title>river-raid: Sound</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Sound">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Sound</td>
 </tr>
 </table>
+<div class="page-content">
 <ul class="contents">
 <li><a href="#fire">Missile fire</a></li>
 <li><a href="#engine-normal">Engine (normal speed)</a></li>
@@ -29,7 +34,7 @@
 <div class="box box-1">
 <div class="box-title">Missile fire</div>
 <div class="paragraph">
-This sound effect is produced by the routine at <a href="../asm/35330.html">8A02</a>. The routine plays 8
+This sound effect is produced by the routine at <a href="../asm/35330.html">do_fire</a>. The routine plays 8
 speaker pulses (~1.3 ms) per interrupt. The CONTROLS_BIT_FIRE_SOUND flag is set
 when the missile is created and cleared by the game loop when missile Y drops to
 $70 (112). Starting from Y=$7E (126) and moving -6 pixels per game frame, this
@@ -46,7 +51,7 @@ consecutive interrupt calls with ~18.7 ms gaps between them.
 <div class="box box-2">
 <div class="box-title">Engine (normal speed)</div>
 <div class="paragraph">
-This sound effect is produced by the routine at <a href="../asm/27741.html">6C5D</a> during normal speed
+This sound effect is produced by the routine at <a href="../asm/27741.html">beep_engine_normal</a> during normal speed
 flight (player not pressing up or down).
 </div>
 <div class="paragraph">
@@ -59,7 +64,7 @@ flight (player not pressing up or down).
 <div class="box box-1">
 <div class="box-title">Engine (fast speed)</div>
 <div class="paragraph">
-This sound effect is produced by the routine at <a href="../asm/27832.html">6CB8</a> when the player holds
+This sound effect is produced by the routine at <a href="../asm/27832.html">beep_engine_fast</a> when the player holds
 up to accelerate.
 </div>
 <div class="paragraph">
@@ -72,7 +77,7 @@ up to accelerate.
 <div class="box box-2">
 <div class="box-title">Engine (slow speed)</div>
 <div class="paragraph">
-This sound effect is produced by the routine at <a href="../asm/27862.html">6CD6</a> when the player holds
+This sound effect is produced by the routine at <a href="../asm/27862.html">beep_engine_slow</a> when the player holds
 down to decelerate.
 </div>
 <div class="paragraph">
@@ -85,7 +90,7 @@ down to decelerate.
 <div class="box box-1">
 <div class="box-title">Explosion</div>
 <div class="paragraph">
-This sound effect is produced by the routine at <a href="../asm/27771.html">6C7B</a> when the player's plane
+This sound effect is produced by the routine at <a href="../asm/27771.html">beep_explosion</a> when the player's plane
 is destroyed. The ON delay varies semi-randomly between frames because the DE
 register is not intentionally set by the caller, giving the explosion its noisy
 character. Each frame plays 4 cycles of waveform with a decreasing OFF delay,
@@ -101,7 +106,7 @@ making the sound more rapid and urgent as the explosion progresses.
 <div class="box box-2">
 <div class="box-title">Low fuel warning</div>
 <div class="paragraph">
-This sound effect is produced by the routine at <a href="../asm/27892.html">6CF4</a> when the fuel level
+This sound effect is produced by the routine at <a href="../asm/27892.html">do_low_fuel</a> when the fuel level
 drops below the warning threshold. The pitch warbles by decrementing the period
 each frame, creating an urgent rising tone that resets after reaching zero.
 </div>
@@ -115,7 +120,7 @@ each frame, creating an urgent rising tone that resets after reaching zero.
 <div class="box box-1">
 <div class="box-title">Bonus life</div>
 <div class="paragraph">
-This sound effect is produced by the routine at <a href="../asm/27697.html">6C31</a> when the player earns
+This sound effect is produced by the routine at <a href="../asm/27697.html">do_bonus_life</a> when the player earns
 an extra life. It generates a rising pitch over 63 frames by calling the ROM
 BEEPER routine at $03B5 with decreasing pitch values.
 </div>
@@ -129,7 +134,7 @@ BEEPER routine at $03B5 with decreasing pitch values.
 <div class="box box-2">
 <div class="box-title">Tank full</div>
 <div class="paragraph">
-This sound effect is produced by the routine at <a href="../asm/28306.html">6E92</a> when the fuel tank is
+This sound effect is produced by the routine at <a href="../asm/28306.html">signal_fuel_level_excessive</a> when the fuel tank is
 already full and cannot accept more fuel. It plays a short beep (~1450 Hz,
 ~6ms) via the ROM BEEPER routine.
 </div>
@@ -188,5 +193,6 @@ an explosion and plays no sound.
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 923E</title>
+<title>river-raid: Routine at 923E</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,37 +40,45 @@ Displays the remaining lives as plane UDG symbols at row 20, column 18. Uses the
 </td>
 </tr>
 <tr>
+<td class="asm-label">print_lives</td>
 <td class="address-2"><span id="37438"></span>923E</td>
 <td class="instruction">LD A,($923D)</td>
-<td class="comment-1" rowspan="2">If current player is player 2, jump to <a href="37495.html">9277</a>.</td>
+<td class="comment-1" rowspan="2">If current player is player 2, jump to <a href="37495.html">print_lives_player_2</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37441"></span>9241</td>
 <td class="instruction">CP $02</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37443"></span>9243</td>
-<td class="instruction">JP Z,<a href="37495.html">$9277</a></td>
+<td class="instruction">JP Z,<a href="37495.html">print_lives_player_2</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37446"></span>9246</td>
 <td class="instruction">LD A,$10</td>
 <td class="comment-1" rowspan="4">INK PLAYER_1</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37448"></span>9248</td>
 <td class="instruction">RST $10</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37449"></span>9249</td>
 <td class="instruction">LD A,$06</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37451"></span>924B</td>
 <td class="instruction">RST $10</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37452"></span>924C</td>
 <td class="instruction">LD A,($923B)</td>
 <td class="comment-1" rowspan="1">Load player 1 lives count and fall through.</td>
@@ -87,5 +100,6 @@ Next: <a href="37455.html">924F</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

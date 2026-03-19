@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 724C</title>
+<title>river-raid: Routine at 724C</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -44,29 +49,35 @@ Routes helicopters to rotor animation. Non-helicopters return to main loop.
 </td>
 </tr>
 <tr>
+<td class="asm-label">animate_object</td>
 <td class="address-2"><span id="29260"></span>724C</td>
 <td class="instruction">LD A,D</td>
-<td class="comment-1" rowspan="5">If helicopter (REG or ADV), animate rotor via <a href="29273.html">7259</a>. Otherwise return to main loop.</td>
+<td class="comment-1" rowspan="5">If helicopter (REG or ADV), animate rotor via <a href="29273.html">animate_helicopter</a>. Otherwise return to main loop.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29261"></span>724D</td>
 <td class="instruction">AND $07</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29263"></span>724F</td>
 <td class="instruction">CP $01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29265"></span>7251</td>
-<td class="instruction">JP Z,<a href="29273.html">$7259</a></td>
+<td class="instruction">JP Z,<a href="29273.html">animate_helicopter</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29268"></span>7254</td>
 <td class="instruction">CP $03</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29270"></span>7256</td>
-<td class="instruction">JP NZ,<a href="28814.html">$708E</a></td>
+<td class="instruction">JP NZ,<a href="28814.html">operate_viewport_slots</a></td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 </table>
@@ -86,5 +97,6 @@ Next: <a href="29273.html">7259</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

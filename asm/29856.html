@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 74A0</title>
+<title>river-raid: Routine at 74A0</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,72 +40,88 @@ Erases the tank shell sprite when it goes off-screen and removes it from the gam
 </td>
 </tr>
 <tr>
+<td class="asm-label">erase_tank_shell_offscreen</td>
 <td class="address-2"><span id="29856"></span>74A0</td>
 <td class="instruction">LD BC,($8B0A)</td>
-<td class="comment-1" rowspan="2">Load shell position from <a href="35594.html">8B0A</a>, shell sprite <a href="33841.html">8431</a>.</td>
+<td class="comment-1" rowspan="2">Load shell position from <a href="35594.html">previous_object_coordinates</a>, shell sprite <a href="33841.html">sprite_missile</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29860"></span>74A4</td>
 <td class="instruction">LD HL,$8431</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29863"></span>74A7</td>
 <td class="instruction">LD A,C</td>
 <td class="comment-1" rowspan="7">Calculate sprite frame offset from X position: (X AND 6) &lt;&lt; 2.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29864"></span>74A8</td>
 <td class="instruction">AND $06</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29866"></span>74AA</td>
 <td class="instruction">SLA A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29868"></span>74AC</td>
 <td class="instruction">SLA A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29870"></span>74AE</td>
 <td class="instruction">LD D,$00</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29872"></span>74B0</td>
 <td class="instruction">LD E,A</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29873"></span>74B1</td>
 <td class="instruction">ADD HL,DE</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29874"></span>74B2</td>
 <td class="instruction">LD ($8B0E),HL</td>
-<td class="comment-1" rowspan="2">Add offset to sprite address, store to <a href="35598.html">8B0E</a>. Load erase sprite <a href="33525.html">82F5</a>.</td>
+<td class="comment-1" rowspan="2">Add offset to sprite address, store to <a href="35598.html">render_sprite_ptr</a>. Load erase sprite <a href="33525.html">sprite_erasure</a>.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29877"></span>74B5</td>
 <td class="instruction">LD HL,$82F5</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29880"></span>74B8</td>
 <td class="instruction">LD DE,$0100</td>
 <td class="comment-1" rowspan="4">Render erase sprite and remove shell.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29883"></span>74BB</td>
 <td class="instruction">LD A,$01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29885"></span>74BD</td>
 <td class="instruction">LD BC,$0008</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29888"></span>74C0</td>
-<td class="instruction">CALL <a href="35644.html">$8B3C</a></td>
+<td class="instruction">CALL <a href="35644.html">render_object</a></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="29891"></span>74C3</td>
-<td class="instruction">JP <a href="29924.html">$74E4</a></td>
+<td class="instruction">JP <a href="29924.html">remove_tank_shell</a></td>
 <td class="comment-1" rowspan="1">Remove shell.</td>
 </tr>
 </table>
@@ -120,5 +141,6 @@ Next: <a href="29894.html">74C6</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>

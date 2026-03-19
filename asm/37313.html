@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>River Raid: Routine at 91C1</title>
+<title>river-raid: Routine at 91C1</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="../theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="../theme.js"></script>
 </head>
 <body class="Asm-c">
 <table class="header">
@@ -12,6 +16,7 @@
 <td class="page-header">Routines</td>
 </tr>
 </table>
+<div class="page-content">
 <table class="asm-navigation">
 <tr>
 <td class="prev">
@@ -35,100 +40,122 @@ Displays player 2's full score area including "P2" label and leading zero.
 </td>
 </tr>
 <tr>
+<td class="asm-label">print_score_player_2</td>
 <td class="address-2"><span id="37313"></span>91C1</td>
 <td class="instruction">LD A,$10</td>
 <td class="comment-1" rowspan="4">INK PLAYER_2</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37315"></span>91C3</td>
 <td class="instruction">RST $10</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37316"></span>91C4</td>
 <td class="instruction">LD A,$05</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37318"></span>91C6</td>
 <td class="instruction">RST $10</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37319"></span>91C7</td>
 <td class="instruction">LD BC,$0006</td>
-<td class="comment-1" rowspan="3">Print 6-digit score from <a href="37058.html">90C2</a> via ROM PR_STRING.</td>
+<td class="comment-1" rowspan="3">Print 6-digit score from <a href="37058.html">state_score_player_2_low</a> via ROM PR_STRING.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37322"></span>91CA</td>
 <td class="instruction">LD DE,$90C2</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37325"></span>91CD</td>
 <td class="instruction">CALL $203C</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37328"></span>91D0</td>
 <td class="instruction">LD A,"0"</td>
 <td class="comment-1" rowspan="1">Print trailing '0' after score.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37330"></span>91D2</td>
 <td class="instruction">RST $10</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37331"></span>91D3</td>
 <td class="instruction">LD A,$16</td>
 <td class="comment-1" rowspan="6">AT 1,18</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37333"></span>91D5</td>
 <td class="instruction">RST $10</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37334"></span>91D6</td>
 <td class="instruction">LD A,$01</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37336"></span>91D8</td>
 <td class="instruction">RST $10</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37337"></span>91D9</td>
 <td class="instruction">LD A,$12</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37339"></span>91DB</td>
 <td class="instruction">RST $10</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37340"></span>91DC</td>
 <td class="instruction">LD A,"P"</td>
 <td class="comment-1" rowspan="1">Print "P2" label.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37342"></span>91DE</td>
 <td class="instruction">RST $10</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37343"></span>91DF</td>
 <td class="instruction">LD A,"2"</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37345"></span>91E1</td>
 <td class="instruction">RST $10</td>
 <td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37346"></span>91E2</td>
 <td class="instruction">LD A,$02</td>
 <td class="comment-1" rowspan="3">Switch to channel 2 (main screen) and return.</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37348"></span>91E4</td>
 <td class="instruction">CALL $1601</td>
 </tr>
 <tr>
+<td class="asm-label"></td>
 <td class="address-1"><span id="37351"></span>91E7</td>
 <td class="instruction">RET</td>
 </tr>
@@ -149,5 +176,6 @@ Next: <a href="37352.html">91E8</a>
 <div class="copyright"></div>
 <div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
 </footer>
+</div>
 </body>
 </html>
