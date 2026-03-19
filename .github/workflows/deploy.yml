@@ -33,4 +33,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: html/river-raid
-          commit_message: "Build ${{ steps.vars.outputs.sha }}"
+          full_commit_message: "Build ${{ steps.vars.outputs.sha }}"
