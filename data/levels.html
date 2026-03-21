@@ -118,7 +118,7 @@ within the river, splitting it into channels.
 </div>
 <div class="paragraph">
 Island data: <a href="../asm/50688.html">data_islands</a> (108 bytes total). Referenced from terrain fragment
-byte 3 (upper 6 bits = island index x 4). Initialized by <a href="../asm/26987.html">handle_island</a>.
+byte 3 (upper 6 bits = island index × 4). Initialized by <a href="../asm/26987.html">handle_island</a>.
 </div>
 </div>
 <div><span id="terrainFragments"></span></div>
@@ -150,7 +150,7 @@ sequentially by <a href="../asm/27215.html">render_terrain_row</a> as the terrai
 </table>
 </div>
 <div class="paragraph">
-Terrain data: <a href="../asm/38144.html">level_terrains</a> (48 levels x 256 bytes = 12,288 bytes).
+Terrain data: <a href="../asm/38144.html">level_terrains</a> (48 levels × 256 bytes = 12,288 bytes).
 </div>
 </div>
 <div><span id="objectSpawns"></span></div>
@@ -168,20 +168,20 @@ which objects appear at each scroll position. Read by <a href="../asm/28544.html
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">0</td>
-<td class="" colspan="1" rowspan="1">Object definition: bits 0-2 = type (OBJECT_* constants), bit 3 = rock flag (SLOT_BIT_ROCK)</td>
+<td class="" colspan="1" rowspan="1">Object definition: bits 0-2 = type (<code>OBJECT_*</code> constants), bit 3 = rock flag (<code>SLOT_BIT_ROCK</code>)</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">1</td>
-<td class="" colspan="1" rowspan="1">X position ($00 = empty slot, $01-$FF = spawn coordinate)</td>
+<td class="" colspan="1" rowspan="1">X position (<code>$00</code> = empty slot, <code>$01</code>–<code>$FF</code> = spawn coordinate)</td>
 </tr>
 </table>
 </div>
 <div class="paragraph">
 When the rock flag is set, bits 0-1 select rock variant (0-3). Most slots are
-empty (X = $00), making this a sparse encoding.
+empty (X = <code>$00</code>), making this a sparse encoding.
 </div>
 <div class="paragraph">
-Object data: <a href="../asm/51200.html">level_objects</a> (48 levels x 256 bytes = 12,288 bytes).
+Object data: <a href="../asm/51200.html">level_objects</a> (48 levels × 256 bytes = 12,288 bytes).
 </div>
 </div>
 <footer>

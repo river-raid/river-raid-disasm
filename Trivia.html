@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>river-raid: Trivia</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="stylesheet" type="text/css" href="skoolkit.css" />
+<link rel="stylesheet" type="text/css" href="theme.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script type="text/javascript" src="theme.js"></script>
+</head>
+<body class="Trivia">
+<a class="github-fork-ribbon fixed" href="https://github.com/river-raid/river-raid-disasm" data-ribbon="Fork me on GitHub" title="Fork me on GitHub" target="_blank" rel="noopener">Fork me on GitHub</a>
+<table class="header">
+<tr>
+<td class="logo"><a href="index.html">River Raid</a></td>
+<td class="page-header">Trivia</td>
+</tr>
+</table>
+<div class="page-content">
+<ul class="contents">
+<li><a href="#targets">Targets</a></li>
+<li><a href="#bonusLife">Bonus life every 10,000 points</a></li>
+<li><a href="#speedMechanics">Player movement</a></li>
+<li><a href="#fuelMechanics">Fuel mechanics</a></li>
+<li><a href="#bridgeProgressOnDeath">Destroying a bridge advances the respawn point without crossing it</a></li>
+<li><a href="#entitySets">Enemy activation delay after spawning</a></li>
+<li><a href="#tankAfterBridge">Tank behavior after bridge destruction depends on the level</a></li>
+<li><a href="#bridgeProgression">Infinite loop after bridge 48</a></li>
+</ul>
+<div><span id="targets"></span></div>
+<div class="box box-1">
+<div class="box-title">Targets</div>
+<div class="paragraph">
+The player's plane can hit eight types of targets with its missile. Six are
+mobile enemies, one is a static facility, and one is a terrain structure:
+</div>
+<div class="paragraph">
+<table class="default targets-table">
+<tr>
+<th colspan="1" rowspan="1">Target</th>
+<th colspan="1" rowspan="1">Points</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Ship</td>
+<td class="" colspan="1" rowspan="1">30</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Helicopter</td>
+<td class="" colspan="1" rowspan="1">60</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Balloon</td>
+<td class="" colspan="1" rowspan="1">60</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Fuel Depot</td>
+<td class="" colspan="1" rowspan="1">80</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Fighter</td>
+<td class="" colspan="1" rowspan="1">100</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Helicopter+</td>
+<td class="" colspan="1" rowspan="1">150</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Tank</td>
+<td class="" colspan="1" rowspan="1">250</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Bridge</td>
+<td class="" colspan="1" rowspan="1">500</td>
+</tr>
+</table>
+</div>
+</div>
+<div><span id="bonusLife"></span></div>
+<div class="box box-2">
+<div class="box-title">Bonus life every 10,000 points</div>
+<div class="paragraph">
+A bonus life is awarded every 10,000 points, accompanied by a jingle
+(<a href="sound/sound.html#bonus-life">listen</a>).
+</div>
+</div>
+<div><span id="speedMechanics"></span></div>
+<div class="box box-1">
+<div class="box-title">Player movement</div>
+<div class="paragraph">
+The game has three speed settings that control how fast the terrain scrolls:
+</div>
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Speed</th>
+<th colspan="1" rowspan="1">Terrain scroll</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Slow</td>
+<td class="" colspan="1" rowspan="1">1 px/frame</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Normal</td>
+<td class="" colspan="1" rowspan="1">2 px/frame</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Fast</td>
+<td class="" colspan="1" rowspan="1">4 px/frame</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+See <a href="asm/24420.html">state_speed</a> (speed state), <a href="asm/26378.html">handle_up</a> (accelerate), <a href="asm/26391.html">handle_down</a> (decelerate),
+<a href="asm/26320.html">advance_scroll</a> (scroll update).
+</div>
+</div>
+<div><span id="fuelMechanics"></span></div>
+<div class="box box-2">
+<div class="box-title">Fuel mechanics</div>
+<div class="paragraph">
+The fuel system governs how long the player can stay airborne:
+</div>
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Mechanic</th>
+<th colspan="1" rowspan="1">Rate</th>
+<th colspan="1" rowspan="1">Duration</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Consumption</td>
+<td class="" colspan="1" rowspan="1">1 unit every 2 frames (~6 units/sec)</td>
+<td class="" colspan="1" rowspan="1">Full tank lasts ~40 sec</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Refueling</td>
+<td class="" colspan="1" rowspan="1">4 units per frame (~48 units/sec)</td>
+<td class="" colspan="1" rowspan="1">Full refuel in ~5 sec</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+Key details:
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Fuel consumption speed does not depend on the movement speed</li>
+<li>Low fuel warning triggers when fuel drops below 64</li>
+<li>A "tank full" beep (<a href="asm/28306.html">signal_fuel_level_excessive</a>) plays when fuel reaches 252</li>
+</ul>
+</div>
+<div class="paragraph">
+See <a href="asm/28159.html">consume_fuel</a> (consumption), <a href="asm/28224.html">add_fuel</a> (refueling), <a href="asm/24422.html">state_fuel</a> (fuel state
+variable).
+</div>
+</div>
+<div><span id="bridgeProgressOnDeath"></span></div>
+<div class="box box-1">
+<div class="box-title">Destroying a bridge advances the respawn point without crossing it</div>
+<div class="paragraph">
+Bridge progress is recorded the moment the bridge is destroyed — not when the
+player crosses it. If the player dies before reaching the next bridge, the
+respawn still places them past the destroyed one. The counter (<a href="asm/24426.html">state_bridge_player_1</a> for
+player 1, <a href="asm/24427.html">state_bridge_player_2</a> for player 2) is incremented at <a href="asm/25019.html#25151">next_bridge_player_1</a> and <a href="asm/25161.html">next_bridge_player_2</a> and is
+never decremented on death.
+</div>
+</div>
+<div><span id="entitySets"></span></div>
+<div class="box box-2">
+<div class="box-title">Enemy activation delay after spawning</div>
+<div class="paragraph">
+Enemies do not move or shoot immediately when they appear — there is a delay
+of up to 32 frames before they become active. After the player destroys a
+bridge, the delay halves to up to 16 frames.
+</div>
+</div>
+<div><span id="tankAfterBridge"></span></div>
+<div class="box box-1">
+<div class="box-title">Tank behavior after bridge destruction depends on the level</div>
+<div class="paragraph">
+When the player destroys a bridge while a tank on the road survives, what
+happens next depends on the current bridge number. On bridges 1–7 the tank
+freezes in place. From bridge 8 onwards it continues moving until it reaches
+the gap left by the destroyed bridge, then fires shells into it.
+</div>
+<div class="paragraph">
+The threshold is a single comparison at <a href="asm/29934.html#30010">tank_bridge_check</a> against bridge 7, using the
+player's progress from <a href="asm/24426.html">state_bridge_player_1</a> (player 1) or <a href="asm/24427.html">state_bridge_player_2</a> (player 2). The two
+paths diverge from <a href="asm/29934.html#29989">convert_tank_to_bank</a>.
+</div>
+</div>
+<div><span id="bridgeProgression"></span></div>
+<div class="box box-2">
+<div class="box-title">Infinite loop after bridge 48</div>
+<div class="paragraph">
+The game has 48 unique bridge sections, each containing 64 terrain fragments.
+After the player completes all 48, the game does not end — instead it wraps
+around using the formula:
+</div>
+<div class="paragraph">
+new_bridge = ((progress - 48) mod 15) + 33
+</div>
+<div class="paragraph">
+This creates an infinite loop through bridges 33-48 (the hardest 15 bridges),
+making the game theoretically endless. See <a href="asm/26857.html">init_current_bridge</a> for the wraparound
+algorithm.
+</div>
+</div>
+<footer>
+<div class="release"></div>
+<div class="copyright"></div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 9.6.</div>
+</footer>
+</div>
+</body>
+</html>

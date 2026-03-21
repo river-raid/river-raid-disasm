@@ -29,6 +29,7 @@
 
 html {
   scrollbar-color: var(--river-mid) var(--bg);
+  scroll-padding-top: 64px;
 }
 
 /* ── Body ────────────────────────────────── */
@@ -689,6 +690,10 @@ td.centre { text-align: center; }
 
 /* ── Contents list ───────────────────────── */
 
+ul:not(.contents):not(.list-entry) {
+  padding-left: 1.4em;
+}
+
 ul.contents {
   list-style: none;
   margin: 0 0 24px;
@@ -778,4 +783,22 @@ footer a {
 
 footer a:hover {
   color: var(--yellow);
+}
+
+table.targets-table td:nth-child(2) { text-align: right; }
+
+/* ── Inline code ─────────────────────────── */
+
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88em;
+  color: var(--cyan);
+  background: rgba(24, 212, 245, 0.08);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+a[href*="asm/"] {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88em;
 }

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>river-raid: Glossary</title>
+<title>river-raid: Data reference</title>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" type="text/css" href="../skoolkit.css" />
@@ -9,12 +9,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
 <script type="text/javascript" src="../theme.js"></script>
 </head>
-<body class="Glossary">
+<body class="DataReference">
 <a class="github-fork-ribbon fixed" href="https://github.com/river-raid/river-raid-disasm" data-ribbon="Fork me on GitHub" title="Fork me on GitHub" target="_blank" rel="noopener">Fork me on GitHub</a>
 <table class="header">
 <tr>
 <td class="logo"><a href="../index.html">River Raid</a></td>
-<td class="page-header">Glossary</td>
+<td class="page-header">Data reference</td>
 </tr>
 </table>
 <div class="page-content">
@@ -22,14 +22,13 @@
 <li><a href="#viewport">Viewport</a></li>
 <li><a href="#slot">Slot</a></li>
 <li><a href="#objectDefinition">Object Definition Byte</a></li>
-<li><a href="#markers">Slot Markers</a></li>
 </ul>
 <div><span id="viewport"></span></div>
 <div class="box box-1">
 <div class="box-title">Viewport</div>
 <div class="paragraph">
-The **viewport** is the visible portion of the game world displayed on screen.
-It contains a fixed-size array of **slots** that hold active game objects
+The viewport is the visible portion of the game world displayed on screen.
+It contains a fixed-size array of slots that hold active game objects
 (enemies, fuel depots, etc.) currently visible or about to scroll into view.
 </div>
 <div class="paragraph">
@@ -41,7 +40,7 @@ The viewport is implemented as the <a href="../asm/24320.html">viewport_slots</a
 <div class="box box-2">
 <div class="box-title">Slot</div>
 <div class="paragraph">
-A **slot** is a 3-byte entry in the viewport array (<a href="../asm/24320.html">viewport_slots</a>) that can hold one
+A slot is a 3-byte entry in the viewport array (<a href="../asm/24320.html">viewport_slots</a>) that can hold one
 game object. Each slot has the following structure:
 </div>
 <div class="paragraph">
@@ -76,23 +75,23 @@ A slot can be in one of three states:
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">Empty</td>
-<td class="" colspan="1" rowspan="1">$00 (SET_MARKER_EMPTY_SLOT)</td>
+<td class="" colspan="1" rowspan="1"><code>$00</code> (<code>SET_MARKER_EMPTY_SLOT</code>)</td>
 <td class="" colspan="1" rowspan="1">Slot is unused, skipped during iteration</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">Occupied</td>
-<td class="" colspan="1" rowspan="1">$01-$FE</td>
+<td class="" colspan="1" rowspan="1"><code>$01</code>–<code>$FE</code></td>
 <td class="" colspan="1" rowspan="1">Contains a valid game object</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">End marker</td>
-<td class="" colspan="1" rowspan="1">$FF (SET_MARKER_END_OF_SET)</td>
-<td class="" colspan="1" rowspan="1">Marks end of active objects</td>
+<td class="" colspan="1" rowspan="1"><code>$FF</code> (<code>SET_MARKER_END_OF_SET</code>)</td>
+<td class="" colspan="1" rowspan="1">Marks end of active objects; iterator resets to start via <a href="../asm/30247.html">reset_slot_ptr</a></td>
 </tr>
 </table>
 </div>
 <div class="paragraph">
-The **current_slot_ptr** at <a href="../asm/24416.html">current_slot_ptr</a> is an iterator that traverses slots during
+The iterator at <a href="../asm/24416.html">current_slot_ptr</a> traverses slots during
 the main object processing loop (<a href="../asm/28814.html">operate_viewport_slots</a>). It advances through all slots
 (including empty ones), checking each slot's state before processing.
 </div>
@@ -101,7 +100,7 @@ the main object processing loop (<a href="../asm/28814.html">operate_viewport_sl
 <div class="box box-1">
 <div class="box-title">Object Definition Byte</div>
 <div class="paragraph">
-The **object definition byte** (byte 2 of each slot) encodes the object's type
+The object definition byte (byte 2 of each slot) encodes the object's type
 and state using bit fields:
 </div>
 <div class="paragraph">
@@ -112,7 +111,7 @@ and state using bit fields:
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">0-2</td>
-<td class="" colspan="1" rowspan="1">Object type (OBJECT_* constants: helicopter, ship, tank, etc.)</td>
+<td class="" colspan="1" rowspan="1">Object type (<code>OBJECT_*</code> constants: helicopter, ship, tank, etc.)</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">3</td>
@@ -139,36 +138,6 @@ and state using bit fields:
 <div class="paragraph">
 Objects spawn with bit 7 clear (inactive). On their first frame in the
 viewport, <a href="../asm/28814.html">operate_viewport_slots</a> sets bit 7 to activate them, enabling movement and collision.
-</div>
-</div>
-<div><span id="markers"></span></div>
-<div class="box box-2">
-<div class="box-title">Slot Markers</div>
-<div class="paragraph">
-Two special values in the X position byte (byte 0) serve as **markers**:
-</div>
-<div class="paragraph">
-<table class="default">
-<tr>
-<th colspan="1" rowspan="1">Constant</th>
-<th colspan="1" rowspan="1">Value</th>
-<th colspan="1" rowspan="1">Purpose</th>
-</tr>
-<tr>
-<td class="" colspan="1" rowspan="1">SET_MARKER_EMPTY_SLOT</td>
-<td class="" colspan="1" rowspan="1">$00</td>
-<td class="" colspan="1" rowspan="1">Marks an unused slot (skip during iteration)</td>
-</tr>
-<tr>
-<td class="" colspan="1" rowspan="1">SET_MARKER_END_OF_SET</td>
-<td class="" colspan="1" rowspan="1">$FF</td>
-<td class="" colspan="1" rowspan="1">Marks end of active objects (reset iterator)</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-When the iterator (<a href="../asm/24416.html">current_slot_ptr</a>) encounters SET_MARKER_END_OF_SET, it resets to the
-beginning of the array via <a href="../asm/30247.html">reset_slot_ptr</a>.
 </div>
 </div>
 <footer>

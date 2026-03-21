@@ -154,7 +154,7 @@ Speed affects the number of terrain fragments rendered per frame and the sprite 
 <td class="asm-label"></td>
 <td class="address-1"><span id="24777"></span>60C9</td>
 <td class="instruction">ADD A,$80</td>
-<td class="comment-1" rowspan="4">Calculate plane Y: Y = $88 - speed. However, movement handlers (<a href="26099.html">handle_right</a>, <a href="26178.html">handle_left</a>, <a href="26242.html">render_plane</a>) always use the fixed PLANE_COORDINATE_Y ($80), so this speed-dependent value has no visible effect.</td>
+<td class="comment-1" rowspan="4">Compute look-ahead Y: Y = 136 - speed (135 slow, 134 normal, 132 fast), placing the plane higher on screen at faster speeds to reveal more upcoming terrain. Dead code: movement handlers (<a href="26099.html">handle_right</a>, <a href="26178.html">handle_left</a>, <a href="26242.html">render_plane</a>) always overwrite this with the fixed PLANE_COORDINATE_Y.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

@@ -19,166 +19,32 @@
 </table>
 <div class="page-content">
 <ul class="contents">
-<li><a href="#player2Afterthought">Player 2 logic was a late addition</a></li>
-<li><a href="#duplicatedRendering">Island and bank rendering heavily duplicated</a></li>
-<li><a href="#levelDataStorage">Level data stored wastefully</a></li>
-<li><a href="#unusedControlScreen">Unused control selection screen at $8561</a></li>
-<li><a href="#preShiftedSprites">Pre-shifted sprites (and wasted fighter frames)</a></li>
-<li><a href="#selfModifyingCode">Self-modifying code for blending modes</a></li>
-<li><a href="#pixelCollisionDetection">Pixel-perfect collision via rendering pipeline</a></li>
+<li><a href="#fps">Game loop runs at ~12 FPS</a></li>
 <li><a href="#interruptDrivenSound">Multi-channel interrupt-driven sound</a></li>
+<li><a href="#preShiftedSprites">Pre-shifted sprites (and wasted fighter frames)</a></li>
+<li><a href="#pixelCollisionDetection">Pixel-perfect collision via rendering pipeline</a></li>
+<li><a href="#selfModifyingCode">Self-modifying code for blending modes</a></li>
+<li><a href="#scrollInBufferZone">Black-on-black buffer zone for scroll-in</a></li>
+<li><a href="#singleProjectiles">Only one tank shell and one helicopter missile at a time</a></li>
 <li><a href="#asciiArithmetic">Arithmetic directly on ASCII digit strings</a></li>
-<li><a href="#multiplyAndDivide">Multiplication and division without hardware support</a></li>
 <li><a href="#incrementThenCorrect">Increment-then-correct for bidirectional movement</a></li>
-<li><a href="#stackTricks">Stack pointer tricks for computed jumps</a></li>
-<li><a href="#uselessTrampoline">Useless trampoline at $76AC</a></li>
-<li><a href="#deadCode">Dead calculation at $7695</a></li>
-<li><a href="#unusedSprites">Unused explosion animation at $8AD8</a></li>
+<li><a href="#player2Afterthought">Player 2 logic was a late addition</a></li>
+<li><a href="#levelDataStorage">Level data stored wastefully</a></li>
+<li><a href="#duplicatedRendering">Island and bank rendering heavily duplicated</a></li>
+<li><a href="#unusedControlScreen">Unused control selection screen</a></li>
+<li><a href="#uselessTrampoline">Useless single-instruction trampoline</a></li>
+<li><a href="#deadCode">Dead frame offset calculation in balloon handler</a></li>
+<li><a href="#unusedSprites">Unused alternate explosion animation</a></li>
 <li><a href="#unusedData">Unused variables and data areas</a></li>
-<li><a href="#retnVsReti">RETN instead of RETI in interrupt handler</a></li>
 </ul>
-<div><span id="player2Afterthought"></span></div>
+<div><span id="fps"></span></div>
 <div class="box box-1">
-<div class="box-title">Player 2 logic was a late addition</div>
+<div class="box-title">Game loop runs at ~12 FPS</div>
 <div class="paragraph">
-Player 2 handling is scattered across the codebase as duplicated branches
-rather than parameterized code. Nearly every routine that touches scoring,
-bridge display, status line, or death handling has a
-<code>CP PLAYER_2 / JR Z</code> fork to a near-identical copy:
-</div>
-<div class="paragraph">
-<ul class="">
-<li>Score increment: <a href="../asm/37179.html">inc_player_1_score_digit</a> (player 1) vs <a href="../asm/37225.html">inc_player_2_score_digit</a> (player 2)</li>
-<li>Score printing: <a href="../asm/37195.html">print_player_1_score_digit</a> (player 1) vs <a href="../asm/37225.html#37240">9178</a> (player 2)</li>
-<li>Bridge display: <a href="../asm/25788.html">print_bridge</a> (player 1) vs <a href="../asm/25829.html">print_bridge_player_2</a> (player 2)</li>
-<li>Plane movement: <a href="../asm/26099.html">handle_right</a> and <a href="../asm/26178.html">handle_left</a> both branch for player 2 attributes</li>
-<li>Death handling: multiple routines with <code>CP PLAYER_2</code> forks</li>
-</ul>
-</div>
-<div class="paragraph">
-A parameterized design using the player number as a table index would have
-eliminated the duplication. The pattern strongly suggests that single-player
-mode was developed first and two-player support was bolted on afterward.
-</div>
-</div>
-<div><span id="duplicatedRendering"></span></div>
-<div class="box box-2">
-<div class="box-title">Island and bank rendering heavily duplicated</div>
-<div class="paragraph">
-Left bank and right bank rendering in <a href="../asm/27024.html">render_island_line</a> (island edges) and <a href="../asm/27299.html">render_terrain_fragment</a>
-(terrain fragments) follow identical logic but are implemented as separate
-code paths with only operand differences. The duplication is remarkably
-regular — same structure, same control flow, different constants.
-</div>
-<div class="paragraph">
-This pattern could indicate systematic copy-paste development, or
-alternatively, output from a high-level language compiler or macro assembler
-that expanded separate invocations without optimizing the identical code.
-</div>
-</div>
-<div><span id="levelDataStorage"></span></div>
-<div class="box box-1">
-<div class="box-title">Level data stored wastefully</div>
-<div class="paragraph">
-The game dedicates nearly 24 KB to level definitions — almost half the total
-program size:
-</div>
-<div class="paragraph">
-<table class="default">
-<tr>
-<th colspan="1" rowspan="1">Data</th>
-<th colspan="1" rowspan="1">Size</th>
-<th colspan="1" rowspan="1">Location</th>
-</tr>
-<tr>
-<td class="" colspan="1" rowspan="1">Terrain shapes</td>
-<td class="" colspan="1" rowspan="1">48 levels x 256 bytes = 12,288 bytes</td>
-<td class="" colspan="1" rowspan="1"><a href="../asm/38144.html">level_terrains</a></td>
-</tr>
-<tr>
-<td class="" colspan="1" rowspan="1">Object spawns</td>
-<td class="" colspan="1" rowspan="1">48 levels x 256 bytes = 12,288 bytes</td>
-<td class="" colspan="1" rowspan="1"><a href="../asm/51200.html">level_objects</a></td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-The terrain data is reasonably efficient (64 fragments x 4 bytes = 256 bytes
-per level). However, the object spawn data uses 128 slots x 2 bytes per
-level, where most slots are empty (X position = $00). A more compact encoding
-— such as run-length compression for empty slots or delta-encoding for
-terrain offsets — could save significant memory.
-</div>
-<div class="paragraph">
-The straightforward storage suggests the level data was likely generated by
-an external tool that prioritized simplicity over compactness.
-</div>
-</div>
-<div><span id="unusedControlScreen"></span></div>
-<div class="box box-2">
-<div class="box-title">Unused control selection screen at $8561</div>
-<div class="paragraph">
-Text data at <a href="../asm/34145.html">msg_control_menu</a> contains a formatted control selection menu that is
-never displayed by the game code. It appears to be a remnant of an earlier
-UI design, replaced by the current menu system implemented at <a href="../asm/31417.html">setup</a>.
-</div>
-</div>
-<div><span id="preShiftedSprites"></span></div>
-<div class="box box-1">
-<div class="box-title">Pre-shifted sprites (and wasted fighter frames)</div>
-<div class="paragraph">
-All sprites exist in 4 copies, each shifted by 2 pixels. The rendering
-routine at <a href="../asm/35614.html">render_sprite</a> picks the correct pre-shifted frame based on the object's
-X position bits 1-2. This trades memory for speed: a single table lookup
-replaces what would otherwise be 0-6 bit-shift operations per scanline during
-rendering.
-</div>
-<div class="paragraph">
-However, fighters move at 4 pixels per frame — exactly one character cell
-width. This means that at most 1-2 of the 4 shifted frames are ever actually
-displayed for fighters. The remaining 2-3 frames (48-72 bytes per direction)
-are wasted memory.
-</div>
-</div>
-<div><span id="selfModifyingCode"></span></div>
-<div class="box box-2">
-<div class="box-title">Self-modifying code for blending modes</div>
-<div class="paragraph">
-The sprite renderer uses self-modifying code to switch between blending modes
-at runtime. The opcodes OPCODE_XOR_B and OPCODE_OR_B are patched into the
-instruction addresses <a href="../asm/35900.html">sprite_draw_op</a> and <a href="../asm/35867.html">sprite_erase_op</a>:
-</div>
-<div class="paragraph">
-<ul class="">
-<li><a href="../asm/28742.html">blending_mode_xor_nop</a> patches in XOR mode (for fighters and tanks)</li>
-<li><a href="../asm/29423.html">blending_mode_or_or</a> restores OR mode (default blending)</li>
-</ul>
-</div>
-<div class="paragraph">
-Self-modifying code is also used for the fuel gauge at <a href="../asm/24868.html">calculate_fuel_gauge_offset</a>, where a
-computed sprite data offset is patched into an RLC instruction's operand.
-</div>
-</div>
-<div><span id="pixelCollisionDetection"></span></div>
-<div class="box box-1">
-<div class="box-title">Pixel-perfect collision via rendering pipeline</div>
-<div class="paragraph">
-The two-phase render pipeline at <a href="../asm/35644.html">render_object</a> serves double duty — it both renders
-sprites and detects collisions in a single pass:
-</div>
-<div class="paragraph">
-<ul class="">
-<li>Phase 1: XOR erase the old sprite (removes the previous frame)</li>
-<li>Phase 2: OR draw the new sprite, checking for non-zero pixels at each position</li>
-</ul>
-</div>
-<div class="paragraph">
-If OR-ing a sprite pixel onto non-zero screen data, a collision is flagged
-and dispatched via <a href="../asm/24886.html">collision_dispatcher</a>. This eliminates the need for a separate collision
-map, but it also means that any non-zero screen content — including attribute
-artifacts, explosion debris, or even POKEd data — acts as a collision
-surface. See also <a href="bugs.html#screenCollision">Collision detection works on
-raw screen pixels</a>.
+The game loop runs at approximately 12 FPS despite the ZX Spectrum's 50 Hz
+interrupt rate. This was measured programmatically using a custom FPS counter
+that tracks <a href="../asm/24303.html">state_tick</a> increments per 50 interrupts. The gap is caused by the
+scroll routine taking multiple frame periods to complete.
 </div>
 </div>
 <div><span id="interruptDrivenSound"></span></div>
@@ -198,8 +64,89 @@ makes the pitch vary semi-randomly between frames, producing the chaotic
 explosion effect.
 </div>
 </div>
-<div><span id="asciiArithmetic"></span></div>
+<div><span id="preShiftedSprites"></span></div>
 <div class="box box-1">
+<div class="box-title">Pre-shifted sprites (and wasted fighter frames)</div>
+<div class="paragraph">
+All sprites exist in 4 copies, each shifted by 2 pixels. The rendering
+routine at <a href="../asm/35614.html">render_sprite</a> picks the correct pre-shifted frame based on the object's
+X position bits 1-2. This trades memory for speed: a single table lookup
+replaces what would otherwise be 0-6 bit-shift operations per scanline during
+rendering.
+</div>
+<div class="paragraph">
+However, fighters move at 4 pixels per frame — exactly one character cell
+width. This means that at most 1-2 of the 4 shifted frames are ever actually
+displayed for fighters. The remaining 2-3 frames (48-72 bytes per direction)
+are wasted memory.
+</div>
+</div>
+<div><span id="pixelCollisionDetection"></span></div>
+<div class="box box-2">
+<div class="box-title">Pixel-perfect collision via rendering pipeline</div>
+<div class="paragraph">
+The sprite renderer doubles as the collision detector. The two-phase pipeline
+at <a href="../asm/35644.html">render_object</a> XOR-erases the old sprite, then OR-draws the new one; if OR-ing
+onto non-zero screen data, a collision is flagged and dispatched via <a href="../asm/24886.html">collision_dispatcher</a>.
+There is no separate collision map — the framebuffer itself is the collision
+surface.
+</div>
+<div class="paragraph">
+This means any non-zero screen content — including attribute artifacts,
+explosion debris, or data written via POKE during a pause — acts as a
+collision surface. See also <a href="bugs.html#screenCollision">Collision detection
+works on raw screen pixels</a>.
+</div>
+</div>
+<div><span id="selfModifyingCode"></span></div>
+<div class="box box-1">
+<div class="box-title">Self-modifying code for blending modes</div>
+<div class="paragraph">
+The sprite renderer uses self-modifying code to switch between blending modes
+at runtime. The opcodes <code>OPCODE_XOR_B</code> and <code>OPCODE_OR_B</code> are patched into the
+instruction addresses <a href="../asm/35900.html">sprite_draw_op</a> and <a href="../asm/35867.html">sprite_erase_op</a>:
+</div>
+<div class="paragraph">
+<ul class="">
+<li><a href="../asm/28742.html">blending_mode_xor_nop</a> patches in XOR mode (for fighters and tanks)</li>
+<li><a href="../asm/29423.html">blending_mode_or_or</a> restores OR mode (default blending)</li>
+</ul>
+</div>
+<div class="paragraph">
+Self-modifying code is also used for the fuel gauge at <a href="../asm/24868.html">calculate_fuel_gauge_offset</a>, where a
+computed sprite data offset is patched into an RLC instruction's operand.
+</div>
+</div>
+<div><span id="scrollInBufferZone"></span></div>
+<div class="box box-2">
+<div class="box-title">Black-on-black buffer zone for scroll-in</div>
+<div class="paragraph">
+Attribute row 0 (<a href="../asm/22528.html">screen_attributes</a>) is kept permanently black, making it an invisible 8-pixel
+buffer. Objects spawning at the top scroll into view from behind it. This is
+sufficient for 1-tile sprites (ship, helicopter) but not for balloons (16 px) or
+fuel stations (25 px) — their lower portions appear immediately.
+</div>
+<div class="paragraph">
+The overview text crawl uses a similar 1-column buffer at column 31 of char row
+23: characters are printed there with black ink + paper and shifted left into
+view by <a href="../asm/35355.html">scroll_text_crawl</a>.
+</div>
+</div>
+<div><span id="singleProjectiles"></span></div>
+<div class="box box-1">
+<div class="box-title">Only one tank shell and one helicopter missile at a time</div>
+<div class="paragraph">
+Each projectile type has a single global state variable: <a href="../asm/29571.html">tank_shell_state</a>
+(tank_shell_state) for tank shells and <a href="../asm/24435.html">helicopter_missile_coordinates_ptr</a> (helicopter missile
+coordinates) for helicopter missiles. When any tank tries to fire, it checks
+<code>TANK_SHELL_BIT_FLYING</code> in <a href="../asm/29571.html">tank_shell_state</a> and skips firing if the bit is
+set. When any advanced helicopter tries to fire, it checks the Y coordinate
+in <a href="../asm/24435.html">helicopter_missile_coordinates_ptr</a> and returns if non-zero. All tanks share the one shell
+slot; all advanced helicopters share the one missile slot.
+</div>
+</div>
+<div><span id="asciiArithmetic"></span></div>
+<div class="box box-2">
 <div class="box-title">Arithmetic directly on ASCII digit strings</div>
 <div class="paragraph">
 Instead of binary addition followed by BCD-to-ASCII conversion, the game
@@ -210,7 +157,7 @@ schoolbook long addition:
 <ul class="">
 <li>Load an ASCII digit character from the score buffer</li>
 <li>Increment it (INC adds 1 to the character code)</li>
-<li>Compare with '9'+1 (CHAR_0 + 10) to detect overflow</li>
+<li>Compare with '9'+1 (<code>CHAR_0</code> + 10) to detect overflow</li>
 <li>If overflow: store '0' and carry to the next higher digit</li>
 <li>If no overflow: store the updated digit and print it</li>
 </ul>
@@ -220,68 +167,6 @@ This avoids binary math entirely — there is no binary score representation
 anywhere in the game. The tradeoff: single-digit updates are fast, but adding
 multi-digit values requires repeated single-digit increments with carry
 propagation.
-</div>
-</div>
-<div><span id="multiplyAndDivide"></span></div>
-<div class="box box-2">
-<div class="box-title">Multiplication and division without hardware support</div>
-<div class="paragraph">
-The Z80 has no multiply or divide instructions. River Raid implements these
-operations using shift-and-add chains for multiplication and repeated
-subtraction for division.
-</div>
-<div class="paragraph">
-Multiplication by powers of 2 uses left-shift chains:
-</div>
-<div class="paragraph">
-<table class="default">
-<tr>
-<th colspan="1" rowspan="1">Operation</th>
-<th colspan="1" rowspan="1">Implementation</th>
-<th colspan="1" rowspan="1">Example</th>
-</tr>
-<tr>
-<td class="" colspan="1" rowspan="1">x2</td>
-<td class="" colspan="1" rowspan="1"><code>ADD A,A</code> (or <code>SLA A</code>)</td>
-<td class="" colspan="1" rowspan="1"></td>
-</tr>
-<tr>
-<td class="" colspan="1" rowspan="1">x4</td>
-<td class="" colspan="1" rowspan="1"><code>ADD A,A</code> twice</td>
-<td class="" colspan="1" rowspan="1"></td>
-</tr>
-<tr>
-<td class="" colspan="1" rowspan="1">x8</td>
-<td class="" colspan="1" rowspan="1"><code>ADD A,A</code> three times (or <code>SLA</code>)</td>
-<td class="" colspan="1" rowspan="1"><a href="../asm/35406.html#35430">8A66</a></td>
-</tr>
-<tr>
-<td class="" colspan="1" rowspan="1">x3</td>
-<td class="" colspan="1" rowspan="1">x2 + original</td>
-<td class="" colspan="1" rowspan="1"></td>
-</tr>
-<tr>
-<td class="" colspan="1" rowspan="1">x5</td>
-<td class="" colspan="1" rowspan="1">x4 + original</td>
-<td class="" colspan="1" rowspan="1"></td>
-</tr>
-<tr>
-<td class="" colspan="1" rowspan="1">x7</td>
-<td class="" colspan="1" rowspan="1">x8 - original</td>
-<td class="" colspan="1" rowspan="1"></td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-Division by powers of 2 uses right-shift chains (<code>SRL</code>). For
-example, dividing by 8 requires three <code>SRL A</code> instructions, as
-seen at <a href="../asm/29534.html#29555">7373</a>.
-</div>
-<div class="paragraph">
-For non-power-of-2 division, the code uses repeated subtraction. For example,
-at $7387 the operation <code>C = C - E*4</code> is performed as four
-consecutive <code>SUB E</code> instructions rather than using a
-shift-and-subtract algorithm.
 </div>
 </div>
 <div><span id="incrementThenCorrect"></span></div>
@@ -303,22 +188,97 @@ unconditional arithmetic followed by a correction. It saves a few bytes but
 looks counterintuitive when reading the code.
 </div>
 </div>
-<div><span id="stackTricks"></span></div>
+<div><span id="player2Afterthought"></span></div>
 <div class="box box-2">
-<div class="box-title">Stack pointer tricks for computed jumps</div>
+<div class="box-title">Player 2 logic was a late addition</div>
 <div class="paragraph">
-The menu system at <a href="../asm/31417.html">setup</a> manipulates the stack pointer directly: it sets SP
-to point at <a href="../asm/30736.html">setup_sp</a>, a table of return addresses. Each subsequent RET
-instruction pops an address from this table and jumps to it, creating a chain
-of computed GOTOs. The original stack pointer is saved at <a href="../asm/24451.html">saved_stack_pointer</a> and
-restored after the menu sequence completes.
+Player 2 handling is scattered across the codebase as duplicated branches
+rather than parameterized code. Nearly every routine that touches scoring,
+bridge display, status line, or death handling has a
+<code>CP PLAYER_2 / JR Z</code> fork to a near-identical copy:
+</div>
+<div class="paragraph">
+<ul class="">
+<li>Score increment: <a href="../asm/37179.html">inc_player_1_score_digit</a> (player 1) vs <a href="../asm/37225.html">inc_player_2_score_digit</a> (player 2)</li>
+<li>Score printing: <a href="../asm/37195.html">print_player_1_score_digit</a> (player 1) vs <a href="../asm/37241.html">print_player_2_score_digit</a> (player 2)</li>
+<li>Bridge display: <a href="../asm/25788.html">print_bridge</a> (player 1) vs <a href="../asm/25829.html">print_bridge_player_2</a> (player 2)</li>
+<li>Plane movement: <a href="../asm/26099.html">handle_right</a> and <a href="../asm/26178.html">handle_left</a> both branch for player 2 attributes</li>
+<li>Death handling: multiple routines with <code>CP PLAYER_2</code> forks</li>
+</ul>
+</div>
+<div class="paragraph">
+A parameterized design using the player number as a table index would have
+eliminated the duplication. The pattern strongly suggests that single-player
+mode was developed first and two-player support was bolted on afterward.
+</div>
+</div>
+<div><span id="levelDataStorage"></span></div>
+<div class="box box-1">
+<div class="box-title">Level data stored wastefully</div>
+<div class="paragraph">
+The game dedicates nearly 24 KB to level definitions — almost half the total
+program size:
+</div>
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Data</th>
+<th colspan="1" rowspan="1">Size</th>
+<th colspan="1" rowspan="1">Location</th>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Terrain shapes</td>
+<td class="" colspan="1" rowspan="1">48 levels × 256 bytes = 12,288 bytes</td>
+<td class="" colspan="1" rowspan="1"><a href="../asm/38144.html">level_terrains</a></td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">Object spawns</td>
+<td class="" colspan="1" rowspan="1">48 levels × 256 bytes = 12,288 bytes</td>
+<td class="" colspan="1" rowspan="1"><a href="../asm/51200.html">level_objects</a></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+The terrain data is reasonably efficient (64 fragments × 4 bytes = 256 bytes
+per level). However, the object spawn data uses 128 slots × 2 bytes per
+level, where most slots are empty (X position = 0). A more compact encoding
+— such as run-length compression for empty slots or delta-encoding for
+terrain offsets — could save significant memory.
+</div>
+<div class="paragraph">
+The straightforward storage suggests the level data was likely generated by
+an external tool that prioritized simplicity over compactness.
+</div>
+</div>
+<div><span id="duplicatedRendering"></span></div>
+<div class="box box-2">
+<div class="box-title">Island and bank rendering heavily duplicated</div>
+<div class="paragraph">
+Left bank and right bank rendering in <a href="../asm/27024.html">render_island_line</a> (island edges) and <a href="../asm/27299.html">render_terrain_fragment</a>
+(terrain fragments) follow identical logic but are implemented as separate
+code paths with only operand differences. The duplication is remarkably
+regular — same structure, same control flow, different constants.
+</div>
+<div class="paragraph">
+This pattern could indicate systematic copy-paste development, or
+alternatively, output from a high-level language compiler or macro assembler
+that expanded separate invocations without optimizing the identical code.
+</div>
+</div>
+<div><span id="unusedControlScreen"></span></div>
+<div class="box box-1">
+<div class="box-title">Unused control selection screen</div>
+<div class="paragraph">
+Text data at <a href="../asm/34145.html">msg_control_menu</a> contains a formatted control selection menu that is
+never displayed by the game code. It appears to be a remnant of an earlier
+UI design, replaced by the current menu system implemented at <a href="../asm/31417.html">setup</a>.
 </div>
 </div>
 <div><span id="uselessTrampoline"></span></div>
-<div class="box box-1">
-<div class="box-title">Useless trampoline at $76AC</div>
+<div class="box box-2">
+<div class="box-title">Useless single-instruction trampoline</div>
 <div class="paragraph">
-The routine at <a href="../asm/30380.html">jp_operate_viewport_slots</a> (<code>jp_operate_viewport_slots</code>) is a single
+The routine at <a href="../asm/30380.html">jp_operate_viewport_slots</a> is a single
 unconditional <code>JP <a href="../asm/28814.html">operate_viewport_slots</a></code> instruction. It adds no logic —
 callers could jump to <a href="../asm/28814.html">operate_viewport_slots</a> directly. This is likely a remnant of
 refactoring where an intermediate routine was removed but its entry point was
@@ -326,10 +286,10 @@ preserved.
 </div>
 </div>
 <div><span id="deadCode"></span></div>
-<div class="box box-2">
-<div class="box-title">Dead calculation at $7695</div>
+<div class="box box-1">
+<div class="box-title">Dead frame offset calculation in balloon handler</div>
 <div class="paragraph">
-At $7695, 8 bytes calculate a frame offset from the frame counter. However,
+At <a href="../asm/30281.html#30357">dead_frame_offset</a>, 8 bytes calculate a frame offset from the frame counter. However,
 the result is immediately overwritten by balloon-specific parameters in the
 instructions that follow. This dead code is likely left over from a time when
 this code path handled multiple object types before being specialized for
@@ -337,8 +297,8 @@ balloons only.
 </div>
 </div>
 <div><span id="unusedSprites"></span></div>
-<div class="box box-1">
-<div class="box-title">Unused explosion animation at $8AD8</div>
+<div class="box box-2">
+<div class="box-title">Unused alternate explosion animation</div>
 <div class="paragraph">
 A 6-frame animation at <a href="../asm/35544.html">sprite_unused_explosion</a> shows a diamond shape expanding from a single
 pixel to a full diamond (48 bytes total). This appears to be an
@@ -347,7 +307,7 @@ sprites are already rendered as UDGs in the disassembly listing.
 </div>
 </div>
 <div><span id="unusedData"></span></div>
-<div class="box box-2">
+<div class="box box-1">
 <div class="box-title">Unused variables and data areas</div>
 <div class="paragraph">
 Several variables and data areas in the game binary are never accessed by any
@@ -377,7 +337,7 @@ code:
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1"><a href="../asm/33681.html">data_unused_8391</a></td>
-<td class="" colspan="1" rowspan="1">32-byte alternate road attributes using $3F/$C0 values (flash + invisible); possibly a debug or early version of the road rendering</td>
+<td class="" colspan="1" rowspan="1">Alternate road attributes (possibly debug or early version)</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1"><a href="../asm/35608.html">data_unused_8B18</a></td>
@@ -393,18 +353,12 @@ code:
 </tr>
 </table>
 </div>
-</div>
-<div><span id="retnVsReti"></span></div>
-<div class="box box-1">
-<div class="box-title">RETN instead of RETI in interrupt handler</div>
 <div class="paragraph">
-The interrupt handler at <a href="../asm/27611.html">int_handler</a> uses RETN (return from non-maskable
-interrupt, opcode $ED $45) instead of RETI (return from maskable interrupt,
-opcode $ED $4D). On a standard ZX Spectrum without daisy-chained Z80
-peripherals, these are functionally equivalent — both copy IFF2 to IFF1 and
-pop the return address. The distinction only matters for Z80 peripheral chips
-(PIO, SIO, CTC) that monitor the data bus for the specific RETI opcode to
-manage their interrupt priority chains.
+Several of these areas begin with the bytes <code>$C3,$90,$EA</code> — the Z80 encoding of <code>JP $EA90</code>. Since
+<code>$EA90</code> falls within the object spawn tables and has no special meaning in the
+shipped game, this is likely a fill pattern from the development toolchain:
+a debug trap that would redirect stray execution to a fixed address
+(presumably a monitor or debugger) on the development system.
 </div>
 </div>
 <footer>

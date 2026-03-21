@@ -19,113 +19,33 @@
 </table>
 <div class="page-content">
 <ul class="contents">
-<li><a href="#planeSprite">Plane sprite has misplaced pixels</a></li>
-<li><a href="#fighterSprite">Fighter sprite has wrong pixels in multiple frames</a></li>
-<li><a href="#screenCollision">Collision detection works on raw screen pixels</a></li>
-<li><a href="#fuelDepotSelfDestruct">Shooting a fuel depot while refueling can kill you</a></li>
-<li><a href="#islandLoop">Off-by-one in island element lookup</a></li>
-<li><a href="#planeYInconsistency">Speed-dependent plane Y coordinate is dead code</a></li>
+<li><a href="#brokenSprites">Several sprites contain incorrect pixel data</a></li>
 <li><a href="#bothDirections">Pressing left and right simultaneously shows banked plane sprite</a></li>
 <li><a href="#bothUpDown">Pressing up and down simultaneously always results in slow speed</a></li>
-<li><a href="#statusLineCopy">Wrong addresses in Player 2 status line</a></li>
+<li><a href="#missileAlignment">Missile spawns 1 pixel to the right of the plane tip</a></li>
+<li><a href="#fuelBugs">Fuel tank and gauge off-by-one errors</a></li>
+<li><a href="#missileTrail">Missile trail is implemented but never rendered</a></li>
+<li><a href="#planeYInconsistency">Speed-dependent look-ahead distance is implemented but never used</a></li>
+<li><a href="#scrollInBridgeCount">Bridge counter not updated during scroll-in</a></li>
 </ul>
-<div><span id="planeSprite"></span></div>
+<div><span id="brokenSprites"></span></div>
 <div class="box box-1">
-<div class="box-title">Plane sprite has misplaced pixels</div>
+<div class="box-title">Several sprites contain incorrect pixel data</div>
 <div class="paragraph">
-Two bytes in the player's plane sprite data contain incorrect pixel values.
-The errors are at $83BB (frame 1) and $83CB (frame 2), corrected via
-<code>ofix</code> directives. The visual effect is subtle — a few pixels are
-misplaced in the plane's wing area.
-</div>
-</div>
-<div><span id="fighterSprite"></span></div>
-<div class="box box-2">
-<div class="box-title">Fighter sprite has wrong pixels in multiple frames</div>
-<div class="paragraph">
-Six bytes across both left-facing and right-facing fighter sprite frames
-contain incorrect pixel data:
-</div>
-<div class="paragraph">
-<ul class="">
-<li>Left-facing: $8736 and $8739 (frame 1)</li>
-<li>Right-facing: $8916 and $8919 (frame 1), $891F (frame 1), $893A (frame 2)</li>
-</ul>
-</div>
-<div class="paragraph">
-All corrected via <code>ofix</code> directives. The errors affect the
-fighter's wing and fuselage outline in certain animation frames.
-</div>
-</div>
-<div><span id="screenCollision"></span></div>
-<div class="box box-1">
-<div class="box-title">Collision detection works on raw screen pixels</div>
-<div class="paragraph">
-The game detects collisions during the sprite rendering phase by checking
-whether OR-ing a new sprite's pixels onto the screen encounters any non-zero
-existing pixels (see <a href="../asm/35644.html">render_object</a> and <a href="../asm/35909.html">jp_collision_dispatcher</a>). There is no separate collision
-map — the framebuffer itself serves as the collision surface.
-</div>
-<div class="paragraph">
-This means that anything drawn on screen is collidable, including data
-written via POKE during a pause. If you pause the game and POKE non-zero
-bytes into screen memory at the plane's position, the plane will collide
-with them when the game resumes.
-</div>
-</div>
-<div><span id="fuelDepotSelfDestruct"></span></div>
-<div class="box box-2">
-<div class="box-title">Shooting a fuel depot while refueling can kill you</div>
-<div class="paragraph">
-While refueling (GAMEPLAY_MODE_REFUEL), the plane's collision detection
-remains active with COLLISION_MODE_FUEL_DEPOT set. If the player fires a
-missile at the fuel depot being used for refueling, the resulting explosion
-fragments are rendered via OR blending. If an explosion fragment's pixels
-happen to overlap the plane's pixel position on screen, the rendering
-pipeline detects the overlap and triggers a player death.
-</div>
-<div class="paragraph">
-This bug is intermittent because the explosion fragments must land at exactly
-the right pixel position to overlap with the plane sprite. Most of the time,
-the fragments fly past harmlessly.
-</div>
-<div class="paragraph">
-See <a href="../asm/25720.html">hit_fuel</a> (fuel depot collision handler), <a href="../asm/25174.html">handle_collision_mode_fuel_depot</a> (fuel depot collision
-mode setup), <a href="../asm/35644.html">render_object</a> (render with collision detection).
-</div>
-</div>
-<div><span id="islandLoop"></span></div>
-<div class="box box-1">
-<div class="box-title">Off-by-one in island element lookup</div>
-<div class="paragraph">
-The island element search loop at <a href="../asm/26987.html#27000">locate_island_element</a> has an incorrect branch condition,
-corrected by the <code>ofix</code> at $697A (JR NZ with corrected target).
-The original code can skip past the intended island entry under certain
-conditions.
-</div>
-</div>
-<div><span id="planeYInconsistency"></span></div>
-<div class="box box-2">
-<div class="box-title">Speed-dependent plane Y coordinate is dead code</div>
-<div class="paragraph">
-The terrain rendering routine (<a href="../asm/24741.html#24777">60C9</a>) computes the plane's Y position as
-$88 minus the current speed setting, which would place the plane 1-3 pixels
-lower at higher speeds. However, all three movement handlers — handle_right
-(<a href="../asm/26099.html">handle_right</a>), handle_left (<a href="../asm/26178.html">handle_left</a>), and render_plane (<a href="../asm/26242.html">render_plane</a>) — immediately
-overwrite this with the fixed PLANE_COORDINATE_Y ($80), making the
-speed-dependent calculation dead code with no visible effect.
+The player plane, fighter, advanced helicopter, and tank sprites all contain
+bytes with incorrect pixel values, corrected via <code>ofix</code> directives.
 </div>
 </div>
 <div><span id="bothDirections"></span></div>
-<div class="box box-1">
+<div class="box box-2">
 <div class="box-title">Pressing left and right simultaneously shows banked plane sprite</div>
 <div class="paragraph">
 When both left and right are held at the same time, the plane appears banked
-despite no net movement. Both <a href="../asm/26099.html">handle_right</a> (handle_right) and <a href="../asm/26178.html">handle_left</a> (handle_left)
-are called in sequence: handle_right moves the plane +2 pixels and renders the
-banked sprite, then handle_left moves it −2 pixels and renders the banked sprite
+despite no net movement. Both <a href="../asm/26099.html">handle_right</a> and <a href="../asm/26178.html">handle_left</a>
+are called in sequence: <a href="../asm/26099.html">handle_right</a> moves the plane +2 pixels and renders the
+banked sprite, then <a href="../asm/26178.html">handle_left</a> moves it −2 pixels and renders the banked sprite
 again, leaving the plane at its original position. However, both handlers always
-set <a href="../asm/24425.html">state_plane_sprite_bank</a> (state_plane_sprite_bank) to $04, which causes the main render pass
+set <a href="../asm/24425.html">state_plane_sprite_bank</a> to <code>4</code>, which causes the main render pass
 in <a href="../asm/26242.html">render_plane</a> to select the banked sprite rather than the centered one. Since neither
 handler checks whether the opposing direction is also active, there is no way for
 the net-zero input to produce the level sprite. Contrast with up+down, where the
@@ -133,13 +53,13 @@ last-evaluated key wins outright — see <a href="bugs.html#bothUpDown">Pressing
 </div>
 </div>
 <div><span id="bothUpDown"></span></div>
-<div class="box box-2">
+<div class="box box-1">
 <div class="box-title">Pressing up and down simultaneously always results in slow speed</div>
 <div class="paragraph">
 When both up and down are held at the same time, the plane always slows down.
-<a href="../asm/24680.html">scan_keyboard</a> (scan_keyboard) evaluates up before down: <a href="../asm/26378.html">handle_up</a> (handle_up) writes
-SPEED_FAST and clears CONTROLS_BIT_SPEED_NOT_FAST, then <a href="../asm/26391.html">handle_down</a> (handle_down)
-immediately overwrites with SPEED_SLOW and sets both speed control bits. Last
+<a href="../asm/24680.html">scan_keyboard</a> evaluates up before down: <a href="../asm/26378.html">handle_up</a> writes
+<code>SPEED_FAST</code> and clears <code>CONTROLS_BIT_SPEED_NOT_FAST</code>, then <a href="../asm/26391.html">handle_down</a>
+immediately overwrites with <code>SPEED_SLOW</code> and sets both speed control bits. Last
 writer wins unconditionally.
 </div>
 <div class="paragraph">
@@ -149,14 +69,69 @@ is no cancellation — one input simply silently overwrites the other. The outco
 in both cases is an accident of evaluation order, not a deliberate design choice.
 </div>
 </div>
-<div><span id="statusLineCopy"></span></div>
-<div class="box box-1">
-<div class="box-title">Wrong addresses in Player 2 status line</div>
+<div><span id="missileAlignment"></span></div>
+<div class="box box-2">
+<div class="box-title">Missile spawns 1 pixel to the right of the plane tip</div>
 <div class="paragraph">
-When displaying the Player 2 status line, the code at $65A1 uses incorrect
-source address and byte count parameters for the memory copy. The
-<code>ofix</code> directives at $65A1 (LD DE) and $65A4 (LD BC) correct
-these values to properly copy the status line text.
+The plane tip is a single pixel at offset +3 from the sprite's left edge
+(<a href="../asm/33713.html">sprite_plane</a> frame 1, first row: <code>$10</code> = bit 4). The missile spawns
+at <code>plane_X</code> + 4 (<a href="../asm/26404.html">handle_fire</a>), and since the plane always moves in 2-pixel steps,
+<code>plane_X</code> is always even — so the missile's 2 visible pixels always land at
+<code>plane_X</code> + 4 and <code>plane_X</code> + 5, one pixel to the right of the tip with no
+overlap. Using offset +3 instead would align the right missile pixel with the
+tip, which is the closest centering possible given the even/odd constraint.
+</div>
+</div>
+<div><span id="fuelBugs"></span></div>
+<div class="box box-1">
+<div class="box-title">Fuel tank and gauge off-by-one errors</div>
+<div class="paragraph">
+Refueling stops at <code>FUEL_LEVEL_ALMOST_FULL</code> (252) rather
+than <code>FUEL_LEVEL_FULL</code> (255) — see <a href="../asm/28224.html">add_fuel</a>. The difference
+is not visible: both values map to the same gauge column via
+<code>fuel >> 2</code>.
+</div>
+<div class="paragraph">
+The refueling gauge routine (<a href="../asm/28224.html#28264">update_fuel_gauge_refuel</a>) uses column offset 63, while the
+consumption routine (<a href="../asm/28159.html#28194">update_fuel_gauge</a>) uses 64. At the same fuel level, the refueling
+needle sits 1 pixel to the left of where the consumption needle would appear.
+The needle jumps 1 pixel right the moment the player leaves the fuel depot.
+</div>
+</div>
+<div><span id="missileTrail"></span></div>
+<div class="box box-2">
+<div class="box-title">Missile trail is implemented but never rendered</div>
+<div class="paragraph">
+The missile trail sprite (<a href="../asm/33873.html">sprite_missile_trail</a>, 4 frames) and its frame-selection logic in
+<a href="../asm/26516.html">finalize_collision</a> are fully implemented, but the trail is never drawn. After selecting
+the correct frame based on the missile's X position, <a href="../asm/26516.html">finalize_collision</a> immediately
+discards the pointer and substitutes <a href="../asm/33525.html">sprite_erasure</a>, so only an
+erasure is rendered at the trail's location. The feature appears unfinished.
+</div>
+</div>
+<div><span id="planeYInconsistency"></span></div>
+<div class="box box-1">
+<div class="box-title">Speed-dependent look-ahead distance is implemented but never used</div>
+<div class="paragraph">
+The terrain rendering routine (<a href="../asm/24741.html">render_plane_and_terrain</a>) computes the plane's Y position as
+136 minus the current speed setting, placing the plane at Y=135 (slow),
+134 (normal), or 132 (fast) — higher on screen at faster speeds, showing
+more upcoming terrain as a look-ahead effect. However, all three movement handlers — handle_right
+(<a href="../asm/26099.html">handle_right</a>), handle_left (<a href="../asm/26178.html">handle_left</a>), and render_plane (<a href="../asm/26242.html">render_plane</a>) — immediately
+overwrite this with the fixed <code>PLANE_COORDINATE_Y</code> (128), making the
+look-ahead calculation dead code with no visible effect.
+</div>
+</div>
+<div><span id="scrollInBridgeCount"></span></div>
+<div class="box box-2">
+<div class="box-title">Bridge counter not updated during scroll-in</div>
+<div class="paragraph">
+The scroll-in preview (<a href="../asm/23974.html#24202">scroll_in_loop</a>) advances the internal bridge index (<a href="../asm/24304.html">state_bridge_index</a>)
+as bridge boundaries scroll past. The player's bridge counter
+(<a href="../asm/24426.html">state_bridge_player_1</a>/<a href="../asm/24427.html">state_bridge_player_2</a>), however, only advances when the player shoots a bridge —
+which requires collision detection, disabled during scroll-in. After the
+preview ends, the displayed count and level-dependent logic are behind by the
+number of bridges scrolled through.
 </div>
 </div>
 <footer>

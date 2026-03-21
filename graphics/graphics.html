@@ -37,7 +37,7 @@
 <div class="box box-1">
 <div class="box-title">Player plane</div>
 <div class="paragraph">
-The player's plane is a 2x1 tile (16x8 pixel) sprite with 4 pre-shifted
+The player's plane is a 2×1 tile (16×8 pixel) sprite with 4 pre-shifted
 frames for smooth horizontal movement. A separate banked variant is used when
 the plane turns left or right.
 </div>
@@ -65,7 +65,7 @@ Sprite data: <a href="../asm/33713.html">sprite_plane</a> (centered), <a href=".
 <div class="box box-2">
 <div class="box-title">Helicopter</div>
 <div class="paragraph">
-Regular and advanced helicopters share the same 3x1 tile (24x8 pixel) sprite
+Regular and advanced helicopters share the same 3×1 tile (24×8 pixel) sprite
 format with 4 pre-shifted frames per direction. The advanced variant fires
 missiles at the player.
 </div>
@@ -96,7 +96,7 @@ Sprite data: <a href="../asm/34227.html">sprite_enemies_left</a> (left-facing), 
 <div class="box box-1">
 <div class="box-title">Helicopter rotor</div>
 <div class="paragraph">
-The helicopter rotor is a 2-tile wide × 2-pixel tall sprite rendered separately
+The helicopter rotor is a 2-tile wide Ã 2-pixel tall sprite rendered separately
 above the helicopter body. Each direction has 4 pre-shifted frames for smooth
 animation as the helicopter moves horizontally.
 </div>
@@ -124,7 +124,7 @@ Sprite data: <a href="../asm/35512.html">sprite_helicopter_rotor_left</a> (left)
 <div class="box box-2">
 <div class="box-title">Ship</div>
 <div class="paragraph">
-Ships are 3x1 tile (24x8 pixel) sprites with 4 pre-shifted frames per
+Ships are 3×1 tile (24×8 pixel) sprites with 4 pre-shifted frames per
 direction.
 </div>
 <div class="paragraph">
@@ -142,7 +142,7 @@ Sprite data: <a href="../asm/34227.html#34323">8613</a> (left), <a href="../asm/
 <div class="box box-1">
 <div class="box-title">Tank</div>
 <div class="paragraph">
-Tanks are 3x1 tile (24x8 pixel) sprites with 4 pre-shifted frames per
+Tanks are 3×1 tile (24×8 pixel) sprites with 4 pre-shifted frames per
 direction. They move along river banks and fire parabolic shells.
 </div>
 <div class="paragraph">
@@ -160,9 +160,9 @@ Sprite data: <a href="../asm/34227.html#34515">86D3</a> (left), <a href="../asm/
 <div class="box box-2">
 <div class="box-title">Fighter</div>
 <div class="paragraph">
-Fighters are 3x1 tile (24x8 pixel) sprites with 4 pre-shifted frames per
+Fighters are 3×1 tile (24×8 pixel) sprites with 4 pre-shifted frames per
 direction. They are the fastest enemy at 4 pixels/frame, which means they
-always move in full character cell increments — so at most 1-2 of the 4
+always move in full character cell increments â so at most 1-2 of the 4
 pre-shifted frames are ever displayed.
 </div>
 <div class="paragraph">
@@ -180,8 +180,8 @@ Sprite data: <a href="../asm/34227.html#34611">8733</a> (left), <a href="../asm/
 <div class="box box-1">
 <div class="box-title">Balloon</div>
 <div class="paragraph">
-Balloons are 2x2 tile (16x16 pixel) sprites with 4 pre-shifted frames. Unlike
-other enemies, balloons have no separate left/right variants — they float
+Balloons are 2×2 tile (16×16 pixel) sprites with 4 pre-shifted frames. Unlike
+other enemies, balloons have no separate left/right variants â they float
 vertically.
 </div>
 <div class="paragraph">
@@ -199,7 +199,7 @@ Sprite data: <a href="../asm/35186.html">sprite_balloon</a>.
 <div class="box box-2">
 <div class="box-title">Fuel depot</div>
 <div class="paragraph">
-The fuel depot is a 2-tile wide, 25-pixel tall static sprite — the tallest
+The fuel depot is a 2-tile wide, 25-pixel tall static sprite â the tallest
 object in the game.
 </div>
 <div class="paragraph">
@@ -217,7 +217,7 @@ Sprite data: <a href="../asm/35462.html">sprite_fuel</a>.
 <div class="box box-1">
 <div class="box-title">Rock</div>
 <div class="paragraph">
-Rocks are 3x2 tile (24x16 pixel) static decorations with 4 variants.
+Rocks are 3×2 tile (24×16 pixel) static decorations with 4 variants.
 </div>
 <div class="paragraph">
 <table class="">
@@ -237,7 +237,7 @@ Sprite data: <a href="../asm/33953.html">sprite_rock</a>.
 <div class="box box-2">
 <div class="box-title">Explosion</div>
 <div class="paragraph">
-The explosion animation uses 3 frames of 2x1 tile (16x8 pixel) sprites,
+The explosion animation uses 3 frames of 2×1 tile (16×8 pixel) sprites,
 played back in a 1-2-3-2 loop.
 </div>
 <div class="paragraph">
@@ -255,7 +255,7 @@ Sprite data: <a href="../asm/33905.html">sprite_explosion_f1</a> (frame 1), <a h
 <div class="box box-1">
 <div class="box-title">Missile and shell</div>
 <div class="paragraph">
-The player's missile is a 1x1 tile (8x8 pixel) sprite with 4 pre-shifted
+The player's missile is a 1×1 tile (8×8 pixel) sprite with 4 pre-shifted
 frames and a separate trail sprite drawn below it.
 </div>
 <div class="paragraph">
@@ -279,7 +279,7 @@ Sprite data: <a href="../asm/33841.html">sprite_missile</a> (missile), <a href="
 </div>
 <div class="paragraph">
 Tank shells reuse the missile sprite data but render only 1 pixel height
-(SPRITE_SHELL_HEIGHT_PIXELS). The shell explosion is a 2x2 tile (16x16 pixel)
+(SPRITE_SHELL_HEIGHT_PIXELS). The shell explosion is a 2×2 tile (16×16 pixel)
 sprite at <a href="../asm/36860.html">sprite_tank_shell_explosion</a>.
 </div>
 </div>
@@ -287,7 +287,7 @@ sprite at <a href="../asm/36860.html">sprite_tank_shell_explosion</a>.
 <div class="box box-2">
 <div class="box-title">Tank shell explosion</div>
 <div class="paragraph">
-The tank shell explosion is a 2x2 tile (16x16 pixel) sprite with 6 frames
+The tank shell explosion is a 2×2 tile (16×16 pixel) sprite with 6 frames
 showing an expanding diamond pattern. Used when tank shells hit the ground
 or player.
 </div>
@@ -307,9 +307,9 @@ Sprite data: <a href="../asm/36860.html">sprite_tank_shell_explosion</a>.
 <div class="box-title">Unused explosion (prototype)</div>
 <div class="paragraph">
 An unused 6-frame animation at <a href="../asm/35544.html">sprite_unused_explosion</a> showing a diamond shape expanding from
-a single pixel to a full diamond. Each frame is 1x1 tile (8x8 pixels) — half
+a single pixel to a full diamond. Each frame is 1×1 tile (8×8 pixels) â half
 the size of the tank shell explosion at <a href="../asm/36860.html">sprite_tank_shell_explosion</a>. This appears to be an early
-prototype that was replaced with the larger 16x16 pixel version for better
+prototype that was replaced with the larger 16×16 pixel version for better
 visibility.
 </div>
 <div class="paragraph">
