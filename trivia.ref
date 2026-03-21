@@ -1,0 +1,87 @@
+; Trivia about River Raid game mechanics.
+
+[Trivia:targets:Targets]
+The player's plane can hit eight types of targets with its missile. Six are
+mobile enemies, one is a static facility, and one is a terrain structure:
+
+#TABLE(default targets-table)
+{ =h Target       | =h Points }
+{ Ship            | 30        }
+{ Helicopter      | 60        }
+{ Balloon         | 60        }
+{ Fuel Depot      | 80        }
+{ Fighter         | 100       }
+{ Helicopter+     | 150       }
+{ Tank            | 250       }
+{ Bridge          | 500       }
+TABLE#
+
+[Trivia:bonusLife:Bonus life every 10,000 points]
+A bonus life is awarded every 10,000 points, accompanied by a jingle
+(#LINK(Sound#bonus-life)(listen)).
+
+[Trivia:speedMechanics:Player movement]
+The game has three speed settings that control how fast the terrain scrolls:
+
+#TABLE(default)
+{ =h Speed  | =h Terrain scroll }
+{ Slow      | 1 px/frame     }
+{ Normal    | 2 px/frame    }
+{ Fast      | 4 px/frame    }
+TABLE#
+
+See #R$5F64 (speed state), #R$670A (accelerate), #R$6717 (decelerate),
+#R$66D0 (scroll update).
+
+[Trivia:fuelMechanics:Fuel mechanics]
+The fuel system governs how long the player can stay airborne:
+
+#TABLE(default)
+{ =h Mechanic | =h Rate | =h Duration }
+{ Consumption   | 1 unit every 2 frames (~6 units/sec)  | Full tank lasts ~40 sec  }
+{ Refueling     | 4 units per frame (~48 units/sec)     | Full refuel in ~5 sec  }
+TABLE#
+
+Key details:
+
+#LIST
+{ Fuel consumption speed does not depend on the movement speed }
+{ Low fuel warning triggers when fuel drops below 64 }
+{ A "tank full" beep (#R$6E92) plays when fuel reaches 252 }
+LIST#
+
+See #R$6DFF (consumption), #R$6E40 (refueling), #R$5F66 (fuel state
+variable).
+
+[Trivia:bridgeProgressOnDeath:Destroying a bridge advances the respawn point without crossing it]
+Bridge progress is recorded the moment the bridge is destroyed — not when the
+player crosses it. If the player dies before reaching the next bridge, the
+respawn still places them past the destroyed one. The counter (#R$5F6A for
+player 1, #R$5F6B for player 2) is incremented at #R$623F and #R$6249 and is
+never decremented on death.
+
+[Trivia:entitySets:Enemy activation delay after spawning]
+Enemies do not move or shoot immediately when they appear — there is a delay
+of up to 32 frames before they become active. After the player destroys a
+bridge, the delay halves to up to 16 frames.
+
+[Trivia:tankAfterBridge:Tank behavior after bridge destruction depends on the level]
+When the player destroys a bridge while a tank on the road survives, what
+happens next depends on the current bridge number. On bridges 1–7 the tank
+freezes in place. From bridge 8 onwards it continues moving until it reaches
+the gap left by the destroyed bridge, then fires shells into it.
+
+The threshold is a single comparison at #R$753A against bridge 7, using the
+player's progress from #R$5F6A (player 1) or #R$5F6B (player 2). The two
+paths diverge from #R$7525.
+
+[Trivia:bridgeProgression:Infinite loop after bridge 48]
+The game has 48 unique bridge sections, each containing 64 terrain fragments.
+After the player completes all 48, the game does not end — instead it wraps
+around using the formula:
+
+new_bridge = ((progress - 48) mod 15) + 33
+
+This creates an infinite loop through bridges 33-48 (the hardest 15 bridges),
+making the game theoretically endless. See #R$68E9 for the wraparound
+algorithm.

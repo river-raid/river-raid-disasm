@@ -1,5 +1,5 @@
 [Config]
-RefFiles=sound.ref;graphics.ref;levels.ref;facts.ref;bugs.ref;notes.ref;glossary.ref;design.ref
+RefFiles=sound.ref;graphics.ref;levels.ref;trivia.ref;bugs.ref;notes.ref;data-reference.ref;design.ref
 GameDir=river-raid
 
 [Game]
@@ -14,31 +14,31 @@ Levels
 GameStatusBuffer
 
 [Index:Reference:Reference]
-Facts
+DataReference
+Trivia
 Bugs
 Notes
-Glossary
 
 [Paths]
 Graphics=graphics/graphics.html
 Sound=sound/sound.html
 Levels=data/levels.html
 Notes=reference/notes.html
-Glossary=reference/glossary.html
+DataReference=reference/data-reference.html
 
 [Links]
 Graphics=Sprite graphics
 Sound=Sound effects
 Levels=Level data
 Notes=Implementation notes
-Glossary=Glossary
+DataReference=Data reference
 
 [Titles]
 Graphics=Sprite graphics
 Levels=Level data
-Facts=Trivia
+Trivia=Trivia
 Notes=Implementation notes
-Glossary=Glossary
+DataReference=Data reference
 
 [Page:Graphics]
 SectionPrefix=Graphic
@@ -52,5 +52,8 @@ SectionPrefix=Level
 [Page:Notes]
 SectionPrefix=Note
 
-[Page:Glossary]
-SectionPrefix=Glossary
+[Page:DataReference]
+SectionPrefix=DataReference
+
+[Page:Trivia]
+SectionPrefix=Trivia

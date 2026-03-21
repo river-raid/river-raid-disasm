@@ -1303,7 +1303,7 @@ u$5EFE DEFB $FF,$FF
 ;
 ; Each slot is a 3-byte entry that can hold one game object (enemy, fuel depot,
 ; etc.). Iterated by #R$708E (operate) and #R$62E8 (collision). New objects
-; added via #R$6EAB. See Glossary for terminology.
+; added via #R$6EAB. See #LINK(DataReference)(Data reference) for terminology.
 ; .
 ; #TABLE(default)
 ; { =h Byte | =h Contents }
@@ -1413,18 +1413,6 @@ g$5F64 DEFB $02
 g$5F65 DEFB $00
 
 ; Fuel level (0-255). $FF=full tank, $00=empty.
-;
-; #TABLE(default)
-; { =h Mechanic | =h Rate | =h Formula }
-; { Consumption | 1 unit every 2 frames | ~25 units/sec at 50fps }
-; { Refueling | 4 units per frame | ~200 units/sec at 50fps }
-; { Full tank duration | ~10 seconds | 255 / 25 = 10.2 sec }
-; { Full refuel time | ~1.3 seconds | 255 / 200 = 1.3 sec }
-; TABLE#
-; .
-; Consumption rate does NOT depend on scroll speed. Low fuel warning triggers
-; when <$40 (top 2 bits clear). Refueling only occurs when plane is centered
-; over depot (not banking left/right).
 @label=state_fuel
 g$5F66 DEFB $00
 
@@ -1792,10 +1780,12 @@ c$60A5 LD A,($5F68)  ; {Skip plane rendering if not GAMEPLAY_MODE_NORMAL.
  $60C2 LD HL,($5EF7) ; {Apply offset to sprite pointer.
  $60C5 ADD HL,DE     ;
  $60C6 LD ($8B0E),HL ; }
- $60C9 ADD A,$80     ; {Calculate plane Y: Y = $88 - speed. However, movement
- $60CB LD B,A        ; handlers (#R$65F3, #R$6642, #R$6682) always use the
- $60CC LD A,($5F64)  ; fixed PLANE_COORDINATE_Y ($80), so this speed-dependent
- $60CF LD D,A        ; value has no visible effect.}
+ $60C9 ADD A,$80     ; {Compute look-ahead Y: Y = 136 - speed (135 slow, 134
+ $60CB LD B,A        ; normal, 132 fast), placing the plane higher on screen at
+ $60CC LD A,($5F64)  ; faster speeds to reveal more upcoming terrain. Dead
+ $60CF LD D,A        ; code: movement handlers (#R$65F3, #R$6642, #R$6682)
+                     ; always overwrite this with the fixed PLANE_COORDINATE_Y.
+                     ; }
  $60D0 LD ($8B0A),BC ; {Set plane coordinates for rendering.
  $60D4 LD ($8B0C),BC ; }
  $60D8 LD E,$00      ; {Render plane: width=2, size=$10, attrs=$00.
@@ -6018,6 +6008,7 @@ c$735E LD A,($5EF2)  ; {If TANK_SHELL_ACTIVE, cancel shell via #R$7358.
  $736D RES 7,A       ;
  $736F SRL A         ;
  $7371 SRL A         ; }
+@label=divide_by_8
  $7373 SRL A         ; {Shift right 4 times to get upper nibble.
  $7375 SRL A         ;
  $7377 LD B,A        ;
@@ -6710,6 +6701,7 @@ c$7649 BIT 7,B       ; {If balloon is off-screen (Y bit 7 set), skip to main
  $768D LD (HL),C     ; }
  $768E LD ($8B0C),BC ; {Store render position and load balloon sprite pointer.
  $7692 LD HL,$8972   ; }
+@label=dead_frame_offset
  $7695 LD A,($5EEF)  ; {Calculate frame offset from frame counter (unused -
  $7698 AND $03       ; overwritten below).
  $769A ADD A,$0C     ;

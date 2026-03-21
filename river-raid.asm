@@ -1217,7 +1217,7 @@ data_unused_5EFE:
 ;
 ; Each slot is a 3-byte entry that can hold one game object (enemy, fuel depot, etc.). Iterated by
 ; operate_viewport_slots (operate) and check_missile_vs_objects (collision). New objects added via add_object_to_set.
-; See Glossary for terminology.
+; See Data reference for terminology.
 ;
 ; +------+-------------------------------------------------------------+
 ; | Byte | Contents                                                    |
@@ -1328,18 +1328,6 @@ low_fuel_sound_period:
   DEFB $00
 
 ; Fuel level (0-255). $FF=full tank, $00=empty.
-;
-; +--------------------+-----------------------+-------------------------+
-; | Mechanic           | Rate                  | Formula                 |
-; +--------------------+-----------------------+-------------------------+
-; | Consumption        | 1 unit every 2 frames | ~25 units/sec at 50fps  |
-; | Refueling          | 4 units per frame     | ~200 units/sec at 50fps |
-; | Full tank duration | ~10 seconds           | 255 / 25 = 10.2 sec     |
-; | Full refuel time   | ~1.3 seconds          | 255 / 200 = 1.3 sec     |
-; +--------------------+-----------------------+-------------------------+
-;
-; Consumption rate does NOT depend on scroll speed. Low fuel warning triggers when <$40 (top 2 bits clear). Refueling
-; only occurs when plane is centered over depot (not banking left/right).
 state_fuel:
   DEFB $00
 
@@ -1666,10 +1654,10 @@ render_plane_and_terrain:
   LD HL,(ptr_plane_sprite)             ; Apply offset to sprite pointer.
   ADD HL,DE                            ;
   LD (render_sprite_ptr),HL            ;
-  ADD A,$80                            ; Calculate plane Y: Y = $88 - speed. However, movement handlers (handle_right,
-  LD B,A                               ; handle_left, render_plane) always use the fixed PLANE_COORDINATE_Y ($80), so
-  LD A,(state_speed)                   ; this speed-dependent value has no visible effect.
-  LD D,A                               ;
+  ADD A,$80                            ; Compute look-ahead Y: Y = 136 - speed (135 slow, 134 normal, 132 fast), placing
+  LD B,A                               ; the plane higher on screen at faster speeds to reveal more upcoming terrain.
+  LD A,(state_speed)                   ; Dead code: movement handlers (handle_right, handle_left, render_plane) always
+  LD D,A                               ; overwrite this with the fixed PLANE_COORDINATE_Y.
   LD (previous_object_coordinates),BC  ; Set plane coordinates for rendering.
   LD (object_coordinates),BC           ;
   LD E,$00                             ; Render plane: width=2, size=$10, attrs=$00.
@@ -3787,7 +3775,7 @@ bonus_life_sound_counter:
 ; Play bonus life sound effect
 ;
 ; Generates a rising pitch sound effect when player earns an extra life. Called once per interrupt while
-; CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 interrupts.
+; CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 interrupts (~1.28 seconds).
 ;
 ; * Counter increments from 0 to 64 over successive interrupts
 ; * Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases
@@ -5294,6 +5282,7 @@ check_shell_init_condition:
   RES 7,A                              ;
   SRL A                                ;
   SRL A                                ;
+divide_by_8:
   SRL A                                ; Shift right 4 times to get upper nibble.
   SRL A                                ;
   LD B,A                               ;
@@ -5908,6 +5897,7 @@ operate_balloon_shared:
   LD (HL),C                            ;
   LD (object_coordinates),BC           ; Store render position and load balloon sprite pointer.
   LD HL,sprite_balloon                 ;
+dead_frame_offset:
   LD A,(state_tick)                    ; Calculate frame offset from frame counter (unused - overwritten below).
   AND $03                              ;
   ADD A,$0C                            ;

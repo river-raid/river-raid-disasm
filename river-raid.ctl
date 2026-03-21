@@ -534,7 +534,7 @@ g $5EFD Island starting line index. Screen line (0-23) where island rendering be
 u $5EFE
 @ $5F00 label=viewport_slots
 g $5F00 Viewport slots array (15 slots for active game objects).
-D $5F00 Each slot is a 3-byte entry that can hold one game object (enemy, fuel depot, etc.). Iterated by #R$708E (operate) and #R$62E8 (collision). New objects added via #R$6EAB. See Glossary for terminology.
+D $5F00 Each slot is a 3-byte entry that can hold one game object (enemy, fuel depot, etc.). Iterated by #R$708E (operate) and #R$62E8 (collision). New objects added via #R$6EAB. See #LINK(DataReference)(Data reference) for terminology.
 D $5F00 #TABLE(default) { =h Byte | =h Contents } { 0 | X position (0-255 pixels), or slot marker } { 1 | Y position (0-255 pixels, increases as object scrolls down) } { 2 | Object definition byte (type, orientation, activation) } TABLE#
 D $5F00 #TABLE(default) { =h Marker | =h Value | =h Meaning } { SET_MARKER_EMPTY_SLOT | $00 | Unused slot (skip during iteration) } { SET_MARKER_END_OF_SET | $FF | End of active slots (reset iterator) } TABLE#
 B $5F00,46,3
@@ -562,8 +562,6 @@ D $5F64 Also determines sprite animation frame and number of terrain fragments r
 g $5F65 Low fuel warning sound period (0-127). Used as delay loop iteration count for speaker ON/OFF phases. Lower values = higher pitch. Decremented each frame, creating a rising-then-resetting warble effect.
 @ $5F66 label=state_fuel
 g $5F66 Fuel level (0-255). $FF=full tank, $00=empty.
-D $5F66 #TABLE(default) { =h Mechanic | =h Rate | =h Formula } { Consumption | 1 unit every 2 frames | ~25 units/sec at 50fps } { Refueling | 4 units per frame | ~200 units/sec at 50fps } { Full tank duration | ~10 seconds | 255 / 25 = 10.2 sec } { Full refuel time | ~1.3 seconds | 255 / 200 = 1.3 sec } TABLE#
-D $5F66 Consumption rate does NOT depend on scroll speed. Low fuel warning triggers when <$40 (top 2 bits clear). Refueling only occurs when plane is centered over depot (not banking left/right).
 @ $5F67 label=state_input_interface
 g $5F67 Input interface type ($00=Keyboard, $01=Sinclair, $02=Kempston, $03=Cursor).
 @ $5F68 label=state_gameplay_mode
@@ -698,7 +696,7 @@ N $60A5 Speed affects the number of terrain fragments rendered per frame and the
   $60AD Set collision mode to NONE for plane (no collision during render).
   $60B2 Calculate plane sprite frame: offset = (8 - speed) * 2.
   $60C2 Apply offset to sprite pointer.
-  $60C9 Calculate plane Y: Y = $88 - speed. However, movement handlers (#R$65F3, #R$6642, #R$6682) always use the fixed PLANE_COORDINATE_Y ($80), so this speed-dependent value has no visible effect.
+  $60C9 Compute look-ahead Y: Y = 136 - speed (135 slow, 134 normal, 132 fast), placing the plane higher on screen at faster speeds to reveal more upcoming terrain. Dead code: movement handlers (#R$65F3, #R$6642, #R$6682) always overwrite this with the fixed PLANE_COORDINATE_Y.
   $60D0 Set plane coordinates for rendering.
   $60D8 Render plane: width=2, size=$10, attrs=$00.
 @ $60E5 label=render_terrain_fragments
@@ -2357,6 +2355,7 @@ D $735E Alternative shell initialization when bit 4 is set. Checks if tank can f
   $735E If TANK_SHELL_ACTIVE, cancel shell via #R$7358.
 @ $7361 isub=CP TANK_SHELL_ACTIVE
   $7366 Push BC, check X position sign bit, invert if positive via #R$7380.
+@ $7373 label=divide_by_8
   $7373 Shift right 4 times to get upper nibble.
 @ $7379 isub=AND 1<<SLOT_BIT_ORIENTATION
   $737B Combine with orientation, pop BC, continue to fire shell.
@@ -2617,6 +2616,7 @@ R $7649 I:D Object definition (bit 6 = orientation: 0=right, 1=left)
 N $7685 Shared entry point for balloon rendering (also used by right-facing balloon).
   $7685 Read object definition from viewport, write updated position back.
   $768E Store render position and load balloon sprite pointer.
+@ $7695 label=dead_frame_offset
   $7695,8 Calculate frame offset from frame counter (unused - overwritten below).
 @ $769D isub=LD A,SPRITE_BALLOON_WIDTH_TILES
 @ $769F isub=LD BC,SPRITE_BALLOON_FRAME_SIZE

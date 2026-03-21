@@ -34,7 +34,7 @@ within the river, splitting it into channels.
 TABLE#
 
 Island data: #R$C600 (108 bytes total). Referenced from terrain fragment
-byte 3 (upper 6 bits = island index x 4). Initialized by #R$696B.
+byte 3 (upper 6 bits = island index × 4). Initialized by #R$696B.
 
 [Level:terrainFragments:Terrain fragments]
 Each of the 48 game levels (bridge sections) is defined by 64 terrain
@@ -48,7 +48,7 @@ sequentially by #R$6A4F as the terrain scrolls.
 { 3       | Bits 0-1: edge mode. Bits 2-7: island index (divide by 4 for #R$C600 lookup) }
 TABLE#
 
-Terrain data: #R$9500 (48 levels x 256 bytes = 12,288 bytes).
+Terrain data: #R$9500 (48 levels × 256 bytes = 12,288 bytes).
 
 [Level:objectSpawns:Object spawn tables]
 Each level has 128 spawn slots (2 bytes each, 256 bytes per level) that define
@@ -56,11 +56,11 @@ which objects appear at each scroll position. Read by #R$6F80 during scroll.
 
 #TABLE(default)
 { =h Byte | =h Contents }
-{ 0       | Object definition: bits 0-2 = type (OBJECT_* constants), bit 3 = rock flag (SLOT_BIT_ROCK) }
-{ 1       | X position ($00 = empty slot, $01-$FF = spawn coordinate) }
+{ 0       | Object definition: bits 0-2 = type (<code>OBJECT_*</code> constants), bit 3 = rock flag (<code>SLOT_BIT_ROCK</code>) }
+{ 1       | X position (<code>$00</code> = empty slot, <code>$01</code>–<code>$FF</code> = spawn coordinate) }
 TABLE#
 
 When the rock flag is set, bits 0-1 select rock variant (0-3). Most slots are
-empty (X = $00), making this a sparse encoding.
+empty (X = <code>$00</code>), making this a sparse encoding.
 
-Object data: #R$C800 (48 levels x 256 bytes = 12,288 bytes).
+Object data: #R$C800 (48 levels × 256 bytes = 12,288 bytes).

@@ -1,7 +1,7 @@
 ; Sprite graphics gallery.
 
 [Graphic:plane:Player plane]
-The player's plane is a 2x1 tile (16x8 pixel) sprite with 4 pre-shifted
+The player's plane is a 2×1 tile (16×8 pixel) sprite with 4 pre-shifted
 frames for smooth horizontal movement. A separate banked variant is used when
 the plane turns left or right.
 
@@ -23,7 +23,7 @@ TABLE#
 Sprite data: #R$83B1 (centered), #R$83F1 (banked).
 
 [Graphic:helicopter:Helicopter]
-Regular and advanced helicopters share the same 3x1 tile (24x8 pixel) sprite
+Regular and advanced helicopters share the same 3×1 tile (24×8 pixel) sprite
 format with 4 pre-shifted frames per direction. The advanced variant fires
 missiles at the player.
 
@@ -54,7 +54,7 @@ TABLE#
 Sprite data: #R$85B3 (left-facing), #R$8793 (right-facing).
 
 [Graphic:rotor:Helicopter rotor]
-The helicopter rotor is a 2-tile wide × 2-pixel tall sprite rendered separately
+The helicopter rotor is a 2-tile wide Ã 2-pixel tall sprite rendered separately
 above the helicopter body. Each direction has 4 pre-shifted frames for smooth
 animation as the helicopter moves horizontally.
 
@@ -76,7 +76,7 @@ TABLE#
 Sprite data: #R$8AB8 (left), #R$8AC8 (right).
 
 [Graphic:ship:Ship]
-Ships are 3x1 tile (24x8 pixel) sprites with 4 pre-shifted frames per
+Ships are 3×1 tile (24×8 pixel) sprites with 4 pre-shifted frames per
 direction.
 
 #UDGARRAY3,13,4,3;$8613-$8616-1-16(*ship-left-f1)
@@ -94,7 +94,7 @@ TABLE#
 Sprite data: #R$8613 (left), #R$87F3 (right).
 
 [Graphic:tank:Tank]
-Tanks are 3x1 tile (24x8 pixel) sprites with 4 pre-shifted frames per
+Tanks are 3×1 tile (24×8 pixel) sprites with 4 pre-shifted frames per
 direction. They move along river banks and fire parabolic shells.
 
 #UDGARRAY3,60,4,3;$86D3-$86D6-1-16{0,0,64,32}(*tank-left-f1)
@@ -112,9 +112,9 @@ TABLE#
 Sprite data: #R$86D3 (left), #R$88B3 (right).
 
 [Graphic:fighter:Fighter]
-Fighters are 3x1 tile (24x8 pixel) sprites with 4 pre-shifted frames per
+Fighters are 3×1 tile (24×8 pixel) sprites with 4 pre-shifted frames per
 direction. They are the fastest enemy at 4 pixels/frame, which means they
-always move in full character cell increments — so at most 1-2 of the 4
+always move in full character cell increments â so at most 1-2 of the 4
 pre-shifted frames are ever displayed.
 
 #UDGARRAY3,12,4,3;$8733-$8736-1-16{0,0,64,32}(*fighter-left-f1)
@@ -132,8 +132,8 @@ TABLE#
 Sprite data: #R$8733 (left), #R$8913 (right).
 
 [Graphic:balloon:Balloon]
-Balloons are 2x2 tile (16x16 pixel) sprites with 4 pre-shifted frames. Unlike
-other enemies, balloons have no separate left/right variants — they float
+Balloons are 2×2 tile (16×16 pixel) sprites with 4 pre-shifted frames. Unlike
+other enemies, balloons have no separate left/right variants â they float
 vertically.
 
 #UDGARRAY2,14,4,2;$8972-$898A-1-16(*balloon-f1)
@@ -147,7 +147,7 @@ TABLE#
 Sprite data: #R$8972.
 
 [Graphic:fuelDepot:Fuel depot]
-The fuel depot is a 2-tile wide, 25-pixel tall static sprite — the tallest
+The fuel depot is a 2-tile wide, 25-pixel tall static sprite â the tallest
 object in the game.
 
 #UDGTABLE
@@ -157,7 +157,7 @@ TABLE#
 Sprite data: #R$8A86.
 
 [Graphic:rock:Rock]
-Rocks are 3x2 tile (24x16 pixel) static decorations with 4 variants.
+Rocks are 3×2 tile (24×16 pixel) static decorations with 4 variants.
 
 #UDGTABLE
 { #UDGARRAY3,34,4,3;$84A1-$84D0-1-24(rock-1) |
@@ -169,7 +169,7 @@ TABLE#
 Sprite data: #R$84A1.
 
 [Graphic:explosion:Explosion]
-The explosion animation uses 3 frames of 2x1 tile (16x8 pixel) sprites,
+The explosion animation uses 3 frames of 2×1 tile (16×8 pixel) sprites,
 played back in a 1-2-3-2 loop.
 
 #UDGARRAY2,14,4,2;$8471-$8472-1-16(*explosion-f1)
@@ -182,7 +182,7 @@ TABLE#
 Sprite data: #R$8471 (frame 1), #R$8481 (frame 2), #R$8491 (frame 3).
 
 [Graphic:missile:Missile and shell]
-The player's missile is a 1x1 tile (8x8 pixel) sprite with 4 pre-shifted
+The player's missile is a 1×1 tile (8×8 pixel) sprite with 4 pre-shifted
 frames and a separate trail sprite drawn below it.
 
 #UDG$8431,14,4(*missile-f1)
@@ -203,11 +203,11 @@ TABLE#
 Sprite data: #R$8431 (missile), #R$8451 (trail).
 
 Tank shells reuse the missile sprite data but render only 1 pixel height
-(SPRITE_SHELL_HEIGHT_PIXELS). The shell explosion is a 2x2 tile (16x16 pixel)
+(SPRITE_SHELL_HEIGHT_PIXELS). The shell explosion is a 2×2 tile (16×16 pixel)
 sprite at #R$8FFC.
 
 [Graphic:tankShellExplosion:Tank shell explosion]
-The tank shell explosion is a 2x2 tile (16x16 pixel) sprite with 6 frames
+The tank shell explosion is a 2×2 tile (16×16 pixel) sprite with 6 frames
 showing an expanding diamond pattern. Used when tank shells hit the ground
 or player.
 
@@ -225,9 +225,9 @@ Sprite data: #R$8FFC.
 
 [Graphic:unusedExplosion:Unused explosion (prototype)]
 An unused 6-frame animation at #R$8AD8 showing a diamond shape expanding from
-a single pixel to a full diamond. Each frame is 1x1 tile (8x8 pixels) — half
+a single pixel to a full diamond. Each frame is 1×1 tile (8×8 pixels) â half
 the size of the tank shell explosion at #R$8FFC. This appears to be an early
-prototype that was replaced with the larger 16x16 pixel version for better
+prototype that was replaced with the larger 16×16 pixel version for better
 visibility.
 
 #UDG$8AD8,4,4(*unused-exp-f1)

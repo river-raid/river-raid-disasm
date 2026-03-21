@@ -4,16 +4,16 @@
 ; structures and concepts. They are not derived from the original game's
 ; source code or documentation.
 
-[Glossary:viewport:Viewport]
-The **viewport** is the visible portion of the game world displayed on screen.
-It contains a fixed-size array of **slots** that hold active game objects
+[DataReference:viewport:Viewport]
+The viewport is the visible portion of the game world displayed on screen.
+It contains a fixed-size array of slots that hold active game objects
 (enemies, fuel depots, etc.) currently visible or about to scroll into view.
 
 The viewport is implemented as the #R$5F00 array with 15 slots (46 bytes total:
 15 × 3 bytes + 1 end marker byte).
 
-[Glossary:slot:Slot]
-A **slot** is a 3-byte entry in the viewport array (#R$5F00) that can hold one
+[DataReference:slot:Slot]
+A slot is a 3-byte entry in the viewport array (#R$5F00) that can hold one
 game object. Each slot has the following structure:
 
 #TABLE(default)
@@ -27,22 +27,22 @@ A slot can be in one of three states:
 
 #TABLE(default)
 { =h State | =h X Value | =h Description }
-{ Empty | $00 (SET_MARKER_EMPTY_SLOT) | Slot is unused, skipped during iteration }
-{ Occupied | $01-$FE | Contains a valid game object }
-{ End marker | $FF (SET_MARKER_END_OF_SET) | Marks end of active objects }
+{ Empty | <code>$00</code> (<code>SET_MARKER_EMPTY_SLOT</code>) | Slot is unused, skipped during iteration }
+{ Occupied | <code>$01</code>–<code>$FE</code> | Contains a valid game object }
+{ End marker | <code>$FF</code> (<code>SET_MARKER_END_OF_SET</code>) | Marks end of active objects; iterator resets to start via #R$7627 }
 TABLE#
 
-The **current_slot_ptr** at #R$5F60 is an iterator that traverses slots during
+The iterator at #R$5F60 traverses slots during
 the main object processing loop (#R$708E). It advances through all slots
 (including empty ones), checking each slot's state before processing.
 
-[Glossary:objectDefinition:Object Definition Byte]
-The **object definition byte** (byte 2 of each slot) encodes the object's type
+[DataReference:objectDefinition:Object Definition Byte]
+The object definition byte (byte 2 of each slot) encodes the object's type
 and state using bit fields:
 
 #TABLE(default)
 { =h Bit(s) | =h Meaning }
-{ 0-2 | Object type (OBJECT_* constants: helicopter, ship, tank, etc.) }
+{ 0-2 | Object type (<code>OBJECT_*</code> constants: helicopter, ship, tank, etc.) }
 { 3 | Rock flag (1=rock decoration on land, 0=interactive object) }
 { 4 | Unused }
 { 5 | Tank location (1=river bank, 0=bridge) }
@@ -52,15 +52,3 @@ TABLE#
 
 Objects spawn with bit 7 clear (inactive). On their first frame in the
 viewport, #R$708E sets bit 7 to activate them, enabling movement and collision.
-
-[Glossary:markers:Slot Markers]
-Two special values in the X position byte (byte 0) serve as **markers**:
-
-#TABLE(default)
-{ =h Constant | =h Value | =h Purpose }
-{ SET_MARKER_EMPTY_SLOT | $00 | Marks an unused slot (skip during iteration) }
-{ SET_MARKER_END_OF_SET | $FF | Marks end of active objects (reset iterator) }
-TABLE#
-
-When the iterator (#R$5F60) encounters SET_MARKER_END_OF_SET, it resets to the
-beginning of the array via #R$7627.

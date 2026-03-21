@@ -1,70 +1,16 @@
 ; Bugs and quirks in the original River Raid code.
 
-[Bug:planeSprite:Plane sprite has misplaced pixels]
-Two bytes in the player's plane sprite data contain incorrect pixel values.
-The errors are at $83BB (frame 1) and $83CB (frame 2), corrected via
-<code>ofix</code> directives. The visual effect is subtle — a few pixels are
-misplaced in the plane's wing area.
-
-[Bug:fighterSprite:Fighter sprite has wrong pixels in multiple frames]
-Six bytes across both left-facing and right-facing fighter sprite frames
-contain incorrect pixel data:
-
-#LIST
-{ Left-facing: $8736 and $8739 (frame 1) }
-{ Right-facing: $8916 and $8919 (frame 1), $891F (frame 1), $893A (frame 2) }
-LIST#
-
-All corrected via <code>ofix</code> directives. The errors affect the
-fighter's wing and fuselage outline in certain animation frames.
-
-[Bug:screenCollision:Collision detection works on raw screen pixels]
-The game detects collisions during the sprite rendering phase by checking
-whether OR-ing a new sprite's pixels onto the screen encounters any non-zero
-existing pixels (see #R$8B3C and #R$8C45). There is no separate collision
-map — the framebuffer itself serves as the collision surface.
-
-This means that anything drawn on screen is collidable, including data
-written via POKE during a pause. If you pause the game and POKE non-zero
-bytes into screen memory at the plane's position, the plane will collide
-with them when the game resumes.
-
-[Bug:fuelDepotSelfDestruct:Shooting a fuel depot while refueling can kill you]
-While refueling (GAMEPLAY_MODE_REFUEL), the plane's collision detection
-remains active with COLLISION_MODE_FUEL_DEPOT set. If the player fires a
-missile at the fuel depot being used for refueling, the resulting explosion
-fragments are rendered via OR blending. If an explosion fragment's pixels
-happen to overlap the plane's pixel position on screen, the rendering
-pipeline detects the overlap and triggers a player death.
-
-This bug is intermittent because the explosion fragments must land at exactly
-the right pixel position to overlap with the plane sprite. Most of the time,
-the fragments fly past harmlessly.
-
-See #R$6478 (fuel depot collision handler), #R$6256 (fuel depot collision
-mode setup), #R$8B3C (render with collision detection).
-
-[Bug:islandLoop:Off-by-one in island element lookup]
-The island element search loop at #R$6978 has an incorrect branch condition,
-corrected by the <code>ofix</code> at $697A (JR NZ with corrected target).
-The original code can skip past the intended island entry under certain
-conditions.
-
-[Bug:planeYInconsistency:Speed-dependent plane Y coordinate is dead code]
-The terrain rendering routine (#R$60C9) computes the plane's Y position as
-$88 minus the current speed setting, which would place the plane 1-3 pixels
-lower at higher speeds. However, all three movement handlers — handle_right
-(#R$65F3), handle_left (#R$6642), and render_plane (#R$6682) — immediately
-overwrite this with the fixed PLANE_COORDINATE_Y ($80), making the
-speed-dependent calculation dead code with no visible effect.
+[Bug:brokenSprites:Several sprites contain incorrect pixel data]
+The player plane, fighter, advanced helicopter, and tank sprites all contain
+bytes with incorrect pixel values, corrected via <code>ofix</code> directives.
 
 [Bug:bothDirections:Pressing left and right simultaneously shows banked plane sprite]
 When both left and right are held at the same time, the plane appears banked
-despite no net movement. Both #R$65F3 (handle_right) and #R$6642 (handle_left)
-are called in sequence: handle_right moves the plane +2 pixels and renders the
-banked sprite, then handle_left moves it −2 pixels and renders the banked sprite
+despite no net movement. Both #R$65F3 and #R$6642
+are called in sequence: #R$65F3 moves the plane +2 pixels and renders the
+banked sprite, then #R$6642 moves it −2 pixels and renders the banked sprite
 again, leaving the plane at its original position. However, both handlers always
-set #R$5F69 (state_plane_sprite_bank) to $04, which causes the main render pass
+set #R$5F69 to <code>4</code>, which causes the main render pass
 in #R$6682 to select the banked sprite rather than the centered one. Since neither
 handler checks whether the opposing direction is also active, there is no way for
 the net-zero input to produce the level sprite. Contrast with up+down, where the
@@ -72,9 +18,9 @@ last-evaluated key wins outright — see #LINK(Bugs#bothUpDown)(Pressing up and 
 
 [Bug:bothUpDown:Pressing up and down simultaneously always results in slow speed]
 When both up and down are held at the same time, the plane always slows down.
-#R$6068 (scan_keyboard) evaluates up before down: #R$670A (handle_up) writes
-SPEED_FAST and clears CONTROLS_BIT_SPEED_NOT_FAST, then #R$6717 (handle_down)
-immediately overwrites with SPEED_SLOW and sets both speed control bits. Last
+#R$6068 evaluates up before down: #R$670A writes
+<code>SPEED_FAST</code> and clears <code>CONTROLS_BIT_SPEED_NOT_FAST</code>, then #R$6717
+immediately overwrites with <code>SPEED_SLOW</code> and sets both speed control bits. Last
 writer wins unconditionally.
 
 This is inconsistent with the left/right case (see #LINK(Bugs#bothDirections)(Pressing left and right simultaneously shows banked plane sprite)), where
@@ -82,8 +28,46 @@ the two moves cancel each other out and the net position is unchanged. Here ther
 is no cancellation — one input simply silently overwrites the other. The outcome
 in both cases is an accident of evaluation order, not a deliberate design choice.
 
-[Bug:statusLineCopy:Wrong addresses in Player 2 status line]
-When displaying the Player 2 status line, the code at $65A1 uses incorrect
-source address and byte count parameters for the memory copy. The
-<code>ofix</code> directives at $65A1 (LD DE) and $65A4 (LD BC) correct
-these values to properly copy the status line text.
+[Bug:missileAlignment:Missile spawns 1 pixel to the right of the plane tip]
+The plane tip is a single pixel at offset +3 from the sprite's left edge
+(#R$83B1 frame 1, first row: <code>$10</code> = bit 4). The missile spawns
+at <code>plane_X</code> + 4 (#R$6724), and since the plane always moves in 2-pixel steps,
+<code>plane_X</code> is always even — so the missile's 2 visible pixels always land at
+<code>plane_X</code> + 4 and <code>plane_X</code> + 5, one pixel to the right of the tip with no
+overlap. Using offset +3 instead would align the right missile pixel with the
+tip, which is the closest centering possible given the even/odd constraint.
+
+[Bug:fuelBugs:Fuel tank and gauge off-by-one errors]
+Refueling stops at <code>FUEL_LEVEL_ALMOST_FULL</code> (252) rather
+than <code>FUEL_LEVEL_FULL</code> (255) — see #R$6E40. The difference
+is not visible: both values map to the same gauge column via
+<code>fuel >> 2</code>.
+
+The refueling gauge routine (#R$6E68) uses column offset 63, while the
+consumption routine (#R$6E22) uses 64. At the same fuel level, the refueling
+needle sits 1 pixel to the left of where the consumption needle would appear.
+The needle jumps 1 pixel right the moment the player leaves the fuel depot.
+
+[Bug:missileTrail:Missile trail is implemented but never rendered]
+The missile trail sprite (#R$8451, 4 frames) and its frame-selection logic in
+#R$6794 are fully implemented, but the trail is never drawn. After selecting
+the correct frame based on the missile's X position, #R$6794 immediately
+discards the pointer and substitutes #R$82F5, so only an
+erasure is rendered at the trail's location. The feature appears unfinished.
+
+[Bug:planeYInconsistency:Speed-dependent look-ahead distance is implemented but never used]
+The terrain rendering routine (#R$60A5) computes the plane's Y position as
+136 minus the current speed setting, placing the plane at Y=135 (slow),
+134 (normal), or 132 (fast) — higher on screen at faster speeds, showing
+more upcoming terrain as a look-ahead effect. However, all three movement handlers — handle_right
+(#R$65F3), handle_left (#R$6642), and render_plane (#R$6682) — immediately
+overwrite this with the fixed <code>PLANE_COORDINATE_Y</code> (128), making the
+look-ahead calculation dead code with no visible effect.
+
+[Bug:scrollInBridgeCount:Bridge counter not updated during scroll-in]
+The scroll-in preview (#R$5E8A) advances the internal bridge index (#R$5EF0)
+as bridge boundaries scroll past. The player's bridge counter
+(#R$5F6A/#R$5F6B), however, only advances when the player shoots a bridge —
+which requires collision detection, disabled during scroll-in. After the
+preview ends, the displayed count and level-dependent logic are behind by the
+number of bridges scrolled through.
