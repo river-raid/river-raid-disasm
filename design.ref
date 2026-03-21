@@ -19,6 +19,7 @@ JavaScript=design/theme.js
 <# endfor #>
 </head>
 <body class="{SkoolKit[page_id]}">
+<a class="github-fork-ribbon fixed" href="https://github.com/river-raid/river-raid-disasm" data-ribbon="Fork me on GitHub" title="Fork me on GitHub" target="_blank" rel="noopener">Fork me on GitHub</a>
 <table class="header">
 <tr>
 <# if(SkoolKit[page_header][0]) #>
@@ -49,6 +50,7 @@ JavaScript=design/theme.js
 <link rel="stylesheet" type="text/css" href="theme.css" />
 </head>
 <body class="{SkoolKit[page_id]}">
+<a class="github-fork-ribbon fixed" href="https://github.com/river-raid/river-raid-disasm" data-ribbon="Fork me on GitHub" title="Fork me on GitHub" target="_blank" rel="noopener">Fork me on GitHub</a>
 <div class="container">
 <header>
 <div class="eyebrow">ZX Spectrum 48K &nbsp;&middot;&nbsp; 1984 &nbsp;&middot;&nbsp; Activision</div>
