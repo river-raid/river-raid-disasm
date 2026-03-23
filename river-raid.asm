@@ -1169,12 +1169,12 @@ state_input_readings:
 state_tank_shell:
   DEFB $00
 
-; Player missile Y coordinate in pixels (0-255). $00 when no missile active.
-state_plane_missile_y:
+; Y coordinate of the active striker (missile or plane) in pixels (0-255). $00 when no missile is active.
+state_striker_y:
   DEFB $00
 
-; Player missile X coordinate in pixels (0-255).
-state_plane_missile_x:
+; X coordinate of the active striker (missile or plane) in pixels (0-255).
+state_striker_x:
   DEFB $00
 
 ; Collision detection mode for current render pass. Determines which collision handler to invoke on pixel overlap.
@@ -1468,8 +1468,8 @@ collision_coordinates:
 state_saved_object_coords:
   DEFW $0000
 
-; Backup of plane missile coordinates. Saved before movement, used for collision detection and erasure.
-state_plane_missile_y_backup:
+; Missile coordinates preserved during plane rendering.
+state_plane_missile_coords_backup:
   DEFW $0000
 
 ; Main gameplay loop
@@ -1757,18 +1757,17 @@ collision_dispatcher:
 ; Used by the routine at collision_dispatcher.
 ;
 ; Checks if the player's missile has collided with a fighter aircraft. Uses bounding box collision detection by
-; comparing the missile coordinates (from state_plane_missile_y) with the fighter's coordinates (from
-; object_coordinates).
+; comparing the missile coordinates (from state_striker_y) with the fighter's coordinates (from object_coordinates).
 ;
 ; The collision box is 6 pixels wide (horizontally) and uses vertical bounds of +10 and +1 pixels.
 ;
 ; If no collision is detected (any boundary check fails), jumps to no_collision_exit to reset collision mode and return.
 ;
 ; On collision: removes the fighter from the viewport, triggers two explosion fragments, awards POINTS_FIGHTER, and
-; continues to post-collision processing at finalize_collision.
+; continues to post-collision processing at deactivate_missile.
 handle_collision_mode_fighter:
-  LD BC,(state_plane_missile_y)        ; Load missile coordinates from state_plane_missile_y and fighter coordinates
-  LD DE,(object_coordinates)           ; from object_coordinates.
+  LD BC,(state_striker_y)              ; Load missile coordinates from state_striker_y and fighter coordinates from
+  LD DE,(object_coordinates)           ; object_coordinates.
 ; Y-axis collision check.
   LD A,B                               ; Check if missile_Y + 6 >= fighter_Y; exit to no_collision_exit if not.
   ADD A,$06                            ;
@@ -1788,7 +1787,7 @@ handle_collision_mode_fighter:
   SBC HL,BC                            ;
   JP M,no_collision_exit               ;
   LD H,$00                             ; Check if missile_X + 1 >= fighter_X; exit to no_collision_exit if not.
-  LD BC,(state_plane_missile_y)        ;
+  LD BC,(state_striker_y)              ;
   LD A,C                               ;
   INC A                                ;
   LD L,A                               ;
@@ -1821,14 +1820,14 @@ handle_collision_mode_fighter:
   CALL spawn_explosion_fragment        ;
   LD A,POINTS_FIGHTER                  ; Award POINTS_FIGHTER to player.
   CALL add_points                      ;
-  JP finalize_collision                ; Finalize collision.
+  JP deactivate_missile                ; Deactivate missile.
 
 ; Check collision against bridges and viewport objects
 ;
 ; Used by the routines at collision_dispatcher and handle_collision_mode_fuel_depot.
 ;
 ; Checks if the entity (missile or plane) has collided with a bridge or any viewport object. The coordinates to check
-; are read from state_plane_missile_y.
+; are read from state_striker_y.
 ;
 ; Called in two contexts: (1) when COLLISION_MODE_MISSILE is set, checks missile collision; (2) when called from
 ; handle_collision_mode_fuel_depot, checks plane collision with fuel depots.
@@ -1839,7 +1838,7 @@ handle_collision_mode_fighter:
 ;
 ; If no bridge collision, falls through to check_missile_vs_objects to check collision against viewport objects.
 check_collision:
-  LD BC,(state_plane_missile_y)        ; Load entity coordinates from state_plane_missile_y and bridge Y from
+  LD BC,(state_striker_y)              ; Load entity coordinates from state_striker_y and bridge Y from
   LD A,(state_bridge_y_position)       ; state_bridge_y_position.
   CP $00                               ; If no bridge exists, jump to check_missile_vs_objects to check viewport
   JP Z,check_missile_vs_objects        ; objects.
@@ -1893,8 +1892,8 @@ check_collision:
   LD (state_bridge_y_position),A       ;
   LD A,$01                             ; Set bridge destroyed flag (state_bridge_destroyed).
   LD (state_bridge_destroyed),A        ;
-  LD BC,(state_saved_object_coords)    ; Restore entity coordinates from state_saved_object_coords to
-  LD (state_plane_missile_y),BC        ; state_plane_missile_y.
+  LD BC,(state_saved_object_coords)    ; Restore entity coordinates from state_saved_object_coords to state_striker_y.
+  LD (state_striker_y),BC              ;
   LD A,(state_player)                  ; Check if player 2; if so, jump to next_bridge_player_2.
   CP PLAYER_2                          ;
   JP Z,next_bridge_player_2            ; (continued from above).
@@ -1902,7 +1901,7 @@ next_bridge_player_1:
   LD HL,state_bridge_player_1          ; Increment player 1 bridge counter at state_bridge_player_1 and print.
   INC (HL)                             ;
   CALL print_bridge                    ;
-  JP finalize_collision                ; Finalize collision.
+  JP deactivate_missile                ; Deactivate missile.
 
 ; Increment player 2's bridge counter
 ;
@@ -1911,7 +1910,7 @@ next_bridge_player_2:
   LD HL,state_bridge_player_2          ; Increment player 2 bridge counter at state_bridge_player_2 and print.
   INC (HL)                             ;
   CALL print_bridge                    ;
-  JP finalize_collision                ; Finalize collision.
+  JP deactivate_missile                ; Deactivate missile.
 
 ; Unused
 data_unused_6253:
@@ -1928,10 +1927,10 @@ data_unused_6253:
 handle_collision_mode_fuel_depot:
   LD A,GAMEPLAY_MODE_REFUEL            ; Set gameplay mode to GAMEPLAY_MODE_REFUEL in state_gameplay_mode.
   LD (state_gameplay_mode),A           ;
-  LD B,$80                             ; Load plane coordinates (Y=$80, X from state_plane_x) into
-  LD A,(state_plane_x)                 ; state_plane_missile_y.
+  LD B,$80                             ; Load plane coordinates (Y=$80, X from state_plane_x) into state_striker_y.
+  LD A,(state_plane_x)                 ;
   LD C,A                               ;
-  LD (state_plane_missile_y),BC        ;
+  LD (state_striker_y),BC              ;
   JP check_collision                   ; Check for collision with fuel depot.
 
 ; Check collision with explosion fragments
@@ -1958,7 +1957,7 @@ check_fragment_collision:
   JP Z,check_fragment_collision_end    ;
   CALL advance_object                  ; Adjust Y coordinate for scrolling.
 ; Y-axis collision check (8-pixel height for both entity and fragment).
-  LD DE,(state_plane_missile_y)        ; Check if entity_Y + 8 >= fragment_Y; if not, next fragment.
+  LD DE,(state_striker_y)              ; Check if entity_Y + 8 >= fragment_Y; if not, next fragment.
   LD A,D                               ;
   ADD A,$08                            ;
   LD H,$00                             ;
@@ -1978,7 +1977,7 @@ check_fragment_collision:
   SBC HL,DE                            ;
   JP M,check_fragment_collision        ;
 ; X-axis collision check (8-pixel width for entity, 16-pixel for fragment).
-  LD DE,(state_plane_missile_y)        ; Check if entity_X + 8 >= fragment_X; if not, next fragment.
+  LD DE,(state_striker_y)              ; Check if entity_X + 8 >= fragment_X; if not, next fragment.
   LD H,$00                             ;
   LD A,E                               ;
   ADD A,$08                            ;
@@ -1990,7 +1989,7 @@ check_fragment_collision:
   JP M,check_fragment_collision        ; (continued).
   LD A,C                               ; Check if fragment_X + 16 >= entity_X; if not, next fragment.
   ADD A,$10                            ;
-  LD DE,(state_plane_missile_y)        ;
+  LD DE,(state_striker_y)              ;
   LD H,$00                             ;
   LD L,A                               ;
   OR A                                 ;
@@ -2084,7 +2083,7 @@ check_missile_vs_objects:
   CP GAMEPLAY_MODE_REFUEL              ;
   CALL Z,advance_object                ;
 ; Y-axis collision check (entity height: 9 pixels).
-  LD DE,(state_plane_missile_y)        ; Check if entity_Y + 9 >= object_Y; if not, next object.
+  LD DE,(state_striker_y)              ; Check if entity_Y + 9 >= object_Y; if not, next object.
   LD A,D                               ;
   ADD A,$09                            ;
   LD H,$00                             ;
@@ -2108,7 +2107,7 @@ check_missile_vs_objects:
   CALL Z,get_offset_fuel               ;
   LD A,D                               ; Check if object_Y + 8 + offset >= entity_Y; if not, next object.
   ADD A,E                              ;
-  LD DE,(state_plane_missile_y)        ;
+  LD DE,(state_striker_y)              ;
   LD H,$00                             ;
   LD L,A                               ;
   LD E,D                               ;
@@ -2117,7 +2116,7 @@ check_missile_vs_objects:
   SBC HL,DE                            ;
   JP M,check_missile_vs_objects        ; (continued).
 ; X-axis collision check (entity width: 8 pixels).
-  LD DE,(state_plane_missile_y)        ; Check if entity_X + 8 >= object_X; if not, next object.
+  LD DE,(state_striker_y)              ; Check if entity_X + 8 >= object_X; if not, next object.
   LD A,E                               ;
   ADD A,$08                            ;
   LD E,A                               ;
@@ -2140,7 +2139,7 @@ check_missile_vs_objects:
   CALL Z,get_offset_balloon            ;
   LD A,D                               ; Store object coordinates to collision_coordinates for hit handlers.
   ADD A,E                              ;
-  LD DE,(state_plane_missile_y)        ;
+  LD DE,(state_striker_y)              ;
   LD (collision_coordinates),BC        ; (continued).
   LD H,$00                             ; Check if object_X + 10 + offset >= entity_X; if not, next object.
   LD L,A                               ;
@@ -2190,7 +2189,7 @@ check_missile_vs_objects_end:
   LD A,B                               ;
   CP D                                 ;
   JP Z,reset_gameplay_mode
-; Entry point for collision hit processing. Cleans up stack and finalizes collision.
+; Entry point for collision hit processing. Cleans up stack and deactivates missile.
 process_collision_hit:
   POP DE                               ; Pop four words from stack (unwind call frames).
   POP DE                               ;
@@ -2203,8 +2202,8 @@ process_collision_hit:
   LD HL,viewport_slots                 ;
   LD (current_slot_ptr),HL             ;
   LD BC,(state_saved_object_coords)    ; Load saved coordinates from state_saved_object_coords.
-  LD (state_plane_missile_y),BC        ; Store to state_plane_missile_y.
-  JP finalize_collision                ; Finalize collision.
+  LD (state_striker_y),BC              ; Store to state_striker_y.
+  JP deactivate_missile                ; Deactivate missile.
 
 ; Reset gameplay mode to normal and exit collision system
 ;
@@ -2231,7 +2230,7 @@ hit_helicopter_reg:
   CALL add_points                      ;
   LD BC,(collision_coordinates)        ; Spawn explosion at object coordinates from collision_coordinates.
   CALL spawn_explosion_fragment        ;
-  JP process_collision_hit             ; Finalize collision.
+  JP process_collision_hit             ; Deactivate missile.
 
 ; Handle missile hit on ship
 ;
@@ -2254,7 +2253,7 @@ hit_ship:
   ADD A,$04                            ;
   LD B,A                               ;
   CALL spawn_explosion_fragment        ;
-  JP process_collision_hit             ; Finalize collision.
+  JP process_collision_hit             ; Deactivate missile.
 
 ; Handle missile hit on advanced helicopter
 ;
@@ -2266,7 +2265,7 @@ hit_helicopter_adv:
   CALL add_points                      ;
   LD BC,(collision_coordinates)        ; Spawn explosion at object coordinates from collision_coordinates.
   CALL spawn_explosion_fragment        ;
-  JP process_collision_hit             ; Finalize collision.
+  JP process_collision_hit             ; Deactivate missile.
 
 ; Handle missile hit on fighter
 ;
@@ -2278,7 +2277,7 @@ hit_fighter:
   CALL add_points                      ;
   LD BC,(collision_coordinates)        ; Spawn explosion at object coordinates from collision_coordinates.
   CALL spawn_explosion_fragment        ;
-  JP process_collision_hit             ; Finalize collision.
+  JP process_collision_hit             ; Deactivate missile.
 
 ; Handle missile hit on balloon
 ;
@@ -2294,7 +2293,7 @@ hit_balloon:
   ADD A,$08                            ;
   LD B,A                               ;
   CALL spawn_explosion_fragment        ;
-  JP process_collision_hit             ; Finalize collision.
+  JP process_collision_hit             ; Deactivate missile.
 
 ; Handle collision with fuel depot
 ;
@@ -2328,7 +2327,7 @@ hit_fuel:
 
 ; Jump to collision finalization
 hit_fuel_done:
-  JP process_collision_hit             ; Finalize collision.
+  JP process_collision_hit             ; Deactivate missile.
 
 ; Handle refueling from fuel depot
 ;
@@ -2443,8 +2442,8 @@ handle_player_death:
   LD B,PLANE_COORDINATE_Y-1            ; Set fragment Y to PLANE_COORDINATE_Y-1.
   LD A,$00                             ; Stop plane movement: clear scroll speed, missile Y, and missile X.
   LD (state_speed),A                   ;
-  LD (state_plane_missile_y),A         ;
-  LD (state_plane_missile_x),A         ;
+  LD (state_striker_y),A               ;
+  LD (state_striker_x),A               ;
   LD D,$00                             ; Set explosion frame index to 0.
   CALL spawn_explosion_fragment        ; Create first explosion fragment at plane position
   LD A,B                               ; Offset Y-coordinate by $05 pixels for second explosion
@@ -2596,13 +2595,13 @@ check_player_1_lives:
 ; right (INC A twice), backs up the missile coordinates, renders the plane at the new position, then restores the
 ; missile coordinates and sets the sprite bank selector.
 handle_right:
-  LD A,(state_plane_x)                 ; Back up missile coordinates and move plane 2 pixels right.
-  LD HL,(state_plane_missile_y)        ;
-  LD (state_plane_missile_y_backup),HL ;
-  INC A                                ;
+  LD A,(state_plane_x)
+  LD HL,(state_striker_y)                   ; Back up missile coordinates.
+  LD (state_plane_missile_coords_backup),HL ;
+  INC A                                ; Move plane 2 pixels right.
   INC A                                ;
   LD (state_plane_x),A                 ;
-  LD C,A                               ;
+  LD C,A
   LD B,PLANE_COORDINATE_Y              ; Set position and collision mode (FUEL_DEPOT) for rendering.
   LD A,COLLISION_MODE_FUEL_DEPOT       ;
   LD (state_collision_mode),A          ;
@@ -2627,8 +2626,8 @@ handle_right:
 ; Shared cleanup for handle_right, handle_left, and render_plane. Restores missile coordinates and sprite bank selector
 ; after rendering the plane sprite.
 restore_plane_state_after_render:
-  LD HL,(state_plane_missile_y_backup) ; Restore missile coordinates from backup.
-  LD (state_plane_missile_y),HL        ;
+  LD HL,(state_plane_missile_coords_backup) ; Restore missile coordinates from backup.
+  LD (state_striker_y),HL                   ;
   LD HL,(render_sprite_ptr_out)        ; Update plane sprite pointer from render output.
   LD (ptr_plane_sprite),HL             ;
   LD A,$04                             ; Set sprite bank selector to $04 (select banked plane sprite).
@@ -2639,13 +2638,13 @@ restore_plane_state_after_render:
 ;
 ; Mirrors handle_right but moves the plane 2 pixels left instead of right.
 handle_left:
-  LD A,(state_plane_x)                 ; Back up missile coordinates and move plane 2 pixels left.
-  LD HL,(state_plane_missile_y)        ;
-  LD (state_plane_missile_y_backup),HL ;
-  DEC A                                ;
+  LD A,(state_plane_x)
+  LD HL,(state_striker_y)                   ; Back up missile coordinates.
+  LD (state_plane_missile_coords_backup),HL ;
+  DEC A                                ; Move plane 2 pixels left.
   DEC A                                ;
   LD (state_plane_x),A                 ;
-  LD C,A                               ;
+  LD C,A
   LD B,PLANE_COORDINATE_Y              ; Set position and collision mode (FUEL_DEPOT) for rendering.
   LD A,COLLISION_MODE_FUEL_DEPOT       ;
   LD (state_collision_mode),A          ;
@@ -2674,7 +2673,7 @@ handle_left:
 ; other modes (scroll-in, overview, refuel).
 ;
 ; Sets COLLISION_MODE_FUEL_DEPOT so the collision system checks for fuel depot contact during rendering. Backs up
-; missile coordinates to state_plane_missile_y_backup before modifying them for collision detection.
+; missile coordinates to state_plane_missile_coords_backup before modifying them for collision detection.
 ;
 ; Selects between normal sprite (sprite_plane) and banked sprite (sprite_plane_banked) based on state_plane_sprite_bank.
 ; Player 2 uses different attributes (same as ship).
@@ -2682,9 +2681,9 @@ render_plane:
   LD A,(state_gameplay_mode)           ; Return if not in GAMEPLAY_MODE_NORMAL.
   CP GAMEPLAY_MODE_NORMAL              ;
   RET NZ                               ;
-  LD A,(state_plane_x)                 ; Backup missile coords to state_plane_missile_y_backup; set up plane position
-  LD HL,(state_plane_missile_y)        ; (Y=$80, X from state_plane_x).
-  LD (state_plane_missile_y_backup),HL ;
+  LD A,(state_plane_x)                      ; Backup missile coords to state_plane_missile_coords_backup; set up plane
+  LD HL,(state_striker_y)                   ; position (Y=$80, X from state_plane_x).
+  LD (state_plane_missile_coords_backup),HL ;
   LD C,A                               ; Set COLLISION_MODE_FUEL_DEPOT and store plane coords.
   LD B,$80                             ;
   LD A,COLLISION_MODE_FUEL_DEPOT       ;
@@ -2804,14 +2803,14 @@ handle_down:
 ; Creates a new missile if none is currently active. Positions missile at plane X + 4, Y = $7E (just above plane). Sets
 ; CONTROLS_BIT_FIRE_SOUND to trigger the fire sound effect.
 handle_fire:
-  LD A,(state_plane_missile_y)         ; Return if missile already active (Y != 0).
+  LD A,(state_striker_y)               ; Return if missile already active (Y != 0).
   CP $00                               ;
   RET NZ                               ;
   LD A,(state_plane_x)                 ; Create missile at (plane_X + 4, $7E).
   ADD A,$04                            ;
   LD B,$7E                             ;
   LD C,A                               ;
-  LD (state_plane_missile_y),BC        ;
+  LD (state_striker_y),BC              ;
   LD HL,state_controls                 ; Set CONTROLS_BIT_FIRE_SOUND in state_controls.
   SET CONTROLS_BIT_FIRE_SOUND,(HL)     ;
   RET
@@ -2828,42 +2827,42 @@ missile_pass_selector:
 ; On the first pass (missile_pass_selector = $01), adjusts missile position for screen scrolling. On both passes, moves
 ; missile up by 6 pixels.
 ;
-; If missile reaches top of screen (Y AND $F8 == 0), jumps to finalize_collision to finalize collision. Clears
+; If missile reaches top of screen (Y AND $F8 == 0), jumps to deactivate_missile to deactivate missile. Clears
 ; CONTROLS_BIT_FIRE_SOUND when missile is in lower screen area ($70 - Y >= 0).
 ;
 ; Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions.
 animate_plane_missile:
-  LD A,(state_plane_missile_y)         ; Return if no missile active (Y == 0).
+  LD A,(state_striker_y)               ; Return if no missile active (Y == 0).
   CP $00                               ;
   RET Z                                ;
-  LD BC,(state_plane_missile_y)        ; Backup coords to state_saved_object_coords; if first pass, adjust for scroll.
+  LD BC,(state_striker_y)              ; Save current position to state_saved_object_coords.
   LD (state_saved_object_coords),BC    ;
-  LD A,(missile_pass_selector)         ;
+  LD A,(missile_pass_selector)         ; If first pass, adjust position for scroll.
   CP $01                               ;
   CALL Z,advance_object                ;
-  LD (previous_object_coordinates),BC  ; Store previous position to previous_object_coordinates.
-  LD BC,(state_plane_missile_y)        ; Calculate new position: X = plane_X + 4, Y = missile_Y - 6.
+  LD (previous_object_coordinates),BC  ; Store current position as previous for sprite erasure.
+  LD BC,(state_striker_y)              ; X = plane_X + 4.
   LD A,(state_plane_x)                 ;
   ADD A,$04                            ;
   LD C,A                               ;
-  LD A,B                               ;
+  LD A,B                               ; Y = missile_Y - 6.
   SUB $06                              ;
-  LD B,A                               ; If Y reached top of screen, jump to finalize_collision.
-  AND $F8                              ;
+  LD B,A                               ;
+  AND $F8                              ; If missile reached top of screen, jump to deactivate_missile.
   CP $00                               ;
-  JP Z,finalize_collision              ; (continued) Store new coordinates to state_plane_missile_y.
-  LD (state_plane_missile_y),BC        ;
-  LD A,$70                             ; If missile in lower area, call clear_fire_bit to clear fire bit.
+  JP Z,deactivate_missile              ;
+  LD (state_striker_y),BC              ; Store new missile position.
+  LD A,$70                             ; If missile has risen to Y ≤ $70, stop fire sound.
   SUB B                                ;
   CALL P,clear_fire_bit                ;
   LD (object_coordinates),BC           ; Store position to object_coordinates.
   LD A,COLLISION_MODE_MISSILE          ; Set COLLISION_MODE_MISSILE in state_collision_mode.
   LD (state_collision_mode),A          ;
-  LD DE,SPRITE_MISSILE_HEIGHT_PIXELS<<8|SPRITE_MISSILE_ATTRIBUTES ; Set up sprite params and call render_sprite to
-  LD HL,sprite_missile                                            ; render missile.
+  LD DE,SPRITE_MISSILE_HEIGHT_PIXELS<<8|SPRITE_MISSILE_ATTRIBUTES ; Set up sprite params.
+  LD HL,sprite_missile                                            ;
   LD BC,SPRITE_MISSILE_FRAME_SIZE_BYTES                           ;
   LD A,SPRITE_MISSILE_WIDTH_TILES                                 ;
-  CALL render_sprite                                              ;
+  CALL render_sprite
   RET
 
 ; Clear CONTROLS_BIT_FIRE_SOUND flag
@@ -2877,21 +2876,22 @@ clear_fire_bit:
   RES CONTROLS_BIT_FIRE_SOUND,(HL)     ;
   RET
 
-; Finalize collision and erase missile sprite
+; Deactivate missile
 ;
 ; Used by the routines at handle_collision_mode_fighter, check_collision, next_bridge_player_2, check_missile_vs_objects
 ; and animate_plane_missile.
 ;
-; Called after a successful collision to clean up the game state. Erases the missile sprite from the screen, resets the
-; collision mode to COLLISION_MODE_NONE, clears the missile coordinates, and resets CONTROLS_BIT_SPEED_NOT_FAST.
+; Erases the missile sprite from the screen, clears the missile coordinates, resets collision mode to
+; COLLISION_MODE_NONE, and resets CONTROLS_BIT_SPEED_NOT_FAST. Called both after a collision and when the missile leaves
+; the top of the screen.
 ;
 ; If in GAMEPLAY_MODE_REFUEL, jumps to handle_player_death instead.
 ;
 ; The sprite frame selection uses the X coordinate's lower 3 bits to choose the correct pixel-aligned erasure frame
 ; (1-4).
-finalize_collision:
-  LD BC,(state_plane_missile_y)        ; Load missile coordinates from state_plane_missile_y and call
-  CALL blending_mode_or_or             ; blending_mode_or_or to set OR blending.
+deactivate_missile:
+  LD BC,(state_striker_y)              ; Load missile coordinates from state_striker_y and call blending_mode_or_or to
+  CALL blending_mode_or_or             ; set OR blending.
   LD A,(state_gameplay_mode)           ; If GAMEPLAY_MODE_REFUEL, jump to handle_player_death.
   CP GAMEPLAY_MODE_REFUEL              ;
   JP Z,handle_player_death             ;
@@ -2906,10 +2906,10 @@ finalize_collision:
   INC A                                ;
   OR A                                 ;
   SBC HL,DE                            ; Prepare for frame selection loop.
-finalize_collision_erase_missile_loop:
-  ADD HL,DE                                   ; Select correct frame by adding frame_size A times.
-  DEC A                                       ;
-  JR NZ,finalize_collision_erase_missile_loop ;
+deactivate_missile_erase_loop:
+  ADD HL,DE                            ; Select correct frame by adding frame_size A times.
+  DEC A                                ;
+  JR NZ,deactivate_missile_erase_loop  ;
   LD A,(missile_pass_selector)         ; If first missile pass, call advance_object to advance position.
   CP $01                               ;
   CALL Z,advance_object                ;
@@ -2923,9 +2923,9 @@ finalize_collision_erase_missile_loop:
   CALL render_object                   ;
   LD HL,state_controls                 ; Reset CONTROLS_BIT_SPEED_NOT_FAST in state_controls.
   RES CONTROLS_BIT_SPEED_NOT_FAST,(HL) ;
-  LD BC,(state_plane_missile_y)        ; Reload coordinates from state_plane_missile_y, then clear them.
+  LD BC,(state_striker_y)              ; Reload coordinates from state_striker_y, then clear them.
   LD HL,$0000                          ;
-  LD (state_plane_missile_y),HL        ;
+  LD (state_striker_y),HL              ;
   LD A,B                               ; Calculate residue Y position (missile_Y - 6).
   SUB $06                              ;
   LD B,A                               ;
@@ -2942,10 +2942,10 @@ finalize_collision_erase_missile_loop:
   INC A                                       ;
   OR A                                        ;
   SBC HL,DE                                   ;
-finalize_collision_erase_residue_loop:
+deactivate_missile_erase_residue_loop:
   ADD HL,DE                                   ;
   DEC A                                       ;
-  JR NZ,finalize_collision_erase_residue_loop ;
+  JR NZ,deactivate_missile_erase_residue_loop ;
   LD A,(state_collision_y)             ; Calculate remaining height from state_collision_y; return if zero.
   LD D,A                               ;
   LD A,$08                             ;

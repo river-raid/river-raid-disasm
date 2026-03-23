@@ -509,10 +509,10 @@ g $5EF0 Current bridge number (0-47).
 g $5EF1 Raw input port value from last keyboard/joystick read. Format depends on input interface type.
 @ $5EF2 label=state_tank_shell
 g $5EF2 Road tank center flag ($00 = inactive, $01 = road tank is at center X=$80).
-@ $5EF3 label=state_plane_missile_y
-g $5EF3 Player missile Y coordinate in pixels (0-255). $00 when no missile active.
-@ $5EF4 label=state_plane_missile_x
-g $5EF4 Player missile X coordinate in pixels (0-255).
+@ $5EF3 label=state_striker_y
+g $5EF3 Y coordinate of the active striker (missile or plane) in pixels (0-255). $00 when no missile is active.
+@ $5EF4 label=state_striker_x
+g $5EF4 X coordinate of the active striker (missile or plane) in pixels (0-255).
 @ $5EF5 label=state_collision_mode
 g $5EF5 Collision detection mode for current render pass. Determines which collision handler to invoke on pixel overlap.
 @ $5EF6 label=state_collision_y
@@ -632,8 +632,8 @@ W $5F8B
 @ $5F8D label=state_saved_object_coords
 g $5F8D Saved object coordinates during rendering. Backup of object position for multi-pass rendering.
 W $5F8D
-@ $5F8F label=state_plane_missile_y_backup
-g $5F8F Backup of plane missile coordinates. Saved before movement, used for collision detection and erasure.
+@ $5F8F label=state_plane_missile_coords_backup
+g $5F8F Missile coordinates preserved during plane rendering.
 W $5F8F
 @ $5F91 label=main_loop
 c $5F91 Main gameplay loop
@@ -756,7 +756,7 @@ N $6194 Collision detected - process hit.
   $61A5 Spawn two explosion fragments (second offset by X-6).
 @ $61B3 isub=LD A,POINTS_FIGHTER
   $61B3 Award POINTS_FIGHTER to player.
-  $61B8 Finalize collision.
+  $61B8 Deactivate missile.
 @ $61BB label=check_collision
 c $61BB Check collision against bridges and viewport objects
 N $61BB Checks if the entity (missile or plane) has collided with a bridge or any viewport object. The coordinates to check are read from #R$5EF3.
@@ -798,11 +798,11 @@ N $61D3 Bridge hit - award points and spawn explosions.
   $623C (continued from above).
 @ $623F label=next_bridge_player_1
   $623F Increment player 1 bridge counter at #R$5F6A and print.
-  $6246 Finalize collision.
+  $6246 Deactivate missile.
 @ $6249 label=next_bridge_player_2
 c $6249 Increment player 2's bridge counter
   $6249 Increment player 2 bridge counter at #R$5F6B and print.
-  $6250,3 Finalize collision.
+  $6250,3 Deactivate missile.
 @ $6253 label=data_unused_6253
 u $6253
 @ $6256 label=handle_collision_mode_fuel_depot
@@ -925,13 +925,13 @@ N $63B9 End of object list - check fragment collision and tank shell.
   $63C8 If fragment collision detected ($02), jump to #R$63FC.
   $63D0,10 Compare missile Y with tank shell Y; if equal, jump to #R$63FC.
 @ $63DD label=process_collision_hit
-N $63DD Entry point for collision hit processing. Cleans up stack and finalizes collision.
+N $63DD Entry point for collision hit processing. Cleans up stack and deactivates missile.
   $63DD Pop four words from stack (unwind call frames).
   $63E1 Store hit Y coordinate to #R$5EF6.
   $63E5 Reset #R$5F62 and #R$5F60 to list starts.
   $63F1 Load saved coordinates from #R$5F8D.
   $63F5 Store to #R$5EF3.
-  $63F9 Finalize collision.
+  $63F9 Deactivate missile.
 @ $63FC label=reset_gameplay_mode
 c $63FC Reset gameplay mode to normal and exit collision system
   $63FC Reset gameplay mode to GAMEPLAY_MODE_NORMAL.
@@ -945,7 +945,7 @@ c $6414 Handle missile hit on regular helicopter
 N $6414 Awards POINTS_HELICOPTER_REG and spawns 1 explosion fragment at the object coordinates.
   $6414 Award POINTS_HELICOPTER_REG to player.
   $6419 Spawn explosion at object coordinates from #R$5F8B.
-  $6420 Finalize collision.
+  $6420 Deactivate missile.
 @ $6423 label=hit_ship
 @ $6423 isub=LD A,POINTS_SHIP
 c $6423 Handle missile hit on ship
@@ -954,21 +954,21 @@ N $6423 Awards POINTS_SHIP and spawns 3 explosion fragments in a triangular patt
   $6428 Load coordinates from #R$5F8B and spawn explosion 1 (left).
   $642F Move X+8 and spawn explosion 2 (right).
   $6436 Move X-8, Y+4 and spawn explosion 3 (center-bottom).
-  $6441 Finalize collision.
+  $6441 Deactivate missile.
 @ $6444 label=hit_helicopter_adv
 @ $6444 isub=LD A,POINTS_HELICOPTER_ADV
 c $6444 Handle missile hit on advanced helicopter
 N $6444 Awards POINTS_HELICOPTER_ADV and spawns 1 explosion fragment.
   $6444 Award POINTS_HELICOPTER_ADV to player.
   $6449 Spawn explosion at object coordinates from #R$5F8B.
-  $6450 Finalize collision.
+  $6450 Deactivate missile.
 @ $6453 label=hit_fighter
 @ $6453 isub=LD A,POINTS_FIGHTER
 c $6453 Handle missile hit on fighter
 N $6453 Awards POINTS_FIGHTER and spawns 1 explosion fragment.
   $6453 Award POINTS_FIGHTER to player.
   $6458 Spawn explosion at object coordinates from #R$5F8B.
-  $645F Finalize collision.
+  $645F Deactivate missile.
 @ $6462 label=hit_balloon
 @ $6462 isub=LD A,POINTS_BALLOON
 c $6462 Handle missile hit on balloon
@@ -976,7 +976,7 @@ N $6462 Awards POINTS_BALLOON and spawns 2 explosion fragments vertically (ballo
   $6462 Award POINTS_BALLOON to player.
   $6467 Load coordinates from #R$5F8B and spawn explosion 1 (top).
   $646E Move Y+8 and spawn explosion 2 (bottom).
-  $6475 Finalize collision.
+  $6475 Deactivate missile.
 @ $6478 label=hit_fuel
 c $6478 Handle collision with fuel depot
 N $6478 Handles both missile hits and plane refueling at fuel depots.
@@ -995,7 +995,7 @@ N $6480 Missile hit on fuel depot - destroy it.
   $649A Move Y+1 and spawn explosion 4.
 @ $649E label=hit_fuel_done
 c $649E Jump to collision finalization
-  $649E Finalize collision.
+  $649E Deactivate missile.
 @ $64A1 label=refuel_from_depot
 c $64A1 Handle refueling from fuel depot
 N $64A1 Called when the plane touches a fuel depot during REFUEL mode. Marks the depot slot as empty and adds fuel.
@@ -1144,7 +1144,8 @@ D $65DE This routine is called when Player 2 dies and Player 1 has lives remaini
 @ $65F3 label=handle_right
 c $65F3 Move player plane right by 2 pixels
 D $65F3 This routine is called when the player presses right on the joystick or keyboard. It moves the plane 2 pixels to the right (INC A twice), backs up the missile coordinates, renders the plane at the new position, then restores the missile coordinates and sets the sprite bank selector.
-  $65F3 Back up missile coordinates and move plane 2 pixels right.
+  $65F6 Back up missile coordinates.
+  $65FC,5 Move plane 2 pixels right.
 @ $6602 isub=LD B,PLANE_COORDINATE_Y
   $6602 Set position and collision mode (FUEL_DEPOT) for rendering.
 @ $6604 isub=LD A,COLLISION_MODE_FUEL_DEPOT
@@ -1164,7 +1165,8 @@ D $6630 Shared cleanup for #R$65F3, #R$6642, and #R$6682. Restores missile coord
 @ $6642 label=handle_left
 c $6642 Move player plane left by 2 pixels
 D $6642 Mirrors #R$65F3 but moves the plane 2 pixels left instead of right.
-  $6642 Back up missile coordinates and move plane 2 pixels left.
+  $6645 Back up missile coordinates.
+  $664B,5 Move plane 2 pixels left.
 @ $6651 isub=LD B,PLANE_COORDINATE_Y
   $6651 Set position and collision mode (FUEL_DEPOT) for rendering.
 @ $6653 isub=LD A,COLLISION_MODE_FUEL_DEPOT
@@ -1255,21 +1257,23 @@ c $673D Animate and render player missile
 D $673D Missile speed: 6 pixels upward per frame. Called twice per frame for two-pass rendering (erase then draw).
 N $673D On the first pass (#R$673C = $01), adjusts missile position for screen scrolling. On both passes, moves missile up by 6 pixels.
 N $673D .
-N $673D If missile reaches top of screen (Y AND $F8 == 0), jumps to #R$6794 to finalize collision. Clears CONTROLS_BIT_FIRE_SOUND when missile is in lower screen area ($70 - Y >= 0).
+N $673D If missile reaches top of screen (Y AND $F8 == 0), jumps to #R$6794 to deactivate missile. Clears CONTROLS_BIT_FIRE_SOUND when missile is in lower screen area ($70 - Y >= 0).
 N $673D .
 N $673D Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions.
   $673D Return if no missile active (Y == 0).
-  $6743 Backup coords to #R$5F8D; if first pass, adjust for scroll.
-  $6753 Store previous position to #R$8B0A.
-  $6757 Calculate new position: X = plane_X + 4, Y = missile_Y - 6.
-  $6764 If Y reached top of screen, jump to #R$6794.
-  $6769 (continued) Store new coordinates to #R$5EF3.
-  $6770 If missile in lower area, call #R$678E to clear fire bit.
+  $6743 Save current position to #R$5F8D.
+  $674B If first pass, adjust position for scroll.
+  $6753 Store current position as previous for sprite erasure.
+  $6757 X = plane_X + 4.
+  $6761 Y = missile_Y - 6.
+  $6765 If missile reached top of screen, jump to #R$6794.
+  $676C Store new missile position.
+  $6770 If missile has risen to Y ≤ $70, stop fire sound.
   $6776 Store position to #R$8B0C.
 @ $677A isub=LD A,COLLISION_MODE_MISSILE
   $677A Set COLLISION_MODE_MISSILE in #R$5EF5.
 @ $677F isub=LD DE,SPRITE_MISSILE_HEIGHT_PIXELS<<8|SPRITE_MISSILE_ATTRIBUTES
-  $677F,14 Set up sprite params and call #R$8B1E to render missile.
+  $677F,11 Set up sprite params.
 @ $6785 isub=LD BC,SPRITE_MISSILE_FRAME_SIZE_BYTES
 @ $6788 isub=LD A,SPRITE_MISSILE_WIDTH_TILES
 @ $678E label=clear_fire_bit
@@ -1277,9 +1281,9 @@ c $678E Clear CONTROLS_BIT_FIRE_SOUND flag
 N $678E Called when missile Y <= $70 (112), stopping the fire sound effect. Does not affect firing — a new missile is gated by missile Y being 0.
   $678E,5 Clear CONTROLS_BIT_FIRE_SOUND in #R$6BB0.
 @ $6791 isub=RES CONTROLS_BIT_FIRE_SOUND,(HL)
-@ $6794 label=finalize_collision
-c $6794 Finalize collision and erase missile sprite
-N $6794 Called after a successful collision to clean up the game state. Erases the missile sprite from the screen, resets the collision mode to COLLISION_MODE_NONE, clears the missile coordinates, and resets CONTROLS_BIT_SPEED_NOT_FAST.
+@ $6794 label=deactivate_missile
+c $6794 Deactivate missile
+N $6794 Erases the missile sprite from the screen, clears the missile coordinates, resets collision mode to COLLISION_MODE_NONE, and resets CONTROLS_BIT_SPEED_NOT_FAST. Called both after a collision and when the missile leaves the top of the screen.
 N $6794 .
 N $6794 If in GAMEPLAY_MODE_REFUEL, jumps to #R$650A instead.
 N $6794 .
@@ -1292,7 +1296,7 @@ N $6794 The sprite frame selection uses the X coordinate's lower 3 bits to choos
   $67A8 Set up sprite parameters: width=1, base=#R$8451, frame_size=8.
   $67B0 Calculate frame index from X coordinate's lower 3 bits.
   $67B7 Prepare for frame selection loop.
-@ $67B9 label=finalize_collision_erase_missile_loop
+@ $67B9 label=deactivate_missile_erase_loop
   $67B9 Select correct frame by adding frame_size A times.
   $67BD If first missile pass, call #R$62DA to advance position.
   $67C5 Store sprite pointer and coordinates to rendering vars.
@@ -1305,7 +1309,7 @@ N $6794 The sprite frame selection uses the X coordinate's lower 3 bits to choos
   $67F4 Set X = plane_X + 4 for centered erasure.
   $67FA Set up sprite parameters for residue erasure.
   $6803 Same frame selection as missile loop above (X lower 3 bits).
-@ $6809 label=finalize_collision_erase_residue_loop
+@ $6809 label=deactivate_missile_erase_residue_loop
   $680D Calculate remaining height from #R$5EF6; return if zero.
   $6817 Set height and attributes (height in D, attrs=$0C in E).
   $681A,22 Store sprite params and call #R$8B3C to erase residue.

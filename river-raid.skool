@@ -1248,12 +1248,13 @@ g$5EF1 DEFB $00
 @label=state_tank_shell
 g$5EF2 DEFB $00
 
-; Player missile Y coordinate in pixels (0-255). $00 when no missile active.
-@label=state_plane_missile_y
+; Y coordinate of the active striker (missile or plane) in pixels (0-255). $00
+; when no missile is active.
+@label=state_striker_y
 g$5EF3 DEFB $00
 
-; Player missile X coordinate in pixels (0-255).
-@label=state_plane_missile_x
+; X coordinate of the active striker (missile or plane) in pixels (0-255).
+@label=state_striker_x
 g$5EF4 DEFB $00
 
 ; Collision detection mode for current render pass. Determines which collision
@@ -1570,9 +1571,8 @@ g$5F8B DEFW $0000
 @label=state_saved_object_coords
 g$5F8D DEFW $0000
 
-; Backup of plane missile coordinates. Saved before movement, used for
-; collision detection and erasure.
-@label=state_plane_missile_y_backup
+; Missile coordinates preserved during plane rendering.
+@label=state_plane_missile_coords_backup
 g$5F8F DEFW $0000
 
 ; Main gameplay loop
@@ -1968,7 +1968,7 @@ c$615E LD BC,($5EF3) ; {Load missile coordinates from #R$5EF3 and fighter
 @isub=LD A,POINTS_FIGHTER
  $61B3 LD A,$10      ; {Award POINTS_FIGHTER to player.
  $61B5 CALL $90E0    ; }
- $61B8 JP $6794      ; Finalize collision.
+ $61B8 JP $6794      ; Deactivate missile.
 
 ; Check collision against bridges and viewport objects
 ;
@@ -2066,7 +2066,7 @@ c$61BB LD BC,($5EF3) ; {Load entity coordinates from #R$5EF3 and bridge Y from
  $623F LD HL,$5F6A   ; {Increment player 1 bridge counter at #R$5F6A and print.
  $6242 INC (HL)      ;
  $6243 CALL $64BC    ; }
- $6246 JP $6794      ; Finalize collision.
+ $6246 JP $6794      ; Deactivate missile.
 
 ; Increment player 2's bridge counter
 ;
@@ -2075,7 +2075,7 @@ c$61BB LD BC,($5EF3) ; {Load entity coordinates from #R$5EF3 and bridge Y from
 c$6249 LD HL,$5F6B   ; {Increment player 2 bridge counter at #R$5F6B and print.
  $624C INC (HL)      ;
  $624D CALL $64BC    ; }
- $6250 JP $6794      ; Finalize collision.
+ $6250 JP $6794      ; Deactivate missile.
 
 ; Unused
 @label=data_unused_6253
@@ -2395,8 +2395,8 @@ c$62E8 LD HL,($5F60) ; {Load object coordinates (C=X, B=Y) from list pointer
  $63D8 LD A,B        ;
  $63D9 CP D          ; }
  $63DA JP Z,$63FC    ;
-; Entry point for collision hit processing. Cleans up stack and finalizes
-; collision.
+; Entry point for collision hit processing. Cleans up stack and deactivates
+; missile.
 @label=process_collision_hit
 *$63DD POP DE        ; {Pop four words from stack (unwind call frames).
  $63DE POP DE        ;
@@ -2410,7 +2410,7 @@ c$62E8 LD HL,($5F60) ; {Load object coordinates (C=X, B=Y) from list pointer
  $63EE LD ($5F60),HL ; }
  $63F1 LD BC,($5F8D) ; Load saved coordinates from #R$5F8D.
  $63F5 LD ($5EF3),BC ; Store to #R$5EF3.
- $63F9 JP $6794      ; Finalize collision.
+ $63F9 JP $6794      ; Deactivate missile.
 
 ; Reset gameplay mode to normal and exit collision system
 ;
@@ -2442,7 +2442,7 @@ c$6414 LD A,$06      ; {Award POINTS_HELICOPTER_REG to player.
  $6416 CALL $90E0    ; }
  $6419 LD BC,($5F8B) ; {Spawn explosion at object coordinates from #R$5F8B.
  $641D CALL $6E9C    ; }
- $6420 JP $63DD      ; Finalize collision.
+ $6420 JP $63DD      ; Deactivate missile.
 
 ; Handle missile hit on ship
 ;
@@ -2469,7 +2469,7 @@ c$6423 LD A,$03      ; {Award POINTS_SHIP to player.
  $643B ADD A,$04     ;
  $643D LD B,A        ;
  $643E CALL $6E9C    ; }
- $6441 JP $63DD      ; Finalize collision.
+ $6441 JP $63DD      ; Deactivate missile.
 
 ; Handle missile hit on advanced helicopter
 ;
@@ -2484,7 +2484,7 @@ c$6444 LD A,$15      ; {Award POINTS_HELICOPTER_ADV to player.
  $6446 CALL $90E0    ; }
  $6449 LD BC,($5F8B) ; {Spawn explosion at object coordinates from #R$5F8B.
  $644D CALL $6E9C    ; }
- $6450 JP $63DD      ; Finalize collision.
+ $6450 JP $63DD      ; Deactivate missile.
 
 ; Handle missile hit on fighter
 ;
@@ -2499,7 +2499,7 @@ c$6453 LD A,$10      ; {Award POINTS_FIGHTER to player.
  $6455 CALL $90E0    ; }
  $6458 LD BC,($5F8B) ; {Spawn explosion at object coordinates from #R$5F8B.
  $645C CALL $6E9C    ; }
- $645F JP $63DD      ; Finalize collision.
+ $645F JP $63DD      ; Deactivate missile.
 
 ; Handle missile hit on balloon
 ;
@@ -2519,7 +2519,7 @@ c$6462 LD A,$06      ; {Award POINTS_BALLOON to player.
  $646F ADD A,$08     ;
  $6471 LD B,A        ;
  $6472 CALL $6E9C    ; }
- $6475 JP $63DD      ; Finalize collision.
+ $6475 JP $63DD      ; Deactivate missile.
 
 ; Handle collision with fuel depot
 ;
@@ -2562,7 +2562,7 @@ c$6478 LD A,($5F68)  ; {Check if in REFUEL mode; if so, jump to #R$64A1.
 
 ; Jump to collision finalization
 @label=hit_fuel_done
-c$649E JP $63DD      ; Finalize collision.
+c$649E JP $63DD      ; Deactivate missile.
 
 ; Handle refueling from fuel depot
 ;
@@ -2883,13 +2883,13 @@ c$65DE LD A,$01      ; {Set current player to PLAYER_1.
 ; the missile coordinates, renders the plane at the new position, then restores
 ; the missile coordinates and sets the sprite bank selector.
 @label=handle_right
-c$65F3 LD A,($5F72)  ; {Back up missile coordinates and move plane 2 pixels
- $65F6 LD HL,($5EF3) ; right.
- $65F9 LD ($5F8F),HL ;
- $65FC INC A         ;
+c$65F3 LD A,($5F72)  ;
+ $65F6 LD HL,($5EF3) ; {Back up missile coordinates.
+ $65F9 LD ($5F8F),HL ; }
+ $65FC INC A         ; {Move plane 2 pixels right.
  $65FD INC A         ;
- $65FE LD ($5F72),A  ;
- $6601 LD C,A        ; }
+ $65FE LD ($5F72),A  ; }
+ $6601 LD C,A        ;
 @isub=LD B,PLANE_COORDINATE_Y
  $6602 LD B,$80      ; {Set position and collision mode (FUEL_DEPOT) for
 @isub=LD A,COLLISION_MODE_FUEL_DEPOT
@@ -2933,13 +2933,13 @@ c$6630 LD HL,($5F8F) ; {Restore missile coordinates from backup.
 ;
 ; Mirrors #R$65F3 but moves the plane 2 pixels left instead of right.
 @label=handle_left
-c$6642 LD A,($5F72)  ; {Back up missile coordinates and move plane 2 pixels
- $6645 LD HL,($5EF3) ; left.
- $6648 LD ($5F8F),HL ;
- $664B DEC A         ;
+c$6642 LD A,($5F72)  ;
+ $6645 LD HL,($5EF3) ; {Back up missile coordinates.
+ $6648 LD ($5F8F),HL ; }
+ $664B DEC A         ; {Move plane 2 pixels left.
  $664C DEC A         ;
- $664D LD ($5F72),A  ;
- $6650 LD C,A        ; }
+ $664D LD ($5F72),A  ; }
+ $6650 LD C,A        ;
 @isub=LD B,PLANE_COORDINATE_Y
  $6651 LD B,$80      ; {Set position and collision mode (FUEL_DEPOT) for
 @isub=LD A,COLLISION_MODE_FUEL_DEPOT
@@ -3185,7 +3185,7 @@ g$673C DEFB $00
 ; .
 ; .
 ; If missile reaches top of screen (Y AND $F8 == 0), jumps to #R$6794 to
-; finalize collision. Clears CONTROLS_BIT_FIRE_SOUND when missile is in lower
+; deactivate missile. Clears CONTROLS_BIT_FIRE_SOUND when missile is in lower
 ; screen area ($70 - Y >= 0).
 ; .
 ; .
@@ -3196,38 +3196,38 @@ g$673C DEFB $00
 c$673D LD A,($5EF3)  ; {Return if no missile active (Y == 0).
  $6740 CP $00        ;
  $6742 RET Z         ; }
- $6743 LD BC,($5EF3) ; {Backup coords to #R$5F8D; if first pass, adjust for
- $6747 LD ($5F8D),BC ; scroll.
- $674B LD A,($673C)  ;
+ $6743 LD BC,($5EF3) ; {Save current position to #R$5F8D.
+ $6747 LD ($5F8D),BC ; }
+ $674B LD A,($673C)  ; {If first pass, adjust position for scroll.
  $674E CP $01        ;
  $6750 CALL Z,$62DA  ; }
- $6753 LD ($8B0A),BC ; Store previous position to #R$8B0A.
- $6757 LD BC,($5EF3) ; {Calculate new position: X = plane_X + 4, Y = missile_Y
- $675B LD A,($5F72)  ; - 6.
+ $6753 LD ($8B0A),BC ; Store current position as previous for sprite erasure.
+ $6757 LD BC,($5EF3) ; {X = plane_X + 4.
+ $675B LD A,($5F72)  ;
  $675E ADD A,$04     ;
- $6760 LD C,A        ;
- $6761 LD A,B        ;
- $6762 SUB $06       ; }
- $6764 LD B,A        ; {If Y reached top of screen, jump to #R$6794.
- $6765 AND $F8       ;
- $6767 CP $00        ; }
- $6769 JP Z,$6794    ; {(continued) Store new coordinates to #R$5EF3.
- $676C LD ($5EF3),BC ; }
- $6770 LD A,$70      ; {If missile in lower area, call #R$678E to clear fire
- $6772 SUB B         ; bit.
+ $6760 LD C,A        ; }
+ $6761 LD A,B        ; {Y = missile_Y - 6.
+ $6762 SUB $06       ;
+ $6764 LD B,A        ; }
+ $6765 AND $F8       ; {If missile reached top of screen, jump to #R$6794.
+ $6767 CP $00        ;
+ $6769 JP Z,$6794    ; }
+ $676C LD ($5EF3),BC ; Store new missile position.
+ $6770 LD A,$70      ; {If missile has risen to Y ≤ $70, stop fire sound.
+ $6772 SUB B         ;
  $6773 CALL P,$678E  ; }
  $6776 LD ($8B0C),BC ; Store position to #R$8B0C.
 @isub=LD A,COLLISION_MODE_MISSILE
  $677A LD A,$02      ; {Set COLLISION_MODE_MISSILE in #R$5EF5.
  $677C LD ($5EF5),A  ; }
 @isub=LD DE,SPRITE_MISSILE_HEIGHT_PIXELS<<8|SPRITE_MISSILE_ATTRIBUTES
- $677F LD DE,$080C   ; {Set up sprite params and call #R$8B1E to render
- $6782 LD HL,$8431   ; missile.
+ $677F LD DE,$080C   ; {Set up sprite params.
+ $6782 LD HL,$8431   ;
 @isub=LD BC,SPRITE_MISSILE_FRAME_SIZE_BYTES
  $6785 LD BC,$0008   ;
 @isub=LD A,SPRITE_MISSILE_WIDTH_TILES
- $6788 LD A,$01      ;
- $678A CALL $8B1E    ; }
+ $6788 LD A,$01      ; }
+ $678A CALL $8B1E    ;
  $678D RET           ;
 
 ; Clear CONTROLS_BIT_FIRE_SOUND flag
@@ -3244,16 +3244,16 @@ c$678E LD HL,$6BB0   ; {Clear CONTROLS_BIT_FIRE_SOUND in #R$6BB0.
  $6791 RES 0,(HL)    ; }
  $6793 RET           ;
 
-; Finalize collision and erase missile sprite
+; Deactivate missile
 ;
 ; Used by the routines at #R$615E, #R$61BB, #R$6249, #R$62E8 and #R$673D.
 ;
 ; .
 ;
-; Called after a successful collision to clean up the game state. Erases the
-; missile sprite from the screen, resets the collision mode to
-; COLLISION_MODE_NONE, clears the missile coordinates, and resets
-; CONTROLS_BIT_SPEED_NOT_FAST.
+; Erases the missile sprite from the screen, clears the missile coordinates,
+; resets collision mode to COLLISION_MODE_NONE, and resets
+; CONTROLS_BIT_SPEED_NOT_FAST. Called both after a collision and when the
+; missile leaves the top of the screen.
 ; .
 ; .
 ; .
@@ -3263,7 +3263,7 @@ c$678E LD HL,$6BB0   ; {Clear CONTROLS_BIT_FIRE_SOUND in #R$6BB0.
 ; .
 ; The sprite frame selection uses the X coordinate's lower 3 bits to choose the
 ; correct pixel-aligned erasure frame (1-4).
-@label=finalize_collision
+@label=deactivate_missile
 c$6794 LD BC,($5EF3) ; {Load missile coordinates from #R$5EF3 and call #R$72EF
  $6798 CALL $72EF    ; to set OR blending.}
  $679B LD A,($5F68)  ; {If GAMEPLAY_MODE_REFUEL, jump to #R$650A.
@@ -3282,7 +3282,7 @@ c$6794 LD BC,($5EF3) ; {Load missile coordinates from #R$5EF3 and call #R$72EF
  $67B5 INC A         ;
  $67B6 OR A          ; }
  $67B7 SBC HL,DE     ; Prepare for frame selection loop.
-@label=finalize_collision_erase_missile_loop
+@label=deactivate_missile_erase_loop
 *$67B9 ADD HL,DE     ; {Select correct frame by adding frame_size A times.
  $67BA DEC A         ;
  $67BB JR NZ,$67B9   ; }
@@ -3319,7 +3319,7 @@ c$6794 LD BC,($5EF3) ; {Load missile coordinates from #R$5EF3 and call #R$72EF
  $6805 INC A         ; bits).
  $6806 OR A          ;
  $6807 SBC HL,DE     ;
-@label=finalize_collision_erase_residue_loop
+@label=deactivate_missile_erase_residue_loop
 *$6809 ADD HL,DE     ;
  $680A DEC A         ;
  $680B JR NZ,$6809   ; }
