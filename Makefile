@@ -91,7 +91,7 @@ $(ASM_NON_FIXED): $(SKOOL)
 html: html/.stamp
 
 html/.stamp: $(SKOOL) $(REF) sound.ref graphics.ref levels.ref trivia.ref bugs.ref notes.ref design.ref design/theme.css design/theme.js
-	skool2html.py -d html -H -a -o $(SKOOL) $(REF)
+	skool2html.py -d html -H -a --rebuild-images --rebuild-audio $(SKOOL) $(REF)
 	touch $@
 
 clean:
