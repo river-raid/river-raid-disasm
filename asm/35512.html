@@ -29,13 +29,13 @@ Next: <a href="35528.html">8AC8</a>
 </td>
 </tr>
 </table>
-<div class="description">8AB8: Helicopter rotor sprite (left-facing, 4 frames × 4 bytes).</div>
+<div class="description">8AB8: Helicopter rotor sprite (left-facing, 4 sub-pixel variants × 4 bytes).</div>
 <table class="disassembly">
 <tr>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-The rotor is rendered above the helicopter body at 2 pixels height. Each frame is 2 tiles wide × 2 pixels tall, pre-shifted for smooth animation.
+Four pre-shifted 2-tile × 2-pixel variants (2-bit shift each). Only frame 4 (offset $0C) is used — selected by SPRITE_ROTOR_ATTRIBUTES ($0E) via the frame selection in <a href="35909.html">jp_collision_dispatcher</a>. Its two rows are the vertically swapped version of the helicopter body sprite's top 2 rows, providing the alternate blade position for the animation.
 </div>
 </div>
 </td>

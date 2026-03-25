@@ -48,7 +48,7 @@ Missile speed: 6 pixels upward per frame. Called twice per frame for two-pass re
 On the first pass (<a href="26428.html">missile_pass_selector</a> = $01), adjusts missile position for screen scrolling. On both passes, moves missile up by 6 pixels.
 </div>
 <div class="paragraph">
-If missile reaches top of screen (Y AND $F8 == 0), jumps to <a href="26516.html">finalize_collision</a> to finalize collision. Clears CONTROLS_BIT_FIRE_SOUND when missile is in lower screen area ($70 - Y &gt;= 0).
+If missile reaches top of screen (Y AND $F8 == 0), jumps to <a href="26516.html">deactivate_missile</a> to deactivate missile. Clears CONTROLS_BIT_FIRE_SOUND when missile is in lower screen area ($70 - Y &gt;= 0).
 </div>
 <div class="paragraph">
 Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions.
@@ -76,7 +76,7 @@ Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions
 <td class="asm-label"></td>
 <td class="address-1"><span id="26435"></span>6743</td>
 <td class="instruction">LD BC,($5EF3)</td>
-<td class="comment-1" rowspan="5">Backup coords to <a href="24461.html">state_saved_object_coords</a>; if first pass, adjust for scroll.</td>
+<td class="comment-1" rowspan="2">Save current position to <a href="24461.html">state_saved_object_coords</a>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -87,6 +87,7 @@ Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions
 <td class="asm-label"></td>
 <td class="address-1"><span id="26443"></span>674B</td>
 <td class="instruction">LD A,($673C)</td>
+<td class="comment-1" rowspan="3">If first pass, adjust position for scroll.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -102,13 +103,13 @@ Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions
 <td class="asm-label"></td>
 <td class="address-1"><span id="26451"></span>6753</td>
 <td class="instruction">LD ($8B0A),BC</td>
-<td class="comment-1" rowspan="1">Store previous position to <a href="35594.html">previous_object_coordinates</a>.</td>
+<td class="comment-1" rowspan="1">Store current position as previous for sprite erasure.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="26455"></span>6757</td>
 <td class="instruction">LD BC,($5EF3)</td>
-<td class="comment-1" rowspan="6">Calculate new position: X = plane_X + 4, Y = missile_Y - 6.</td>
+<td class="comment-1" rowspan="4">X = plane_X + 4.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -129,6 +130,7 @@ Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions
 <td class="asm-label"></td>
 <td class="address-1"><span id="26465"></span>6761</td>
 <td class="instruction">LD A,B</td>
+<td class="comment-1" rowspan="3">Y = missile_Y - 6.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -139,12 +141,12 @@ Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions
 <td class="asm-label"></td>
 <td class="address-1"><span id="26468"></span>6764</td>
 <td class="instruction">LD B,A</td>
-<td class="comment-1" rowspan="3">If Y reached top of screen, jump to <a href="26516.html">finalize_collision</a>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="26469"></span>6765</td>
 <td class="instruction">AND $F8</td>
+<td class="comment-1" rowspan="3">If missile reached top of screen, jump to <a href="26516.html">deactivate_missile</a>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -154,19 +156,19 @@ Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="26473"></span>6769</td>
-<td class="instruction">JP Z,<a href="26516.html">finalize_collision</a></td>
-<td class="comment-1" rowspan="2">(continued) Store new coordinates to <a href="24307.html">state_plane_missile_y</a>.</td>
+<td class="instruction">JP Z,<a href="26516.html">deactivate_missile</a></td>
 </tr>
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="26476"></span>676C</td>
 <td class="instruction">LD ($5EF3),BC</td>
+<td class="comment-1" rowspan="1">Store new missile position.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="26480"></span>6770</td>
 <td class="instruction">LD A,$70</td>
-<td class="comment-1" rowspan="3">If missile in lower area, call <a href="26510.html">clear_fire_bit</a> to clear fire bit.</td>
+<td class="comment-1" rowspan="3">If missile has risen to Y ≤ $70, stop fire sound.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -199,7 +201,7 @@ Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions
 <td class="asm-label"></td>
 <td class="address-1"><span id="26495"></span>677F</td>
 <td class="instruction">LD DE,$080C</td>
-<td class="comment-1" rowspan="5">Set up sprite params and call <a href="35614.html">render_sprite</a> to render missile.</td>
+<td class="comment-1" rowspan="4">Set up sprite params.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -220,6 +222,7 @@ Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions
 <td class="asm-label"></td>
 <td class="address-1"><span id="26506"></span>678A</td>
 <td class="instruction">CALL <a href="35614.html">render_sprite</a></td>
+<td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
 <td class="asm-label"></td>

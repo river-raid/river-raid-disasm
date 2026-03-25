@@ -45,7 +45,7 @@ Used by the routine at <a href="24886.html">collision_dispatcher</a>.
 <span id="24926"></span>
 <div class="comments">
 <div class="paragraph">
-Checks if the player's missile has collided with a fighter aircraft. Uses bounding box collision detection by comparing the missile coordinates (from <a href="24307.html">state_plane_missile_y</a>) with the fighter's coordinates (from <a href="35596.html">object_coordinates</a>).
+Checks if the player's missile has collided with a fighter aircraft. Uses bounding box collision detection by comparing the missile coordinates (from <a href="24307.html">state_striker_y</a>) with the fighter's coordinates (from <a href="35596.html">object_coordinates</a>).
 </div>
 <div class="paragraph">
 The collision box is 6 pixels wide (horizontally) and uses vertical bounds of +10 and +1 pixels.
@@ -54,7 +54,7 @@ The collision box is 6 pixels wide (horizontally) and uses vertical bounds of +1
 If no collision is detected (any boundary check fails), jumps to <a href="25596.html#25601">no_collision_exit</a> to reset collision mode and return.
 </div>
 <div class="paragraph">
-On collision: removes the fighter from the viewport, triggers two explosion fragments, awards POINTS_FIGHTER, and continues to post-collision processing at <a href="26516.html">finalize_collision</a>.
+On collision: removes the fighter from the viewport, triggers two explosion fragments, awards POINTS_FIGHTER, and continues to post-collision processing at <a href="26516.html">deactivate_missile</a>.
 </div>
 </div>
 </td>
@@ -63,7 +63,7 @@ On collision: removes the fighter from the viewport, triggers two explosion frag
 <td class="asm-label">handle_collision_mode_fighter</td>
 <td class="address-2"><span id="24926"></span>615E</td>
 <td class="instruction">LD BC,($5EF3)</td>
-<td class="comment-1" rowspan="2">Load missile coordinates from <a href="24307.html">state_plane_missile_y</a> and fighter coordinates from <a href="35596.html">object_coordinates</a>.</td>
+<td class="comment-1" rowspan="2">Load missile coordinates from <a href="24307.html">state_striker_y</a> and fighter coordinates from <a href="35596.html">object_coordinates</a>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -357,8 +357,8 @@ Collision detected - process hit.
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="25016"></span>61B8</td>
-<td class="instruction">JP <a href="26516.html">finalize_collision</a></td>
-<td class="comment-1" rowspan="1">Finalize collision.</td>
+<td class="instruction">JP <a href="26516.html">deactivate_missile</a></td>
+<td class="comment-1" rowspan="1">Deactivate missile.</td>
 </tr>
 </table>
 <table class="asm-navigation">

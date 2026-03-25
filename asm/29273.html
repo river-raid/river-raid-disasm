@@ -29,19 +29,19 @@ Next: <a href="29323.html">728B</a>
 </td>
 </tr>
 </table>
-<div class="description">7259: Animate helicopter rotor</div>
+<div class="description">7259: Render helicopter rotor sprite</div>
 <table class="disassembly">
 <tr>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Renders the helicopter rotor sprite based on orientation. Uses left-facing (<a href="35512.html">sprite_helicopter_rotor_left</a>) or right-facing (<a href="35528.html">sprite_helicopter_rotor_right</a>) rotor sprite.
+Draws the rotor sprite at the helicopter's position (rows 0-1 only, 2 pixels tall). The blade animation emerges from alternating this render with the body render (<a href="28968.html">render_ship_or_helicopter</a>): the body sprite's top 2 rows contain blade pixels in one position; the rotor sprite contains the same rows vertically swapped (the other blade position). Each pass erases its area with <a href="33477.html">all_ff</a> before drawing, so the two blade positions alternate every tick. Uses left-facing (<a href="35512.html">sprite_helicopter_rotor_left</a>) or right-facing (<a href="35528.html">sprite_helicopter_rotor_right</a>) rotor sprite.
 </div>
 </div>
 </td>
 </tr>
 <tr>
-<td class="asm-label">animate_helicopter</td>
+<td class="asm-label">render_helicopter_rotor</td>
 <td class="address-2"><span id="29273"></span>7259</td>
 <td class="instruction">LD HL,($5F60)</td>
 <td class="comment-1" rowspan="7">Load current_slot_ptr, extract [D, B, C] from current slot.</td>
@@ -96,7 +96,7 @@ Renders the helicopter rotor sprite based on orientation. Uses left-facing (<a h
 <td class="asm-label"></td>
 <td class="address-1"><span id="29290"></span>726A</td>
 <td class="instruction">LD ($8B0C),BC</td>
-<td class="comment-1" rowspan="4">Store positions to <a href="35596.html">object_coordinates</a> and <a href="35594.html">previous_object_coordinates</a>. Push rotor sprite, get main sprite pointer.</td>
+<td class="comment-1" rowspan="4">Set both coordinates to BC so erase and draw target the same position. Push rotor sprite; call <a href="30138.html">ld_enemy_sprites</a> (result discarded).</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -117,7 +117,7 @@ Renders the helicopter rotor sprite based on orientation. Uses left-facing (<a h
 <td class="asm-label"></td>
 <td class="address-1"><span id="29302"></span>7276</td>
 <td class="instruction">LD HL,$82C5</td>
-<td class="comment-1" rowspan="3">Store erase sprite <a href="33477.html">all_ff</a> to <a href="35598.html">render_sprite_ptr</a>. Pop rotor sprite.</td>
+<td class="comment-1" rowspan="3">render_sprite_ptr = <a href="33477.html">all_ff</a> (all $FF): clears the 2 blade rows, removing the body sprite's blade pixels drawn on the previous tick. Pop rotor sprite.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -133,7 +133,7 @@ Renders the helicopter rotor sprite based on orientation. Uses left-facing (<a h
 <td class="asm-label"></td>
 <td class="address-1"><span id="29309"></span>727D</td>
 <td class="instruction">LD DE,$020E</td>
-<td class="comment-1" rowspan="4">Render rotor: height=2, attributes=$0E, frame size=4, width=2.</td>
+<td class="comment-1" rowspan="4">Render rotor with height=2, targeting only the 2 blade rows at the top of the body sprite area.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

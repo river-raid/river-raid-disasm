@@ -48,7 +48,7 @@ Used by the routines at <a href="23974.html">play</a> and <a href="26683.html">s
 Renders the player's plane at its current position. Only executes in GAMEPLAY_MODE_NORMAL; returns immediately in other modes (scroll-in, overview, refuel).
 </div>
 <div class="paragraph">
-Sets COLLISION_MODE_FUEL_DEPOT so the collision system checks for fuel depot contact during rendering. Backs up missile coordinates to <a href="24463.html">state_plane_missile_y_backup</a> before modifying them for collision detection.
+Sets COLLISION_MODE_FUEL_DEPOT so the collision system checks for fuel depot contact during rendering. Backs up missile coordinates to <a href="24463.html">state_plane_missile_coords_backup</a> before modifying them for collision detection.
 </div>
 <div class="paragraph">
 Selects between normal sprite (<a href="33713.html">sprite_plane</a>) and banked sprite (<a href="33777.html">sprite_plane_banked</a>) based on <a href="24425.html">state_plane_sprite_bank</a>. Player 2 uses different attributes (same as ship).
@@ -76,7 +76,7 @@ Selects between normal sprite (<a href="33713.html">sprite_plane</a>) and banked
 <td class="asm-label"></td>
 <td class="address-1"><span id="26248"></span>6688</td>
 <td class="instruction">LD A,($5F72)</td>
-<td class="comment-1" rowspan="3">Backup missile coords to <a href="24463.html">state_plane_missile_y_backup</a>; set up plane position (Y=$80, X from <a href="24434.html">state_plane_x</a>).</td>
+<td class="comment-1" rowspan="3">Backup missile coords to <a href="24463.html">state_plane_missile_coords_backup</a>; set up plane position (Y=$80, X from <a href="24434.html">state_plane_x</a>).</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

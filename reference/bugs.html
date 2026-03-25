@@ -103,8 +103,8 @@ The needle jumps 1 pixel right the moment the player leaves the fuel depot.
 <div class="box-title">Missile trail is implemented but never rendered</div>
 <div class="paragraph">
 The missile trail sprite (<a href="../asm/33873.html">sprite_missile_trail</a>, 4 frames) and its frame-selection logic in
-<a href="../asm/26516.html">finalize_collision</a> are fully implemented, but the trail is never drawn. After selecting
-the correct frame based on the missile's X position, <a href="../asm/26516.html">finalize_collision</a> immediately
+<a href="../asm/26516.html">deactivate_missile</a> are fully implemented, but the trail is never drawn. After selecting
+the correct frame based on the missile's X position, <a href="../asm/26516.html">deactivate_missile</a> immediately
 discards the pointer and substitutes <a href="../asm/33525.html">sprite_erasure</a>, so only an
 erasure is rendered at the trail's location. The feature appears unfinished.
 </div>

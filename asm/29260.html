@@ -53,7 +53,7 @@ Routes helicopters to rotor animation. Non-helicopters return to main loop.
 <td class="asm-label">animate_object</td>
 <td class="address-2"><span id="29260"></span>724C</td>
 <td class="instruction">LD A,D</td>
-<td class="comment-1" rowspan="5">If helicopter (REG or ADV), animate rotor via <a href="29273.html">animate_helicopter</a>. Otherwise return to main loop.</td>
+<td class="comment-1" rowspan="5">If helicopter (REG or ADV), animate rotor via <a href="29273.html">render_helicopter_rotor</a>. Otherwise return to main loop.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -68,7 +68,7 @@ Routes helicopters to rotor animation. Non-helicopters return to main loop.
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="29265"></span>7251</td>
-<td class="instruction">JP Z,<a href="29273.html">animate_helicopter</a></td>
+<td class="instruction">JP Z,<a href="29273.html">render_helicopter_rotor</a></td>
 </tr>
 <tr>
 <td class="asm-label"></td>

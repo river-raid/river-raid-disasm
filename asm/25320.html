@@ -727,7 +727,7 @@ End of object list - check fragment collision and tank shell.
 <span id="25565"></span>
 <div class="comments">
 <div class="paragraph">
-Entry point for collision hit processing. Cleans up stack and finalizes collision.
+Entry point for collision hit processing. Cleans up stack and deactivates missile.
 </div>
 </div>
 </td>
@@ -795,13 +795,13 @@ Entry point for collision hit processing. Cleans up stack and finalizes collisio
 <td class="asm-label"></td>
 <td class="address-1"><span id="25589"></span>63F5</td>
 <td class="instruction">LD ($5EF3),BC</td>
-<td class="comment-1" rowspan="1">Store to <a href="24307.html">state_plane_missile_y</a>.</td>
+<td class="comment-1" rowspan="1">Store to <a href="24307.html">state_striker_y</a>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="25593"></span>63F9</td>
-<td class="instruction">JP <a href="26516.html">finalize_collision</a></td>
-<td class="comment-1" rowspan="1">Finalize collision.</td>
+<td class="instruction">JP <a href="26516.html">deactivate_missile</a></td>
+<td class="comment-1" rowspan="1">Deactivate missile.</td>
 </tr>
 </table>
 <table class="asm-navigation">

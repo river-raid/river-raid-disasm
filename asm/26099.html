@@ -44,12 +44,13 @@ This routine is called when the player presses right on the joystick or keyboard
 <td class="asm-label">handle_right</td>
 <td class="address-2"><span id="26099"></span>65F3</td>
 <td class="instruction">LD A,($5F72)</td>
-<td class="comment-1" rowspan="7">Back up missile coordinates and move plane 2 pixels right.</td>
+<td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="26102"></span>65F6</td>
 <td class="instruction">LD HL,($5EF3)</td>
+<td class="comment-1" rowspan="2">Back up missile coordinates.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -60,6 +61,7 @@ This routine is called when the player presses right on the joystick or keyboard
 <td class="asm-label"></td>
 <td class="address-1"><span id="26108"></span>65FC</td>
 <td class="instruction">INC A</td>
+<td class="comment-1" rowspan="3">Move plane 2 pixels right.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -75,6 +77,7 @@ This routine is called when the player presses right on the joystick or keyboard
 <td class="asm-label"></td>
 <td class="address-1"><span id="26113"></span>6601</td>
 <td class="instruction">LD C,A</td>
+<td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
 <td class="asm-label"></td>

@@ -35,7 +35,7 @@ Next: <a href="29256.html">7248</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Processes objects that haven't been activated yet. Routes balloons to <a href="30380.html">jp_operate_viewport_slots</a>, checks animation timing for helicopter rotor animation.
+Processes objects that haven't been activated yet. Routes balloons to <a href="30380.html">jp_operate_viewport_slots</a>. For helicopters, the blade animation requires both renderers to alternate every tick: on odd ticks calls <a href="29260.html">animate_object</a> (rotor sprite), on even ticks falls through to <a href="28968.html">render_ship_or_helicopter</a> (body sprite). Active helicopters dispatch the opposite way (even → rotor, odd → body via <a href="28932.html">operate_ship_or_helicopter</a>), so the blade animation runs regardless of activation state.
 </div>
 </div>
 <table class="input">
@@ -99,7 +99,7 @@ Processes objects that haven't been activated yet. Routes balloons to <a href="3
 <td class="asm-label"></td>
 <td class="address-1"><span id="29236"></span>7234</td>
 <td class="instruction">LD A,D</td>
-<td class="comment-1" rowspan="5">If helicopter (REG or ADV), store position and continue to <a href="28968.html">operate_ship_or_helicopter_continue</a>.</td>
+<td class="comment-1" rowspan="5">If helicopter (REG or ADV), store position and continue to <a href="28968.html">render_ship_or_helicopter</a>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -131,12 +131,12 @@ Processes objects that haven't been activated yet. Routes balloons to <a href="3
 <td class="asm-label">store_and_continue_ship</td>
 <td class="address-2"><span id="29249"></span>7241</td>
 <td class="instruction">LD ($8B0A),BC</td>
-<td class="comment-1" rowspan="2">Helicopters store position and jump to <a href="28968.html">operate_ship_or_helicopter_continue</a>.</td>
+<td class="comment-1" rowspan="2">Helicopters store position and jump to <a href="28968.html">render_ship_or_helicopter</a>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="29253"></span>7245</td>
-<td class="instruction">JP <a href="28968.html">operate_ship_or_helicopter_continue</a></td>
+<td class="instruction">JP <a href="28968.html">render_ship_or_helicopter</a></td>
 </tr>
 </table>
 <table class="asm-navigation">

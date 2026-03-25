@@ -29,7 +29,7 @@ Next: <a href="29013.html">7155</a>
 </td>
 </tr>
 </table>
-<div class="description">7128: Continue ship/helicopter rendering</div>
+<div class="description">7128: Render ship or helicopter body sprite</div>
 <table class="disassembly">
 <tr>
 <td class="routine-comment" colspan="5">
@@ -41,7 +41,7 @@ Updates the object's position in the viewport array and renders the sprite.
 </td>
 </tr>
 <tr>
-<td class="asm-label">operate_ship_or_helicopter_continue</td>
+<td class="asm-label">render_ship_or_helicopter</td>
 <td class="address-2"><span id="28968"></span>7128</td>
 <td class="instruction">LD HL,($5F60)</td>
 <td class="comment-1" rowspan="7">Load current_slot_ptr, navigate back to current slot, update [X, Y, D] values.</td>
@@ -80,12 +80,13 @@ Updates the object's position in the viewport array and renders the sprite.
 <td class="asm-label"></td>
 <td class="address-1"><span id="28977"></span>7131</td>
 <td class="instruction">LD ($8B0C),BC</td>
-<td class="comment-1" rowspan="3">Store position to <a href="35596.html">object_coordinates</a>, sprite address <a href="33477.html">all_ff</a> to <a href="35598.html">render_sprite_ptr</a>. Get sprite pointer.</td>
+<td class="comment-1" rowspan="1">Store current position.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="28981"></span>7135</td>
 <td class="instruction">LD HL,$82C5</td>
+<td class="comment-1" rowspan="2">render_sprite_ptr = <a href="33477.html">all_ff</a> (all $FF): <a href="35644.html">render_object</a> will use this to clear the full 8-row body area, including the 2 blade rows where the rotor was drawn.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -96,7 +97,7 @@ Updates the object's position in the viewport array and renders the sprite.
 <td class="asm-label"></td>
 <td class="address-1"><span id="28987"></span>713B</td>
 <td class="instruction">CALL <a href="30138.html">ld_enemy_sprites</a></td>
-<td class="comment-1" rowspan="1"></td>
+<td class="comment-1" rowspan="1">Get body sprite pointer.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

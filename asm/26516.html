@@ -29,7 +29,7 @@ Next: <a href="26673.html">6831</a>
 </td>
 </tr>
 </table>
-<div class="description">6794: Finalize collision and erase missile sprite</div>
+<div class="description">6794: Deactivate missile</div>
 <table class="disassembly">
 <tr>
 <td class="routine-comment" colspan="5">
@@ -45,7 +45,7 @@ Used by the routines at <a href="24926.html">handle_collision_mode_fighter</a>, 
 <span id="26516"></span>
 <div class="comments">
 <div class="paragraph">
-Called after a successful collision to clean up the game state. Erases the missile sprite from the screen, resets the collision mode to COLLISION_MODE_NONE, clears the missile coordinates, and resets CONTROLS_BIT_SPEED_NOT_FAST.
+Erases the missile sprite from the screen, clears the missile coordinates, resets collision mode to COLLISION_MODE_NONE, and resets CONTROLS_BIT_SPEED_NOT_FAST. Called both after a collision and when the missile leaves the top of the screen.
 </div>
 <div class="paragraph">
 If in GAMEPLAY_MODE_REFUEL, jumps to <a href="25866.html">handle_player_death</a> instead.
@@ -57,10 +57,10 @@ The sprite frame selection uses the X coordinate's lower 3 bits to choose the co
 </td>
 </tr>
 <tr>
-<td class="asm-label">finalize_collision</td>
+<td class="asm-label">deactivate_missile</td>
 <td class="address-2"><span id="26516"></span>6794</td>
 <td class="instruction">LD BC,($5EF3)</td>
-<td class="comment-1" rowspan="2">Load missile coordinates from <a href="24307.html">state_plane_missile_y</a> and call <a href="29423.html">blending_mode_or_or</a> to set OR blending.</td>
+<td class="comment-1" rowspan="2">Load missile coordinates from <a href="24307.html">state_striker_y</a> and call <a href="29423.html">blending_mode_or_or</a> to set OR blending.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -143,7 +143,7 @@ The sprite frame selection uses the X coordinate's lower 3 bits to choose the co
 <td class="comment-1" rowspan="1">Prepare for frame selection loop.</td>
 </tr>
 <tr>
-<td class="asm-label">finalize_collision_erase_missile_loop</td>
+<td class="asm-label">deactivate_missile_erase_loop</td>
 <td class="address-2"><span id="26553"></span>67B9</td>
 <td class="instruction">ADD HL,DE</td>
 <td class="comment-1" rowspan="3">Select correct frame by adding frame_size A times.</td>
@@ -156,7 +156,7 @@ The sprite frame selection uses the X coordinate's lower 3 bits to choose the co
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="26555"></span>67BB</td>
-<td class="instruction">JR NZ,<a href="26516.html#26553">finalize_collision_erase_missile_loop</a></td>
+<td class="instruction">JR NZ,<a href="26516.html#26553">deactivate_missile_erase_loop</a></td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -232,7 +232,7 @@ The sprite frame selection uses the X coordinate's lower 3 bits to choose the co
 <td class="asm-label"></td>
 <td class="address-1"><span id="26595"></span>67E3</td>
 <td class="instruction">LD BC,($5EF3)</td>
-<td class="comment-1" rowspan="3">Reload coordinates from <a href="24307.html">state_plane_missile_y</a>, then clear them.</td>
+<td class="comment-1" rowspan="3">Reload coordinates from <a href="24307.html">state_striker_y</a>, then clear them.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -329,7 +329,7 @@ The sprite frame selection uses the X coordinate's lower 3 bits to choose the co
 <td class="instruction">SBC HL,DE</td>
 </tr>
 <tr>
-<td class="asm-label">finalize_collision_erase_residue_loop</td>
+<td class="asm-label">deactivate_missile_erase_residue_loop</td>
 <td class="address-2"><span id="26633"></span>6809</td>
 <td class="instruction">ADD HL,DE</td>
 </tr>
@@ -341,7 +341,7 @@ The sprite frame selection uses the X coordinate's lower 3 bits to choose the co
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="26635"></span>680B</td>
-<td class="instruction">JR NZ,<a href="26516.html#26633">finalize_collision_erase_residue_loop</a></td>
+<td class="instruction">JR NZ,<a href="26516.html#26633">deactivate_missile_erase_residue_loop</a></td>
 </tr>
 <tr>
 <td class="asm-label"></td>

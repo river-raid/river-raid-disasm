@@ -223,7 +223,7 @@
 <td class="map-byte">243</td>
 <td class="map-g"><span id="24307"></span><a href="../asm/24307.html">5EF3</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24307.html">Player missile Y coordinate in pixels (0-255). $00 when no missile active.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24307.html">Y coordinate of the active striker (missile or plane) in pixels (0-255). $00 when no missile is active.</a></div>
 </td>
 </tr>
 <tr>
@@ -231,7 +231,7 @@
 <td class="map-byte">244</td>
 <td class="map-g"><span id="24308"></span><a href="../asm/24308.html">5EF4</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24308.html">Player missile X coordinate in pixels (0-255).</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24308.html">X coordinate of the active striker (missile or plane) in pixels (0-255).</a></div>
 </td>
 </tr>
 <tr>
@@ -607,7 +607,7 @@
 <td class="map-byte">143</td>
 <td class="map-g"><span id="24463"></span><a href="../asm/24463.html">5F8F</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24463.html">Backup of plane missile coordinates. Saved before movement, used for collision detection and erasure.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24463.html">Missile coordinates preserved during plane rendering.</a></div>
 </td>
 </tr>
 <tr>
@@ -1071,7 +1071,7 @@
 <td class="map-byte">148</td>
 <td class="map-c"><span id="26516"></span><a href="../asm/26516.html">6794</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26516.html">Finalize collision and erase missile sprite</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26516.html">Deactivate missile</a></div>
 </td>
 </tr>
 <tr>
@@ -1687,7 +1687,7 @@
 <td class="map-byte">40</td>
 <td class="map-c"><span id="28968"></span><a href="../asm/28968.html">7128</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28968.html">Continue ship/helicopter rendering</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/28968.html">Render ship or helicopter body sprite</a></div>
 </td>
 </tr>
 <tr>
@@ -1775,7 +1775,7 @@
 <td class="map-byte">89</td>
 <td class="map-c"><span id="29273"></span><a href="../asm/29273.html">7259</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29273.html">Animate helicopter rotor</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29273.html">Render helicopter rotor sprite</a></div>
 </td>
 </tr>
 <tr>
@@ -2479,7 +2479,7 @@
 <td class="map-byte">184</td>
 <td class="map-b"><span id="35512"></span><a href="../asm/35512.html">8AB8</a></td>
 <td class="map-b-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35512.html">Helicopter rotor sprite (left-facing, 4 frames × 4 bytes).</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35512.html">Helicopter rotor sprite (left-facing, 4 sub-pixel variants × 4 bytes).</a></div>
 </td>
 </tr>
 <tr>
@@ -2487,7 +2487,7 @@
 <td class="map-byte">200</td>
 <td class="map-b"><span id="35528"></span><a href="../asm/35528.html">8AC8</a></td>
 <td class="map-b-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35528.html">Helicopter rotor sprite (right-facing, 4 frames × 4 bytes).</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/35528.html">Helicopter rotor sprite (right-facing, 4 sub-pixel variants × 4 bytes).</a></div>
 </td>
 </tr>
 <tr>

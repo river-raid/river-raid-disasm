@@ -45,7 +45,7 @@ Used by the routines at <a href="24886.html">collision_dispatcher</a> and <a hre
 <span id="25019"></span>
 <div class="comments">
 <div class="paragraph">
-Checks if the entity (missile or plane) has collided with a bridge or any viewport object. The coordinates to check are read from <a href="24307.html">state_plane_missile_y</a>.
+Checks if the entity (missile or plane) has collided with a bridge or any viewport object. The coordinates to check are read from <a href="24307.html">state_striker_y</a>.
 </div>
 <div class="paragraph">
 Called in two contexts: (1) when COLLISION_MODE_MISSILE is set, checks missile collision; (2) when called from <a href="25174.html">handle_collision_mode_fuel_depot</a>, checks plane collision with fuel depots.
@@ -63,7 +63,7 @@ If no bridge collision, falls through to <a href="25320.html">check_missile_vs_o
 <td class="asm-label">check_collision</td>
 <td class="address-2"><span id="25019"></span>61BB</td>
 <td class="instruction">LD BC,($5EF3)</td>
-<td class="comment-1" rowspan="2">Load entity coordinates from <a href="24307.html">state_plane_missile_y</a> and bridge Y from <a href="24430.html">state_bridge_y_position</a>.</td>
+<td class="comment-1" rowspan="2">Load entity coordinates from <a href="24307.html">state_striker_y</a> and bridge Y from <a href="24430.html">state_bridge_y_position</a>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -358,7 +358,7 @@ Bridge hit - award points and spawn explosions.
 <td class="asm-label"></td>
 <td class="address-1"><span id="25135"></span>622F</td>
 <td class="instruction">LD BC,($5F8D)</td>
-<td class="comment-1" rowspan="2">Restore entity coordinates from <a href="24461.html">state_saved_object_coords</a> to <a href="24307.html">state_plane_missile_y</a>.</td>
+<td class="comment-1" rowspan="2">Restore entity coordinates from <a href="24461.html">state_saved_object_coords</a> to <a href="24307.html">state_striker_y</a>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -401,8 +401,8 @@ Bridge hit - award points and spawn explosions.
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="25158"></span>6246</td>
-<td class="instruction">JP <a href="26516.html">finalize_collision</a></td>
-<td class="comment-1" rowspan="1">Finalize collision.</td>
+<td class="instruction">JP <a href="26516.html">deactivate_missile</a></td>
+<td class="comment-1" rowspan="1">Deactivate missile.</td>
 </tr>
 </table>
 <table class="asm-navigation">

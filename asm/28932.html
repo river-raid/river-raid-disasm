@@ -35,7 +35,7 @@ Next: <a href="28947.html">7113</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Animates and moves ships and helicopters. On even ticks, advances the object by 2 pixels toward the opposite river bank. When the object gets within 16 pixels of the bank edge, it reverses direction.
+Animates and moves ships and helicopters. On odd ticks, advances the object by 2 pixels toward the opposite river bank. When the object gets within 16 pixels of the bank edge, it reverses direction. On even ticks, jumps to <a href="29260.html">animate_object</a> to animate the helicopter rotor instead.
 </div>
 <div class="paragraph">
 <ul class="">
@@ -69,17 +69,19 @@ Animates and moves ships and helicopters. On even ticks, advances the object by 
 <td class="asm-label">operate_ship_or_helicopter</td>
 <td class="address-2"><span id="28932"></span>7104</td>
 <td class="instruction">LD A,($5EEF)</td>
-<td class="comment-1" rowspan="3">Skip if odd tick (ships/helicopters move on even ticks).</td>
+<td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="28935"></span>7107</td>
 <td class="instruction">AND $01</td>
+<td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
 <td class="asm-label"></td>
 <td class="address-1"><span id="28937"></span>7109</td>
 <td class="instruction">CP $00</td>
+<td class="comment-1" rowspan="1"></td>
 </tr>
 <tr>
 <td class="asm-label"></td>
