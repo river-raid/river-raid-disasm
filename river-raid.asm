@@ -4688,8 +4688,8 @@ render_balloon:
 
 ; Main viewport slot processing loop.
 ;
-; Used by the routines at play, main_loop, overview, operate_ship_or_helicopter_continue, operate_fighter_continue,
-; operate_tank_shell_explosion, handle_inactive_object, animate_object, animate_helicopter, operate_tank,
+; Used by the routines at play, main_loop, overview, render_ship_or_helicopter, operate_fighter_continue,
+; operate_tank_shell_explosion, handle_inactive_object, animate_object, render_helicopter_rotor, operate_tank,
 ; operate_tank_on_bank, cancel_and_remove_shell, handle_tank_at_boundary, operate_fuel, reverse_enemy_direction,
 ; remove_object_from_viewport, operate_balloon, jp_operate_viewport_slots and reverse_balloon_direction.
 ;
@@ -4780,8 +4780,9 @@ dispatch_object_type:
 
 ; Ship or helicopter operation routine
 ;
-; Animates and moves ships and helicopters. On even ticks, advances the object by 2 pixels toward the opposite river
-; bank. When the object gets within 16 pixels of the bank edge, it reverses direction.
+; Animates and moves ships and helicopters. On odd ticks, advances the object by 2 pixels toward the opposite river
+; bank. When the object gets within 16 pixels of the bank edge, it reverses direction. On even ticks, jumps to
+; animate_object to animate the helicopter rotor instead.
 ;
 ; * Checks tick parity for movement timing
 ; * Determines direction from bit 6 (SLOT_BIT_ORIENTATION)
@@ -4792,9 +4793,9 @@ dispatch_object_type:
 ; I:C X position of object
 ; I:D Object definition byte
 operate_ship_or_helicopter:
-  LD A,(state_tick)                    ; Skip if odd tick (ships/helicopters move on even ticks).
-  AND TICK_MASK_FRAME_PARITY           ;
-  CP TICK_PARITY_EVEN                  ;
+  LD A,(state_tick)
+  AND TICK_MASK_FRAME_PARITY
+  CP TICK_PARITY_EVEN
   JP Z,animate_object
   BIT SLOT_BIT_ORIENTATION,D            ; Check orientation: if bit 6 clear (right-facing), jump to
   JP Z,ship_or_helicopter_right_advance ; ship_or_helicopter_right_advance.
@@ -4820,10 +4821,10 @@ ship_or_helicopter_left_advance:
   DEC C                                ; pixels (DEC C twice).
   DEC C                                ;
 
-; Continue ship/helicopter rendering
+; Render ship or helicopter body sprite
 ;
 ; Updates the object's position in the viewport array and renders the sprite.
-operate_ship_or_helicopter_continue:
+render_ship_or_helicopter:
   LD HL,(current_slot_ptr)             ; Load current_slot_ptr, navigate back to current slot, update [X, Y, D] values.
   DEC HL                               ;
   LD D,(HL)                            ;
@@ -4831,10 +4832,10 @@ operate_ship_or_helicopter_continue:
   LD (HL),B                            ;
   DEC HL                               ;
   LD (HL),C                            ;
-  LD (object_coordinates),BC           ; Store position to object_coordinates, sprite address all_ff to
-  LD HL,all_ff                         ; render_sprite_ptr. Get sprite pointer.
-  LD (render_sprite_ptr),HL            ;
-  CALL ld_enemy_sprites
+  LD (object_coordinates),BC           ; Store current position.
+  LD HL,all_ff                         ; render_sprite_ptr = all_ff (all $FF): render_object will use this to clear the
+  LD (render_sprite_ptr),HL            ; full 8-row body area, including the 2 blade rows where the rotor was drawn.
+  CALL ld_enemy_sprites                ; Get body sprite pointer.
   LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE   ; Set frame size=$18, default attributes=$0E.
   LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES    ;
   LD A,D                               ; If object type is OBJECT_SHIP, load ship attributes via ld_attributes_ship.
@@ -5007,8 +5008,10 @@ finish_tank_shell_explosion:
 
 ; Handle non-activated object
 ;
-; Processes objects that haven't been activated yet. Routes balloons to jp_operate_viewport_slots, checks animation
-; timing for helicopter rotor animation.
+; Processes objects that haven't been activated yet. Routes balloons to jp_operate_viewport_slots. For helicopters, the
+; blade animation requires both renderers to alternate every tick: on odd ticks calls animate_object (rotor sprite), on
+; even ticks falls through to render_ship_or_helicopter (body sprite). Active helicopters dispatch the opposite way
+; (even → rotor, odd → body via operate_ship_or_helicopter), so the blade animation runs regardless of activation state.
 ;
 ; I:B Y position
 ; I:C X position
@@ -5022,14 +5025,14 @@ handle_inactive_object:
   CP TICK_PARITY_ODD                   ;
   JP Z,animate_object
   LD A,D                               ; If helicopter (REG or ADV), store position and continue to
-  AND SLOT_MASK_OBJECT_TYPE            ; operate_ship_or_helicopter_continue.
+  AND SLOT_MASK_OBJECT_TYPE            ; render_ship_or_helicopter.
   CP OBJECT_HELICOPTER_REG             ;
   JP Z,store_and_continue_ship         ;
   CP OBJECT_HELICOPTER_ADV             ;
   JP NZ,operate_viewport_slots         ; Not a helicopter: return to main loop.
 store_and_continue_ship:
-  LD (previous_object_coordinates),BC    ; Helicopters store position and jump to operate_ship_or_helicopter_continue.
-  JP operate_ship_or_helicopter_continue ;
+  LD (previous_object_coordinates),BC  ; Helicopters store position and jump to render_ship_or_helicopter.
+  JP render_ship_or_helicopter         ;
 
 ; Load right-facing helicopter rotor sprite
 ;
@@ -5046,18 +5049,21 @@ ld_sprite_helicopter_rotor_right:
 ;
 ; I:D Object definition byte
 animate_object:
-  LD A,D                               ; If helicopter (REG or ADV), animate rotor via animate_helicopter. Otherwise
-  AND SLOT_MASK_OBJECT_TYPE            ; return to main loop.
+  LD A,D                               ; If helicopter (REG or ADV), animate rotor via render_helicopter_rotor.
+  AND SLOT_MASK_OBJECT_TYPE            ; Otherwise return to main loop.
   CP OBJECT_HELICOPTER_REG             ;
-  JP Z,animate_helicopter              ;
+  JP Z,render_helicopter_rotor         ;
   CP OBJECT_HELICOPTER_ADV             ;
   JP NZ,operate_viewport_slots
 
-; Animate helicopter rotor
+; Render helicopter rotor sprite
 ;
-; Renders the helicopter rotor sprite based on orientation. Uses left-facing (sprite_helicopter_rotor_left) or
-; right-facing (sprite_helicopter_rotor_right) rotor sprite.
-animate_helicopter:
+; Draws the rotor sprite at the helicopter's position (rows 0-1 only, 2 pixels tall). The blade animation emerges from
+; alternating this render with the body render (render_ship_or_helicopter): the body sprite's top 2 rows contain blade
+; pixels in one position; the rotor sprite contains the same rows vertically swapped (the other blade position). Each
+; pass erases its area with all_ff before drawing, so the two blade positions alternate every tick. Uses left-facing
+; (sprite_helicopter_rotor_left) or right-facing (sprite_helicopter_rotor_right) rotor sprite.
+render_helicopter_rotor:
   LD HL,(current_slot_ptr)             ; Load current_slot_ptr, extract [D, B, C] from current slot.
   DEC HL                               ;
   LD D,(HL)                            ;
@@ -5068,15 +5074,15 @@ animate_helicopter:
   LD HL,sprite_helicopter_rotor_left      ; Load left rotor sprite sprite_helicopter_rotor_left. If right-facing (bit 6
   BIT SLOT_BIT_ORIENTATION,D              ; clear), load sprite_helicopter_rotor_right.
   CALL Z,ld_sprite_helicopter_rotor_right ;
-  LD (object_coordinates),BC           ; Store positions to object_coordinates and previous_object_coordinates. Push
-  LD (previous_object_coordinates),BC  ; rotor sprite, get main sprite pointer.
+  LD (object_coordinates),BC           ; Set both coordinates to BC so erase and draw target the same position. Push
+  LD (previous_object_coordinates),BC  ; rotor sprite; call ld_enemy_sprites (result discarded).
   PUSH HL                              ;
   CALL ld_enemy_sprites                ;
-  LD HL,all_ff                         ; Store erase sprite all_ff to render_sprite_ptr. Pop rotor sprite.
-  LD (render_sprite_ptr),HL            ;
+  LD HL,all_ff                         ; render_sprite_ptr = all_ff (all $FF): clears the 2 blade rows, removing the
+  LD (render_sprite_ptr),HL            ; body sprite's blade pixels drawn on the previous tick. Pop rotor sprite.
   POP HL                               ;
-  LD DE,SPRITE_ROTOR_HEIGHT_PIXELS<<8|SPRITE_ROTOR_ATTRIBUTES ; Render rotor: height=2, attributes=$0E, frame size=4,
-  LD BC,SPRITE_ROTOR_FRAME_SIZE                               ; width=2.
+  LD DE,SPRITE_ROTOR_HEIGHT_PIXELS<<8|SPRITE_ROTOR_ATTRIBUTES ; Render rotor with height=2, targeting only the 2 blade
+  LD BC,SPRITE_ROTOR_FRAME_SIZE                               ; rows at the top of the body sprite area.
   LD A,SPRITE_ROTOR_WIDTH_TILES                               ;
   CALL render_object                                          ;
   JP operate_viewport_slots
@@ -5744,7 +5750,7 @@ ship_or_helicopter_right_advance:
   LD (previous_object_coordinates),BC  ; Store position to previous_object_coordinates. Advance X position right by 2
   INC C                                ; pixels (INC C twice).
   INC C                                ;
-  JP operate_ship_or_helicopter_continue ; Continue to operate_ship_or_helicopter_continue for rendering.
+  JP render_ship_or_helicopter         ; Continue to render_ship_or_helicopter for rendering.
 
 ; Load enemy sprite pointer
 ;
@@ -7381,10 +7387,11 @@ sprite_fuel:
   DEFB $0C,$30
   DEFB $0F,$F0
 
-; Helicopter rotor sprite (left-facing, 4 frames × 4 bytes).
+; Helicopter rotor sprite (left-facing, 4 sub-pixel variants × 4 bytes).
 ;
-; The rotor is rendered above the helicopter body at 2 pixels height. Each frame is 2 tiles wide × 2 pixels tall,
-; pre-shifted for smooth animation.
+; Four pre-shifted 2-tile × 2-pixel variants (2-bit shift each). Only frame 4 (offset $0C) is used — selected by
+; SPRITE_ROTOR_ATTRIBUTES ($0E) via the frame selection in jp_collision_dispatcher. Its two rows are the vertically
+; swapped version of the helicopter body sprite's top 2 rows, providing the alternate blade position for the animation.
 ;
 sprite_helicopter_rotor_left:
   DEFB $1E,$00                         ; Frame 1
@@ -7396,10 +7403,11 @@ sprite_helicopter_rotor_left:
   DEFB $00,$78                         ; Frame 4
   DEFB $03,$C0                         ;
 
-; Helicopter rotor sprite (right-facing, 4 frames × 4 bytes).
+; Helicopter rotor sprite (right-facing, 4 sub-pixel variants × 4 bytes).
 ;
-; The rotor is rendered above the helicopter body at 2 pixels height. Each frame is 2 tiles wide × 2 pixels tall,
-; pre-shifted for smooth animation.
+; Four pre-shifted 2-tile × 2-pixel variants (2-bit shift each). Only frame 4 (offset $0C) is used — selected by
+; SPRITE_ROTOR_ATTRIBUTES ($0E) via the frame selection in jp_collision_dispatcher. Its two rows are the vertically
+; swapped version of the helicopter body sprite's top 2 rows, providing the alternate blade position for the animation.
 ;
 sprite_helicopter_rotor_right:
   DEFB $1E,$00                         ; Frame 1
