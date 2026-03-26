@@ -15,7 +15,7 @@ These recurring issues appear across multiple routines and should be addressed c
 
 1. **Mechanical instruction restatements**: Comments like "Load X into A" or "Store A to variable" that add nothing
    beyond what the symbolic instruction already says.
-2. **Restating variable/constant names**: "Set CONTROLS_BIT_LOW_FUEL in controls state" when `SET CONTROLS_BIT_LOW_FUEL,(HL)` is self-evident.
+2. **Restating variable/constant names**: "Set SOUND_BIT_LOW_FUEL in sound flags" when `SET SOUND_BIT_LOW_FUEL,(HL)` is self-evident.
 3. **Per-instruction comments where grouping is needed**: Sequential `INC A; INC A` pairs or initialization sequences
    should share one comment describing the logical operation.
 4. **Missing formulas in calculation routines**: Calculation routines should document the formula up front, not
@@ -173,7 +173,7 @@ line comments that explain purpose rather than restating code:
 `handle_up`, `handle_down`, `handle_fire`, `animate_plane_missile`, `clear_fire_bit`, `scroll_screen`,
 `init_current_bridge`, `increase_bridge_index`, `handle_island`, `render_island_line`,
 `calc_mirrored_edge`, `calc_offset_edge`, `render_terrain_row`, `render_terrain_fragment`,
-`handle_special_terrain_fragment`, `int_handler`, `handle_controls`, `int_return`, `do_bonus_life`,
+`handle_special_terrain_fragment`, `int_handler`, `dispatch_sounds`, `int_return`, `do_bonus_life`,
 `beep_engine_normal`, `beep_explosion`, `beep_engine_fast`, `beep_engine_slow`, `do_low_fuel`,
 `overview`, `consume_fuel`, `add_fuel`, `explode_fragment`, `add_object_to_set`, `write_object_to_set`,
 `render_explosions`, `next_row`, `render_rock`, `render_enemy`, `blending_mode_xor_nop`, `render_fuel`,

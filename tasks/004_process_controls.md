@@ -7,7 +7,7 @@
 
 ## Objective
 
-Document the control state processing that bridges input to action and sound.
+Document the sound flags processing that bridges input to action and sound.
 
 ## Scope
 
@@ -15,11 +15,11 @@ Document the control state processing that bridges input to action and sound.
 - Document how input state becomes game actions
 - Identify sound effect triggers
 - Cross-reference input routines and sound routines
-- Document the state_controls bitmask usage
+- Document the sound_flags bitmask usage
 
 ## Current State
 
-The routine at $6BED executes ~43M times per game session. It processes control state but the pipeline from input to action to sound is undocumented.
+The routine at $6BED executes ~43M times per game session. It processes sound flags but the pipeline from input to action to sound is undocumented.
 
 ## Acceptance Criteria
 

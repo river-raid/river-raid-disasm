@@ -15,6 +15,10 @@ This sound effect is produced by the routine at #R$6C5D during normal speed
 flight (player not pressing up or down). Called once per interrupt (~50 Hz);
 each call plays 8 speaker pulses (~9.5 kHz).
 
+Note: the period parameter is <code>sound_flags AND $0F</code>, which equals 2
+during normal speed gameplay, not 10. The delays here (177/191 T-states,
+corresponding to period = 10) do not reflect a reachable game state.
+
 #AUDIO(engine-normal.wav)(43,[177,191]*7,177,[67092,[177,191]*7,177]*49)
 
 [Audio:engine-fast:Engine (fast speed)]

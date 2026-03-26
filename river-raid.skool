@@ -66,17 +66,17 @@ SPEED_SLOW   EQU $01
 SPEED_NORMAL EQU $02
 SPEED_FAST   EQU $04
 
-CONTROLS_BIT_FIRE_SOUND      EQU 0
-CONTROLS_BIT_SPEED_NOT_FAST  EQU 1
-CONTROLS_BIT_SPEED_CHANGED   EQU 2
-CONTROLS_BIT_LOW_FUEL        EQU 3
-CONTROLS_BIT_BONUS_LIFE      EQU 4
-CONTROLS_BIT_EXPLODING       EQU 5
+SOUND_BIT_FIRE            EQU 0
+SOUND_BIT_SPEED_NOT_FAST  EQU 1
+SOUND_BIT_SPEED_CHANGED   EQU 2
+SOUND_BIT_LOW_FUEL        EQU 3
+SOUND_BIT_BONUS_LIFE      EQU 4
+SOUND_BIT_EXPLODING       EQU 5
 
-CONTROLS_SPEED_MASK   EQU 1<<CONTROLS_BIT_SPEED_NOT_FAST|1<<CONTROLS_BIT_SPEED_CHANGED
-CONTROLS_SPEED_NORMAL EQU 1<<CONTROLS_BIT_SPEED_NOT_FAST
-CONTROLS_SPEED_FAST   EQU 1<<CONTROLS_BIT_SPEED_CHANGED
-CONTROLS_SPEED_SLOW   EQU 1<<CONTROLS_BIT_SPEED_NOT_FAST|1<<CONTROLS_BIT_SPEED_CHANGED
+SOUND_SPEED_MASK   EQU 1<<SOUND_BIT_SPEED_NOT_FAST|1<<SOUND_BIT_SPEED_CHANGED
+SOUND_SPEED_NORMAL EQU 1<<SOUND_BIT_SPEED_NOT_FAST
+SOUND_SPEED_FAST   EQU 1<<SOUND_BIT_SPEED_CHANGED
+SOUND_SPEED_SLOW   EQU 1<<SOUND_BIT_SPEED_NOT_FAST|1<<SOUND_BIT_SPEED_CHANGED
 
 TANK_SHELL_STATE_UNITIALIZED   EQU $00
 TANK_SHELL_MASK_SPEED          EQU $07
@@ -1026,7 +1026,7 @@ c$5D44 LD A,$78      ; {Initialize plane X position to $78. Why isn't it $80?
 @isub=LD (state_activation_interval),A
  $5D56 LD ($5F5F),A  ; }
  $5D59 LD A,$00      ; {Set border to black, silence speaker, clear tank shell
- $5D5B OUT ($FE),A   ; and controls state.
+ $5D5B OUT ($FE),A   ; state and sound flags.
 @isub=LD (state_tank_shell),A
  $5D5D LD ($5EF2),A  ;
  $5D60 LD ($6BB0),A  ; }
@@ -1160,7 +1160,7 @@ c$5DA6 LD A,$10      ; {Initialize island line index (starting line for island
 @isub=LD A,"h"
  $5E69 LD A,$68      ; {Set LAST_K to 'h' to start in paused state.
  $5E6B LD ($5C08),A  ; }
- $5E6E LD A,$00      ; {Clear control state and tank shell state.
+ $5E6E LD A,$00      ; {Clear sound flags and tank shell state.
  $5E70 LD ($6BB0),A  ;
  $5E73 LD ($5EF2),A  ; }
 @isub=LD A,SPEED_FAST
@@ -1185,7 +1185,7 @@ c$5DA6 LD A,$10      ; {Initialize island line index (starting line for island
  $5E9A LD ($5F64),A  ; }
  $5E9D POP BC        ; Restore loop counter.
  $5E9E DJNZ $5E8A    ; Loop until scroll-in complete.
- $5EA0 LD A,$00      ; {Clear control state.
+ $5EA0 LD A,$00      ; {Clear sound flags.
  $5EA2 LD ($6BB0),A  ; }
  $5EA5 LD ($5F68),A  ; Set gameplay mode to normal (ready for player control).
  $5EA8 CALL $6682    ;
@@ -2736,8 +2736,8 @@ c$650A LD A,($5F72)  ; Load plane X-coordinate
  $6546 JR NZ,$6543   ;
  $6548 DEC D         ;
  $6549 JR NZ,$6543   ; }
- $654B LD A,$00      ; Clear control state (reset all button flags)
- $654D LD ($6BB0),A  ; Store cleared control state
+ $654B LD A,$00      ; Clear sound flags.
+ $654D LD ($6BB0),A  ; Store cleared sound flags.
  $6550 LD A,($923D)  ; Load current player number
 @isub=CP PLAYER_2
  $6553 CP $02        ; Check if current player is Player 2
@@ -3044,12 +3044,12 @@ c$66CC LD HL,$83F1   ;
 ;
 ; Called each frame to advance the vertical scroll position. Adds current speed
 ; (#R$5F64) to scroll offset (#R$5F70), updates the bridge's Y position, then
-; resets speed to SPEED_NORMAL and updates control flags.
+; resets speed to SPEED_NORMAL and updates sound flags.
 ; .
 ; .
 ; .
-; The control bits modified are: clears CONTROLS_BIT_SPEED_CHANGED, sets
-; CONTROLS_BIT_SPEED_NOT_FAST. This triggers #R$6C5D to play the normal speed
+; The control bits modified are: clears SOUND_BIT_SPEED_CHANGED, sets
+; SOUND_BIT_SPEED_NOT_FAST. This triggers #R$6C5D to play the normal speed
 ; engine sound.
 @label=advance_scroll
 c$66D0 LD BC,($5F70) ; {Add speed to scroll offset and store result.
@@ -3062,10 +3062,10 @@ c$66D0 LD BC,($5F70) ; {Add speed to scroll offset and store result.
 @isub=LD A,SPEED_NORMAL
  $66E1 LD A,$02      ;
  $66E3 LD ($5F64),A  ;
- $66E6 LD HL,$6BB0   ; {Clear CONTROLS_BIT_SPEED_CHANGED, set
-@isub=RES CONTROLS_BIT_SPEED_CHANGED,(HL)
- $66E9 RES 2,(HL)    ; CONTROLS_BIT_SPEED_NOT_FAST in #R$6BB0.
-@isub=SET CONTROLS_BIT_SPEED_NOT_FAST,(HL)
+ $66E6 LD HL,$6BB0   ; {Clear SOUND_BIT_SPEED_CHANGED, set
+@isub=RES SOUND_BIT_SPEED_CHANGED,(HL)
+ $66E9 RES 2,(HL)    ; SOUND_BIT_SPEED_NOT_FAST in #R$6BB0.
+@isub=SET SOUND_BIT_SPEED_NOT_FAST,(HL)
  $66EB SET 1,(HL)    ; }
  $66ED RET           ;
 
@@ -3112,16 +3112,16 @@ c$6704 LD A,$00      ; {Clear bridge destroyed flag.
 ;
 ; .
 ;
-; Sets speed to SPEED_FAST and updates control flags. Called when player
-; presses up on joystick/keyboard.
+; Sets speed to SPEED_FAST and updates sound flags. Called when player presses
+; up on joystick/keyboard.
 @label=handle_up
 @isub=LD A,SPEED_FAST
 c$670A LD A,$04      ; {Set speed to SPEED_FAST.
  $670C LD ($5F64),A  ; }
- $670F LD HL,$6BB0   ; {Set CONTROLS_BIT_SPEED_CHANGED, clear
-@isub=SET CONTROLS_BIT_SPEED_CHANGED,(HL)
- $6712 SET 2,(HL)    ; CONTROLS_BIT_SPEED_NOT_FAST.
-@isub=RES CONTROLS_BIT_SPEED_NOT_FAST,(HL)
+ $670F LD HL,$6BB0   ; {Set SOUND_BIT_SPEED_CHANGED, clear
+@isub=SET SOUND_BIT_SPEED_CHANGED,(HL)
+ $6712 SET 2,(HL)    ; SOUND_BIT_SPEED_NOT_FAST.
+@isub=RES SOUND_BIT_SPEED_NOT_FAST,(HL)
  $6714 RES 1,(HL)    ; }
  $6716 RET           ;
 
@@ -3131,16 +3131,16 @@ c$670A LD A,$04      ; {Set speed to SPEED_FAST.
 ;
 ; .
 ;
-; Sets speed to SPEED_SLOW and updates control flags. Called when player
-; presses down on joystick/keyboard.
+; Sets speed to SPEED_SLOW and updates sound flags. Called when player presses
+; down on joystick/keyboard.
 @label=handle_down
 @isub=LD A,SPEED_SLOW
 c$6717 LD A,$01      ; {Set speed to SPEED_SLOW.
  $6719 LD ($5F64),A  ; }
- $671C LD HL,$6BB0   ; {Set CONTROLS_BIT_SPEED_CHANGED and
-@isub=SET CONTROLS_BIT_SPEED_CHANGED,(HL)
- $671F SET 2,(HL)    ; CONTROLS_BIT_SPEED_NOT_FAST.
-@isub=SET CONTROLS_BIT_SPEED_NOT_FAST,(HL)
+ $671C LD HL,$6BB0   ; {Set SOUND_BIT_SPEED_CHANGED and
+@isub=SET SOUND_BIT_SPEED_CHANGED,(HL)
+ $671F SET 2,(HL)    ; SOUND_BIT_SPEED_NOT_FAST.
+@isub=SET SOUND_BIT_SPEED_NOT_FAST,(HL)
  $6721 SET 1,(HL)    ; }
  $6723 RET           ;
 
@@ -3151,8 +3151,8 @@ c$6717 LD A,$01      ; {Set speed to SPEED_SLOW.
 ; .
 ;
 ; Creates a new missile if none is currently active. Positions missile at plane
-; X + 4, Y = $7E (just above plane). Sets CONTROLS_BIT_FIRE_SOUND to trigger
-; the fire sound effect.
+; X + 4, Y = $7E (just above plane). Sets SOUND_BIT_FIRE to trigger the fire
+; sound effect.
 @label=handle_fire
 c$6724 LD A,($5EF3)  ; {Return if missile already active (Y != 0).
  $6727 CP $00        ;
@@ -3162,8 +3162,8 @@ c$6724 LD A,($5EF3)  ; {Return if missile already active (Y != 0).
  $672F LD B,$7E      ;
  $6731 LD C,A        ;
  $6732 LD ($5EF3),BC ; }
- $6736 LD HL,$6BB0   ; {Set CONTROLS_BIT_FIRE_SOUND in #R$6BB0.
-@isub=SET CONTROLS_BIT_FIRE_SOUND,(HL)
+ $6736 LD HL,$6BB0   ; {Set SOUND_BIT_FIRE in #R$6BB0.
+@isub=SET SOUND_BIT_FIRE,(HL)
  $6739 SET 0,(HL)    ; }
  $673B RET           ;
 
@@ -3185,8 +3185,8 @@ g$673C DEFB $00
 ; .
 ; .
 ; If missile reaches top of screen (Y AND $F8 == 0), jumps to #R$6794 to
-; deactivate missile. Clears CONTROLS_BIT_FIRE_SOUND when missile is in lower
-; screen area ($70 - Y >= 0).
+; deactivate missile. Clears SOUND_BIT_FIRE when missile is in lower screen
+; area ($70 - Y >= 0).
 ; .
 ; .
 ; .
@@ -3230,7 +3230,7 @@ c$673D LD A,($5EF3)  ; {Return if no missile active (Y == 0).
  $678A CALL $8B1E    ;
  $678D RET           ;
 
-; Clear CONTROLS_BIT_FIRE_SOUND flag
+; Clear SOUND_BIT_FIRE flag
 ;
 ; Used by the routine at #R$673D.
 ;
@@ -3239,8 +3239,8 @@ c$673D LD A,($5EF3)  ; {Return if no missile active (Y == 0).
 ; Called when missile Y <= $70 (112), stopping the fire sound effect. Does not
 ; affect firing — a new missile is gated by missile Y being 0.
 @label=clear_fire_bit
-c$678E LD HL,$6BB0   ; {Clear CONTROLS_BIT_FIRE_SOUND in #R$6BB0.
-@isub=RES CONTROLS_BIT_FIRE_SOUND,(HL)
+c$678E LD HL,$6BB0   ; {Clear SOUND_BIT_FIRE in #R$6BB0.
+@isub=RES SOUND_BIT_FIRE,(HL)
  $6791 RES 0,(HL)    ; }
  $6793 RET           ;
 
@@ -3252,8 +3252,8 @@ c$678E LD HL,$6BB0   ; {Clear CONTROLS_BIT_FIRE_SOUND in #R$6BB0.
 ;
 ; Erases the missile sprite from the screen, clears the missile coordinates,
 ; resets collision mode to COLLISION_MODE_NONE, and resets
-; CONTROLS_BIT_SPEED_NOT_FAST. Called both after a collision and when the
-; missile leaves the top of the screen.
+; SOUND_BIT_SPEED_NOT_FAST. Called both after a collision and when the missile
+; leaves the top of the screen.
 ; .
 ; .
 ; .
@@ -3297,8 +3297,8 @@ c$6794 LD BC,($5EF3) ; {Load missile coordinates from #R$5EF3 and call #R$72EF
  $67D5 LD DE,$080C   ; }
  $67D8 LD HL,$82F5   ; {Erase missile sprite.
  $67DB CALL $8B3C    ; }
- $67DE LD HL,$6BB0   ; {Reset CONTROLS_BIT_SPEED_NOT_FAST in #R$6BB0.
-@isub=RES CONTROLS_BIT_SPEED_NOT_FAST,(HL)
+ $67DE LD HL,$6BB0   ; {Reset SOUND_BIT_SPEED_NOT_FAST in #R$6BB0.
+@isub=RES SOUND_BIT_SPEED_NOT_FAST,(HL)
  $67E1 RES 1,(HL)    ; }
  $67E3 LD BC,($5EF3) ; {Reload coordinates from #R$5EF3, then clear them.
  $67E7 LD HL,$0000   ;
@@ -4092,9 +4092,9 @@ c$6B7B CP $80        ; {Dispatch: $80=#R$6B63, $E0=#R$6B6B, $F0=#R$6B73,
  $6BAD DJNZ $6BAA    ;
  $6BAF RET           ; }
 
-; Control state bitmask. Bit 0=FIRE, 1=SPEED_DECREASED, 2=SPEED_ALTERED,
-; 3=LOW_FUEL, 4=BONUS_LIFE, 5=EXPLODING.
-@label=state_controls
+; Sound event and speed flag bitmask. Bit 0=FIRE_SOUND, 1=SPEED_NOT_FAST,
+; 2=SPEED_CHANGED, 3=LOW_FUEL, 4=BONUS_LIFE, 5=EXPLODING.
+@label=sound_flags
 g$6BB0 DEFB $00
 
 ; Keep the game paused
@@ -4145,7 +4145,7 @@ c$6BD2 LD HL,$8182   ; {Reset text pointer to #R$8182 (credits text start).
 ; #LIST
 ; { Increment interrupt counter (#R$5C78) }
 ; { Check H key for pause (jumps to #R$6BB1) }
-; { Process control flags for sound effects (falls through to #R$6BED) }
+; { Process sound flags (falls through to #R$6BED) }
 ; LIST#
 ; .
 ; .
@@ -4166,57 +4166,67 @@ c$6BDB DI            ; {Disable interrupts and save registers.
  $6BE8 BIT 4,A       ;
  $6BEA JP Z,$6BB1    ; }
 
-; Process control state flags and trigger sound effects
+; Dispatch sound effects from flag state
 ;
 ; Sound processing dispatcher called from interrupt handler. Reads #R$6BB0
-; control flags and calls appropriate sound routines. Multiple sounds can
-; trigger simultaneously (e.g., fire + low fuel).
+; sound flags and dispatches to sound routines. FIRE, BONUS_LIFE, and EXPLODING
+; use <code>CALL NZ</code> — the routine returns and the dispatcher continues
+; to the next check. LOW_FUEL uses <code>JP NZ</code> — execution jumps away
+; and the engine check is never reached. Engine plays only when LOW_FUEL is
+; clear.
 ; .
 ; #TABLE(default)
-; { =h Bit | =h Flag | =h Sound Handler }
-; { 0 | FIRE_SOUND | #R$8A02 (fire) }
-; { 1 | SPEED_NOT_FAST | #R$6C5D (normal speed) }
-; { 2 | SPEED_CHANGED | #R$6CB8 (fast speed) }
-; { 1+2 | Both speed bits | #R$6CD6 (slow speed) }
-; { 3 | LOW_FUEL | #R$6CF4 (warning) }
-; { 4 | BONUS_LIFE | #R$6C31 (jingle) }
-; { 5 | EXPLODING | #R$6C7B (explosion) }
+; { =h Bit | =h Flag | =h Sound Handler | =h Dispatch }
+; { 0 | FIRE_SOUND | #R$8A02 (fire) | CALL NZ }
+; { 4 | BONUS_LIFE | #R$6C31 (jingle) | CALL NZ }
+; { 5 | EXPLODING | #R$6C7B (explosion) | CALL NZ }
+; { 3 | LOW_FUEL | #R$6CF4 (warning) | JP NZ (tail-call) }
+; { 1 | SPEED_NOT_FAST | #R$6C5D (normal speed) | JP Z (tail-call) }
+; { 2 | SPEED_CHANGED | #R$6CB8 (fast speed) | JP Z (tail-call) }
+; { 1+2 | Both speed bits | #R$6CD6 (slow speed) | JP Z (tail-call) }
 ; TABLE#
 ;
 ; .
 ;
 ; Flags are set by game logic (input handlers, collision, fuel system) and
 ; cleared by sound routines when complete.
-@label=handle_controls
+; .
+; Because EXPLODING uses <code>CALL NZ</code> and the engine check follows,
+; explosion mixes with the engine in the same interrupt frame — this happens
+; every time an enemy or the player is destroyed. Fire and explosion cannot
+; mix: #R$6E9C clears SOUND_BIT_FIRE when setting SOUND_BIT_EXPLODING. LOW_FUEL
+; and engine are mutually exclusive: the <code>JP NZ</code> to #R$6CF4 bypasses
+; all engine checks.
+@label=dispatch_sounds
 c$6BED LD A,($5C08)  ; {Skip if LAST_K is 'h'.
 @isub=CP "h"
  $6BF0 CP $68        ;
  $6BF2 JP Z,$6C24    ; }
  $6BF5 LD HL,$6BB0   ; {Check FIRE_SOUND → #R$8A02.
-@isub=BIT CONTROLS_BIT_FIRE_SOUND,(HL)
+@isub=BIT SOUND_BIT_FIRE,(HL)
  $6BF8 BIT 0,(HL)    ;
  $6BFA CALL NZ,$8A02 ; }
-@isub=BIT CONTROLS_BIT_BONUS_LIFE,(HL)
+@isub=BIT SOUND_BIT_BONUS_LIFE,(HL)
  $6BFD BIT 4,(HL)    ; {Check BONUS_LIFE → #R$6C31.
  $6BFF CALL NZ,$6C31 ;
  $6C02 LD HL,$6BB0   ; }
-@isub=BIT CONTROLS_BIT_EXPLODING,(HL)
+@isub=BIT SOUND_BIT_EXPLODING,(HL)
  $6C05 BIT 5,(HL)    ; {Check EXPLODING → #R$6C7B.
  $6C07 CALL NZ,$6C7B ;
  $6C0A LD HL,$6BB0   ; }
-@isub=BIT CONTROLS_BIT_LOW_FUEL,(HL)
+@isub=BIT SOUND_BIT_LOW_FUEL,(HL)
  $6C0D BIT 3,(HL)    ; {Check LOW_FUEL → #R$6CF4.
  $6C0F JP NZ,$6CF4   ;
  $6C12 LD A,(HL)     ; }
-@isub=AND CONTROLS_SPEED_MASK
+@isub=AND SOUND_SPEED_MASK
  $6C13 AND $06       ; Mask speed bits.
-@isub=CP CONTROLS_SPEED_NORMAL
+@isub=CP SOUND_SPEED_NORMAL
  $6C15 CP $02        ; {Normal speed → #R$6C5D.
  $6C17 JP Z,$6C5D    ; }
-@isub=CP CONTROLS_SPEED_FAST
+@isub=CP SOUND_SPEED_FAST
  $6C1A CP $04        ; {Fast speed → #R$6CB8.
  $6C1C JP Z,$6CB8    ; }
-@isub=CP CONTROLS_SPEED_SLOW
+@isub=CP SOUND_SPEED_SLOW
  $6C1F CP $06        ; {Slow speed → #R$6CD6.
  $6C21 JP Z,$6CD6    ; }
 
@@ -4244,8 +4254,8 @@ g$6C30 DEFB $00
 ; Play bonus life sound effect
 ;
 ; Generates a rising pitch sound effect when player earns an extra life. Called
-; once per interrupt while CONTROLS_BIT_BONUS_LIFE is set. The sound plays over
-; 64 interrupts (~1.28 seconds).
+; once per interrupt while SOUND_BIT_BONUS_LIFE is set. The sound plays over 64
+; interrupts (~1.28 seconds).
 ; .
 ; #LIST
 ; { Counter increments from 0 to 64 over successive interrupts }
@@ -4276,32 +4286,32 @@ c$6C31 LD A,($6C30)  ; {Increment counter and check if reached $40 (64). If so,
 
 ; Complete bonus life sound sequence
 ;
-; Resets the sound counter and clears the CONTROLS_BIT_BONUS_LIFE flag to stop
-; the sound effect.
+; Resets the sound counter and clears the SOUND_BIT_BONUS_LIFE flag to stop the
+; sound effect.
 @label=bonus_life_sound_done
 c$6C52 LD A,$00      ; {Reset counter to 0.
  $6C54 LD ($6C30),A  ; }
- $6C57 LD HL,$6BB0   ; {Clear CONTROLS_BIT_BONUS_LIFE in #R$6BB0 to indicate
-@isub=RES CONTROLS_BIT_BONUS_LIFE,(HL)
- $6C5A RES 4,(HL)    ; sound is complete.}
+ $6C57 LD HL,$6BB0   ; {Clear SOUND_BIT_BONUS_LIFE in #R$6BB0 to indicate sound
+@isub=RES SOUND_BIT_BONUS_LIFE,(HL)
+ $6C5A RES 4,(HL)    ; is complete.}
  $6C5C RET           ;
 
 ; Play normal speed engine sound
 ;
 ; Generates the engine sound for normal speed. Called when only
-; CONTROLS_BIT_SPEED_NOT_FAST is set (player not pressing up or down). HL
-; points to the controls byte on entry.
+; SOUND_BIT_SPEED_NOT_FAST is set (player not pressing up or down). HL points
+; to the sound flags byte on entry.
 ; .
 ; #LIST
-; { Period = (controls_byte AND $0F), used for both on and off delays }
+; { Period = (sound_flags AND $0F), used for both on and off delays }
 ; { Symmetric square wave: same delay for high and low phases }
 ; { Loops 8 cycles then returns }
 ; LIST#
 ;
-; I:HL Pointer to #R$6BB0 (controls state byte)
+; I:HL Pointer to #R$6BB0 (sound flags byte)
 @label=beep_engine_normal
-c$6C5D LD A,(HL)     ; {Extract period from low 4 bits of controls byte. Higher
- $6C5E AND $0F       ; value = lower pitch.
+c$6C5D LD A,(HL)     ; {Extract period from low 4 bits of sound flags byte.
+ $6C5E AND $0F       ; Higher value = lower pitch.
  $6C60 LD E,A        ; }
  $6C61 LD C,$08      ; Loop counter: 8 cycles of the waveform.
 @label=beep_engine_normal_loop
@@ -4331,10 +4341,10 @@ g$6C7A DEFB $18
 ; Play explosion sound effect
 ;
 ; Generates an explosion sound that plays over 24 interrupts ($18). Called once
-; per interrupt while CONTROLS_BIT_EXPLODING is set. The ON delay is derived
-; from (DE)&7, but DE is not set up by the caller - it retains whatever value
-; the interrupted main loop code had, making the pitch vary semi-randomly
-; between interrupts and giving the explosion its noisy character.
+; per interrupt while SOUND_BIT_EXPLODING is set. The ON delay is derived from
+; (DE)&7, but DE is not set up by the caller - it retains whatever value the
+; interrupted main loop code had, making the pitch vary semi-randomly between
+; interrupts and giving the explosion its noisy character.
 ; .
 ; #LIST
 ; { Counter decrements from $18 (24) to 0 over successive interrupts }
@@ -4382,31 +4392,31 @@ c$6C7B LD A,($6C7A)  ; {Decrement explosion counter.
 
 ; Complete explosion sound sequence
 ;
-; Resets the explosion counter and clears CONTROLS_BIT_EXPLODING flag.
+; Resets the explosion counter and clears SOUND_BIT_EXPLODING flag.
 @label=explosion_render_finish
 @isub=LD A,EXPLOSION_SOUND_TICKS
 c$6CAD LD A,$18      ; {Reset explosion counter for next explosion.
  $6CAF LD ($6C7A),A  ; }
- $6CB2 LD HL,$6BB0   ; {Clear CONTROLS_BIT_EXPLODING in #R$6BB0.
-@isub=RES CONTROLS_BIT_EXPLODING,(HL)
+ $6CB2 LD HL,$6BB0   ; {Clear SOUND_BIT_EXPLODING in #R$6BB0.
+@isub=RES SOUND_BIT_EXPLODING,(HL)
  $6CB5 RES 5,(HL)    ; }
  $6CB7 RET           ;
 
 ; Play fast speed engine sound
 ;
 ; Generates the engine sound for fast speed. Called when only
-; CONTROLS_BIT_SPEED_CHANGED is set (player holding up). HL points to the
-; controls byte on entry.
+; SOUND_BIT_SPEED_CHANGED is set (player holding up). HL points to the sound
+; flags byte on entry.
 ; .
 ; #LIST
-; { Period = (controls_byte AND $07), used for speaker ON delay }
+; { Period = (sound_flags AND $07), used for speaker ON delay }
 ; { Fixed OFF delay of 4 iterations (shorter than ON = asymmetric wave) }
 ; { Asymmetric wave gives a higher-pitched timbre than normal speed }
 ; LIST#
 ;
-; I:HL Pointer to #R$6BB0 (controls state byte)
+; I:HL Pointer to #R$6BB0 (sound flags byte)
 @label=beep_engine_fast
-c$6CB8 LD A,(HL)     ; {Extract period from low 3 bits of controls byte.
+c$6CB8 LD A,(HL)     ; {Extract period from low 3 bits of sound flags byte.
  $6CB9 AND $07       ;
  $6CBB LD E,A        ; }
  $6CBC LD C,$08      ; Loop counter: 8 cycles of the waveform.
@@ -4432,18 +4442,18 @@ c$6CB8 LD A,(HL)     ; {Extract period from low 3 bits of controls byte.
 ; Play slow speed engine sound
 ;
 ; Generates the engine sound for slow speed. Called when both
-; CONTROLS_BIT_SPEED_NOT_FAST and CONTROLS_BIT_SPEED_CHANGED are set (player
-; holding down). HL points to the controls byte on entry.
+; SOUND_BIT_SPEED_NOT_FAST and SOUND_BIT_SPEED_CHANGED are set (player holding
+; down). HL points to the sound flags byte on entry.
 ; .
 ; #LIST
-; { Period = (controls_byte AND $17), uses bits 0-2 and bit 4 }
+; { Period = (sound_flags AND $17), uses bits 0-2 and bit 4 }
 ; { Fixed OFF delay of $0C (12) iterations (longer than fast speed sound) }
 ; { Lower-pitched timbre than normal and fast speeds }
 ; LIST#
 ;
-; I:HL Pointer to #R$6BB0 (controls state byte)
+; I:HL Pointer to #R$6BB0 (sound flags byte)
 @label=beep_engine_slow
-c$6CD6 LD A,(HL)     ; {Extract period from bits 0-2 and bit 4 of controls
+c$6CD6 LD A,(HL)     ; {Extract period from bits 0-2 and bit 4 of sound flags
  $6CD7 AND $17       ; byte.
  $6CD9 LD E,A        ; }
  $6CDA LD C,$08      ; Loop counter: 8 cycles of the waveform.
@@ -4469,7 +4479,7 @@ c$6CD6 LD A,(HL)     ; {Extract period from bits 0-2 and bit 4 of controls
 ; Play low fuel warning sound
 ;
 ; Generates a warbling warning sound when fuel is low. Called once per
-; interrupt while CONTROLS_BIT_LOW_FUEL is set. The sound pitch varies each
+; interrupt while SOUND_BIT_LOW_FUEL is set. The sound pitch varies each
 ; interrupt creating an urgent warbling effect.
 ; .
 ; #LIST
@@ -4754,20 +4764,20 @@ c$6E40 LD A,($5F69)  ; {Check #R$5F69 == 4 (dead code: always $00 at call
 
 ; Set low fuel warning flag
 ;
-; Sets CONTROLS_BIT_LOW_FUEL in #R$6BB0 to trigger the warbling low fuel
-; warning sound.
+; Sets SOUND_BIT_LOW_FUEL in #R$6BB0 to trigger the warbling low fuel warning
+; sound.
 @label=register_low_fuel
-c$6E86 LD HL,$6BB0   ; {Set CONTROLS_BIT_LOW_FUEL in controls state.
-@isub=SET CONTROLS_BIT_LOW_FUEL,(HL)
+c$6E86 LD HL,$6BB0   ; {Set SOUND_BIT_LOW_FUEL in #R$6BB0.
+@isub=SET SOUND_BIT_LOW_FUEL,(HL)
  $6E89 SET 3,(HL)    ; }
  $6E8B RET           ;
 
 ; Clear low fuel warning flag
 ;
-; Clears CONTROLS_BIT_LOW_FUEL in #R$6BB0 to stop the low fuel warning sound.
+; Clears SOUND_BIT_LOW_FUEL in #R$6BB0 to stop the low fuel warning sound.
 @label=register_sufficient_fuel
-c$6E8C LD HL,$6BB0   ; {Clear CONTROLS_BIT_LOW_FUEL in controls state.
-@isub=RES CONTROLS_BIT_LOW_FUEL,(HL)
+c$6E8C LD HL,$6BB0   ; {Clear SOUND_BIT_LOW_FUEL in #R$6BB0.
+@isub=RES SOUND_BIT_LOW_FUEL,(HL)
  $6E8F RES 3,(HL)    ; }
  $6E91 RET           ;
 
@@ -4787,8 +4797,8 @@ c$6E92 LD DE,$0008   ; {Play tank full sound: BEEPER with DE=$0008, HL=$0111.
 ; state and adds an explosion entry to the explosions set at #R$5F2E.
 ; .
 ; #LIST
-; { Sets CONTROLS_BIT_EXPLODING to trigger explosion sound }
-; { Clears CONTROLS_BIT_FIRE_SOUND to stop the fire sound during explosion }
+; { Sets SOUND_BIT_EXPLODING to trigger explosion sound }
+; { Clears SOUND_BIT_FIRE to stop the fire sound during explosion }
 ; { Resets #R$6C7A (explosion counter) to EXPLOSION_SOUND_TICKS }
 ; { Falls through to #R$6EAB to add explosion to set }
 ; LIST#
@@ -4796,11 +4806,11 @@ c$6E92 LD DE,$0008   ; {Play tank full sound: BEEPER with DE=$0008, HL=$0111.
 ; I:BC Fragment coordinates: B=Y offset, C=X position
 ; I:D Initial explosion frame index (0 = start at frame 1)
 @label=spawn_explosion_fragment
-c$6E9C LD HL,$6BB0   ; {Set CONTROLS_BIT_EXPLODING in #R$6BB0.
-@isub=SET CONTROLS_BIT_EXPLODING,(HL)
+c$6E9C LD HL,$6BB0   ; {Set SOUND_BIT_EXPLODING in #R$6BB0.
+@isub=SET SOUND_BIT_EXPLODING,(HL)
  $6E9F SET 5,(HL)    ; }
-@isub=RES CONTROLS_BIT_FIRE_SOUND,(HL)
- $6EA1 RES 0,(HL)    ; Clear CONTROLS_BIT_FIRE_SOUND.
+@isub=RES SOUND_BIT_FIRE,(HL)
+ $6EA1 RES 0,(HL)    ; Clear SOUND_BIT_FIRE.
 @isub=LD A,EXPLOSION_SOUND_TICKS
  $6EA3 LD A,$18      ; {Reset explosion counter.
  $6EA5 LD ($6C7A),A  ; }
@@ -8432,16 +8442,16 @@ b$89FA DEFB %11111111,%11111111 ; 16 pixels
 c$8A02 LD C,$08      ; Loop 8 pulses for sound duration.
 @label=do_fire_pulse_loop
 @isub=LD A,ULA_SPEAKER_ON
-*$8A04 LD A,$10      ; {Speaker ON, delay 32 iterations (~150us half-period,
- $8A06 OUT ($FE),A   ; ~3.3kHz).
+*$8A04 LD A,$10      ; {Speaker ON, 32-iteration delay loop (~150 µs ON phase).
+ $8A06 OUT ($FE),A   ;
  $8A08 LD D,$20      ;
 @label=do_fire_delay_loop
 *$8A0A DEC D         ;
  $8A0B JR NZ,$8A0A   ; }
 @isub=LD A,ULA_SPEAKER_OFF
- $8A0D LD A,$00      ; {Speaker OFF, same delay. $FD prefix byte adds 4
- $8A0F OUT ($FE),A   ; T-states before DEC C (IY prefix on non-HL instruction =
- $8A11 LD D,$20      ; extra delay cycle).
+ $8A0D LD A,$00      ; {Speaker OFF. No delay loop: two LD D,$20 are timing
+ $8A0F OUT ($FE),A   ; filler (7T each); $FD prefix before DEC C adds 4T. OFF
+ $8A11 LD D,$20      ; phase = 50T (~14 µs), giving a 91% duty cycle waveform.
  $8A13 LD D,$20      ;
  $8A15 DEFB $FD      ;
  $8A16 DEC C         ;
@@ -9343,7 +9353,7 @@ c$9109 PUSH AF       ; {Increment lives and print updated display on main
  $9110 CALL $1601    ;
  $9113 CALL $923E    ;
  $9116 LD HL,($9283) ; }
-@isub=SET CONTROLS_BIT_BONUS_LIFE,(HL)
+@isub=SET SOUND_BIT_BONUS_LIFE,(HL)
  $9119 SET 4,(HL)    ; {Trigger bonus life sound, restore upper screen channel.
  $911B LD A,$01      ;
  $911D CALL $1601    ;
@@ -9740,9 +9750,9 @@ c$9277 LD A,$10      ; {INK PLAYER_2
  $927D LD A,($923C)  ; {Load player 2 lives count and jump to #R$924F.
  $9280 JP $924F      ; }
 
-; Pointer to state_controls at #R$6BB0. Allows indirect access to control state
+; Pointer to sound_flags at #R$6BB0. Allows indirect access to the sound flag
 ; bitmask.
-@label=ptr_state_controls
+@label=ptr_sound_flags
 g$9283 DEFW $0000
 
 ; Saved BC register during attribute setting. Preserved across attribute

@@ -19,7 +19,7 @@ last-evaluated key wins outright — see #LINK(Bugs#bothUpDown)(Pressing up and 
 [Bug:bothUpDown:Pressing up and down simultaneously always results in slow speed]
 When both up and down are held at the same time, the plane always slows down.
 #R$6068 evaluates up before down: #R$670A writes
-<code>SPEED_FAST</code> and clears <code>CONTROLS_BIT_SPEED_NOT_FAST</code>, then #R$6717
+<code>SPEED_FAST</code> and clears <code>SOUND_BIT_SPEED_NOT_FAST</code>, then #R$6717
 immediately overwrites with <code>SPEED_SLOW</code> and sets both speed control bits. Last
 writer wins unconditionally.
 
