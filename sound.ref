@@ -16,8 +16,12 @@ flight (player not pressing up or down). Called once per interrupt (~50 Hz);
 each call plays 8 speaker pulses (~9.5 kHz).
 
 Note: the period parameter is <code>sound_flags AND $0F</code>, which equals 2
-during normal speed gameplay, not 10. The delays here (177/191 T-states,
-corresponding to period = 10) do not reflect a reachable game state.
+during normal speed gameplay. With period = 2, the ON and OFF delays are 49T
+and 63T respectively. At 44,100 Hz, 49T converts to 0.62 samples and 63T to
+0.79 samples — both round to 1 sample, producing alternating single-sample
+pulses at 22 kHz (the Nyquist limit), which are effectively inaudible as PCM.
+The delays here use period = 10 (177/191 T-states, ~2.2/2.4 samples each) to
+produce a representable, audible illustration.
 
 #AUDIO(engine-normal.wav)(43,[177,191]*7,177,[67092,[177,191]*7,177]*49)
 
