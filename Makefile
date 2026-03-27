@@ -62,7 +62,7 @@ lint-lengths: $(CTL)
 	python3 scripts/validate_ctl_lengths.py $(CTL)
 
 # Generate fixed assembly source
-$(ASM_FIXED): $(SKOOL)
+$(ASM_FIXED): $(SKOOL) $(INI)
 	@skool2asm.py --create-labels -f 1 $(SKOOL) > $@.tmp 2> $@.stderr; \
 	if grep -q WARNING $@.stderr; then \
 		cat $@.stderr >&2; rm -f $@.tmp $@.stderr; exit 1; \
@@ -79,7 +79,7 @@ $(Z80_FIXED): $(BIN_FIXED)
 	bin2sna.py --border 0 --org $(ORG) --start $(PC) --stack $(SP) $< $@
 
 # Generate non-fixed assembly source
-$(ASM_NON_FIXED): $(SKOOL)
+$(ASM_NON_FIXED): $(SKOOL) $(INI)
 	@skool2asm.py --create-labels $(SKOOL) > $@.tmp 2> $@.stderr; \
 	if grep -q WARNING $@.stderr; then \
 		cat $@.stderr >&2; rm -f $@.tmp $@.stderr; exit 1; \
