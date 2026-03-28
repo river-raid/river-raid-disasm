@@ -338,7 +338,7 @@ N $5CD2 This is the main entry point invoked by the BASIC loader. It performs on
   $5CE3 Write the interrupt handler address, completing the JP #R$6BDB instruction.
 @ $5CE6 isub=LD (INT_VECTOR_ENTRY<<8|INT_VECTOR_ENTRY+1),HL
 @ $5CE9 isub=LD HL,INT_VECTOR_TABLE_HI<<8
-  $5CE9 Point HL to the start of interrupt vector table.
+  $5CE9 Point #REGhl to the start of interrupt vector table.
   $5CEC Prepare to iterate 256 times.
 @ $5CEE label=int_vector_table_write_loop
 @ $5CEE isub=LD (HL),INT_VECTOR_ENTRY
@@ -618,13 +618,13 @@ u $5F82
 g $5F83 Saved stack pointer. Captured at init, restored when starting new life to unwind any nested calls.
 W $5F83
 @ $5F85 label=collision_saved_hl
-g $5F85 Saved HL register during collision detection. Preserved across collision handler calls.
+g $5F85 Saved #REGhl register during collision detection. Preserved across collision handler calls.
 W $5F85
 @ $5F87 label=collision_saved_de
-g $5F87 Saved DE register during collision detection. Preserved across collision handler calls.
+g $5F87 Saved #REGde register during collision detection. Preserved across collision handler calls.
 W $5F87
 @ $5F89 label=collision_saved_bc
-g $5F89 Saved BC register during collision detection. Preserved across collision handler calls.
+g $5F89 Saved #REGbc register during collision detection. Preserved across collision handler calls.
 W $5F89
 @ $5F8B label=collision_coordinates
 g $5F8B Collision coordinates (Y in high byte, X in low byte). Set by collision detection when overlap found.
@@ -703,7 +703,7 @@ N $60A5 Speed affects the number of terrain fragments rendered per frame and the
   $60E5 Render islands.
   $60E8 Calculate starting screen row based on speed.
 @ $60F4 label=calculate_screen_row_loop
-  $60F4 HL = screen_start + (speed * $100).
+  $60F4 #REGhl = screen_start + (speed * $100).
   $60F8 Store screen pointer to #R$5F7B.
   $60FB Set up terrain fragment loop (count = speed).
 @ $6103 label=render_terrain_loop
@@ -725,7 +725,7 @@ R $6124 O:B Rotated fuel gauge row (used by caller for next iteration)
 c $6136 Collision detection dispatcher
 D $6136 Central collision handler called during sprite rendering (via #R$8C45) when pixel overlap is detected. Saves registers, reads collision mode from #R$5EF5, and dispatches to the appropriate handler.
 D $6136 #TABLE(default) { =h Mode | =h Handler | =h Description } { COLLISION_MODE_NONE ($00) | #R$8C3B | Rendering only } { COLLISION_MODE_FUEL_DEPOT ($01) | #R$6256 | Fuel depot refuel } { COLLISION_MODE_MISSILE ($02) | #R$61BB | Missile hit } { COLLISION_MODE_FIGHTER ($03) | #R$615E | Fighter hit } { COLLISION_MODE_HELICOPTER_MISSILE ($04) | #R$7415 | Enemy missile } TABLE#
-  $6136 Save registers: return address to #R$5F85, DE to #R$5F87, BC to #R$5F89.
+  $6136 Save registers: return address to #R$5F85, #REGde to #R$5F87, #REGbc to #R$5F89.
   $6142 Load collision mode and dispatch to handler (see table above).
 @ $6145 isub=CP COLLISION_MODE_NONE
 @ $614A isub=CP COLLISION_MODE_FUEL_DEPOT
@@ -749,7 +749,7 @@ N $6174 X-axis collision check.
   $6174 Check if fighter_X + 10 >= missile_X; exit to #R$6401 if not.
   $6182 Check if missile_X + 1 >= fighter_X; exit to #R$6401 if not.
 N $6194 Collision detected - process hit.
-  $6194 Clean up stack (3x POP DE).
+  $6194 Clean up stack (3x POP #REGde).
   $6197 Store fighter Y coordinate to #R$5EF6.
   $619B Get object coordinates from viewport and mark slot as empty.
 @ $61A3 isub=LD (HL),SET_MARKER_EMPTY_SLOT
@@ -1025,7 +1025,7 @@ c $64E5 Print bridge number for Player 2
 N $64E5 Entry point when current player is Player 2. Sets ink color and falls through to common printing logic.
   $64E5 INK PLAYER_2
 @ $64E8 isub=LD A,COLOR_PLAYER_2
-  $64EB Set up DE=$804F, BC=11 for status text.
+  $64EB Set up #REGde=$804F, #REGbc=11 for status text.
 @ $64EE isub=LD BC,status_line_4 - status_line_3
 @ $64F1 label=print_bridge_player_2_common
 c $64F1 Common bridge printing for Player 2
@@ -1202,7 +1202,7 @@ N $6682 Selects between normal sprite (#R$83B1) and banked sprite (#R$83F1) base
   $66C9 Restore state.
 @ $66CC label=ld_sprite_plane_banked
 c $66CC Load banked plane sprite address
-N $66CC Helper to load the banked sprite address (#R$83F1) into HL when sprite bank selector is $04.
+N $66CC Helper to load the banked sprite address (#R$83F1) into #REGhl when sprite bank selector is $04.
   $66CC,3
 @ $66D0 label=advance_scroll
 c $66D0 Advance game scroll and update bridge position
@@ -1315,12 +1315,12 @@ N $6794 The sprite frame selection uses the X coordinate's lower 3 bits to choos
   $681A,22 Store sprite params and call #R$8B3C to erase residue.
 @ $6831 label=add_screen_bank_800
 c $6831 Add $0800 offset to screen pointer
-  $6831 Set DE to $0800
-  $6834,1 Add DE to HL (adjust screen pointer)
+  $6831 Set #REGde to $0800
+  $6834,1 Add #REGde to #REGhl (adjust screen pointer)
 @ $6836 label=add_screen_bank_1000
 c $6836 Add $1000 offset to screen pointer
-  $6836 Set DE to $1000
-  $6839,1 Add DE to HL (adjust screen pointer)
+  $6836 Set #REGde to $1000
+  $6839,1 Add #REGde to #REGhl (adjust screen pointer)
 @ $683B label=scroll_screen
 c $683B Scroll screen pixels vertically
 D $683B Core vertical scroll engine. Scrolls all screen content by copying pixel data between screen lines. Called every frame from #R$60A5.
@@ -1357,7 +1357,7 @@ D $68B7 This routine is called every 8 terrain fragments to scroll the screen at
   $68B7 Copy 524 attribute bytes backward, scrolling all rows up by one.
 @ $68BA ignoreua=$5A3F
 @ $68C2 ignoreua=$5BDF
-  $68C2 Point HL at the bottom attribute row.
+  $68C2 Point #REGhl at the bottom attribute row.
 @ $68C5 label=update_top_visible_row_and_refill_bottom
 c $68C5 Copy bottom attribute row to row 1 and refill bottom
 D $68C5 Copies the bottom attribute row to row 1, then fills the bottom row with either river (green) or bridge attributes depending on state_bridge_section. This leaves attribute row 0 unchanged, creating an 8-pixel blank zone at the top.
@@ -1431,7 +1431,7 @@ N $6990 .
 N $6990 The right edge position depends on state_island_byte_3: 0=use byte_3 directly, 1=mirror around center (2*$3C - left), 2=offset from left ($3C + left). $3C (60) is the default river half-width.
   $6990 Increment island line counter.
 @ $699A isub=LD DE,TERRAIN_PROFILE_SIZE
-  $6994 Set up lookup: HL=data_terrain_profiles, DE=TERRAIN_PROFILE_SIZE.
+  $6994 Set up lookup: #REGhl=data_terrain_profiles, #REGde=TERRAIN_PROFILE_SIZE.
 @ $69A0 label=locate_island_profile
   $69A0 Locate 16-byte profile entry by state_island_profile_idx.
   $69A4 Index into profile by (state_terrain_position AND $0F) to get edge offset byte.
@@ -1450,7 +1450,7 @@ N $6990 The right edge position depends on state_island_byte_3: 0=use byte_3 dir
   $6A26 Calculate fill count = 15 - (right X >> 3). This is number of solid tiles right of edge.
   $6A38 Load $FF (solid terrain byte) into A.
 @ $6A3A label=fill_island_right_loop
-  $6A3A Write A to (DE), increment DE, loop B times to fill rightward.
+  $6A3A Write A to (#REGde), increment #REGde, loop B times to fill rightward.
   $6A3E Return after filling right terrain.
 @ $6A3F label=calc_mirrored_edge
 c $6A3F Calculate mirrored right edge position
@@ -1472,12 +1472,12 @@ N $6A4F Terrain fragment format (4 bytes): byte 0 = profile number (index into #
 N $6A4F .
 N $6A4F Profile numbers 2 and 3 have special meaning: 2 = bridge structure (clears destroyed flag), 3 = bridge approach (sets countdown). Fragment number wraps at 64, incrementing bridge_index.
   $6A4F Reset state_terrain_position to $FF (will be incremented to 0).
-  $6A54,10 Set up level_terrains lookup: HL = #R$9500, DE = $100 (level size).
+  $6A54,10 Set up level_terrains lookup: #REGhl = #R$9500, #REGde = $100 (level size).
 @ $6A60 label=locate_level_terrain
   $6A60 Locate level_terrains[state_bridge_index] (256 bytes per level).
   $6A64 Increment fragment number (0-63), store to state_level_fragment_number.
   $6A6D If fragment wrapped to 0, call #R$694D to advance to next bridge/level.
-  $6A72 Set up fragment lookup: DE = 4 (fragment size).
+  $6A72 Set up fragment lookup: #REGde = 4 (fragment size).
 @ $6A79 label=locate_level_terrain_fragment
   $6A79 Locate fragment within level: level_terrains[bridge][fragment].
   $6A7D Load byte 0 (profile number) to state_terrain_profile_number. Handle special values.
@@ -1490,14 +1490,14 @@ D $6AA3 Renders a single pixel line of the current terrain fragment. Called 16 t
 N $6AA3 .
 N $6AA3 Left edge X = profile_byte + row_offset - 16. The profile_byte comes from #R$8063[profile_number][line]. The -16 adjusts for the edge sprite width. Right edge depends on state_terrain_extras mode.
 @ $6AA9 isub=LD DE,TERRAIN_PROFILE_SIZE
-  $6AA3 Set up profile lookup: HL = #R$8063, DE = TERRAIN_PROFILE_SIZE.
+  $6AA3 Set up profile lookup: #REGhl = #R$8063, #REGde = TERRAIN_PROFILE_SIZE.
 @ $6AAF label=locate_terrain_profile
   $6AAF Locate profile: data_terrain_profiles[state_terrain_profile_number].
   $6AB3 Increment state_terrain_position (line 0-15).
 @ $6ABA isub=CP TERRAIN_PROFILE_SIZE
   $6ABA If line reached TERRAIN_PROFILE_SIZE, jump to #R$6A4F to load next fragment.
 @ $6ABF isub=AND TERRAIN_PROFILE_SIZE-1
-  $6ABF Index into profile: HL = profile_base + (line mod TERRAIN_PROFILE_SIZE).
+  $6ABF Index into profile: #REGhl = profile_base + (line mod TERRAIN_PROFILE_SIZE).
   $6AC5 Load row offset (B) from state_terrain_element_23 and profile byte (A).
   $6ACA If bit 7 of profile byte set, jump to #R$6B7B (special fragment).
   $6ACF Left edge X = profile_byte + row_offset - 16. Save original X, work with adjusted X.
@@ -1531,15 +1531,15 @@ R $6B5E O:A Right terrain edge coordinate = C + D.
 @ $6B63 label=load_canal_river_side
 c $6B63 Load canal sprite (river-adjacent side)
 D $6B63 Helper for special terrain: loads canal/water transition sprite for the side adjacent to the river. Sets bridge_section = 0 (no special attributes).
-  $6B63 A = 0 (no special section), HL = sprite_terrain_pre_post_bridge, jump to continue.
+  $6B63 A = 0 (no special section), #REGhl = sprite_terrain_pre_post_bridge, jump to continue.
 @ $6B6B label=load_canal_road_side
 c $6B6B Load canal sprite (road-adjacent side)
 D $6B6B Helper for special terrain: loads canal sprite for the side adjacent to the road. Sets bridge_section = 2 (road attributes).
-  $6B6B A = 2 (road section), HL = sprite_terrain_pre_post_bridge, jump to continue.
+  $6B6B A = 2 (road section), #REGhl = sprite_terrain_pre_post_bridge, jump to continue.
 @ $6B73 label=load_road_sprite
 c $6B73 Load road/bridge sprite
 D $6B73 Helper for special terrain: loads the road and bridge crossing sprite. Sets bridge_section = 2 (road attributes).
-  $6B73 A = 2 (road section), HL = sprite_road_and_bridge_pixels, jump to continue.
+  $6B73 A = 2 (road section), #REGhl = sprite_road_and_bridge_pixels, jump to continue.
 @ $6B7B label=handle_special_terrain_fragment
 c $6B7B Render special terrain fragment (bridge/road area)
 D $6B7B Handles terrain lines with bit 7 set in profile byte, indicating bridge/road sections. These use full-width 32-byte sprites instead of edge rendering. Dispatches based on profile byte value: $80 = canal (river side), $E0 = canal (road side), $F0 = road, else = bridge.
@@ -1617,14 +1617,14 @@ g $6C30 Bonus life sound progress counter (0-64). Incremented each interrupt dur
 @ $6C31 label=do_bonus_life
 c $6C31 Play bonus life sound effect
 D $6C31 Generates a rising pitch sound effect when player earns an extra life. Called once per interrupt while SOUND_BIT_BONUS_LIFE is set. The sound plays over 64 interrupts (~1.28 seconds).
-D $6C31 #LIST { Counter increments from 0 to 64 over successive interrupts } { Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases } { Lower pitch values = higher frequency, so sound rises in pitch } { Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001 } LIST#
+D $6C31 #LIST { Counter increments from 0 to 64 over successive interrupts } { Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases } { Lower pitch values = higher frequency, so sound rises in pitch } { Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat #REGde=$0001 } LIST#
   $6C31 Increment counter and check if reached $40 (64). If so, sound is complete.
 @ $6C38 isub=CP BONUS_LIFE_SOUND_TICKS
   $6C38 Check if counter reached BONUS_LIFE_SOUND_TICKS. If done, finish sound sequence.
 @ $6C3E isub=LD A,BONUS_LIFE_SOUND_TICKS
   $6C3D Calculate pitch: pitch = BONUS_LIFE_SOUND_TICKS - counter.
   $6C41 Set up BEEPER parameters: H = pitch >> 3 (range 7-0), L = $FF (duration).
-  $6C4A,7 Call ROM BEEPER at $03B5 with DE=$0001 (one iteration). Disable interrupts after.
+  $6C4A,7 Call ROM BEEPER at $03B5 with #REGde=$0001 (one iteration). Disable interrupts after.
 @ $6C52 label=bonus_life_sound_done
 c $6C52 Complete bonus life sound sequence
 D $6C52 Resets the sound counter and clears the SOUND_BIT_BONUS_LIFE flag to stop the sound effect.
@@ -1633,7 +1633,7 @@ D $6C52 Resets the sound counter and clears the SOUND_BIT_BONUS_LIFE flag to sto
 @ $6C5A isub=RES SOUND_BIT_BONUS_LIFE,(HL)
 @ $6C5D label=beep_engine_normal
 c $6C5D Play normal speed engine sound
-D $6C5D Generates the engine sound for normal speed. Called when only SOUND_BIT_SPEED_NOT_FAST is set (player not pressing up or down). HL points to the sound flags byte on entry.
+D $6C5D Generates the engine sound for normal speed. Called when only SOUND_BIT_SPEED_NOT_FAST is set (player not pressing up or down). #REGhl points to the sound flags byte on entry.
 D $6C5D #LIST { Period = (sound_flags AND $0F), used for both on and off delays } { Symmetric square wave: same delay for high and low phases } { Loops 8 cycles then returns } LIST#
 R $6C5D I:HL Pointer to #R$6BB0 (sound flags byte)
   $6C5D Extract period from low 4 bits of sound flags byte. Higher value = lower pitch.
@@ -1654,12 +1654,12 @@ R $6C5D I:HL Pointer to #R$6BB0 (sound flags byte)
 g $6C7A Explosion sound tick counter. Counts down from $18 (24) to 0. Value also controls pitch - higher values = lower frequency.
 @ $6C7B label=beep_explosion
 c $6C7B Play explosion sound effect
-D $6C7B Generates an explosion sound that plays over 24 interrupts ($18). Called once per interrupt while SOUND_BIT_EXPLODING is set. The ON delay is derived from (DE)&7, but DE is not set up by the caller - it retains whatever value the interrupted main loop code had, making the pitch vary semi-randomly between interrupts and giving the explosion its noisy character.
-D $6C7B #LIST { Counter decrements from $18 (24) to 0 over successive interrupts } { ON delay = ((DE) AND $07) << 3 + $10, range $10-$48 (16-72) } { OFF delay = counter value, decreasing each interrupt (sound speeds up) } { 4 cycles of waveform per interrupt } { As counter decreases, OFF delay shortens, making sound more rapid/urgent } LIST#
-R $6C7B I:DE Not intentionally set - residual value from interrupted code, read as (DE)&7 to derive ON delay
+D $6C7B Generates an explosion sound that plays over 24 interrupts ($18). Called once per interrupt while SOUND_BIT_EXPLODING is set. The ON delay is derived from (#REGde)&7, but #REGde is not set up by the caller - it retains whatever value the interrupted main loop code had, making the pitch vary semi-randomly between interrupts and giving the explosion its noisy character.
+D $6C7B #LIST { Counter decrements from $18 (24) to 0 over successive interrupts } { ON delay = ((#REGde) AND $07) << 3 + $10, range $10-$48 (16-72) } { OFF delay = counter value, decreasing each interrupt (sound speeds up) } { 4 cycles of waveform per interrupt } { As counter decreases, OFF delay shortens, making sound more rapid/urgent } LIST#
+R $6C7B I:DE Not intentionally set - residual value from interrupted code, read as (#REGde)&7 to derive ON delay
   $6C7B,4 Decrement explosion counter.
   $6C82 If counter reached 0, jump to #R$6CAD to finish.
-  $6C87 Calculate ON delay: ((DE) AND $07) << 3 + $10. Gives value $10-$48 based on low 3 bits of (DE).
+  $6C87 Calculate ON delay: ((#REGde) AND $07) << 3 + $10. Gives value $10-$48 based on low 3 bits of (#REGde).
   $6C92 Set ON delay in E, loop counter = 4 cycles.
 @ $6C95 label=beep_explosion_loop
 @ $6C95 isub=LD A,ULA_SPEAKER_ON
@@ -1682,7 +1682,7 @@ D $6CAD Resets the explosion counter and clears SOUND_BIT_EXPLODING flag.
 @ $6CB5 isub=RES SOUND_BIT_EXPLODING,(HL)
 @ $6CB8 label=beep_engine_fast
 c $6CB8 Play fast speed engine sound
-D $6CB8 Generates the engine sound for fast speed. Called when only SOUND_BIT_SPEED_CHANGED is set (player holding up). HL points to the sound flags byte on entry.
+D $6CB8 Generates the engine sound for fast speed. Called when only SOUND_BIT_SPEED_CHANGED is set (player holding up). #REGhl points to the sound flags byte on entry.
 D $6CB8 #LIST { Period = (sound_flags AND $07), used for speaker ON delay } { Fixed OFF delay of 4 iterations (shorter than ON = asymmetric wave) } { Asymmetric wave gives a higher-pitched timbre than normal speed } LIST#
 R $6CB8 I:HL Pointer to #R$6BB0 (sound flags byte)
   $6CB8 Extract period from low 3 bits of sound flags byte.
@@ -1701,7 +1701,7 @@ R $6CB8 I:HL Pointer to #R$6BB0 (sound flags byte)
   $6CCF Decrement cycle counter, loop if not zero. Return from interrupt when done.
 @ $6CD6 label=beep_engine_slow
 c $6CD6 Play slow speed engine sound
-D $6CD6 Generates the engine sound for slow speed. Called when both SOUND_BIT_SPEED_NOT_FAST and SOUND_BIT_SPEED_CHANGED are set (player holding down). HL points to the sound flags byte on entry.
+D $6CD6 Generates the engine sound for slow speed. Called when both SOUND_BIT_SPEED_NOT_FAST and SOUND_BIT_SPEED_CHANGED are set (player holding down). #REGhl points to the sound flags byte on entry.
 D $6CD6 #LIST { Period = (sound_flags AND $17), uses bits 0-2 and bit 4 } { Fixed OFF delay of $0C (12) iterations (longer than fast speed sound) } { Lower-pitched timbre than normal and fast speeds } LIST#
 R $6CD6 I:HL Pointer to #R$6BB0 (sound flags byte)
   $6CD6 Extract period from bits 0-2 and bit 4 of sound flags byte.
@@ -1817,7 +1817,7 @@ D $6E40 #LIST { Checks #R$5F69 == 4, but this is always $00 at call time (set to
   $6E46 Check if fuel almost full (AND $FC == $FC). If so, jump to #R$6E92 for tank full sound.
 @ $6E49 isub=AND FUEL_LEVEL_ALMOST_FULL
 @ $6E4B isub=CP FUEL_LEVEL_ALMOST_FULL
-  $6E50 Play refueling sound: BEEPER with DE=$0007, HL=$0333.
+  $6E50 Play refueling sound: BEEPER with #REGde=$0007, #REGhl=$0333.
   $6E59,12 Add 4 to fuel level. If now sufficient (AND $C0 != 0), call #R$6E8C to clear low fuel warning.
 @ $6E5C isub=ADD A,FUEL_INTAKE_AMOUNT
 @ $6E61 isub=AND FUEL_LEVEL_LOW
@@ -1840,7 +1840,7 @@ D $6E8C Clears SOUND_BIT_LOW_FUEL in #R$6BB0 to stop the low fuel warning sound.
 @ $6E92 label=signal_fuel_level_excessive
 c $6E92 Play tank full sound
 D $6E92 Plays a short beep (~1450 Hz, ~6ms) when fuel tank is already full and cannot accept more fuel.
-  $6E92,9 Play tank full sound: BEEPER with DE=$0008, HL=$0111.
+  $6E92,9 Play tank full sound: BEEPER with #REGde=$0008, #REGhl=$0111.
 @ $6E9C label=spawn_explosion_fragment
 c $6E9C Create explosion fragment at coordinates
 D $6E9C Called when an enemy is destroyed or the player collides. Sets up explosion state and adds an explosion entry to the explosions set at #R$5F2E.
@@ -1853,7 +1853,7 @@ R $6E9C I:D Initial explosion frame index (0 = start at frame 1)
   $6EA1 Clear SOUND_BIT_FIRE.
 @ $6EA3 isub=LD A,EXPLOSION_SOUND_TICKS
   $6EA3 Reset explosion counter.
-  $6EA8 Point HL to explosions set at #R$5F2E, fall through to add_object_to_set.
+  $6EA8 Point #REGhl to explosions set at #R$5F2E, fall through to add_object_to_set.
 @ $6EAB label=add_object_to_set
 c $6EAB Add object entry to a set
 D $6EAB Finds an empty slot or end-of-set marker in the object set and writes a 3-byte entry (C, B, D). Each entry represents an object with X position, Y offset, and type.
@@ -1866,7 +1866,7 @@ R $6EAB I:HL Pointer to start of object set
 @ $6EAC isub=CP SET_MARKER_EMPTY_SLOT
   $6EB1 If end-of-set marker, jump to write (will extend set).
 @ $6EB1 isub=CP SET_MARKER_END_OF_SET
-  $6EB6 Entry occupied: advance HL by 3 bytes and loop.
+  $6EB6 Entry occupied: advance #REGhl by 3 bytes and loop.
 @ $6EBC label=write_object_to_set
 c $6EBC Write object entry to set
 D $6EBC Writes a 3-byte object entry at the current position. If replacing the end-of-set marker, writes a new end marker after the entry.
@@ -1937,11 +1937,11 @@ c $6F80 Spawn objects from level data slot
 D $6F80 Called when a new attribute row scrolls into view (every 8 terrain fragments). Reads the level data slot for the current scroll position and spawns the appropriate object (rock, fuel depot, or enemy).
 D $6F80 #LIST { Level data starts at #R$C800, with SIZE_LEVEL_SLOTS ($100) bytes per level } { Slot format: 2 bytes [D, E] where E = X position (0 = empty), D = type/flags } { D bit 3: rock flag, D bits 0-2: object type (7 = fuel depot) } LIST#
   $6F80 Clear collision mode (#R$5EF5).
-  $6F85,9 Calculate level base address: HL = #R$C800 + (#R$5EF0 * SIZE_LEVEL_SLOTS).
+  $6F85,9 Calculate level base address: #REGhl = #R$C800 + (#R$5EF0 * SIZE_LEVEL_SLOTS).
 @ $6F88 isub=LD DE,SIZE_LEVEL_SLOTS
 @ $6F91 label=locate_level
-  $6F91 Loop: advance HL by SIZE_LEVEL_SLOTS for each level up to current.
-  $6F95,15 Calculate slot offset: BC = (#R$5F70 >> 2) with bit 0 cleared. Read [D, E] from (HL + BC).
+  $6F91 Loop: advance #REGhl by SIZE_LEVEL_SLOTS for each level up to current.
+  $6F95,15 Calculate slot offset: #REGbc = (#R$5F70 >> 2) with bit 0 cleared. Read [D, E] from (#REGhl + #REGbc).
   $6FA7 If E == 0 (empty slot), return.
 @ $6FAB isub=BIT SLOT_BIT_ROCK,D
   $6FAB If D bit 3 set (rock), jump to #R$6FBB.
@@ -1957,11 +1957,11 @@ R $6FBB I:D Object type byte (bits 0-2 = rock frame index)
 R $6FBB I:E X position
   $6FBB Extract rock frame index: A = D AND $07. Set flags with OR A.
 @ $6FBC isub=AND SLOT_MASK_OBJECT_TYPE
-  $6FBF Load sprite base address #R$84A1 and frame size $30. Prepare loop: INC A, subtract BC once to offset the first ADD.
+  $6FBF Load sprite base address #R$84A1 and frame size $30. Prepare loop: INC A, subtract #REGbc once to offset the first ADD.
 @ $6FC2 isub=LD BC,SPRITE_ROCK_FRAME_SIZE
 @ $6FC8 label=locate_rock_sprite
-  $6FC8 Loop: HL += $30 for each frame index. Result: HL = #R$84A1 + (frame * $30).
-  $6FCC Set BC = X position (B=0, C=E from input).
+  $6FC8 Loop: #REGhl += $30 for each frame index. Result: #REGhl = #R$84A1 + (frame * $30).
+  $6FCC Set #REGbc = X position (B=0, C=E from input).
   $6FCF Store rendering state: sprite pointer at #R$8B0E, X position at #R$8B0C and #R$8B0A (duplicated). Load erase sprite #R$82F5.
 @ $6FDD isub=LD A,SPRITE_ROCK_WIDTH_TILES
   $6FDD,8 Set dimensions: A=3 (width in tiles), D=$10 (height 16 pixels), E=$14 (attributes). Render rock.
@@ -1970,11 +1970,11 @@ R $6FBB I:E X position
 c $6FE6 Load pointer to right-facing enemy sprites
 D $6FE6 Returns pointer to sprite array for enemies facing right. Used by #R$75BA to select sprite direction based on enemy movement.
 R $6FE6 O:HL Pointer to right-facing enemy sprite array at #R$8793.
-  $6FE6 Load HL with #R$8793 (right-facing sprites base address).
+  $6FE6 Load #REGhl with #R$8793 (right-facing sprites base address).
 @ $6FEA label=setup_object_position
 c $6FEA Set up object screen position for rendering
 D $6FEA Calculates screen coordinates and stores the result in both #R$8B0A and #R$8B0C for sprite rendering.
-  $6FEA Calculate position and store result BC in both position registers.
+  $6FEA Calculate position and store result #REGbc in both position registers.
 @ $6FF6 label=render_enemy
 @ $6FF6 isub=CP OBJECT_BALLOON
 c $6FF6 Spawn and render enemy on screen
@@ -1989,7 +1989,7 @@ R $6FF6 I:E X position
 @ $7000 isub=CP OBJECT_TANK
   $7000 If tank (type 4), set XOR blending mode.
   $7005 Get sprite pointer based on enemy direction.
-  $7008,10 Add enemy to active objects set: BC = (0, X_pos), call #R$6EAB with HL = #R$5F00.
+  $7008,10 Add enemy to active objects set: #REGbc = (0, X_pos), call #R$6EAB with #REGhl = #R$5F00.
   $7013 Set up screen position.
 @ $7016 isub=LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
   $7016 Set sprite frame size ($18 = 24 bytes) and default attributes ($0E).
@@ -2036,7 +2036,7 @@ c $7051 Render fuel station
 D $7051 Renders a fuel station sprite at the specified X position. Fuel stations are static 2-tile wide (16 pixels) objects that the player can fly over to refuel.
 D $7051 #LIST { Adds fuel station to #R$5F00 active objects set } { Sprite located at #R$8A86 (single frame, no animation) } { Dimensions: 2 tiles wide (16px) × 25 pixels tall } { Attributes: $0B (PAPER RIVER, INK FUEL) } LIST#
 R $7051 I:E X position of fuel station
-  $7051 BC = (0, E): set X position in BC for object entry.
+  $7051 #REGbc = (0, E): set X position in #REGbc for object entry.
   $7054 Add fuel station to active objects set.
   $705A Load fuel sprite address #R$8A86 and call #R$6FEA to set up screen position.
 @ $7060 isub=LD BC,SPRITE_FUEL_STATION_FRAME_SIZE
@@ -2049,7 +2049,7 @@ c $706C Render balloon
 D $706C Renders a balloon enemy sprite at the specified X position. Balloons are 2-tile wide animated objects that float above the river. Unlike other enemies, balloons disable collision detection during rendering.
 D $706C #LIST { Disables collision mode via #R$5EF5 (allows plane to pass through during render) } { Animated sprite with $20 byte frames at #R$8972 } { Dimensions: 2 tiles wide (16px) × 16 pixels tall } { Attributes: $0E (PAPER RIVER, INK BALLOON) } LIST#
 R $706C I:E X position of balloon
-  $706C BC = (0, E): set X position in BC for object entry.
+  $706C #REGbc = (0, E): set X position in #REGbc for object entry.
   $706F Load balloon sprite #R$8972, set COLLISION_MODE_NONE to #R$5EF5.
 @ $7072 isub=LD A,COLLISION_MODE_NONE
   $7077 Push sprite addr, add balloon to #R$5F00 objects set, pop and call #R$6FEA.
@@ -2114,9 +2114,9 @@ D $7113 Moves a left-facing ship/helicopter 2 pixels left, checking for terrain 
 R $7113 I:B Y position
 R $7113 I:C X position
 R $7113 I:D Object definition
-  $7113 Save BC, calculate terrain check position: C -= 16 pixels.
+  $7113 Save #REGbc, calculate terrain check position: C -= 16 pixels.
   $7118 Get terrain byte at (C, B). Load result into A.
-  $711C Restore BC. If terrain != 0, reverse direction.
+  $711C Restore #REGbc. If terrain != 0, reverse direction.
   $7122 Store position to #R$8B0A. Advance X position left by 2 pixels (DEC C twice).
 @ $7128 label=render_ship_or_helicopter
 c $7128 Render ship or helicopter body sprite
@@ -2190,7 +2190,7 @@ R $71A2 I:D Object definition (bits 3-5 = frame index)
   $71B9 Extract frame index from D bits 3-5, increment. If frame == 7, finish.
   $71C8 Shift frame back to bits 3-5 position, store in E.
   $71D1 Merge new frame into D, update object definition in viewport array.
-  $71DB,11 Load sprite base #R$8FFC, calculate frame offset: HL -= (frame * $20).
+  $71DB,11 Load sprite base #R$8FFC, calculate frame offset: #REGhl -= (frame * $20).
 @ $71EC label=tank_shell_frame_calc_loop
   $71EC Add frame size, loop until frame index exhausted.
 @ $71F0 label=tank_shell_render_entry
@@ -2229,7 +2229,7 @@ R $7224 I:D Object definition byte
 c $7248 Load right-facing helicopter rotor sprite
 D $7248 Returns pointer to right-facing helicopter rotor sprite at #R$8AC8.
 R $7248 O:HL Pointer to the sprite
-  $7248,3 Load HL with #R$8AC8 (right-facing rotor sprite).
+  $7248,3 Load #REGhl with #R$8AC8 (right-facing rotor sprite).
 @ $724C label=animate_object
 c $724C Animate object (helicopter rotor)
 D $724C Routes helicopters to rotor animation. Non-helicopters return to main loop.
@@ -2244,7 +2244,7 @@ D $7259 Draws the rotor sprite at the helicopter's position (rows 0-1 only, 2 pi
   $7259 Load current_slot_ptr, extract [D, B, C] from current slot.
   $7262 Load left rotor sprite #R$8AB8. If right-facing (bit 6 clear), load #R$8AC8.
 @ $7265 isub=BIT SLOT_BIT_ORIENTATION,D
-  $726A Set both coordinates to BC so erase and draw target the same position. Push rotor sprite; call #R$75BA (result discarded).
+  $726A Set both coordinates to #REGbc so erase and draw target the same position. Push rotor sprite; call #R$75BA (result discarded).
   $7276 render_sprite_ptr = #R$82C5 (all $FF): clears the 2 blade rows, removing the body sprite's blade pixels drawn on the previous tick. Pop rotor sprite.
 @ $727D isub=LD DE,SPRITE_ROTOR_HEIGHT_PIXELS<<8|SPRITE_ROTOR_ATTRIBUTES
   $727D,11 Render rotor with height=2, targeting only the 2 blade rows at the top of the body sprite area.
@@ -2324,7 +2324,7 @@ R $7302 I:D Object definition byte
 @ $730A isub=BIT SLOT_BIT_ORIENTATION,D
   $730A If left-facing, negate offset via #R$72F8.
   $730F If terrain is solid ($FF), move tank normally.
-  $7317 Pop BC/DE, jump to #R$72B5 if terrain clear.
+  $7317 Pop #REGbc/#REGde, jump to #R$72B5 if terrain clear.
   $731A,5 Check shell state: if already flying, return to main loop.
 @ $731D isub=BIT TANK_SHELL_BIT_FLYING,A
 @ $7322 isub=BIT TANK_SHELL_BIT_EXPLODING,A
@@ -2360,11 +2360,11 @@ c $735E Check shell initialization condition
 D $735E Alternative shell initialization when bit 4 is set. Checks if tank can fire based on shell active state and position.
   $735E If TANK_SHELL_ACTIVE, cancel shell via #R$7358.
 @ $7361 isub=CP TANK_SHELL_ACTIVE
-  $7366 Push BC, check X position sign bit, invert if positive via #R$7380.
+  $7366 Push #REGbc, check X position sign bit, invert if positive via #R$7380.
 @ $7373 label=divide_by_8
   $7373 Shift right 4 times to get upper nibble.
 @ $7379 isub=AND 1<<SLOT_BIT_ORIENTATION
-  $737B Combine with orientation, pop BC, continue to fire shell.
+  $737B Combine with orientation, pop #REGbc, continue to fire shell.
 @ $7380 label=invert_coordinate_sign
 c $7380 Invert coordinate for position calculation
 D $7380 XORs A with $7F to flip coordinate sign for shell trajectory.
@@ -2377,9 +2377,9 @@ D $7383 Speed is pseudo-random (1-4), set when shell is fired at #R$732E.
 @ $7384 label=tank_shell_trajectory_step
 g $7384 Tank shell trajectory step (0-7)
 D $7384 Current step in the shell's parabolic arc. Incremented each frame while flying. At step 8, shell explodes via #R$74C6.
-D $7384 Higher steps produce lower-pitched whistle sounds (BEEPER with HL = step × 256).
+D $7384 Higher steps produce lower-pitched whistle sounds (BEEPER with #REGhl = step × 256).
 @ $7385 label=tank_shell_coordinates
-g $7385 Tank shell position (BC format: C=X, B=Y)
+g $7385 Tank shell position (#REGbc format: C=X, B=Y)
 D $7385 Current screen position of the flying shell. Updated each frame based on speed and orientation. Cleared to $0000 when shell is removed.
 W $7385
 @ $7387 label=invert_shell_coordinate_delta
@@ -2428,7 +2428,7 @@ D $73DD #LIST { Returns immediately during GAMEPLAY_MODE_SCROLL_IN } { Returns i
   $73DD Return if in GAMEPLAY_MODE_SCROLL_IN.
 @ $73E0 isub=CP GAMEPLAY_MODE_SCROLL_IN
   $73E3,7 Load missile coords from #R$5F73. Return if missile active (B != 0).
-  $73EB Play missile launch sound: BEEPER with DE=$0001, HL=$2800.
+  $73EB Play missile launch sound: BEEPER with #REGde=$0001, #REGhl=$2800.
   $73F4 Load current_slot_ptr, extract [D, B, C] from helicopter's slot.
   $73FD Align X to 8-pixel boundary (AND $F8), extract orientation bit.
 @ $7402 isub=AND 1<<SLOT_BIT_ORIENTATION
@@ -2454,7 +2454,7 @@ D $7441 #LIST { Returns if shell not flying (bit 7 of #R$7383) } { Increments tr
   $7447,7 Load shell coords, increment trajectory step, store.
 @ $7452 isub=CP TANK_SHELL_TRAJECTORY_MAX_STEP
   $7452 If step == 8 (max), explode via #R$74C6.
-  $7457 Play shell whistle: BEEPER with DE=$0002, HL=(step, 0).
+  $7457 Play shell whistle: BEEPER with #REGde=$0002, #REGhl=(step, 0).
   $7460,7 Reload shell coords, advance Y position, store to #R$8B0A.
   $746B,10 Get shell speed from state, add speed×2 to X position.
 @ $746F isub=AND TANK_SHELL_MASK_SPEED
@@ -2539,7 +2539,7 @@ D $758A #LIST { Input: B = Y position, D = full height ($19) } { Calculates: ove
 R $758A I:B Y position of fuel station
 R $758A I:D Full sprite height ($19 = 25 pixels)
 R $758A O:D Clipped height (visible portion only)
-  $758A Calculate overflow: HL = (Y + height) - $90.
+  $758A Calculate overflow: #REGhl = (Y + height) - $90.
 @ $758D isub=LD BC,SPRITE_FUEL_STATION_HEIGHT_PIXELS
   $7597,9 Calculate visible height: D = $19 - overflow.
 @ $75A2 label=ship_or_helicopter_right_advance
@@ -2548,9 +2548,9 @@ D $75A2 Moves a right-facing ship/helicopter 2 pixels right, checking for terrai
 R $75A2 I:B Y position
 R $75A2 I:C X position
 R $75A2 I:D Object definition
-  $75A2 Save BC, calculate terrain check position: C += $20 pixels.
+  $75A2 Save #REGbc, calculate terrain check position: C += $20 pixels.
   $75A7 Get terrain byte at (C, B). Load result into A.
-  $75AB Restore BC. If terrain != 0, reverse direction.
+  $75AB Restore #REGbc. If terrain != 0, reverse direction.
   $75B1 Store position to #R$8B0A. Advance X position right by 2 pixels (INC C twice).
   $75B7 Continue to #R$7128 for rendering.
 @ $75BA label=ld_enemy_sprites
@@ -2563,7 +2563,7 @@ R $75BA O:HL Pointer to sprite data
   $75C0 If right-facing (bit 6 clear), get right sprites via #R$6FE6.
   $75C5 Extract object type (bits 0-2), prepare for loop.
 @ $75C6 isub=AND SLOT_MASK_OBJECT_TYPE
-  $75C9,7 Loop: HL += $60 for each type. Result: HL = base + (type * $60).
+  $75C9,7 Loop: #REGhl += $60 for each type. Result: #REGhl = base + (type * $60).
 @ $75CB label=ld_enemy_sprites_loop
 @ $75D0 label=reverse_enemy_direction
 c $75D0 Reverse enemy direction at river bank
@@ -2759,7 +2759,7 @@ T $7A8B,3 AT 12,6
 T $7AA3,3 AT 14,6
 @ $7AB9 label=setup
 c $7AB9 Initial game setup
-D $7AB9 Displays the control selection dialog, waits for user input (or times out to overview mode), then shows the game mode dialog. Stores the selected control type in #R$7800, overview flag in #R$7801, and game mode in #R$923A. Uses a stack trick: sets SP to #R$7810 so RET jumps to #R$5D10.
+D $7AB9 Displays the control selection dialog, waits for user input (or times out to overview mode), then shows the game mode dialog. Stores the selected control type in #R$7800, overview flag in #R$7801, and game mode in #R$923A. Uses a stack trick: sets #REGsp to #R$7810 so RET jumps to #R$5D10.
 C $7AB9,9 Print control types dialog
 C $7AC2,6 Initialize timer
 @ $7AC8 isub=LD A,CHAR_ENTER
@@ -3138,9 +3138,9 @@ D $8A1B Shifts all 8 scanlines of character row 23 (the bottom character row) le
   $8A20 Bytes per scanline
   $8A22 Clear carry before the first RL
 @ $8A23 label=scroll_crawl_inner
-  $8A28 Load step offset DE=$E0 (= $100 − $20: one scanline period minus one row width).
+  $8A28 Load step offset #REGde=$E0 (= $100 − $20: one scanline period minus one row width).
   $8A2B Clear carry.
-  $8A2C Step HL back to the last byte of the previous scanline.
+  $8A2C Step #REGhl back to the last byte of the previous scanline.
   $8A2E,4 Decrement outer counter and loop until all 8 scanlines are processed.
 @ $8A33 label=init_udg
 c $8A33 Initialize UDG and screen attributes.
@@ -3280,7 +3280,7 @@ D $8B70 Handles screen memory boundary wrapping. The screen address increments b
 @ $8B94 label=adjust_new_screen_third
 c $8B94 Adjust screen address for third-of-screen crossing.
 D $8B94 Subtracts $00E0 to correct screen address when crossing a screen-third boundary.
-  $8B94,12 HL -= $E0 (adjust for character row boundary).
+  $8B94,12 #REGhl -= $E0 (adjust for character row boundary).
 @ $8BA3 label=adjust_old_position
 c $8BA3 Process old position screen address adjustment.
 D $8BA3 Similar boundary handling for the old (erasure) position.
@@ -3289,7 +3289,7 @@ D $8BA3 Similar boundary handling for the old (erasure) position.
   $8BB7,12 Subtract $07E0 from old screen address for character row crossing.
 @ $8BC6 label=adjust_old_screen_third
 c $8BC6 Adjust old position for third-of-screen crossing.
-  $8BC6,9 HL -= $E0, fall through to sprite renderer.
+  $8BC6,9 #REGhl -= $E0, fall through to sprite renderer.
 @ $8BD2 label=adjust_old_screen_third_loop
 N $8BD2 Main rendering loop - draws sprite row and advances to next pixel row.
   $8BD2 Render this sprite row.
@@ -3384,7 +3384,7 @@ c $913B Increase a digit in the player 1's score.
 D $913B Increments the ASCII digit at the specified offset in the score buffer. If the digit overflows past '9', it jumps to the carry routine. Otherwise prints the updated digit.
 R $913B I:C Offset of the digit to increase (0=leftmost, 5=rightmost).
 R $913B O:D Offset of the digit (passed to print routine).
-  $913B Point HL at the target digit in player 1's score.
+  $913B Point #REGhl at the target digit in player 1's score.
   $9140 Save offset to D, load digit, increment it.
 @ $9145 isub=CP "9"+1
 C $9145,c2 If digit overflows past '9', jump to #R$9191 for carry.
@@ -3410,7 +3410,7 @@ c $9169 Increase a digit in the player 2's score.
 D $9169 Increments the ASCII digit at the specified offset in player 2's score buffer. If the digit overflows past '9', it jumps to the carry routine. Otherwise prints the updated digit.
 R $9169 I:C Offset of the digit to increase (0=leftmost, 5=rightmost).
 R $9169 O:D Offset of the digit (passed to print routine).
-  $9169 Point HL at the target digit in player 2's score.
+  $9169 Point #REGhl at the target digit in player 2's score.
   $916E Save offset to D, load digit, increment it.
 @ $9173 isub=CP "9"+1
 C $9173,c2 If digit overflows past '9', jump to #R$91A9 for carry.
@@ -3439,9 +3439,9 @@ R $9191 I:HL Pointer to the overflowed digit.
 @ $9197 isub=CP SCORE_DIGIT_COUNT+1
   $9193 Check if this is the leftmost digit (offset 0): A = SCORE_DIGIT_COUNT - D + 1.
   $9199 Return if leftmost digit (no more digits to carry into).
-  $919A Save HL/DE, call #R$9122 to increment next higher digit.
+  $919A Save #REGhl/#REGde, call #R$9122 to increment next higher digit.
   $919F Open channel 1 (upper screen) for printing.
-  $91A4 Restore HL/DE, jump to #R$914B to print the '0' digit.
+  $91A4 Restore #REGhl/#REGde, jump to #R$914B to print the '0' digit.
 @ $91A9 label=carry_player_2_score_digit
 @ $91A9 isub=LD (HL),"0"
 c $91A9 Handle carry for player 2's score digit.
@@ -3453,9 +3453,9 @@ R $91A9 I:HL Pointer to the overflowed digit.
 @ $91AF isub=CP SCORE_DIGIT_COUNT+1
   $91AB Check if this is the leftmost digit (offset 0): A = SCORE_DIGIT_COUNT - D + 1.
   $91B1 Return if leftmost digit (no more digits to carry into).
-  $91B2 Save HL/DE, call #R$9122 to increment next higher digit.
+  $91B2 Save #REGhl/#REGde, call #R$9122 to increment next higher digit.
   $91B7 Open channel 1 (upper screen) for printing.
-  $91BC Restore HL/DE, jump to #R$9179 to print the '0' digit.
+  $91BC Restore #REGhl/#REGde, jump to #R$9179 to print the '0' digit.
 @ $91C1 label=print_score_player_2
 @ $91C1 isub=LD A,EXT_ATTR_INK
 c $91C1 Print player 2's score on the status line.
@@ -3550,13 +3550,13 @@ R $9277 O:A Number of lives.
 g $9283 Pointer to sound_flags at #R$6BB0. Allows indirect access to the sound flag bitmask.
 W $9283
 @ $9285 label=attr_saved_bc
-g $9285 Saved BC register during attribute setting. Preserved across attribute routine calls.
+g $9285 Saved #REGbc register during attribute setting. Preserved across attribute routine calls.
 W $9285
 @ $9287 label=attr_saved_de
-g $9287 Saved DE register during attribute setting. Preserved across attribute routine calls.
+g $9287 Saved #REGde register during attribute setting. Preserved across attribute routine calls.
 W $9287
 @ $9289 label=attr_saved_hl
-g $9289 Saved HL register during attribute setting. Preserved across attribute routine calls.
+g $9289 Saved #REGhl register during attribute setting. Preserved across attribute routine calls.
 W $9289
 @ $928B label=attr_sprite_width
 g $928B Sprite width in tiles for attribute routine. Determines how many attribute cells to update.
@@ -3565,7 +3565,7 @@ W $928B
 c $928D Set screen attributes for sprite area.
 D $928D Fills rectangular regions of attribute cells for both old (erase) and new (draw) sprite positions.
 D $928D .
-D $928D Algorithm: For each position (old then new), calculate the top-left attribute address, then fill a rectangle of B rows × C columns with attribute value A. After filling each row, advance HL by stride DE to reach the next row's starting column.
+D $928D Algorithm: For each position (old then new), calculate the top-left attribute address, then fill a rectangle of B rows × C columns with attribute value A. After filling each row, advance #REGhl by stride #REGde to reach the next row's starting column.
 R $928D I:A Sprite width in tiles (columns to fill).
 R $928D I:DE Sprite height in pixels (D), attribute color byte (E).
 R $928D I:BC Old position coordinates from #R$8B0A.
@@ -3573,61 +3573,61 @@ R $928D I:HL New position coordinates from #R$8B0C.
   $928D Save registers, store width to #R$928B.
 @ $9293 isub=CP ATTRIBUTES_INHERIT
   $9293 If ATTRIBUTES_INHERIT, leave existing screen attributes unchanged.
-  $9298 Save DE, BC, HL to memory at #R$9287, #R$9285, #R$9289 for later use.
-  $92A3 Calculate attribute address for old position: HL = #R$5800 + (Y AND $F8) * 4 + (X >> 3). Y coordinate is in B of stored BC at #R$8B0A, X in C.
+  $9298 Save #REGde, #REGbc, #REGhl to memory at #R$9287, #R$9285, #R$9289 for later use.
+  $92A3 Calculate attribute address for old position: #REGhl = #R$5800 + (Y AND $F8) * 4 + (X >> 3). Y coordinate is in B of stored #REGbc at #R$8B0A, X in C.
   $92BD Calculate row count B = (height >> 3) + 3. This covers sprite height plus padding. Load width into C.
-  $92CF Calculate row stride DE = $20 - width. After filling C columns, add DE to reach column 0 of next row. Check if Y is at screen top (row 0).
+  $92CF Calculate row stride #REGde = $20 - width. After filling C columns, add #REGde to reach column 0 of next row. Check if Y is at screen top (row 0).
   $92E0,9 If at screen top (Y AND $F8 = 0), use wrapped fill at #R$936F to handle attribute area start.
 @ $92EA label=set_attr_old_outer_loop
-  $92EA Outer loop start: push BC to preserve row count (B) and column count (C) for this row.
+  $92EA Outer loop start: push #REGbc to preserve row count (B) and column count (C) for this row.
 @ $92EB label=set_attr_old_inner_loop
-  $92EB Inner loop: write attribute byte A to address HL, increment HL, decrement column counter C, repeat until row complete.
-  $92F0 Boundary check: compare HL against #R$5A20 (row 16 of attributes). If HL >= #R$5A20, sprite has scrolled off visible area, exit early via #R$9367.
-  $92FB Row complete: restore BC, add stride DE to HL (moves to same column on next row), decrement row counter B, repeat outer loop.
+  $92EB Inner loop: write attribute byte A to address #REGhl, increment #REGhl, decrement column counter C, repeat until row complete.
+  $92F0 Boundary check: compare #REGhl against #R$5A20 (row 16 of attributes). If #REGhl >= #R$5A20, sprite has scrolled off visible area, exit early via #R$9367.
+  $92FB Row complete: restore #REGbc, add stride #REGde to #REGhl (moves to same column on next row), decrement row counter B, repeat outer loop.
 @ $92FF label=set_attr_new_position_entry
-  $92FF Calculate attribute address for new position: HL = #R$5800 + (Y AND $F8) * 4 + (X >> 3) using coordinates from #R$8B0C.
+  $92FF Calculate attribute address for new position: #REGhl = #R$5800 + (Y AND $F8) * 4 + (X >> 3) using coordinates from #R$8B0C.
   $9318 Calculate row count B = (height >> 3) + 2 (one less row than old position). Load width into C.
-  $9329 Calculate row stride DE = $20 - width. Check if Y is at screen top.
+  $9329 Calculate row stride #REGde = $20 - width. Check if Y is at screen top.
   $933B,12 If at screen top, use wrapped fill at #R$9388.
 @ $9348 label=set_attr_new_outer_loop
-  $9348 Outer loop start: push BC to preserve row count (B) and column count (C) for this row.
+  $9348 Outer loop start: push #REGbc to preserve row count (B) and column count (C) for this row.
 @ $9349 label=set_attr_new_inner_loop
-  $9349 Inner loop: write attribute byte A to address HL, increment HL, decrement column counter C, repeat until row complete.
-  $934E Boundary check: compare HL against #R$5A20. If HL >= #R$5A20, exit early via #R$936B.
-  $9359 Row complete: restore BC, add stride DE to HL, decrement row counter B, repeat outer loop.
+  $9349 Inner loop: write attribute byte A to address #REGhl, increment #REGhl, decrement column counter C, repeat until row complete.
+  $934E Boundary check: compare #REGhl against #R$5A20. If #REGhl >= #R$5A20, exit early via #R$936B.
+  $9359 Row complete: restore #REGbc, add stride #REGde to #REGhl, decrement row counter B, repeat outer loop.
 @ $935D label=handle_zero_attributes
 c $935D Return point when attribute color is zero.
 D $935D Restores registers and returns without filling any attributes. Called when sprite has no visible color.
-  $935D,9 Restore width from #R$928B, pop BC and HL, load new coordinates from #R$8B0C into DE, return.
+  $935D,9 Restore width from #R$928B, pop #REGbc and #REGhl, load new coordinates from #R$8B0C into #REGde, return.
 @ $9367 label=attr_old_exit_early
 c $9367 Early exit from old position attribute loop.
-D $9367 Called when old position boundary check detects HL >= #R$5A20 (past visible attribute area).
-  $9367,1 Pop BC (discard saved counter) and continue to new position processing at #R$92FF.
+D $9367 Called when old position boundary check detects #REGhl >= #R$5A20 (past visible attribute area).
+  $9367,1 Pop #REGbc (discard saved counter) and continue to new position processing at #R$92FF.
 @ $936B label=attr_new_exit_early
 c $936B Early exit from new position attribute loop.
-D $936B Called when new position boundary check detects HL >= #R$5A20.
-  $936B,1 Pop BC and jump to #R$935D to restore registers and return.
+D $936B Called when new position boundary check detects #REGhl >= #R$5A20.
+  $936B,1 Pop #REGbc and jump to #R$935D to restore registers and return.
 @ $936F label=set_attr_wrap_old
 c $936F Handle old position attributes when sprite is at screen top (row 0).
 D $936F When Y AND $F8 = 0, the sprite is in attribute row 0 (pixel rows 0-7). Instead of writing attributes to row 0, this routine wraps around and writes to the bottom of the viewport. This preserves row 0 as black, creating an 8-pixel blank zone where sprites are invisible. Adds $03DF (31 rows × 32 bytes - 1 = 991) to wrap the address, then subtracts $03DF after each row to maintain the wrap.
-  $936F Add $03DF to HL to correct wrapped address. Restore and re-save BC.
+  $936F Add $03DF to #REGhl to correct wrapped address. Restore and re-save #REGbc.
 @ $9375 label=set_attr_wrap_old_loop
-  $9375 Inner loop: write attribute A to HL, increment HL, decrement C, repeat for row width.
-  $937A After row: restore BC, add stride DE, decrement B, re-save BC. Subtract $03DF from HL to maintain wrap. Jump back to #R$92EA for next row.
+  $9375 Inner loop: write attribute A to #REGhl, increment #REGhl, decrement C, repeat for row width.
+  $937A After row: restore #REGbc, add stride #REGde, decrement B, re-save #REGbc. Subtract $03DF from #REGhl to maintain wrap. Jump back to #R$92EA for next row.
 @ $9388 label=set_attr_wrap_new
 c $9388 Handle new position attributes when sprite is at screen top (row 0).
 D $9388 Same $03DF wrap handling as #R$936F but for new position. Wraps attribute writes to bottom of viewport to preserve row 0 as black.
-  $9388 Add $03DF to HL to correct wrapped address. Restore and re-save BC.
+  $9388 Add $03DF to #REGhl to correct wrapped address. Restore and re-save #REGbc.
 @ $938E label=set_attr_wrap_new_loop
-  $938E Inner loop: write attribute A to HL, increment HL, decrement C, repeat for row width.
-  $9393 After row: restore BC, add stride DE, decrement B, re-save BC. Subtract $03DF from HL to maintain wrap. Jump back to #R$9348 for next row.
+  $938E Inner loop: write attribute A to #REGhl, increment #REGhl, decrement C, repeat for row width.
+  $9393 After row: restore #REGbc, add stride #REGde, decrement B, re-save #REGbc. Subtract $03DF from #REGhl to maintain wrap. Jump back to #R$9348 for next row.
 @ $93A1 label=compare_scores
 @ $93A1 isub=LD C,SCORE_DIGIT_COUNT
 c $93A1 Compare two 6-digit scores.
-D $93A1 Compares score at HL with score at DE, digit by digit.
+D $93A1 Compares score at #REGhl with score at #REGde, digit by digit.
 R $93A1 I:HL Pointer to first score (6 ASCII digits)
 R $93A1 I:DE Pointer to second score (6 ASCII digits)
-R $93A1 O:A Result: 0 if equal, 1 if HL < DE, $FF if HL > DE
+R $93A1 O:A Result: 0 if equal, 1 if #REGhl < #REGde, $FF if #REGhl > #REGde
   $93A1 Initialize digit counter to SCORE_DIGIT_COUNT.
 @ $93A3 label=compare_scores_loop
   $93A3 Compare digits, return if different, advance pointers, loop.
@@ -3656,22 +3656,22 @@ D $93F2 For 2-player games, compares scores and copies player 2 score to player 
 c $940A Clear the screen by setting all pixel bytes to $00 and all attributes to the value set in #REGd.
 D $940A Clears screen memory.
 R $940A I:D Attribute value to fill the attribute area.
-  $940A Point HL to start of screen memory (#R$4000).
+  $940A Point #REGhl to start of screen memory (#R$4000).
   $940D Set outer loop counter to $18 (24 blocks for pixel area).
 @ $940F label=clear_scr_block
   $940F Set inner loop counter to 256 (full block).
 @ $9411 label=clear_scr_byte
-  $9411 Write $00 to pixel byte, advance HL, loop until block cleared.
+  $9411 Write $00 to pixel byte, advance #REGhl, loop until block cleared.
   $9416 Decrement block counter, continue until all pixel blocks done.
   $9419 Set outer loop counter to $03 (3 blocks for attribute area).
 @ $941B label=clear_scr_attr
-  $941B Write attribute value D to byte, advance HL, loop until block cleared.
+  $941B Write attribute value D to byte, advance #REGhl, loop until block cleared.
   $941F,3 Decrement block counter, continue until all attribute blocks done.
 @ $9423 label=ld_lives
 c $9423 Load pointer to current player's lives counter.
-D $9423 Returns HL pointing to player 1's lives by default. If current player is player 2, adjusts to point to player 2's lives instead.
+D $9423 Returns #REGhl pointing to player 1's lives by default. If current player is player 2, adjusts to point to player 2's lives instead.
 R $9423 O:HL Pointer to the current player's lives counter.
-  $9423 Load address of player 1 lives (#R$923B) into HL.
+  $9423 Load address of player 1 lives (#R$923B) into #REGhl.
   $9426 If current player is not PLAYER_2, return with player 1 address.
 @ $9429 isub=CP PLAYER_2
   $942B,4 Otherwise load player 2 lives address (#R$923C) and return.
