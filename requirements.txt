@@ -1,1 +1,1 @@
-skoolkit==9.6
+skoolkit==10.0

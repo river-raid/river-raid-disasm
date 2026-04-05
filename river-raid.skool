@@ -1040,7 +1040,7 @@ c$5D44 LD A,$78      ; {Initialize plane X position to $78. Why isn't it $80?
 @isub=LD (state_bridge_destroyed),A
  $5D75 LD ($5F6D),A  ; Store $02 to #R$5F6D (unclear why $02 is used here).
 @isub=LD HL,"00"
- $5D78 LD HL,"0"     ; {Initialize all player scores to zero.
+ $5D78 LD HL,$3030   ; {Initialize all player scores to zero.
  $5D7B LD ($90BC),HL ;
  $5D7E LD ($90BE),HL ;
  $5D81 LD ($90C0),HL ;
@@ -4310,13 +4310,6 @@ c$6C52 LD A,$00      ; {Reset counter to 0.
 ; LIST#
 ;
 ; I:HL Pointer to #R$6BB0 (sound flags byte)
-;
-; During normal speed flight, sound_flags = SOUND_SPEED_NORMAL ($02), so period
-; = 2. The ON and OFF delays are 49T and 63T, which both round to 1 sample at
-; 44,100 Hz — producing alternating single-sample pulses at 22 kHz that are
-; effectively inaudible as PCM. The WAV in <code>sound.ref</code> uses period =
-; 10 (177/191 T-states, ~2.2/2.4 samples each) for a representable, audible
-; illustration.
 @label=beep_engine_normal
 c$6C5D LD A,(HL)     ; {Extract period from low 4 bits of sound flags byte.
  $6C5E AND $0F       ; Higher value = lower pitch.
@@ -7481,7 +7474,7 @@ u$8391 DEFB $3F,$3F,$3F,$3F,$3F,$3F,$3F,$3F
 ; #POKES33739,36
 ; .
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$83B1-$83B2-1-16(plane-f1) }
+; { #UDGARRAY2,14,4,2($83B1-$83B2-1-16)(plane-f1) }
 ; TABLE#
 @label=sprite_plane
 b$83B1 DEFB $10,$00  ; {Frame 1
@@ -7494,7 +7487,7 @@ b$83B1 DEFB $10,$00  ; {Frame 1
  $83BD DEFB $38,$00  ;
  $83BF DEFB $54,$00  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$83C1-$83C2-1-16(plane-f2) }
+; { #UDGARRAY2,14,4,2($83C1-$83C2-1-16)(plane-f2) }
 ; TABLE#
  $83C1 DEFB $04,$00  ; {Frame 2
  $83C3 DEFB $04,$00  ;
@@ -7506,7 +7499,7 @@ b$83B1 DEFB $10,$00  ; {Frame 1
  $83CD DEFB $0E,$00  ;
  $83CF DEFB $15,$00  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$83D1-$83D2-1-16(plane-f3) }
+; { #UDGARRAY2,14,4,2($83D1-$83D2-1-16)(plane-f3) }
 ; TABLE#
  $83D1 DEFB $01,$00  ; {Frame 3
  $83D3 DEFB $01,$00  ;
@@ -7517,7 +7510,7 @@ b$83B1 DEFB $10,$00  ; {Frame 1
  $83DD DEFB $03,$80  ;
  $83DF DEFB $05,$40  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$83E1-$83E2-1-16(plane-f4) }
+; { #UDGARRAY2,14,4,2($83E1-$83E2-1-16)(plane-f4) }
 ; TABLE#
  $83E1 DEFB $00,$40  ; {Frame 4
  $83E3 DEFB $00,$40  ;
@@ -7535,7 +7528,7 @@ b$83B1 DEFB $10,$00  ; {Frame 1
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$83F1-$83F2-1-16(plane-banked-f1) }
+; { #UDGARRAY2,14,4,2($83F1-$83F2-1-16)(plane-banked-f1) }
 ; TABLE#
 @label=sprite_plane_banked
 b$83F1 DEFB $10,$00  ; {Frame 1
@@ -7547,7 +7540,7 @@ b$83F1 DEFB $10,$00  ; {Frame 1
  $83FD DEFB $38,$00  ;
  $83FF DEFB $28,$00  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$8401-$8402-1-16(plane-banked-f2) }
+; { #UDGARRAY2,14,4,2($8401-$8402-1-16)(plane-banked-f2) }
 ; TABLE#
  $8401 DEFB $04,$00  ; {Frame 2
  $8403 DEFB $04,$00  ;
@@ -7558,7 +7551,7 @@ b$83F1 DEFB $10,$00  ; {Frame 1
  $840D DEFB $0E,$00  ;
  $840F DEFB $0A,$00  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$8411-$8412-1-16(plane-banked-f3) }
+; { #UDGARRAY2,14,4,2($8411-$8412-1-16)(plane-banked-f3) }
 ; TABLE#
  $8411 DEFB $01,$00  ; {Frame 3
  $8413 DEFB $01,$00  ;
@@ -7569,7 +7562,7 @@ b$83F1 DEFB $10,$00  ; {Frame 1
  $841D DEFB $03,$80  ;
  $841F DEFB $02,$80  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$8421-$8422-1-16(plane-banked-f4) }
+; { #UDGARRAY2,14,4,2($8421-$8422-1-16)(plane-banked-f4) }
 ; TABLE#
  $8421 DEFB $00,$40  ; {Frame 4
  $8423 DEFB $00,$40  ;
@@ -7691,7 +7684,7 @@ b$8451 DEFB $C0      ; {Frame 1
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$8471-$8472-1-16(explosion-f1) }
+; { #UDGARRAY2,14,4,2($8471-$8472-1-16)(explosion-f1) }
 ; TABLE#
 @label=sprite_explosion_f1
 b$8471 DEFB $02,$40
@@ -7710,7 +7703,7 @@ b$8471 DEFB $02,$40
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$8481-$8482-1-16(explosion-f2) }
+; { #UDGARRAY2,14,4,2($8481-$8482-1-16)(explosion-f2) }
 ; TABLE#
 @label=sprite_explosion_f2
 b$8481 DEFB $22,$20
@@ -7729,7 +7722,7 @@ b$8481 DEFB $22,$20
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$8491-$8492-1-16(explosion-f3) }
+; { #UDGARRAY2,14,4,2($8491-$8492-1-16)(explosion-f3) }
 ; TABLE#
 @label=sprite_explosion_f3
 b$8491 DEFB $01,$90
@@ -7748,7 +7741,7 @@ b$8491 DEFB $01,$90
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY3,34,4,3;$84A1-$84D0-1-24(rock-1) }
+; { #UDGARRAY3,34,4,3($84A1-$84D0-1-24)(rock-1) }
 ; TABLE#
 @label=sprite_rock
 b$84A1 DEFB $00,$00,$00 ; {Rock 1
@@ -7768,7 +7761,7 @@ b$84A1 DEFB $00,$00,$00 ; {Rock 1
  $84CB DEFB $3F,$FF,$A8 ;
  $84CE DEFB $FF,$FF,$54 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,34,4,3;$84D1-$8500-1-24(rock-2) }
+; { #UDGARRAY3,34,4,3($84D1-$8500-1-24)(rock-2) }
 ; TABLE#
  $84D1 DEFB $00,$02,$00 ; {Rock 2
  $84D4 DEFB $00,$06,$00 ;
@@ -7787,7 +7780,7 @@ b$84A1 DEFB $00,$00,$00 ; {Rock 1
  $84FB DEFB $7F,$7D,$FF ;
  $84FE DEFB $FD,$FD,$FF ; }
 ; #UDGTABLE
-; { #UDGARRAY3,34,4,3;$8501-$8530-1-24(rock-3) }
+; { #UDGARRAY3,34,4,3($8501-$8530-1-24)(rock-3) }
 ; TABLE#
  $8501 DEFB $00,$00,$00 ; {Rock 3
  $8504 DEFB $00,$00,$00 ;
@@ -7806,7 +7799,7 @@ b$84A1 DEFB $00,$00,$00 ; {Rock 1
  $852B DEFB $FE,$FC,$FB ;
  $852E DEFB $FF,$7E,$FF ; }
 ; #UDGTABLE
-; { #UDGARRAY3,34,4,3;$8531-$8560-1-24(rock-4) }
+; { #UDGARRAY3,34,4,3($8531-$8560-1-24)(rock-4) }
 ; TABLE#
  $8531 DEFB $00,$00,$00 ; {Rock 4
  $8534 DEFB $00,$00,$00 ;
@@ -7850,7 +7843,7 @@ t$8561 DEFM $11,$00
 ; Array [4] of regular helicopter headed left sprites (3×1 tiles, 24 bytes).
 ; .
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$85B3-$85B6-1-16{0,0,64,32}(helicopter-reg-left-f1) }
+; { #UDGARRAY3,14,4,3($85B3-$85B6-1-16{0,0,64,32})(helicopter-reg-left-f1) }
 ; TABLE#
 @label=sprite_enemies_left
 b$85B3 DEFB $F0,$00,$00 ; {Frame 1
@@ -7862,7 +7855,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
  $85C5 DEFB $10,$00,$00 ;
  $85C8 DEFB $7C,$00,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$85CB-$85CF-1-16{0,0,64,32}(helicopter-reg-left-f2) }
+; { #UDGARRAY3,14,4,3($85CB-$85CF-1-16{0,0,64,32})(helicopter-reg-left-f2) }
 ; TABLE#
  $85CB DEFB $3C,$00,$00 ; {Frame 2
  $85CE DEFB $07,$80,$00 ;
@@ -7873,7 +7866,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
  $85DD DEFB $04,$00,$00 ;
  $85E0 DEFB $1F,$00,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$85E3-$85E6-1-16{0,0,64,32}(helicopter-reg-left-f3) }
+; { #UDGARRAY3,14,4,3($85E3-$85E6-1-16{0,0,64,32})(helicopter-reg-left-f3) }
 ; TABLE#
  $85E3 DEFB $0F,$00,$00 ; {Frame 3
  $85E6 DEFB $01,$E0,$00 ;
@@ -7884,7 +7877,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
  $85F5 DEFB $01,$00,$00 ;
  $85F8 DEFB $07,$C0,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$85FB-$85FE-1-16{0,0,64,32}(helicopter-reg-left-f4) }
+; { #UDGARRAY3,14,4,3($85FB-$85FE-1-16{0,0,64,32})(helicopter-reg-left-f4) }
 ; TABLE#
  $85FB DEFB $03,$C0,$00 ; {Frame 4
  $85FE DEFB $00,$78,$00 ;
@@ -7897,7 +7890,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
 ; Array [4] of ship headed left sprites (each element is 3×1 tiles = 24 bytes).
 ; .
 ; #UDGTABLE
-; { #UDGARRAY3,13,4,3;$8613-$8616-1-16(ship-left-f1) }
+; { #UDGARRAY3,13,4,3($8613-$8616-1-16)(ship-left-f1) }
 ; TABLE#
  $8613 DEFB $00,$00,$00 ; {Frame 1
  $8616 DEFB $00,$00,$00 ;
@@ -7908,7 +7901,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
  $8625 DEFB $7F,$FF,$C0 ;
  $8628 DEFB $1F,$FF,$80 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,13,4,3;$862B-$862E-1-16(ship-left-f2) }
+; { #UDGARRAY3,13,4,3($862B-$862E-1-16)(ship-left-f2) }
 ; TABLE#
  $862B DEFB $00,$00,$00 ; {Frame 2
  $862E DEFB $00,$00,$00 ;
@@ -7919,7 +7912,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
  $863D DEFB $1F,$FF,$F0 ;
  $8640 DEFB $07,$FF,$E0 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,13,4,3;$8643-$8646-1-16(ship-left-f3) }
+; { #UDGARRAY3,13,4,3($8643-$8646-1-16)(ship-left-f3) }
 ; TABLE#
  $8643 DEFB $00,$00,$00 ; {Frame 3
  $8646 DEFB $00,$00,$00 ;
@@ -7930,7 +7923,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
  $8655 DEFB $07,$FF,$FC ;
  $8658 DEFB $01,$FF,$F8 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,13,4,3;$865B-$865E-1-16(ship-left-f4) }
+; { #UDGARRAY3,13,4,3($865B-$865E-1-16)(ship-left-f4) }
 ; TABLE#
  $865B DEFB $00,$00,$00 ; {Frame 4
  $865E DEFB $00,$00,$00 ;
@@ -7944,7 +7937,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
 ; tiles = 24 bytes).
 ; .
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$8673-$8676-1-16{0,0,64,32}(helicopter-adv-left-f1) }
+; { #UDGARRAY3,14,4,3($8673-$8676-1-16{0,0,64,32})(helicopter-adv-left-f1) }
 ; TABLE#
  $8673 DEFB $F0,$00,$00 ; {Frame 1
  $8676 DEFB $1E,$00,$00 ;
@@ -7955,7 +7948,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
  $8685 DEFB $10,$00,$00 ;
  $8688 DEFB $7C,$00,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$868B-$868F-1-16{0,0,64,32}(helicopter-adv-left-f2) }
+; { #UDGARRAY3,14,4,3($868B-$868F-1-16{0,0,64,32})(helicopter-adv-left-f2) }
 ; TABLE#
  $868B DEFB $3C,$00,$00 ; {Frame 2
  $868E DEFB $07,$80,$00 ;
@@ -7966,7 +7959,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
  $869D DEFB $04,$00,$00 ;
  $86A0 DEFB $1F,$00,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$86A3-$86A6-1-16{0,0,64,32}(helicopter-adv-left-f3) }
+; { #UDGARRAY3,14,4,3($86A3-$86A6-1-16{0,0,64,32})(helicopter-adv-left-f3) }
 ; TABLE#
  $86A3 DEFB $0F,$00,$00 ; {Frame 3
  $86A6 DEFB $01,$E0,$00 ;
@@ -7977,7 +7970,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
  $86B5 DEFB $01,$00,$00 ;
  $86B8 DEFB $07,$C0,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$86BB-$86BE-1-16{0,0,64,32}(helicopter-adv-left-f4) }
+; { #UDGARRAY3,14,4,3($86BB-$86BE-1-16{0,0,64,32})(helicopter-adv-left-f4) }
 ; TABLE#
  $86BB DEFB $03,$C0,$00 ; {Frame 4
  $86BE DEFB $00,$78,$00 ;
@@ -7990,7 +7983,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
 ; Array [4] of tank headed left sprites (each element is 3×1 tiles = 24 bytes).
 ; .
 ; #UDGTABLE
-; { #UDGARRAY3,60,4,3;$86D3-$86D6-1-16{0,0,64,32}(tank-left-f1) }
+; { #UDGARRAY3,60,4,3($86D3-$86D6-1-16{0,0,64,32})(tank-left-f1) }
 ; TABLE#
  $86D3 DEFB $00,$00,$00 ; {Frame 1
  $86D6 DEFB $7F,$00,$00 ;
@@ -8001,7 +7994,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
  $86E5 DEFB $00,$00,$00 ;
  $86E8 DEFB $2A,$80,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,60,4,3;$86EB-$86EE-1-16{0,0,64,32}(tank-left-f2) }
+; { #UDGARRAY3,60,4,3($86EB-$86EE-1-16{0,0,64,32})(tank-left-f2) }
 ; TABLE#
  $86EB DEFB $00,$00,$00 ; {Frame 2
  $86EE DEFB $1F,$C0,$00 ;
@@ -8012,7 +8005,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
  $86FD DEFB $10,$00,$00 ;
  $8700 DEFB $05,$40,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,60,4,3;$8703-$8706-1-16{0,0,64,32}(tank-left-f3) }
+; { #UDGARRAY3,60,4,3($8703-$8706-1-16{0,0,64,32})(tank-left-f3) }
 ; TABLE#
  $8703 DEFB $00,$00,$00 ; {Frame 3
  $8706 DEFB $07,$F0,$00 ;
@@ -8023,7 +8016,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
  $8715 DEFB $00,$00,$00 ;
  $8718 DEFB $02,$A8,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,60,4,3;$871B-$871E-1-16{0,0,64,32}(tank-left-f4) }
+; { #UDGARRAY3,60,4,3($871B-$871E-1-16{0,0,64,32})(tank-left-f4) }
 ; TABLE#
  $871B DEFB $00,$00,$00 ; {Frame 4
  $871E DEFB $01,$FC,$00 ;
@@ -8039,7 +8032,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
 ; bytes).
 ; .
 ; #UDGTABLE
-; { #UDGARRAY3,12,4,3;$8733-$8736-1-16{0,0,64,32}(fighter-left-f1) }
+; { #UDGARRAY3,12,4,3($8733-$8736-1-16{0,0,64,32})(fighter-left-f1) }
 ; TABLE#
  $8733 DEFB $00,$00,$00 ; {Frame 1
 @ofix=DEFB $00,$40,$00
@@ -8052,7 +8045,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
  $8745 DEFB $03,$80,$00 ;
  $8748 DEFB $00,$00,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,12,4,3;$874B-$874E-1-16{0,0,64,32}(fighter-left-f2) }
+; { #UDGARRAY3,12,4,3($874B-$874E-1-16{0,0,64,32})(fighter-left-f2) }
 ; TABLE#
  $874B DEFB $00,$00,$00 ; {Frame 2
  $874E DEFB $00,$10,$00 ;
@@ -8063,7 +8056,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
  $875D DEFB $00,$E0,$00 ;
  $8760 DEFB $00,$00,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,12,4,3;$8763-$8766-1-16{0,0,64,32}(fighter-left-f3) }
+; { #UDGARRAY3,12,4,3($8763-$8766-1-16{0,0,64,32})(fighter-left-f3) }
 ; TABLE#
  $8763 DEFB $00,$00,$00 ; {Frame 3
  $8766 DEFB $00,$04,$00 ;
@@ -8074,7 +8067,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
  $8775 DEFB $00,$38,$00 ;
  $8778 DEFB $00,$00,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,12,4,3;$877B-$877E-1-16{0,0,64,32}(fighter-left-f4) }
+; { #UDGARRAY3,12,4,3($877B-$877E-1-16{0,0,64,32})(fighter-left-f4) }
 ; TABLE#
  $877B DEFB $00,$00,$00 ; {Frame 4
  $877E DEFB $00,$01,$00 ;
@@ -8096,7 +8089,7 @@ b$85B3 DEFB $F0,$00,$00 ; {Frame 1
 ; tiles = 24 bytes).
 ; .
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$8793-$8796-1-16{0,0,64,32}(helicopter-reg-right-f1) }
+; { #UDGARRAY3,14,4,3($8793-$8796-1-16{0,0,64,32})(helicopter-reg-right-f1) }
 ; TABLE#
 @label=sprite_enemies_right
 b$8793 DEFB $03,$C0,$00 ; {Frame 1
@@ -8108,7 +8101,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $87A5 DEFB $02,$00,$00 ;
  $87A8 DEFB $0F,$80,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$87AB-$87AE-1-16{0,0,64,32}(helicopter-reg-right-f2) }
+; { #UDGARRAY3,14,4,3($87AB-$87AE-1-16{0,0,64,32})(helicopter-reg-right-f2) }
 ; TABLE#
  $87AB DEFB $00,$F0,$00 ; {Frame 2
  $87AE DEFB $07,$80,$00 ;
@@ -8119,7 +8112,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $87BD DEFB $00,$80,$00 ;
  $87C0 DEFB $03,$E0,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$87C3-$87C6-1-16{0,0,64,32}(helicopter-reg-right-f3) }
+; { #UDGARRAY3,14,4,3($87C3-$87C6-1-16{0,0,64,32})(helicopter-reg-right-f3) }
 ; TABLE#
  $87C3 DEFB $00,$3C,$00 ; {Frame 3
  $87C6 DEFB $01,$E0,$00 ;
@@ -8130,7 +8123,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $87D5 DEFB $00,$20,$00 ;
  $87D8 DEFB $00,$F8,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$87DB-$87DE-1-16{0,0,64,32}(helicopter-reg-right-f4) }
+; { #UDGARRAY3,14,4,3($87DB-$87DE-1-16{0,0,64,32})(helicopter-reg-right-f4) }
 ; TABLE#
  $87DB DEFB $00,$0F,$00 ; {Frame 4
  $87DE DEFB $00,$78,$00 ;
@@ -8144,7 +8137,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
 ; bytes).
 ; .
 ; #UDGTABLE
-; { #UDGARRAY3,13,4,3;$87F3-$87F6-1-16(ship-right-f1) }
+; { #UDGARRAY3,13,4,3($87F3-$87F6-1-16)(ship-right-f1) }
 ; TABLE#
  $87F3 DEFB $00,$00,$00 ; {Frame 1
  $87F6 DEFB $00,$00,$00 ;
@@ -8155,7 +8148,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $8805 DEFB $FF,$FF,$80 ;
  $8808 DEFB $7F,$FF,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,13,4,3;$880B-$880E-1-16(ship-right-f2) }
+; { #UDGARRAY3,13,4,3($880B-$880E-1-16)(ship-right-f2) }
 ; TABLE#
  $880B DEFB $00,$00,$00 ; {Frame 2
  $880E DEFB $00,$00,$00 ;
@@ -8166,7 +8159,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $881D DEFB $3F,$FF,$E0 ;
  $8820 DEFB $1F,$FF,$80 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,13,4,3;$8823-$8826-1-16(ship-right-f3) }
+; { #UDGARRAY3,13,4,3($8823-$8826-1-16)(ship-right-f3) }
 ; TABLE#
  $8823 DEFB $00,$00,$00 ; {Frame 3
  $8826 DEFB $00,$00,$00 ;
@@ -8177,7 +8170,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $8835 DEFB $0F,$FF,$F8 ;
  $8838 DEFB $07,$FF,$E0 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,13,4,3;$883B-$883E-1-16(ship-right-f4) }
+; { #UDGARRAY3,13,4,3($883B-$883E-1-16)(ship-right-f4) }
 ; TABLE#
  $883B DEFB $00,$00,$00 ; {Frame 4
  $883E DEFB $00,$00,$00 ;
@@ -8191,7 +8184,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
 ; tiles = 24 bytes).
 ; .
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$8853-$8856-1-16{0,0,64,32}(helicopter-adv-right-f1) }
+; { #UDGARRAY3,14,4,3($8853-$8856-1-16{0,0,64,32})(helicopter-adv-right-f1) }
 ; TABLE#
  $8853 DEFB $03,$C0,$00 ; {Frame 1
  $8856 DEFB $1E,$00,$00 ;
@@ -8202,7 +8195,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $8865 DEFB $02,$00,$00 ;
  $8868 DEFB $0F,$80,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$886B-$886E-1-16{0,0,64,32}(helicopter-adv-right-f2) }
+; { #UDGARRAY3,14,4,3($886B-$886E-1-16{0,0,64,32})(helicopter-adv-right-f2) }
 ; TABLE#
  $886B DEFB $00,$F0,$00 ; {Frame 2
  $886E DEFB $07,$80,$00 ;
@@ -8215,7 +8208,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
 ; #POKES34968,0
 ; .
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$8883-$8886-1-16{0,0,64,32}(helicopter-adv-right-f3) }
+; { #UDGARRAY3,14,4,3($8883-$8886-1-16{0,0,64,32})(helicopter-adv-right-f3) }
 ; TABLE#
  $8883 DEFB $00,$3C,$00 ; {Frame 3
  $8886 DEFB $01,$E0,$00 ;
@@ -8229,7 +8222,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
 ; #POKES34992,0
 ; .
 ; #UDGTABLE
-; { #UDGARRAY3,14,4,3;$889B-$889E-1-16{0,0,64,32}(helicopter-adv-right-f4) }
+; { #UDGARRAY3,14,4,3($889B-$889E-1-16{0,0,64,32})(helicopter-adv-right-f4) }
 ; TABLE#
  $889B DEFB $00,$0F,$00 ; {Frame 4
  $889E DEFB $00,$78,$00 ;
@@ -8246,7 +8239,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
 ; bytes).
 ; .
 ; #UDGTABLE
-; { #UDGARRAY3,60,4,3;$88B3-$88B6-1-16{0,0,64,32}(tank-right-f1) }
+; { #UDGARRAY3,60,4,3($88B3-$88B6-1-16{0,0,64,32})(tank-right-f1) }
 ; TABLE#
  $88B3 DEFB $00,$00,$00 ; {Frame 1
  $88B6 DEFB $3F,$80,$00 ;
@@ -8257,7 +8250,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $88C5 DEFB $80,$00,$00 ;
  $88C8 DEFB $2A,$00,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,60,4,3;$88CB-$88CE-1-16{0,0,64,32}(tank-right-f2) }
+; { #UDGARRAY3,60,4,3($88CB-$88CE-1-16{0,0,64,32})(tank-right-f2) }
 ; TABLE#
  $88CB DEFB $00,$00,$00 ; {Frame 2
  $88CE DEFB $0F,$E0,$00 ;
@@ -8269,7 +8262,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $88DD DEFB $D0,$00,$00 ;
  $88E0 DEFB $15,$40,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,60,4,3;$88E3-$88E6-1-16{0,0,64,32}(tank-right-f3) }
+; { #UDGARRAY3,60,4,3($88E3-$88E6-1-16{0,0,64,32})(tank-right-f3) }
 ; TABLE#
  $88E3 DEFB $00,$00,$00 ; {Frame 3
  $88E6 DEFB $03,$F8,$00 ;
@@ -8280,7 +8273,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $88F5 DEFB $00,$08,$00 ;
  $88F8 DEFB $02,$A0,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,60,4,3;$88FB-$88FE-1-16{0,0,64,32}(tank-right-f4) }
+; { #UDGARRAY3,60,4,3($88FB-$88FE-1-16{0,0,64,32})(tank-right-f4) }
 ; TABLE#
  $88FB DEFB $00,$00,$00 ; {Frame 4
  $88FE DEFB $00,$FE,$00 ;
@@ -8296,7 +8289,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
 ; bytes).
 ; .
 ; #UDGTABLE
-; { #UDGARRAY3,12,4,3;$8913-$8916-1-16{0,0,64,32}(fighter-right-f1) }
+; { #UDGARRAY3,12,4,3($8913-$8916-1-16{0,0,64,32})(fighter-right-f1) }
 ; TABLE#
  $8913 DEFB $00,$00,$00 ; {Frame 1
 @ofix=DEFB $80,$00,$00
@@ -8310,7 +8303,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $8925 DEFB $70,$00,$00 ;
  $8928 DEFB $00,$00,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,12,4,3;$892B-$892E-1-16{0,0,64,32}(fighter-right-f2) }
+; { #UDGARRAY3,12,4,3($892B-$892E-1-16{0,0,64,32})(fighter-right-f2) }
 ; TABLE#
  $892B DEFB $00,$00,$00 ; {Frame 2
  $892E DEFB $20,$00,$00 ;
@@ -8322,7 +8315,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $893D DEFB $1C,$00,$00 ;
  $8940 DEFB $00,$00,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,12,4,3;$8943-$8946-1-16{0,0,64,32}(fighter-right-f3) }
+; { #UDGARRAY3,12,4,3($8943-$8946-1-16{0,0,64,32})(fighter-right-f3) }
 ; TABLE#
  $8943 DEFB $00,$00,$00 ; {Frame 3
  $8946 DEFB $08,$00,$00 ;
@@ -8333,7 +8326,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
  $8955 DEFB $07,$00,$00 ;
  $8958 DEFB $00,$00,$00 ; }
 ; #UDGTABLE
-; { #UDGARRAY3,12,4,3;$895B-$895E-1-16{0,0,64,32}(fighter-right-f4) }
+; { #UDGARRAY3,12,4,3($895B-$895E-1-16{0,0,64,32})(fighter-right-f4) }
 ; TABLE#
  $895B DEFB $00,$00,$00 ; {Frame 4
  $895E DEFB $02,$00,$00 ;
@@ -8351,7 +8344,7 @@ b$8793 DEFB $03,$C0,$00 ; {Frame 1
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$8972-$898A-1-16(balloon-f1) }
+; { #UDGARRAY2,14,4,2($8972-$898A-1-16)(balloon-f1) }
 ; TABLE#
 @label=sprite_balloon
 b$8972 DEFB $0C,$00  ; {Frame 1
@@ -8371,7 +8364,7 @@ b$8972 DEFB $0C,$00  ; {Frame 1
  $898E DEFB $1E,$00  ;
  $8990 DEFB $1E,$00  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$8992-$89AA-1-16(balloon-f2) }
+; { #UDGARRAY2,14,4,2($8992-$89AA-1-16)(balloon-f2) }
 ; TABLE#
  $8992 DEFB $03,$00  ; {Frame 2
  $8994 DEFB $0F,$C0  ;
@@ -8390,7 +8383,7 @@ b$8972 DEFB $0C,$00  ; {Frame 1
  $89AE DEFB $07,$80  ;
  $89B0 DEFB $07,$80  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$89B2-$89CA-1-16(balloon-f3) }
+; { #UDGARRAY2,14,4,2($89B2-$89CA-1-16)(balloon-f3) }
 ; TABLE#
  $89B2 DEFB $00,$C0  ; {Frame 3
  $89B4 DEFB $03,$F0  ;
@@ -8409,7 +8402,7 @@ b$8972 DEFB $0C,$00  ; {Frame 1
  $89CE DEFB $01,$E0  ;
  $89D0 DEFB $01,$E0  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,14,4,2;$89D2-$89EA-1-16(balloon-f4) }
+; { #UDGARRAY2,14,4,2($89D2-$89EA-1-16)(balloon-f4) }
 ; TABLE#
  $89D2 DEFB $00,$30  ; {Frame 4
  $89D4 DEFB $00,$FC  ;
@@ -8573,7 +8566,7 @@ c$8A4E LD DE,$0800   ;
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY2,11,4,2;$8A86-$8AB8-1-16{0,0,64,100}(sprite-fuel) }
+; { #UDGARRAY2,11,4,2($8A86-$8AB8-1-16{0,0,64,100})(sprite-fuel) }
 ; TABLE#
 @label=sprite_fuel
 b$8A86 DEFB $0F,$F0
@@ -8613,23 +8606,23 @@ b$8A86 DEFB $0F,$F0
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY2,6,4,2;$8AB8-$8ABB-1-16{0,0,64,8}(rotor-left-f1) }
+; { #UDGARRAY2,6,4,2($8AB8-$8ABB-1-16{0,0,64,8})(rotor-left-f1) }
 ; TABLE#
 @label=sprite_helicopter_rotor_left
 b$8AB8 DEFB $1E,$00  ; {Frame 1
  $8ABA DEFB $F0,$00  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,6,4,2;$8ABC-$8ABF-1-16{0,0,64,8}(rotor-left-f2) }
+; { #UDGARRAY2,6,4,2($8ABC-$8ABF-1-16{0,0,64,8})(rotor-left-f2) }
 ; TABLE#
  $8ABC DEFB $07,$80  ; {Frame 2
  $8ABE DEFB $3C,$00  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,6,4,2;$8AC0-$8AC3-1-16{0,0,64,8}(rotor-left-f3) }
+; { #UDGARRAY2,6,4,2($8AC0-$8AC3-1-16{0,0,64,8})(rotor-left-f3) }
 ; TABLE#
  $8AC0 DEFB $01,$E0  ; {Frame 3
  $8AC2 DEFB $0F,$00  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,6,4,2;$8AC4-$8AC7-1-16{0,0,64,8}(rotor-left-f4) }
+; { #UDGARRAY2,6,4,2($8AC4-$8AC7-1-16{0,0,64,8})(rotor-left-f4) }
 ; TABLE#
  $8AC4 DEFB $00,$78  ; {Frame 4
  $8AC6 DEFB $03,$C0  ; }
@@ -8645,23 +8638,23 @@ b$8AB8 DEFB $1E,$00  ; {Frame 1
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY2,6,4,2;$8AC8-$8ACB-1-16{0,0,64,8}(rotor-right-f1) }
+; { #UDGARRAY2,6,4,2($8AC8-$8ACB-1-16{0,0,64,8})(rotor-right-f1) }
 ; TABLE#
 @label=sprite_helicopter_rotor_right
 b$8AC8 DEFB $1E,$00  ; {Frame 1
  $8ACA DEFB $03,$C0  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,6,4,2;$8ACC-$8ACF-1-16{0,0,64,8}(rotor-right-f2) }
+; { #UDGARRAY2,6,4,2($8ACC-$8ACF-1-16{0,0,64,8})(rotor-right-f2) }
 ; TABLE#
  $8ACC DEFB $07,$80  ; {Frame 2
  $8ACE DEFB $00,$F0  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,6,4,2;$8AD0-$8AD3-1-16{0,0,64,8}(rotor-right-f3) }
+; { #UDGARRAY2,6,4,2($8AD0-$8AD3-1-16{0,0,64,8})(rotor-right-f3) }
 ; TABLE#
  $8AD0 DEFB $01,$E0  ; {Frame 3
  $8AD2 DEFB $00,$3C  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,6,4,2;$8AD4-$8AD7-1-16{0,0,64,8}(rotor-right-f4) }
+; { #UDGARRAY2,6,4,2($8AD4-$8AD7-1-16{0,0,64,8})(rotor-right-f4) }
 ; TABLE#
  $8AD4 DEFB $00,$78  ; {Frame 4
  $8AD6 DEFB $00,$0F  ; }
@@ -9159,7 +9152,7 @@ u$8C4A DEFB $C3,$90,$EA,$0E,$8B,$E9,$C3,$90
 ; .
 ;
 ; #UDGTABLE
-; { #UDGARRAY2,4,4,2;$8FFC-$901A-1-16(tank-shell-exp-f1) }
+; { #UDGARRAY2,4,4,2($8FFC-$901A-1-16)(tank-shell-exp-f1) }
 ; TABLE#
 @label=sprite_tank_shell_explosion
 b$8FFC DEFB $00,$00  ; {Frame 1
@@ -9179,7 +9172,7 @@ b$8FFC DEFB $00,$00  ; {Frame 1
  $9018 DEFB $00,$00  ;
  $901A DEFB $00,$00  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,4,4,2;$901C-$903A-1-16(tank-shell-exp-f2) }
+; { #UDGARRAY2,4,4,2($901C-$903A-1-16)(tank-shell-exp-f2) }
 ; TABLE#
  $901C DEFB $00,$00  ; {Frame 2
  $901E DEFB $00,$00  ;
@@ -9198,7 +9191,7 @@ b$8FFC DEFB $00,$00  ; {Frame 1
  $9038 DEFB $00,$00  ;
  $903A DEFB $00,$00  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,4,4,2;$903C-$905A-1-16(tank-shell-exp-f3) }
+; { #UDGARRAY2,4,4,2($903C-$905A-1-16)(tank-shell-exp-f3) }
 ; TABLE#
  $903C DEFB $00,$00  ; {Frame 3
  $903E DEFB $00,$00  ;
@@ -9217,7 +9210,7 @@ b$8FFC DEFB $00,$00  ; {Frame 1
  $9058 DEFB $00,$00  ;
  $905A DEFB $00,$00  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,4,4,2;$905C-$907A-1-16(tank-shell-exp-f4) }
+; { #UDGARRAY2,4,4,2($905C-$907A-1-16)(tank-shell-exp-f4) }
 ; TABLE#
  $905C DEFB $00,$00  ; {Frame 4
  $905E DEFB $00,$00  ;
@@ -9236,7 +9229,7 @@ b$8FFC DEFB $00,$00  ; {Frame 1
  $9078 DEFB $00,$00  ;
  $907A DEFB $00,$00  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,4,4,2;$907C-$909A-1-16(tank-shell-exp-f5) }
+; { #UDGARRAY2,4,4,2($907C-$909A-1-16)(tank-shell-exp-f5) }
 ; TABLE#
  $907C DEFB $00,$00  ; {Frame 5
  $907E DEFB $00,$00  ;
@@ -9255,7 +9248,7 @@ b$8FFC DEFB $00,$00  ; {Frame 1
  $9098 DEFB $00,$00  ;
  $909A DEFB $00,$00  ; }
 ; #UDGTABLE
-; { #UDGARRAY2,4,4,2;$909C-$90BA-1-16(tank-shell-exp-f6) }
+; { #UDGARRAY2,4,4,2($909C-$90BA-1-16)(tank-shell-exp-f6) }
 ; TABLE#
  $909C DEFB $00,$00  ; {Frame 6
  $909E DEFB $01,$00  ;

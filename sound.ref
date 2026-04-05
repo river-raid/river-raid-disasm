@@ -8,7 +8,7 @@ moves 6 pixels per animate pass, with the sound flag cleared when Y drops to
 112 (after 3 passes: 126→120→114→108). At 50 Hz with 2 animate passes per
 frame at ~12 FPS: 3 × 50 / (2 × 12) = 6.25, rounded to 7.
 
-#AUDIO(fire.wav)(#INCLUDE(FireDelays))
+#AUDIO0(fire.wav)(#INCLUDE(FireDelays))
 
 [Audio:engine-normal:Engine (normal speed)]
 This sound effect is produced by the routine at #R$6C5D during normal speed
@@ -23,21 +23,21 @@ pulses at 22 kHz (the Nyquist limit), which are effectively inaudible as PCM.
 The delays here use period = 10 (177/191 T-states, ~2.2/2.4 samples each) to
 produce a representable, audible illustration.
 
-#AUDIO(engine-normal.wav)(43,[177,191]*7,177,[67092,[177,191]*7,177]*49)
+#AUDIO0(engine-normal.wav)(43,[177,191]*7,177,[67092,[177,191]*7,177]*49)
 
 [Audio:engine-fast:Engine (fast speed)]
 This sound effect is produced by the routine at #R$6CB8 when the player holds
 up to accelerate. Called once per interrupt (~50 Hz); each call plays 8
 speaker pulses (~16.6 kHz).
 
-#AUDIO(engine-fast.wav)(43,[113,98]*7,113,[68255,[113,98]*7,113]*49)
+#AUDIO0(engine-fast.wav)(43,[113,98]*7,113,[68255,[113,98]*7,113]*49)
 
 [Audio:engine-slow:Engine (slow speed)]
 This sound effect is produced by the routine at #R$6CD6 when the player holds
 down to decelerate. Called once per interrupt (~50 Hz); each call plays 8
 speaker pulses (~10.3 kHz).
 
-#AUDIO(engine-slow.wav)(43,[113,226]*7,113,[67359,[113,226]*7,113]*49)
+#AUDIO0(engine-slow.wav)(43,[113,226]*7,113,[67359,[113,226]*7,113]*49)
 
 [Audio:explosion:Explosion]
 This sound effect is produced by the routine at #R$6C7B when the player's plane
@@ -46,42 +46,42 @@ register is not intentionally set by the caller, giving the explosion its noisy
 character. Each frame plays 4 cycles of waveform with a decreasing OFF delay,
 making the sound more rapid and urgent as the explosion progresses.
 
-#AUDIO(explosion.wav)(#INCLUDE(ExplosionDelays))
+#AUDIO0(explosion.wav)(#INCLUDE(ExplosionDelays))
 
 [Audio:low-fuel:Low fuel warning]
 This sound effect is produced by the routine at #R$6CF4 when the fuel level
 drops below the warning threshold. The pitch warbles by decrementing the period
 each frame, creating an urgent rising tone that resets after reaching zero.
 
-#AUDIO(low-fuel.wav)(#INCLUDE(LowFuelDelays),67000,#INCLUDE(LowFuelDelays))
+#AUDIO0(low-fuel.wav)(#INCLUDE(LowFuelDelays),67000,#INCLUDE(LowFuelDelays))
 
 [Audio:bonus-life:Bonus life]
 This sound effect is produced by the routine at #R$6C31 when the player earns
 an extra life. It generates a rising pitch over 63 frames by calling the ROM
 BEEPER routine at <code>$03B5</code> with decreasing pitch values.
 
-#AUDIO(bonus-life.wav)(305,[8303]*3,[44908,[8303]*3]*7,[47980,[7279]*3]*8,[51052,[6255]*3]*8,[54124,[5231]*3]*8,[57196,[4207]*3]*8,[60268,[3183]*3]*8,[63340,[2159]*3]*8,[66412,[1135]*3]*7)
+#AUDIO0(bonus-life.wav)(305,[8303]*3,[44908,[8303]*3]*7,[47980,[7279]*3]*8,[51052,[6255]*3]*8,[54124,[5231]*3]*8,[57196,[4207]*3]*8,[60268,[3183]*3]*8,[63340,[2159]*3]*8,[66412,[1135]*3]*7)
 
 [Audio:fuel-full:Tank full]
 This sound effect is produced by the routine at #R$6E92 when the fuel tank is
 already full and cannot accept more fuel. Called once per game frame (~12 FPS);
 plays a short beep (~1450 Hz, ~6 ms) via the ROM BEEPER routine.
 
-#AUDIO(fuel-full.wav)(218,[1207]*17,[270463,218,[1207]*17]*4)
+#AUDIO0(fuel-full.wav)(218,[1207]*17,[270463,218,[1207]*17]*4)
 
 [Audio:refuel:Refueling]
 This sound effect is produced by the routine at #R$6E50 while the plane is
 actively receiving fuel. Called once per game frame (~12 FPS); uses the ROM
 BEEPER routine with <code>DE=$0007</code>, <code>HL=$0333</code> (8 cycles, ~516 Hz, ~14.6 ms per call).
 
-#AUDIO(refuel.wav)(218,[3391]*15,[240117,218,[3391]*15]*4)
+#AUDIO0(refuel.wav)(218,[3391]*15,[240117,218,[3391]*15]*4)
 
 [Audio:heli-missile-launch:Helicopter missile launch]
 This sound effect is produced by the routine at #R$73EB when an advanced helicopter
 fires a missile. Uses the ROM BEEPER routine with <code>DE=$0001</code>, <code>HL=$2800</code> (2 cycles,
 ~43 Hz, ~35 ms).
 
-#AUDIO(heli-missile-launch.wav)(218,[41075]*3)
+#AUDIO0(heli-missile-launch.wav)(218,[41075]*3)
 
 [Audio:shell-whistle:Tank shell whistle]
 This sound effect is produced by the routine at #R$7457 once per game frame while a
@@ -89,7 +89,7 @@ tank shell is in flight. The pitch parameter is HL = step × 256 (<code>DE=$0002
 per step), producing a descending whistle over trajectory steps 1–7. Step 8 triggers
 an explosion and plays no sound.
 
-#AUDIO(shell-whistle.wav)(#INCLUDE(ShellWhistleDelays))
+#AUDIO0(shell-whistle.wav)(#INCLUDE(ShellWhistleDelays))
 
 [ExplosionDelays]
 121,[657,412]*3,657,
