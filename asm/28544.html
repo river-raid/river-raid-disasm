@@ -62,7 +62,7 @@ Called when a new attribute row scrolls into view (every 8 terrain fragments). R
 <td class="asm-label"></td>
 <td class="address-1"><span id="28549"></span>6F85</td>
 <td class="instruction">LD HL,$C800</td>
-<td class="comment-1" rowspan="3">Calculate level base address: HL = <a href="51200.html">level_objects</a> + (<a href="24304.html">state_bridge_index</a> * SIZE_LEVEL_SLOTS).</td>
+<td class="comment-1" rowspan="3">Calculate level base address: <span class="register">HL</span> = <a href="51200.html">level_objects</a> + (<a href="24304.html">state_bridge_index</a> * SIZE_LEVEL_SLOTS).</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -90,7 +90,7 @@ Called when a new attribute row scrolls into view (every 8 terrain fragments). R
 <td class="asm-label">locate_level</td>
 <td class="address-2"><span id="28561"></span>6F91</td>
 <td class="instruction">ADD HL,DE</td>
-<td class="comment-1" rowspan="3">Loop: advance HL by SIZE_LEVEL_SLOTS for each level up to current.</td>
+<td class="comment-1" rowspan="3">Loop: advance <span class="register">HL</span> by SIZE_LEVEL_SLOTS for each level up to current.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -106,7 +106,7 @@ Called when a new attribute row scrolls into view (every 8 terrain fragments). R
 <td class="asm-label"></td>
 <td class="address-1"><span id="28565"></span>6F95</td>
 <td class="instruction">LD BC,($5F70)</td>
-<td class="comment-1" rowspan="7">Calculate slot offset: BC = (<a href="24432.html">state_scroll_offset</a> &gt;&gt; 2) with bit 0 cleared. Read [D, E] from (HL + BC).</td>
+<td class="comment-1" rowspan="7">Calculate slot offset: <span class="register">BC</span> = (<a href="24432.html">state_scroll_offset</a> &gt;&gt; 2) with bit 0 cleared. Read [D, E] from (<span class="register">HL</span> + <span class="register">BC</span>).</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

@@ -53,7 +53,7 @@ Clears screen memory.
 <td class="asm-label">clear_screen</td>
 <td class="address-2"><span id="37898"></span>940A</td>
 <td class="instruction">LD HL,$4000</td>
-<td class="comment-1" rowspan="1">Point HL to start of screen memory (<a href="16384.html">screen_pixels</a>).</td>
+<td class="comment-1" rowspan="1">Point <span class="register">HL</span> to start of screen memory (<a href="16384.html">screen_pixels</a>).</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -71,7 +71,7 @@ Clears screen memory.
 <td class="asm-label">clear_scr_byte</td>
 <td class="address-2"><span id="37905"></span>9411</td>
 <td class="instruction">LD (HL),$00</td>
-<td class="comment-1" rowspan="3">Write $00 to pixel byte, advance HL, loop until block cleared.</td>
+<td class="comment-1" rowspan="3">Write $00 to pixel byte, advance <span class="register">HL</span>, loop until block cleared.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -104,7 +104,7 @@ Clears screen memory.
 <td class="asm-label">clear_scr_attr</td>
 <td class="address-2"><span id="37915"></span>941B</td>
 <td class="instruction">LD (HL),D</td>
-<td class="comment-1" rowspan="3">Write attribute value D to byte, advance HL, loop until block cleared.</td>
+<td class="comment-1" rowspan="3">Write attribute value D to byte, advance <span class="register">HL</span>, loop until block cleared.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

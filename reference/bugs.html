@@ -58,7 +58,7 @@ last-evaluated key wins outright — see <a href="bugs.html#bothUpDown">Pressing
 <div class="paragraph">
 When both up and down are held at the same time, the plane always slows down.
 <a href="../asm/24680.html">scan_keyboard</a> evaluates up before down: <a href="../asm/26378.html">handle_up</a> writes
-<code>SPEED_FAST</code> and clears <code>CONTROLS_BIT_SPEED_NOT_FAST</code>, then <a href="../asm/26391.html">handle_down</a>
+<code>SPEED_FAST</code> and clears <code>SOUND_BIT_SPEED_NOT_FAST</code>, then <a href="../asm/26391.html">handle_down</a>
 immediately overwrites with <code>SPEED_SLOW</code> and sets both speed control bits. Last
 writer wins unconditionally.
 </div>

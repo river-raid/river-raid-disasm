@@ -567,7 +567,7 @@
 <td class="map-byte">133</td>
 <td class="map-g"><span id="24453"></span><a href="../asm/24453.html">5F85</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24453.html">Saved HL register during collision detection. Preserved across collision handler calls.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24453.html">Saved <span class="register">HL</span> register during collision detection. Preserved across collision handler calls.</a></div>
 </td>
 </tr>
 <tr>
@@ -575,7 +575,7 @@
 <td class="map-byte">135</td>
 <td class="map-g"><span id="24455"></span><a href="../asm/24455.html">5F87</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24455.html">Saved DE register during collision detection. Preserved across collision handler calls.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24455.html">Saved <span class="register">DE</span> register during collision detection. Preserved across collision handler calls.</a></div>
 </td>
 </tr>
 <tr>
@@ -583,7 +583,7 @@
 <td class="map-byte">137</td>
 <td class="map-g"><span id="24457"></span><a href="../asm/24457.html">5F89</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24457.html">Saved BC register during collision detection. Preserved across collision handler calls.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/24457.html">Saved <span class="register">BC</span> register during collision detection. Preserved across collision handler calls.</a></div>
 </td>
 </tr>
 <tr>
@@ -1063,7 +1063,7 @@
 <td class="map-byte">142</td>
 <td class="map-c"><span id="26510"></span><a href="../asm/26510.html">678E</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26510.html">Clear CONTROLS_BIT_FIRE_SOUND flag</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/26510.html">Clear SOUND_BIT_FIRE flag</a></div>
 </td>
 </tr>
 <tr>
@@ -1287,7 +1287,7 @@
 <td class="map-byte">176</td>
 <td class="map-g"><span id="27568"></span><a href="../asm/27568.html">6BB0</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27568.html">Control state bitmask. Bit 0=FIRE, 1=SPEED_DECREASED, 2=SPEED_ALTERED, 3=LOW_FUEL, 4=BONUS_LIFE, 5=EXPLODING.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27568.html">Sound event and speed flag bitmask. Bit 0=FIRE_SOUND, 1=SPEED_NOT_FAST, 2=SPEED_CHANGED, 3=LOW_FUEL, 4=BONUS_LIFE, 5=EXPLODING.</a></div>
 </td>
 </tr>
 <tr>
@@ -1327,7 +1327,7 @@
 <td class="map-byte">237</td>
 <td class="map-c"><span id="27629"></span><a href="../asm/27629.html">6BED</a></td>
 <td class="map-c-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27629.html">Process control state flags and trigger sound effects</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/27629.html">Dispatch sound effects from flag state</a></div>
 </td>
 </tr>
 <tr>
@@ -1895,7 +1895,7 @@
 <td class="map-byte">133</td>
 <td class="map-g"><span id="29573"></span><a href="../asm/29573.html">7385</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29573.html">Tank shell position (BC format: C=X, B=Y)</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/29573.html">Tank shell position (<span class="register">BC</span> format: C=X, B=Y)</a></div>
 </td>
 </tr>
 <tr>
@@ -2903,7 +2903,7 @@
 <td class="map-byte">131</td>
 <td class="map-g"><span id="37507"></span><a href="../asm/37507.html">9283</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37507.html">Pointer to state_controls at <a href="../asm/27568.html">state_controls</a>. Allows indirect access to control state bitmask.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37507.html">Pointer to sound_flags at <a href="../asm/27568.html">sound_flags</a>. Allows indirect access to the sound flag bitmask.</a></div>
 </td>
 </tr>
 <tr>
@@ -2911,7 +2911,7 @@
 <td class="map-byte">133</td>
 <td class="map-g"><span id="37509"></span><a href="../asm/37509.html">9285</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37509.html">Saved BC register during attribute setting. Preserved across attribute routine calls.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37509.html">Saved <span class="register">BC</span> register during attribute setting. Preserved across attribute routine calls.</a></div>
 </td>
 </tr>
 <tr>
@@ -2919,7 +2919,7 @@
 <td class="map-byte">135</td>
 <td class="map-g"><span id="37511"></span><a href="../asm/37511.html">9287</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37511.html">Saved DE register during attribute setting. Preserved across attribute routine calls.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37511.html">Saved <span class="register">DE</span> register during attribute setting. Preserved across attribute routine calls.</a></div>
 </td>
 </tr>
 <tr>
@@ -2927,7 +2927,7 @@
 <td class="map-byte">137</td>
 <td class="map-g"><span id="37513"></span><a href="../asm/37513.html">9289</a></td>
 <td class="map-g-desc">
-<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37513.html">Saved HL register during attribute setting. Preserved across attribute routine calls.</a></div>
+<div class="map-entry-title-10"><a class="map-entry-title" href="../asm/37513.html">Saved <span class="register">HL</span> register during attribute setting. Preserved across attribute routine calls.</a></div>
 </td>
 </tr>
 <tr>

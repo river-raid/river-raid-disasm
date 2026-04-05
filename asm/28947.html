@@ -61,7 +61,7 @@ Moves a left-facing ship/helicopter 2 pixels left, checking for terrain collisio
 <td class="asm-label">ship_or_helicopter_left_advance</td>
 <td class="address-2"><span id="28947"></span>7113</td>
 <td class="instruction">PUSH BC</td>
-<td class="comment-1" rowspan="4">Save BC, calculate terrain check position: C -= 16 pixels.</td>
+<td class="comment-1" rowspan="4">Save <span class="register">BC</span>, calculate terrain check position: C -= 16 pixels.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -93,7 +93,7 @@ Moves a left-facing ship/helicopter 2 pixels left, checking for terrain collisio
 <td class="asm-label"></td>
 <td class="address-1"><span id="28956"></span>711C</td>
 <td class="instruction">POP BC</td>
-<td class="comment-1" rowspan="3">Restore BC. If terrain != 0, reverse direction.</td>
+<td class="comment-1" rowspan="3">Restore <span class="register">BC</span>. If terrain != 0, reverse direction.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

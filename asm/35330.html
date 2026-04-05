@@ -50,7 +50,7 @@ Produces the "pew" sound when the player fires a missile by toggling the speaker
 <td class="asm-label">do_fire_pulse_loop</td>
 <td class="address-2"><span id="35332"></span>8A04</td>
 <td class="instruction">LD A,$10</td>
-<td class="comment-1" rowspan="5">Speaker ON, delay 32 iterations (~150us half-period, ~3.3kHz).</td>
+<td class="comment-1" rowspan="5">Speaker ON, 32-iteration delay loop (~150 µs ON phase).</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -76,7 +76,7 @@ Produces the "pew" sound when the player fires a missile by toggling the speaker
 <td class="asm-label"></td>
 <td class="address-1"><span id="35341"></span>8A0D</td>
 <td class="instruction">LD A,$00</td>
-<td class="comment-1" rowspan="8">Speaker OFF, same delay. $FD prefix byte adds 4 T-states before DEC C (IY prefix on non-HL instruction = extra delay cycle).</td>
+<td class="comment-1" rowspan="8">Speaker OFF. No delay loop: two LD D,$20 are timing filler (7T each); $FD prefix before DEC C adds 4T. OFF phase = 50T (~14 µs), giving a 91% duty cycle waveform.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

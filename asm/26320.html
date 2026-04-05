@@ -45,10 +45,10 @@ Used by the routines at <a href="23974.html">play</a>, <a href="24465.html">main
 <span id="26320"></span>
 <div class="comments">
 <div class="paragraph">
-Called each frame to advance the vertical scroll position. Adds current speed (<a href="24420.html">state_speed</a>) to scroll offset (<a href="24432.html">state_scroll_offset</a>), updates the bridge's Y position, then resets speed to SPEED_NORMAL and updates control flags.
+Called each frame to advance the vertical scroll position. Adds current speed (<a href="24420.html">state_speed</a>) to scroll offset (<a href="24432.html">state_scroll_offset</a>), updates the bridge's Y position, then resets speed to SPEED_NORMAL and updates sound flags.
 </div>
 <div class="paragraph">
-The control bits modified are: clears CONTROLS_BIT_SPEED_CHANGED, sets CONTROLS_BIT_SPEED_NOT_FAST. This triggers <a href="27741.html">beep_engine_normal</a> to play the normal speed engine sound.
+The control bits modified are: clears SOUND_BIT_SPEED_CHANGED, sets SOUND_BIT_SPEED_NOT_FAST. This triggers <a href="27741.html">beep_engine_normal</a> to play the normal speed engine sound.
 </div>
 </div>
 </td>
@@ -106,7 +106,7 @@ The control bits modified are: clears CONTROLS_BIT_SPEED_CHANGED, sets CONTROLS_
 <td class="asm-label"></td>
 <td class="address-1"><span id="26342"></span>66E6</td>
 <td class="instruction">LD HL,$6BB0</td>
-<td class="comment-1" rowspan="3">Clear CONTROLS_BIT_SPEED_CHANGED, set CONTROLS_BIT_SPEED_NOT_FAST in <a href="27568.html">state_controls</a>.</td>
+<td class="comment-1" rowspan="3">Clear SOUND_BIT_SPEED_CHANGED, set SOUND_BIT_SPEED_NOT_FAST in <a href="27568.html">sound_flags</a>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

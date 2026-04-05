@@ -35,11 +35,11 @@ Next: <a href="27862.html">6CD6</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Generates the engine sound for fast speed. Called when only CONTROLS_BIT_SPEED_CHANGED is set (player holding up). HL points to the controls byte on entry.
+Generates the engine sound for fast speed. Called when only SOUND_BIT_SPEED_CHANGED is set (player holding up). <span class="register">HL</span> points to the sound flags byte on entry.
 </div>
 <div class="paragraph">
 <ul class="">
-<li>Period = (controls_byte AND $07), used for speaker ON delay</li>
+<li>Period = (sound_flags AND $07), used for speaker ON delay</li>
 <li>Fixed OFF delay of 4 iterations (shorter than ON = asymmetric wave)</li>
 <li>Asymmetric wave gives a higher-pitched timbre than normal speed</li>
 </ul>
@@ -51,7 +51,7 @@ Generates the engine sound for fast speed. Called when only CONTROLS_BIT_SPEED_C
 </tr>
 <tr>
 <td class="register">HL</td>
-<td class="register-desc">Pointer to <a href="27568.html">state_controls</a> (controls state byte)</td>
+<td class="register-desc">Pointer to <a href="27568.html">sound_flags</a> (sound flags byte)</td>
 </tr>
 </table>
 </td>
@@ -60,7 +60,7 @@ Generates the engine sound for fast speed. Called when only CONTROLS_BIT_SPEED_C
 <td class="asm-label">beep_engine_fast</td>
 <td class="address-2"><span id="27832"></span>6CB8</td>
 <td class="instruction">LD A,(HL)</td>
-<td class="comment-1" rowspan="3">Extract period from low 3 bits of controls byte.</td>
+<td class="comment-1" rowspan="3">Extract period from low 3 bits of sound flags byte.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

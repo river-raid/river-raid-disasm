@@ -44,7 +44,7 @@ Same $03DF wrap handling as <a href="37743.html">set_attr_wrap_old</a> but for n
 <td class="asm-label">set_attr_wrap_new</td>
 <td class="address-2"><span id="37768"></span>9388</td>
 <td class="instruction">LD BC,$03DF</td>
-<td class="comment-1" rowspan="4">Add $03DF to HL to correct wrapped address. Restore and re-save BC.</td>
+<td class="comment-1" rowspan="4">Add $03DF to <span class="register">HL</span> to correct wrapped address. Restore and re-save <span class="register">BC</span>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -65,7 +65,7 @@ Same $03DF wrap handling as <a href="37743.html">set_attr_wrap_old</a> but for n
 <td class="asm-label">set_attr_wrap_new_loop</td>
 <td class="address-2"><span id="37774"></span>938E</td>
 <td class="instruction">LD (HL),A</td>
-<td class="comment-1" rowspan="4">Inner loop: write attribute A to HL, increment HL, decrement C, repeat for row width.</td>
+<td class="comment-1" rowspan="4">Inner loop: write attribute A to <span class="register">HL</span>, increment <span class="register">HL</span>, decrement C, repeat for row width.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -86,7 +86,7 @@ Same $03DF wrap handling as <a href="37743.html">set_attr_wrap_old</a> but for n
 <td class="asm-label"></td>
 <td class="address-1"><span id="37779"></span>9393</td>
 <td class="instruction">POP BC</td>
-<td class="comment-1" rowspan="9">After row: restore BC, add stride DE, decrement B, re-save BC. Subtract $03DF from HL to maintain wrap. Jump back to <a href="37517.html#37704">set_attr_new_outer_loop</a> for next row.</td>
+<td class="comment-1" rowspan="9">After row: restore <span class="register">BC</span>, add stride <span class="register">DE</span>, decrement B, re-save <span class="register">BC</span>. Subtract $03DF from <span class="register">HL</span> to maintain wrap. Jump back to <a href="37517.html#37704">set_attr_new_outer_loop</a> for next row.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

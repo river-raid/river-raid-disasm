@@ -45,7 +45,7 @@ Used by the routines at <a href="24926.html">handle_collision_mode_fighter</a>, 
 <span id="26516"></span>
 <div class="comments">
 <div class="paragraph">
-Erases the missile sprite from the screen, clears the missile coordinates, resets collision mode to COLLISION_MODE_NONE, and resets CONTROLS_BIT_SPEED_NOT_FAST. Called both after a collision and when the missile leaves the top of the screen.
+Erases the missile sprite from the screen, clears the missile coordinates, resets collision mode to COLLISION_MODE_NONE, and resets SOUND_BIT_SPEED_NOT_FAST. Called both after a collision and when the missile leaves the top of the screen.
 </div>
 <div class="paragraph">
 If in GAMEPLAY_MODE_REFUEL, jumps to <a href="25866.html">handle_player_death</a> instead.
@@ -221,7 +221,7 @@ The sprite frame selection uses the X coordinate's lower 3 bits to choose the co
 <td class="asm-label"></td>
 <td class="address-1"><span id="26590"></span>67DE</td>
 <td class="instruction">LD HL,$6BB0</td>
-<td class="comment-1" rowspan="2">Reset CONTROLS_BIT_SPEED_NOT_FAST in <a href="27568.html">state_controls</a>.</td>
+<td class="comment-1" rowspan="2">Reset SOUND_BIT_SPEED_NOT_FAST in <a href="27568.html">sound_flags</a>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

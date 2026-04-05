@@ -35,14 +35,14 @@ Next: <a href="27730.html">6C52</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Generates a rising pitch sound effect when player earns an extra life. Called once per interrupt while CONTROLS_BIT_BONUS_LIFE is set. The sound plays over 64 interrupts (~1.28 seconds).
+Generates a rising pitch sound effect when player earns an extra life. Called once per interrupt while SOUND_BIT_BONUS_LIFE is set. The sound plays over 64 interrupts (~1.28 seconds).
 </div>
 <div class="paragraph">
 <ul class="">
 <li>Counter increments from 0 to 64 over successive interrupts</li>
 <li>Pitch = ($40 - counter) &gt;&gt; 3, giving values 7→0 as counter increases</li>
 <li>Lower pitch values = higher frequency, so sound rises in pitch</li>
-<li>Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001</li>
+<li>Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat <span class="register">DE</span>=$0001</li>
 </ul>
 </div>
 </div>
@@ -121,7 +121,7 @@ Generates a rising pitch sound effect when player earns an extra life. Called on
 <td class="asm-label"></td>
 <td class="address-1"><span id="27722"></span>6C4A</td>
 <td class="instruction">LD DE,$0001</td>
-<td class="comment-1" rowspan="3">Call ROM BEEPER at $03B5 with DE=$0001 (one iteration). Disable interrupts after.</td>
+<td class="comment-1" rowspan="3">Call ROM BEEPER at $03B5 with <span class="register">DE</span>=$0001 (one iteration). Disable interrupts after.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

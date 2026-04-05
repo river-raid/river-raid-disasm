@@ -68,7 +68,7 @@ The right edge position depends on state_island_byte_3: 0=use byte_3 directly, 1
 <td class="asm-label"></td>
 <td class="address-1"><span id="27028"></span>6994</td>
 <td class="instruction">LD A,($5EFA)</td>
-<td class="comment-1" rowspan="5">Set up lookup: HL=data_terrain_profiles, DE=TERRAIN_PROFILE_SIZE.</td>
+<td class="comment-1" rowspan="5">Set up lookup: <span class="register">HL</span>=data_terrain_profiles, <span class="register">DE</span>=TERRAIN_PROFILE_SIZE.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -557,7 +557,7 @@ This entry point is used by the routines at <a href="27199.html">calc_mirrored_e
 <td class="asm-label">fill_island_right_loop</td>
 <td class="address-2"><span id="27194"></span>6A3A</td>
 <td class="instruction">LD (DE),A</td>
-<td class="comment-1" rowspan="3">Write A to (DE), increment DE, loop B times to fill rightward.</td>
+<td class="comment-1" rowspan="3">Write A to (<span class="register">DE</span>), increment <span class="register">DE</span>, loop B times to fill rightward.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

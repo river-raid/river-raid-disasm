@@ -35,12 +35,12 @@ Next: <a href="27821.html">6CAD</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Generates an explosion sound that plays over 24 interrupts ($18). Called once per interrupt while CONTROLS_BIT_EXPLODING is set. The ON delay is derived from (DE)&amp;7, but DE is not set up by the caller - it retains whatever value the interrupted main loop code had, making the pitch vary semi-randomly between interrupts and giving the explosion its noisy character.
+Generates an explosion sound that plays over 24 interrupts ($18). Called once per interrupt while SOUND_BIT_EXPLODING is set. The ON delay is derived from (<span class="register">DE</span>)&amp;7, but <span class="register">DE</span> is not set up by the caller - it retains whatever value the interrupted main loop code had, making the pitch vary semi-randomly between interrupts and giving the explosion its noisy character.
 </div>
 <div class="paragraph">
 <ul class="">
 <li>Counter decrements from $18 (24) to 0 over successive interrupts</li>
-<li>ON delay = ((DE) AND $07) &lt;&lt; 3 + $10, range $10-$48 (16-72)</li>
+<li>ON delay = ((<span class="register">DE</span>) AND $07) &lt;&lt; 3 + $10, range $10-$48 (16-72)</li>
 <li>OFF delay = counter value, decreasing each interrupt (sound speeds up)</li>
 <li>4 cycles of waveform per interrupt</li>
 <li>As counter decreases, OFF delay shortens, making sound more rapid/urgent</li>
@@ -53,7 +53,7 @@ Generates an explosion sound that plays over 24 interrupts ($18). Called once pe
 </tr>
 <tr>
 <td class="register">DE</td>
-<td class="register-desc">Not intentionally set - residual value from interrupted code, read as (DE)&amp;7 to derive ON delay</td>
+<td class="register-desc">Not intentionally set - residual value from interrupted code, read as (<span class="register">DE</span>)&amp;7 to derive ON delay</td>
 </tr>
 </table>
 </td>
@@ -90,7 +90,7 @@ Generates an explosion sound that plays over 24 interrupts ($18). Called once pe
 <td class="asm-label"></td>
 <td class="address-1"><span id="27783"></span>6C87</td>
 <td class="instruction">LD A,(DE)</td>
-<td class="comment-1" rowspan="6">Calculate ON delay: ((DE) AND $07) &lt;&lt; 3 + $10. Gives value $10-$48 based on low 3 bits of (DE).</td>
+<td class="comment-1" rowspan="6">Calculate ON delay: ((<span class="register">DE</span>) AND $07) &lt;&lt; 3 + $10. Gives value $10-$48 based on low 3 bits of (<span class="register">DE</span>).</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

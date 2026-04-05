@@ -90,7 +90,7 @@ When a digit overflows past '9', this routine sets it to '0' and propagates the 
 <td class="asm-label"></td>
 <td class="address-1"><span id="37274"></span>919A</td>
 <td class="instruction">PUSH HL</td>
-<td class="comment-1" rowspan="3">Save HL/DE, call <a href="37154.html">update_score</a> to increment next higher digit.</td>
+<td class="comment-1" rowspan="3">Save <span class="register">HL</span>/<span class="register">DE</span>, call <a href="37154.html">update_score</a> to increment next higher digit.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -117,7 +117,7 @@ When a digit overflows past '9', this routine sets it to '0' and propagates the 
 <td class="asm-label"></td>
 <td class="address-1"><span id="37284"></span>91A4</td>
 <td class="instruction">POP DE</td>
-<td class="comment-1" rowspan="3">Restore HL/DE, jump to <a href="37195.html">print_player_1_score_digit</a> to print the '0' digit.</td>
+<td class="comment-1" rowspan="3">Restore <span class="register">HL</span>/<span class="register">DE</span>, jump to <a href="37195.html">print_player_1_score_digit</a> to print the '0' digit.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

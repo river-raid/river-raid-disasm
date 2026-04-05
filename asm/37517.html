@@ -38,7 +38,7 @@ Next: <a href="37725.html">935D</a>
 Fills rectangular regions of attribute cells for both old (erase) and new (draw) sprite positions.
 </div>
 <div class="paragraph">
-Algorithm: For each position (old then new), calculate the top-left attribute address, then fill a rectangle of B rows × C columns with attribute value A. After filling each row, advance HL by stride DE to reach the next row's starting column.
+Algorithm: For each position (old then new), calculate the top-left attribute address, then fill a rectangle of B rows × C columns with attribute value A. After filling each row, advance <span class="register">HL</span> by stride <span class="register">DE</span> to reach the next row's starting column.
 </div>
 </div>
 <table class="input">
@@ -100,7 +100,7 @@ Algorithm: For each position (old then new), calculate the top-left attribute ad
 <td class="asm-label"></td>
 <td class="address-1"><span id="37528"></span>9298</td>
 <td class="instruction">LD ($9287),DE</td>
-<td class="comment-1" rowspan="3">Save DE, BC, HL to memory at <a href="37511.html">attr_saved_de</a>, <a href="37509.html">attr_saved_bc</a>, <a href="37513.html">attr_saved_hl</a> for later use.</td>
+<td class="comment-1" rowspan="3">Save <span class="register">DE</span>, <span class="register">BC</span>, <span class="register">HL</span> to memory at <a href="37511.html">attr_saved_de</a>, <a href="37509.html">attr_saved_bc</a>, <a href="37513.html">attr_saved_hl</a> for later use.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -116,7 +116,7 @@ Algorithm: For each position (old then new), calculate the top-left attribute ad
 <td class="asm-label"></td>
 <td class="address-1"><span id="37539"></span>92A3</td>
 <td class="instruction">LD BC,($8B0A)</td>
-<td class="comment-1" rowspan="15">Calculate attribute address for old position: HL = <a href="22528.html">screen_attributes</a> + (Y AND $F8) * 4 + (X &gt;&gt; 3). Y coordinate is in B of stored BC at <a href="35594.html">previous_object_coordinates</a>, X in C.</td>
+<td class="comment-1" rowspan="15">Calculate attribute address for old position: <span class="register">HL</span> = <a href="22528.html">screen_attributes</a> + (Y AND $F8) * 4 + (X &gt;&gt; 3). Y coordinate is in B of stored <span class="register">BC</span> at <a href="35594.html">previous_object_coordinates</a>, X in C.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -243,7 +243,7 @@ Algorithm: For each position (old then new), calculate the top-left attribute ad
 <td class="asm-label"></td>
 <td class="address-1"><span id="37583"></span>92CF</td>
 <td class="instruction">LD B,A</td>
-<td class="comment-1" rowspan="10">Calculate row stride DE = $20 - width. After filling C columns, add DE to reach column 0 of next row. Check if Y is at screen top (row 0).</td>
+<td class="comment-1" rowspan="10">Calculate row stride <span class="register">DE</span> = $20 - width. After filling C columns, add <span class="register">DE</span> to reach column 0 of next row. Check if Y is at screen top (row 0).</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -331,13 +331,13 @@ This entry point is used by the routine at <a href="37743.html">set_attr_wrap_ol
 <td class="asm-label">set_attr_old_outer_loop</td>
 <td class="address-2"><span id="37610"></span>92EA</td>
 <td class="instruction">PUSH BC</td>
-<td class="comment-1" rowspan="1">Outer loop start: push BC to preserve row count (B) and column count (C) for this row.</td>
+<td class="comment-1" rowspan="1">Outer loop start: push <span class="register">BC</span> to preserve row count (B) and column count (C) for this row.</td>
 </tr>
 <tr>
 <td class="asm-label">set_attr_old_inner_loop</td>
 <td class="address-2"><span id="37611"></span>92EB</td>
 <td class="instruction">LD (HL),A</td>
-<td class="comment-1" rowspan="4">Inner loop: write attribute byte A to address HL, increment HL, decrement column counter C, repeat until row complete.</td>
+<td class="comment-1" rowspan="4">Inner loop: write attribute byte A to address <span class="register">HL</span>, increment <span class="register">HL</span>, decrement column counter C, repeat until row complete.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -358,7 +358,7 @@ This entry point is used by the routine at <a href="37743.html">set_attr_wrap_ol
 <td class="asm-label"></td>
 <td class="address-1"><span id="37616"></span>92F0</td>
 <td class="instruction">PUSH HL</td>
-<td class="comment-1" rowspan="6">Boundary check: compare HL against <a href="23072.html">screen_attributes_row_16</a> (row 16 of attributes). If HL &gt;= <a href="23072.html">screen_attributes_row_16</a>, sprite has scrolled off visible area, exit early via <a href="37735.html">attr_old_exit_early</a>.</td>
+<td class="comment-1" rowspan="6">Boundary check: compare <span class="register">HL</span> against <a href="23072.html">screen_attributes_row_16</a> (row 16 of attributes). If <span class="register">HL</span> &gt;= <a href="23072.html">screen_attributes_row_16</a>, sprite has scrolled off visible area, exit early via <a href="37735.html">attr_old_exit_early</a>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -389,7 +389,7 @@ This entry point is used by the routine at <a href="37743.html">set_attr_wrap_ol
 <td class="asm-label"></td>
 <td class="address-1"><span id="37627"></span>92FB</td>
 <td class="instruction">POP BC</td>
-<td class="comment-1" rowspan="3">Row complete: restore BC, add stride DE to HL (moves to same column on next row), decrement row counter B, repeat outer loop.</td>
+<td class="comment-1" rowspan="3">Row complete: restore <span class="register">BC</span>, add stride <span class="register">DE</span> to <span class="register">HL</span> (moves to same column on next row), decrement row counter B, repeat outer loop.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -415,7 +415,7 @@ This entry point is used by the routine at <a href="37735.html">attr_old_exit_ea
 <td class="asm-label">set_attr_new_position_entry</td>
 <td class="address-2"><span id="37631"></span>92FF</td>
 <td class="instruction">LD BC,($8B0C)</td>
-<td class="comment-1" rowspan="14">Calculate attribute address for new position: HL = <a href="22528.html">screen_attributes</a> + (Y AND $F8) * 4 + (X &gt;&gt; 3) using coordinates from <a href="35596.html">object_coordinates</a>.</td>
+<td class="comment-1" rowspan="14">Calculate attribute address for new position: <span class="register">HL</span> = <a href="22528.html">screen_attributes</a> + (Y AND $F8) * 4 + (X &gt;&gt; 3) using coordinates from <a href="35596.html">object_coordinates</a>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -532,7 +532,7 @@ This entry point is used by the routine at <a href="37735.html">attr_old_exit_ea
 <td class="asm-label"></td>
 <td class="address-1"><span id="37673"></span>9329</td>
 <td class="instruction">INC A</td>
-<td class="comment-1" rowspan="11">Calculate row stride DE = $20 - width. Check if Y is at screen top.</td>
+<td class="comment-1" rowspan="11">Calculate row stride <span class="register">DE</span> = $20 - width. Check if Y is at screen top.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -630,13 +630,13 @@ This entry point is used by the routine at <a href="37768.html">set_attr_wrap_ne
 <td class="asm-label">set_attr_new_outer_loop</td>
 <td class="address-2"><span id="37704"></span>9348</td>
 <td class="instruction">PUSH BC</td>
-<td class="comment-1" rowspan="1">Outer loop start: push BC to preserve row count (B) and column count (C) for this row.</td>
+<td class="comment-1" rowspan="1">Outer loop start: push <span class="register">BC</span> to preserve row count (B) and column count (C) for this row.</td>
 </tr>
 <tr>
 <td class="asm-label">set_attr_new_inner_loop</td>
 <td class="address-2"><span id="37705"></span>9349</td>
 <td class="instruction">LD (HL),A</td>
-<td class="comment-1" rowspan="4">Inner loop: write attribute byte A to address HL, increment HL, decrement column counter C, repeat until row complete.</td>
+<td class="comment-1" rowspan="4">Inner loop: write attribute byte A to address <span class="register">HL</span>, increment <span class="register">HL</span>, decrement column counter C, repeat until row complete.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -657,7 +657,7 @@ This entry point is used by the routine at <a href="37768.html">set_attr_wrap_ne
 <td class="asm-label"></td>
 <td class="address-1"><span id="37710"></span>934E</td>
 <td class="instruction">PUSH HL</td>
-<td class="comment-1" rowspan="6">Boundary check: compare HL against <a href="23072.html">screen_attributes_row_16</a>. If HL &gt;= <a href="23072.html">screen_attributes_row_16</a>, exit early via <a href="37739.html">attr_new_exit_early</a>.</td>
+<td class="comment-1" rowspan="6">Boundary check: compare <span class="register">HL</span> against <a href="23072.html">screen_attributes_row_16</a>. If <span class="register">HL</span> &gt;= <a href="23072.html">screen_attributes_row_16</a>, exit early via <a href="37739.html">attr_new_exit_early</a>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -688,7 +688,7 @@ This entry point is used by the routine at <a href="37768.html">set_attr_wrap_ne
 <td class="asm-label"></td>
 <td class="address-1"><span id="37721"></span>9359</td>
 <td class="instruction">POP BC</td>
-<td class="comment-1" rowspan="3">Row complete: restore BC, add stride DE to HL, decrement row counter B, repeat outer loop.</td>
+<td class="comment-1" rowspan="3">Row complete: restore <span class="register">BC</span>, add stride <span class="register">DE</span> to <span class="register">HL</span>, decrement row counter B, repeat outer loop.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

@@ -29,13 +29,13 @@ Next: <a href="27684.html">6C24</a>
 </td>
 </tr>
 </table>
-<div class="description">6BED: Process control state flags and trigger sound effects</div>
+<div class="description">6BED: Dispatch sound effects from flag state</div>
 <table class="disassembly">
 <tr>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Sound processing dispatcher called from interrupt handler. Reads <a href="27568.html">state_controls</a> control flags and calls appropriate sound routines. Multiple sounds can trigger simultaneously (e.g., fire + low fuel).
+Sound processing dispatcher called from interrupt handler. Reads <a href="27568.html">sound_flags</a> sound flags and dispatches to sound routines. FIRE, BONUS_LIFE, and EXPLODING use &lt;code&gt;CALL NZ&lt;/code&gt; — the routine returns and the dispatcher continues to the next check. LOW_FUEL uses &lt;code&gt;JP NZ&lt;/code&gt; — execution jumps away and the engine check is never reached. Engine plays only when LOW_FUEL is clear.
 </div>
 <div class="paragraph">
 <table class="default">
@@ -43,41 +43,49 @@ Sound processing dispatcher called from interrupt handler. Reads <a href="27568.
 <th colspan="1" rowspan="1">Bit</th>
 <th colspan="1" rowspan="1">Flag</th>
 <th colspan="1" rowspan="1">Sound Handler</th>
+<th colspan="1" rowspan="1">Dispatch</th>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">0</td>
 <td class="" colspan="1" rowspan="1">FIRE_SOUND</td>
 <td class="" colspan="1" rowspan="1"><a href="35330.html">do_fire</a> (fire)</td>
-</tr>
-<tr>
-<td class="" colspan="1" rowspan="1">1</td>
-<td class="" colspan="1" rowspan="1">SPEED_NOT_FAST</td>
-<td class="" colspan="1" rowspan="1"><a href="27741.html">beep_engine_normal</a> (normal speed)</td>
-</tr>
-<tr>
-<td class="" colspan="1" rowspan="1">2</td>
-<td class="" colspan="1" rowspan="1">SPEED_CHANGED</td>
-<td class="" colspan="1" rowspan="1"><a href="27832.html">beep_engine_fast</a> (fast speed)</td>
-</tr>
-<tr>
-<td class="" colspan="1" rowspan="1">1+2</td>
-<td class="" colspan="1" rowspan="1">Both speed bits</td>
-<td class="" colspan="1" rowspan="1"><a href="27862.html">beep_engine_slow</a> (slow speed)</td>
-</tr>
-<tr>
-<td class="" colspan="1" rowspan="1">3</td>
-<td class="" colspan="1" rowspan="1">LOW_FUEL</td>
-<td class="" colspan="1" rowspan="1"><a href="27892.html">do_low_fuel</a> (warning)</td>
+<td class="" colspan="1" rowspan="1">CALL NZ</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">4</td>
 <td class="" colspan="1" rowspan="1">BONUS_LIFE</td>
 <td class="" colspan="1" rowspan="1"><a href="27697.html">do_bonus_life</a> (jingle)</td>
+<td class="" colspan="1" rowspan="1">CALL NZ</td>
 </tr>
 <tr>
 <td class="" colspan="1" rowspan="1">5</td>
 <td class="" colspan="1" rowspan="1">EXPLODING</td>
 <td class="" colspan="1" rowspan="1"><a href="27771.html">beep_explosion</a> (explosion)</td>
+<td class="" colspan="1" rowspan="1">CALL NZ</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">3</td>
+<td class="" colspan="1" rowspan="1">LOW_FUEL</td>
+<td class="" colspan="1" rowspan="1"><a href="27892.html">do_low_fuel</a> (warning)</td>
+<td class="" colspan="1" rowspan="1">JP NZ (tail-call)</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">1</td>
+<td class="" colspan="1" rowspan="1">SPEED_NOT_FAST</td>
+<td class="" colspan="1" rowspan="1"><a href="27741.html">beep_engine_normal</a> (normal speed)</td>
+<td class="" colspan="1" rowspan="1">JP Z (tail-call)</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">2</td>
+<td class="" colspan="1" rowspan="1">SPEED_CHANGED</td>
+<td class="" colspan="1" rowspan="1"><a href="27832.html">beep_engine_fast</a> (fast speed)</td>
+<td class="" colspan="1" rowspan="1">JP Z (tail-call)</td>
+</tr>
+<tr>
+<td class="" colspan="1" rowspan="1">1+2</td>
+<td class="" colspan="1" rowspan="1">Both speed bits</td>
+<td class="" colspan="1" rowspan="1"><a href="27862.html">beep_engine_slow</a> (slow speed)</td>
+<td class="" colspan="1" rowspan="1">JP Z (tail-call)</td>
 </tr>
 </table>
 </div>
@@ -91,11 +99,14 @@ Sound processing dispatcher called from interrupt handler. Reads <a href="27568.
 <div class="paragraph">
 Flags are set by game logic (input handlers, collision, fuel system) and cleared by sound routines when complete.
 </div>
+<div class="paragraph">
+Because EXPLODING uses &lt;code&gt;CALL NZ&lt;/code&gt; and the engine check follows, explosion mixes with the engine in the same interrupt frame — this happens every time an enemy or the player is destroyed. Fire and explosion cannot mix: <a href="28316.html">spawn_explosion_fragment</a> clears SOUND_BIT_FIRE when setting SOUND_BIT_EXPLODING. LOW_FUEL and engine are mutually exclusive: the &lt;code&gt;JP NZ&lt;/code&gt; to <a href="27892.html">do_low_fuel</a> bypasses all engine checks.
+</div>
 </div>
 </td>
 </tr>
 <tr>
-<td class="asm-label">handle_controls</td>
+<td class="asm-label">dispatch_sounds</td>
 <td class="address-2"><span id="27629"></span>6BED</td>
 <td class="instruction">LD A,($5C08)</td>
 <td class="comment-1" rowspan="3">Skip if LAST_K is 'h'.</td>

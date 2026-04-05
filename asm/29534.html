@@ -60,7 +60,7 @@ Alternative shell initialization when bit 4 is set. Checks if tank can fire base
 <td class="asm-label"></td>
 <td class="address-1"><span id="29542"></span>7366</td>
 <td class="instruction">PUSH BC</td>
-<td class="comment-1" rowspan="7">Push BC, check X position sign bit, invert if positive via <a href="29568.html">invert_coordinate_sign</a>.</td>
+<td class="comment-1" rowspan="7">Push <span class="register">BC</span>, check X position sign bit, invert if positive via <a href="29568.html">invert_coordinate_sign</a>.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -122,7 +122,7 @@ Alternative shell initialization when bit 4 is set. Checks if tank can fire base
 <td class="asm-label"></td>
 <td class="address-1"><span id="29563"></span>737B</td>
 <td class="instruction">ADD A,B</td>
-<td class="comment-1" rowspan="3">Combine with orientation, pop BC, continue to fire shell.</td>
+<td class="comment-1" rowspan="3">Combine with orientation, pop <span class="register">BC</span>, continue to fire shell.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

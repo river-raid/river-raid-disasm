@@ -54,7 +54,7 @@ Left edge X = profile_byte + row_offset - 16. The profile_byte comes from <a hre
 <td class="asm-label">render_terrain_fragment</td>
 <td class="address-2"><span id="27299"></span>6AA3</td>
 <td class="instruction">LD A,($5F77)</td>
-<td class="comment-1" rowspan="5">Set up profile lookup: HL = <a href="32867.html">data_terrain_profiles</a>, DE = TERRAIN_PROFILE_SIZE.</td>
+<td class="comment-1" rowspan="5">Set up profile lookup: <span class="register">HL</span> = <a href="32867.html">data_terrain_profiles</a>, <span class="register">DE</span> = TERRAIN_PROFILE_SIZE.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -123,7 +123,7 @@ Left edge X = profile_byte + row_offset - 16. The profile_byte comes from <a hre
 <td class="asm-label"></td>
 <td class="address-1"><span id="27327"></span>6ABF</td>
 <td class="instruction">AND $0F</td>
-<td class="comment-1" rowspan="4">Index into profile: HL = profile_base + (line mod TERRAIN_PROFILE_SIZE).</td>
+<td class="comment-1" rowspan="4">Index into profile: <span class="register">HL</span> = profile_base + (line mod TERRAIN_PROFILE_SIZE).</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

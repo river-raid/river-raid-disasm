@@ -83,7 +83,7 @@ Shifts all 8 scanlines of character row 23 (the bottom character row) left by 1 
 <td class="asm-label"></td>
 <td class="address-1"><span id="35368"></span>8A28</td>
 <td class="instruction">LD DE,$00E0</td>
-<td class="comment-1" rowspan="1">Load step offset DE=$E0 (= $100 − $20: one scanline period minus one row width).</td>
+<td class="comment-1" rowspan="1">Load step offset <span class="register">DE</span>=$E0 (= $100 − $20: one scanline period minus one row width).</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -95,7 +95,7 @@ Shifts all 8 scanlines of character row 23 (the bottom character row) left by 1 
 <td class="asm-label"></td>
 <td class="address-1"><span id="35372"></span>8A2C</td>
 <td class="instruction">SBC HL,DE</td>
-<td class="comment-1" rowspan="1">Step HL back to the last byte of the previous scanline.</td>
+<td class="comment-1" rowspan="1">Step <span class="register">HL</span> back to the last byte of the previous scanline.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

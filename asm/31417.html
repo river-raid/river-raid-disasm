@@ -35,7 +35,7 @@ Next: <a href="31437.html">7ACD</a>
 <td class="routine-comment" colspan="5">
 <div class="details">
 <div class="paragraph">
-Displays the control selection dialog, waits for user input (or times out to overview mode), then shows the game mode dialog. Stores the selected control type in <a href="30720.html">tmp_control_type</a>, overview flag in <a href="30721.html">state_overview_mode</a>, and game mode in <a href="37434.html">state_game_mode</a>. Uses a stack trick: sets SP to <a href="30736.html">setup_sp</a> so RET jumps to <a href="23824.html">start_gameplay_or_overview</a>.
+Displays the control selection dialog, waits for user input (or times out to overview mode), then shows the game mode dialog. Stores the selected control type in <a href="30720.html">tmp_control_type</a>, overview flag in <a href="30721.html">state_overview_mode</a>, and game mode in <a href="37434.html">state_game_mode</a>. Uses a stack trick: sets <span class="register">SP</span> to <a href="30736.html">setup_sp</a> so RET jumps to <a href="23824.html">start_gameplay_or_overview</a>.
 </div>
 </div>
 </td>

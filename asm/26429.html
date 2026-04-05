@@ -48,7 +48,7 @@ Missile speed: 6 pixels upward per frame. Called twice per frame for two-pass re
 On the first pass (<a href="26428.html">missile_pass_selector</a> = $01), adjusts missile position for screen scrolling. On both passes, moves missile up by 6 pixels.
 </div>
 <div class="paragraph">
-If missile reaches top of screen (Y AND $F8 == 0), jumps to <a href="26516.html">deactivate_missile</a> to deactivate missile. Clears CONTROLS_BIT_FIRE_SOUND when missile is in lower screen area ($70 - Y &gt;= 0).
+If missile reaches top of screen (Y AND $F8 == 0), jumps to <a href="26516.html">deactivate_missile</a> to deactivate missile. Clears SOUND_BIT_FIRE when missile is in lower screen area ($70 - Y &gt;= 0).
 </div>
 <div class="paragraph">
 Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions.

@@ -29,7 +29,7 @@ Next: <a href="27569.html">6BB1</a>
 </td>
 </tr>
 </table>
-<div class="description">6BB0: Control state bitmask. Bit 0=FIRE, 1=SPEED_DECREASED, 2=SPEED_ALTERED, 3=LOW_FUEL, 4=BONUS_LIFE, 5=EXPLODING.</div>
+<div class="description">6BB0: Sound event and speed flag bitmask. Bit 0=FIRE_SOUND, 1=SPEED_NOT_FAST, 2=SPEED_CHANGED, 3=LOW_FUEL, 4=BONUS_LIFE, 5=EXPLODING.</div>
 <table class="disassembly">
 <tr>
 <td class="routine-comment" colspan="5">
@@ -38,7 +38,7 @@ Next: <a href="27569.html">6BB1</a>
 </td>
 </tr>
 <tr>
-<td class="asm-label">state_controls</td>
+<td class="asm-label">sound_flags</td>
 <td class="address-1"><span id="27568"></span>6BB0</td>
 <td class="instruction">DEFB $00</td>
 <td class="comment-0" rowspan="1"></td>

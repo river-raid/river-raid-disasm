@@ -81,7 +81,7 @@ Renders a rock decoration at the specified position. Uses 3x2 tile sprites (24x1
 <td class="asm-label"></td>
 <td class="address-1"><span id="28607"></span>6FBF</td>
 <td class="instruction">LD HL,$84A1</td>
-<td class="comment-1" rowspan="4">Load sprite base address <a href="33953.html">sprite_rock</a> and frame size $30. Prepare loop: INC A, subtract BC once to offset the first ADD.</td>
+<td class="comment-1" rowspan="4">Load sprite base address <a href="33953.html">sprite_rock</a> and frame size $30. Prepare loop: INC A, subtract <span class="register">BC</span> once to offset the first ADD.</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -102,7 +102,7 @@ Renders a rock decoration at the specified position. Uses 3x2 tile sprites (24x1
 <td class="asm-label">locate_rock_sprite</td>
 <td class="address-2"><span id="28616"></span>6FC8</td>
 <td class="instruction">ADD HL,BC</td>
-<td class="comment-1" rowspan="3">Loop: HL += $30 for each frame index. Result: HL = <a href="33953.html">sprite_rock</a> + (frame * $30).</td>
+<td class="comment-1" rowspan="3">Loop: <span class="register">HL</span> += $30 for each frame index. Result: <span class="register">HL</span> = <a href="33953.html">sprite_rock</a> + (frame * $30).</td>
 </tr>
 <tr>
 <td class="asm-label"></td>
@@ -118,7 +118,7 @@ Renders a rock decoration at the specified position. Uses 3x2 tile sprites (24x1
 <td class="asm-label"></td>
 <td class="address-1"><span id="28620"></span>6FCC</td>
 <td class="instruction">LD B,$00</td>
-<td class="comment-1" rowspan="2">Set BC = X position (B=0, C=E from input).</td>
+<td class="comment-1" rowspan="2">Set <span class="register">BC</span> = X position (B=0, C=E from input).</td>
 </tr>
 <tr>
 <td class="asm-label"></td>

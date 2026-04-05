@@ -53,7 +53,7 @@ scroll routine taking multiple frame periods to complete.
 <div class="paragraph">
 Sound routines are called from the ~50 Hz interrupt handler at <a href="../asm/27611.html">int_handler</a>, one
 frame of audio output per interrupt. Multiple sounds can play simultaneously
-via a 6-bit bitmask at <a href="../asm/27568.html">state_controls</a> (fire, speed modes, low fuel, bonus life,
+via a 6-bit bitmask at <a href="../asm/27568.html">sound_flags</a> (fire, speed modes, low fuel, bonus life,
 explosion).
 </div>
 <div class="paragraph">

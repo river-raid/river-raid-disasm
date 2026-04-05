@@ -100,7 +100,7 @@ Calculates sprite pointer for enemy objects based on type and orientation. Uses 
 <td class="asm-label"></td>
 <td class="address-1"><span id="30153"></span>75C9</td>
 <td class="instruction">SBC HL,BC</td>
-<td class="comment-1" rowspan="5">Loop: HL += $60 for each type. Result: HL = base + (type * $60).</td>
+<td class="comment-1" rowspan="5">Loop: <span class="register">HL</span> += $60 for each type. Result: <span class="register">HL</span> = base + (type * $60).</td>
 </tr>
 <tr>
 <td class="asm-label">ld_enemy_sprites_loop</td>
