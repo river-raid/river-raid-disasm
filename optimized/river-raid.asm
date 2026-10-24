@@ -293,7 +293,6 @@ CHAN_OPEN EQU $1601
 OUT_NUM_1 EQU $1A1B
 PR_STRING EQU $203C
 LAST_K EQU $5C08
-ERR_NR EQU $5C3A
 UDG EQU $5C7B
 INT_VECTOR_TABLE_HI EQU $FC
 INT_VECTOR_ENTRY EQU $FE
@@ -3637,10 +3636,7 @@ int_handler:
   PUSH DE                                          ;
   PUSH BC                                          ;
   PUSH AF                                          ;
-  PUSH IX                                          ;
-  PUSH IY                                          ;
-  LD IY,ERR_NR                                     ; KEYBOARD and BEEPER need IY at the system variables, and an
-                                                   ; interrupted scroll_screen holds it in scroll_row_table.
+  PUSH IX                                          ; BEEPER clobbers IX, which an interrupted scroll_screen is using.
   LD HL,int_counter                                ; Increment interrupt counter.
   INC (HL)                                         ;
   LD A,$BF                                         ; Check H key for pause.
@@ -3701,8 +3697,7 @@ dispatch_sounds:
 ;
 ; Restores registers and returns. Uses RETN instead of RETI (both work identically).
 int_return:
-  POP IY                                           ; Restore registers.
-  POP IX                                           ;
+  POP IX                                           ; Restore registers.
   POP AF                                           ;
   POP BC                                           ;
   POP DE                                           ;
@@ -7711,23 +7706,28 @@ jp_collision_dispatcher:
 ; from render_plane_and_terrain.
 ;
 ; Copies screen line (n - speed) to line n for n = 143 down to 1, 32 bytes per line right to left, so the playfield
-; moves down by speed lines. Line addresses come from scroll_row_table: IY steps through destination lines and IX through
-; source lines speed entries further on, so no address arithmetic runs inside the loop.
+; moves down by speed lines. IX walks scroll_row_table one destination line at a time; the source line sits speed
+; entries further on, reached through displacements patched on entry.
+;
+; LDD counts BC down by one per byte, so BC = rows * 32 doubles as the row counter. The copy runs in two loops so
+; render_plane draws the plane mid-scroll, after line 128.
 scroll_screen:
-  LD A,$8F                                         ; Initialize line counter to $8F (143 lines to process).
-  LD (state_island_render_idx),A                   ;
-  LD IY,scroll_row_table                           ; IY walks destination rows, IX walks source rows speed entries ahead.
-  LD A,(state_speed)                               ;
+  LD A,(state_speed)                               ; Patch the source displacements to 2 * speed.
   ADD A,A                                          ;
-  LD E,A                                           ;
-  LD D,$00                                         ;
+  LD (scroll_src_lo_1+2),A                         ;
+  LD (scroll_src_lo_2+2),A                         ;
+  INC A                                            ;
+  LD (scroll_src_hi_1+2),A                         ;
+  LD (scroll_src_hi_2+2),A                         ;
   LD IX,scroll_row_table                           ;
-  ADD IX,DE                                        ;
-scroll_screen_line:
-  LD E,(IY+$00)                                    ; Copy 32 bytes from source row to destination row, right to left.
-  LD D,(IY+$01)                                    ;
-  LD L,(IX+$00)                                    ;
-  LD H,(IX+$01)                                    ;
+  LD BC,16*32                                      ; Lines 143 down to 128.
+scroll_screen_line_1:
+  LD E,(IX+$00)                                    ; Copy 32 bytes from source row to destination row, right to left.
+  LD D,(IX+$01)                                    ;
+scroll_src_lo_1:
+  LD L,(IX+$00)                                    ; Displacement patched to 2 * speed.
+scroll_src_hi_1:
+  LD H,(IX+$01)                                    ; Displacement patched to 2 * speed + 1.
   LDD                                              ;
   LDD                                              ;
   LDD                                              ;
@@ -7760,29 +7760,55 @@ scroll_screen_line:
   LDD                                              ;
   LDD                                              ;
   LDD                                              ;
-  INC IY                                           ; Advance both pointers to the next row up.
-  INC IY                                           ;
+  INC IX                                           ; Advance to the next row up.
   INC IX                                           ;
-  INC IX                                           ;
-  LD A,(state_island_render_idx)                   ; If counter reached 0, jump to clear_top_rows to clear top rows.
-  DEC A                                            ;
-  JR Z,scroll_screen_exit                          ;
-  CP $7F                                           ; At counter $7F, render plane sprite mid-scroll.
-  JR NZ,scroll_screen_next                         ;
-  PUSH IX                                          ;
-  PUSH IY                                          ;
-  LD IY,ERR_NR                                     ; A crash leaves render_plane through restart_current_player or
-                                                   ; game_over, which never return here, so IY must already be valid.
+  JP PE,scroll_screen_line_1                       ; Repeat until LDD has counted BC down to 0.
+  PUSH IX                                          ; Render plane sprite mid-scroll.
   CALL render_plane                                ;
-  POP IY                                           ;
   POP IX                                           ;
-scroll_screen_next:
-  LD A,(state_island_render_idx)                   ; Decrement and continue loop.
-  DEC A                                            ;
-  LD (state_island_render_idx),A                   ;
-  JP scroll_screen_line                            ;
-scroll_screen_exit:
-  LD IY,ERR_NR                                     ; Restore IY for the ROM routines.
+  LD BC,127*32                                     ; Lines 127 down to 1.
+scroll_screen_line_2:
+  LD E,(IX+$00)                                    ; Copy 32 bytes from source row to destination row, right to left.
+  LD D,(IX+$01)                                    ;
+scroll_src_lo_2:
+  LD L,(IX+$00)                                    ; Displacement patched to 2 * speed.
+scroll_src_hi_2:
+  LD H,(IX+$01)                                    ; Displacement patched to 2 * speed + 1.
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  INC IX                                           ; Advance to the next row up.
+  INC IX                                           ;
+  JP PE,scroll_screen_line_2                       ; Repeat until LDD has counted BC down to 0.
   JP clear_top_rows                                ;
 
 ; Scroll row address table
