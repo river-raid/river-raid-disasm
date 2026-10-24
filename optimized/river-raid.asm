@@ -293,6 +293,7 @@ CHAN_OPEN EQU $1601
 OUT_NUM_1 EQU $1A1B
 PR_STRING EQU $203C
 LAST_K EQU $5C08
+ERR_NR EQU $5C3A
 UDG EQU $5C7B
 INT_VECTOR_TABLE_HI EQU $FC
 INT_VECTOR_ENTRY EQU $FE
@@ -2988,74 +2989,77 @@ add_screen_bank_1000:
 ; Copies screen line (n - speed) to line n for n = 143 down to 1, 32 bytes per line right to left, so the playfield
 ; moves down by speed lines. Line addresses come from scroll_row_table: IY steps through destination lines and IX through
 ; source lines speed entries further on, so no address arithmetic runs inside the loop.
-;
-; IY is left pointing into scroll_row_table on return.
 scroll_screen:
-  LD A,$8F                                        ; Initialize line counter to $8F (143 lines to process).
-  LD (state_island_render_idx),A                  ;
-  LD IY,scroll_row_table                          ; IY walks destination rows, IX walks source rows speed entries ahead.
-  LD A,(state_speed)                              ;
-  ADD A,A                                         ;
-  LD E,A                                          ;
-  LD D,$00                                        ;
-  LD IX,scroll_row_table                          ;
-  ADD IX,DE                                       ;
+  LD A,$8F                                         ; Initialize line counter to $8F (143 lines to process).
+  LD (state_island_render_idx),A                   ;
+  LD IY,scroll_row_table                           ; IY walks destination rows, IX walks source rows speed entries ahead.
+  LD A,(state_speed)                               ;
+  ADD A,A                                          ;
+  LD E,A                                           ;
+  LD D,$00                                         ;
+  LD IX,scroll_row_table                           ;
+  ADD IX,DE                                        ;
 scroll_screen_line:
-  LD E,(IY+$00)                                   ; Copy 32 bytes from source row to destination row, right to left.
-  LD D,(IY+$01)                                   ;
-  LD L,(IX+$00)                                   ;
-  LD H,(IX+$01)                                   ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  LDD                                             ;
-  INC IY                                          ; Advance both pointers to the next row up.
-  INC IY                                          ;
-  INC IX                                          ;
-  INC IX                                          ;
-  LD A,(state_island_render_idx)                  ; If counter reached 0, jump to clear_top_rows to clear top rows.
-  DEC A                                           ;
-  JP Z,clear_top_rows                             ;
-  CP $7F                                          ; At counter $7F, render plane sprite mid-scroll.
-  JR NZ,scroll_screen_next                        ;
-  PUSH IX                                         ;
-  PUSH IY                                         ;
-  CALL render_plane                               ;
-  POP IY                                          ;
-  POP IX                                          ;
+  LD E,(IY+$00)                                    ; Copy 32 bytes from source row to destination row, right to left.
+  LD D,(IY+$01)                                    ;
+  LD L,(IX+$00)                                    ;
+  LD H,(IX+$01)                                    ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  INC IY                                           ; Advance both pointers to the next row up.
+  INC IY                                           ;
+  INC IX                                           ;
+  INC IX                                           ;
+  LD A,(state_island_render_idx)                   ; If counter reached 0, jump to clear_top_rows to clear top rows.
+  DEC A                                            ;
+  JR Z,scroll_screen_exit                          ;
+  CP $7F                                           ; At counter $7F, render plane sprite mid-scroll.
+  JR NZ,scroll_screen_next                         ;
+  PUSH IX                                          ;
+  PUSH IY                                          ;
+  LD IY,ERR_NR                                     ; A crash leaves render_plane through restart_current_player or
+                                                   ; game_over, which never return here, so IY must already be valid.
+  CALL render_plane                                ;
+  POP IY                                           ;
+  POP IX                                           ;
 scroll_screen_next:
-  LD A,(state_island_render_idx)                  ; Decrement and continue loop.
-  DEC A                                           ;
-  LD (state_island_render_idx),A                  ;
-  JP scroll_screen_line                           ;
+  LD A,(state_island_render_idx)                   ; Decrement and continue loop.
+  DEC A                                            ;
+  LD (state_island_render_idx),A                   ;
+  JP scroll_screen_line                            ;
+scroll_screen_exit:
+  LD IY,ERR_NR                                     ; Restore IY for the ROM routines.
+  JP clear_top_rows                                ;
 
 ; Scroll row address table
 ;
@@ -3870,6 +3874,10 @@ int_handler:
   PUSH DE                                          ;
   PUSH BC                                          ;
   PUSH AF                                          ;
+  PUSH IX                                          ;
+  PUSH IY                                          ;
+  LD IY,ERR_NR                                     ; KEYBOARD and BEEPER need IY at the system variables, and an
+                                                   ; interrupted scroll_screen holds it in scroll_row_table.
   LD HL,int_counter                                ; Increment interrupt counter.
   INC (HL)                                         ;
   LD A,$BF                                         ; Check H key for pause.
@@ -3930,7 +3938,9 @@ dispatch_sounds:
 ;
 ; Restores registers and returns. Uses RETN instead of RETI (both work identically).
 int_return:
-  POP AF                                           ; Restore registers.
+  POP IY                                           ; Restore registers.
+  POP IX                                           ;
+  POP AF                                           ;
   POP BC                                           ;
   POP DE                                           ;
   POP HL                                           ;
