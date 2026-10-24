@@ -1718,7 +1718,8 @@ calculate_fuel_gauge_offset:
   SLA A                                            ;
   POP DE                                           ;
   ADD A,D                                          ;
-  LD ($6134),A                                     ;
+  LD (fuel_gauge_bit_op+1),A                       ;
+fuel_gauge_bit_op:
   RLC B                                            ; Rotate B left through carry.
   RET
 
