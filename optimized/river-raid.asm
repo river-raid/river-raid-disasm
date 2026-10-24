@@ -2981,243 +2981,6 @@ add_screen_bank_1000:
   ADD HL,DE                                        ; Add DE to HL (adjust screen pointer)
   RET
 
-; Scroll screen pixels vertically
-;
-; Core vertical scroll engine. Scrolls all screen content by copying pixel data between screen lines. Called every frame
-; from render_plane_and_terrain.
-;
-; Copies screen line (n - speed) to line n for n = 143 down to 1, 32 bytes per line right to left, so the playfield
-; moves down by speed lines. Line addresses come from scroll_row_table: IY steps through destination lines and IX through
-; source lines speed entries further on, so no address arithmetic runs inside the loop.
-scroll_screen:
-  LD A,$8F                                         ; Initialize line counter to $8F (143 lines to process).
-  LD (state_island_render_idx),A                   ;
-  LD IY,scroll_row_table                           ; IY walks destination rows, IX walks source rows speed entries ahead.
-  LD A,(state_speed)                               ;
-  ADD A,A                                          ;
-  LD E,A                                           ;
-  LD D,$00                                         ;
-  LD IX,scroll_row_table                           ;
-  ADD IX,DE                                        ;
-scroll_screen_line:
-  LD E,(IY+$00)                                    ; Copy 32 bytes from source row to destination row, right to left.
-  LD D,(IY+$01)                                    ;
-  LD L,(IX+$00)                                    ;
-  LD H,(IX+$01)                                    ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  LDD                                              ;
-  INC IY                                           ; Advance both pointers to the next row up.
-  INC IY                                           ;
-  INC IX                                           ;
-  INC IX                                           ;
-  LD A,(state_island_render_idx)                   ; If counter reached 0, jump to clear_top_rows to clear top rows.
-  DEC A                                            ;
-  JR Z,scroll_screen_exit                          ;
-  CP $7F                                           ; At counter $7F, render plane sprite mid-scroll.
-  JR NZ,scroll_screen_next                         ;
-  PUSH IX                                          ;
-  PUSH IY                                          ;
-  LD IY,ERR_NR                                     ; A crash leaves render_plane through restart_current_player or
-                                                   ; game_over, which never return here, so IY must already be valid.
-  CALL render_plane                                ;
-  POP IY                                           ;
-  POP IX                                           ;
-scroll_screen_next:
-  LD A,(state_island_render_idx)                   ; Decrement and continue loop.
-  DEC A                                            ;
-  LD (state_island_render_idx),A                   ;
-  JP scroll_screen_line                            ;
-scroll_screen_exit:
-  LD IY,ERR_NR                                     ; Restore IY for the ROM routines.
-  JP clear_top_rows                                ;
-
-; Scroll row address table
-;
-; Address of the last byte of each screen line, from line 143 down to line 0, followed by lines 255 down to 249. The
-; source line n - speed wraps to those when it falls below line 0.
-scroll_row_table:
-  DEFW $573F
-  DEFW $563F
-  DEFW $553F
-  DEFW $543F
-  DEFW $533F
-  DEFW $523F
-  DEFW $513F
-  DEFW $503F
-  DEFW $571F
-  DEFW $561F
-  DEFW $551F
-  DEFW $541F
-  DEFW $531F
-  DEFW $521F
-  DEFW $511F
-  DEFW $501F
-  DEFW $4FFF
-  DEFW $4EFF
-  DEFW $4DFF
-  DEFW $4CFF
-  DEFW $4BFF
-  DEFW $4AFF
-  DEFW $49FF
-  DEFW $48FF
-  DEFW $4FDF
-  DEFW $4EDF
-  DEFW $4DDF
-  DEFW $4CDF
-  DEFW $4BDF
-  DEFW $4ADF
-  DEFW $49DF
-  DEFW $48DF
-  DEFW $4FBF
-  DEFW $4EBF
-  DEFW $4DBF
-  DEFW $4CBF
-  DEFW $4BBF
-  DEFW $4ABF
-  DEFW $49BF
-  DEFW $48BF
-  DEFW $4F9F
-  DEFW $4E9F
-  DEFW $4D9F
-  DEFW $4C9F
-  DEFW $4B9F
-  DEFW $4A9F
-  DEFW $499F
-  DEFW $489F
-  DEFW $4F7F
-  DEFW $4E7F
-  DEFW $4D7F
-  DEFW $4C7F
-  DEFW $4B7F
-  DEFW $4A7F
-  DEFW $497F
-  DEFW $487F
-  DEFW $4F5F
-  DEFW $4E5F
-  DEFW $4D5F
-  DEFW $4C5F
-  DEFW $4B5F
-  DEFW $4A5F
-  DEFW $495F
-  DEFW $485F
-  DEFW $4F3F
-  DEFW $4E3F
-  DEFW $4D3F
-  DEFW $4C3F
-  DEFW $4B3F
-  DEFW $4A3F
-  DEFW $493F
-  DEFW $483F
-  DEFW $4F1F
-  DEFW $4E1F
-  DEFW $4D1F
-  DEFW $4C1F
-  DEFW $4B1F
-  DEFW $4A1F
-  DEFW $491F
-  DEFW $481F
-  DEFW $47FF
-  DEFW $46FF
-  DEFW $45FF
-  DEFW $44FF
-  DEFW $43FF
-  DEFW $42FF
-  DEFW $41FF
-  DEFW $40FF
-  DEFW $47DF
-  DEFW $46DF
-  DEFW $45DF
-  DEFW $44DF
-  DEFW $43DF
-  DEFW $42DF
-  DEFW $41DF
-  DEFW $40DF
-  DEFW $47BF
-  DEFW $46BF
-  DEFW $45BF
-  DEFW $44BF
-  DEFW $43BF
-  DEFW $42BF
-  DEFW $41BF
-  DEFW $40BF
-  DEFW $479F
-  DEFW $469F
-  DEFW $459F
-  DEFW $449F
-  DEFW $439F
-  DEFW $429F
-  DEFW $419F
-  DEFW $409F
-  DEFW $477F
-  DEFW $467F
-  DEFW $457F
-  DEFW $447F
-  DEFW $437F
-  DEFW $427F
-  DEFW $417F
-  DEFW $407F
-  DEFW $475F
-  DEFW $465F
-  DEFW $455F
-  DEFW $445F
-  DEFW $435F
-  DEFW $425F
-  DEFW $415F
-  DEFW $405F
-  DEFW $473F
-  DEFW $463F
-  DEFW $453F
-  DEFW $443F
-  DEFW $433F
-  DEFW $423F
-  DEFW $413F
-  DEFW $403F
-  DEFW $471F
-  DEFW $461F
-  DEFW $451F
-  DEFW $441F
-  DEFW $431F
-  DEFW $421F
-  DEFW $411F
-  DEFW $401F
-  DEFW $5FFF
-  DEFW $5EFF
-  DEFW $5DFF
-  DEFW $5CFF
-  DEFW $5BFF
-  DEFW $5AFF
-  DEFW $59FF
-
 ; Clear top screen rows after scrolling
 ;
 ; Clears the top rows of the screen based on scroll speed. After screen content scrolls upward, the topmost rows contain
@@ -7942,127 +7705,242 @@ jp_collision_dispatcher:
   LD HL,(collision_dispatcher_ptr)
   JP (HL)
 
-; Unused
-data_unused_8C4A:
-  DEFB $C3,$90,$EA,$0E,$8B,$E9,$C3,$90
-  DEFB $EA,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00
+; Scroll screen pixels vertically
+;
+; Core vertical scroll engine. Scrolls all screen content by copying pixel data between screen lines. Called every frame
+; from render_plane_and_terrain.
+;
+; Copies screen line (n - speed) to line n for n = 143 down to 1, 32 bytes per line right to left, so the playfield
+; moves down by speed lines. Line addresses come from scroll_row_table: IY steps through destination lines and IX through
+; source lines speed entries further on, so no address arithmetic runs inside the loop.
+scroll_screen:
+  LD A,$8F                                         ; Initialize line counter to $8F (143 lines to process).
+  LD (state_island_render_idx),A                   ;
+  LD IY,scroll_row_table                           ; IY walks destination rows, IX walks source rows speed entries ahead.
+  LD A,(state_speed)                               ;
+  ADD A,A                                          ;
+  LD E,A                                           ;
+  LD D,$00                                         ;
+  LD IX,scroll_row_table                           ;
+  ADD IX,DE                                        ;
+scroll_screen_line:
+  LD E,(IY+$00)                                    ; Copy 32 bytes from source row to destination row, right to left.
+  LD D,(IY+$01)                                    ;
+  LD L,(IX+$00)                                    ;
+  LD H,(IX+$01)                                    ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  LDD                                              ;
+  INC IY                                           ; Advance both pointers to the next row up.
+  INC IY                                           ;
+  INC IX                                           ;
+  INC IX                                           ;
+  LD A,(state_island_render_idx)                   ; If counter reached 0, jump to clear_top_rows to clear top rows.
+  DEC A                                            ;
+  JR Z,scroll_screen_exit                          ;
+  CP $7F                                           ; At counter $7F, render plane sprite mid-scroll.
+  JR NZ,scroll_screen_next                         ;
+  PUSH IX                                          ;
+  PUSH IY                                          ;
+  LD IY,ERR_NR                                     ; A crash leaves render_plane through restart_current_player or
+                                                   ; game_over, which never return here, so IY must already be valid.
+  CALL render_plane                                ;
+  POP IY                                           ;
+  POP IX                                           ;
+scroll_screen_next:
+  LD A,(state_island_render_idx)                   ; Decrement and continue loop.
+  DEC A                                            ;
+  LD (state_island_render_idx),A                   ;
+  JP scroll_screen_line                            ;
+scroll_screen_exit:
+  LD IY,ERR_NR                                     ; Restore IY for the ROM routines.
+  JP clear_top_rows                                ;
+
+; Scroll row address table
+;
+; Address of the last byte of each screen line, from line 143 down to line 0, followed by lines 255 down to 249. The
+; source line n - speed wraps to those when it falls below line 0.
+scroll_row_table:
+  DEFW $573F
+  DEFW $563F
+  DEFW $553F
+  DEFW $543F
+  DEFW $533F
+  DEFW $523F
+  DEFW $513F
+  DEFW $503F
+  DEFW $571F
+  DEFW $561F
+  DEFW $551F
+  DEFW $541F
+  DEFW $531F
+  DEFW $521F
+  DEFW $511F
+  DEFW $501F
+  DEFW $4FFF
+  DEFW $4EFF
+  DEFW $4DFF
+  DEFW $4CFF
+  DEFW $4BFF
+  DEFW $4AFF
+  DEFW $49FF
+  DEFW $48FF
+  DEFW $4FDF
+  DEFW $4EDF
+  DEFW $4DDF
+  DEFW $4CDF
+  DEFW $4BDF
+  DEFW $4ADF
+  DEFW $49DF
+  DEFW $48DF
+  DEFW $4FBF
+  DEFW $4EBF
+  DEFW $4DBF
+  DEFW $4CBF
+  DEFW $4BBF
+  DEFW $4ABF
+  DEFW $49BF
+  DEFW $48BF
+  DEFW $4F9F
+  DEFW $4E9F
+  DEFW $4D9F
+  DEFW $4C9F
+  DEFW $4B9F
+  DEFW $4A9F
+  DEFW $499F
+  DEFW $489F
+  DEFW $4F7F
+  DEFW $4E7F
+  DEFW $4D7F
+  DEFW $4C7F
+  DEFW $4B7F
+  DEFW $4A7F
+  DEFW $497F
+  DEFW $487F
+  DEFW $4F5F
+  DEFW $4E5F
+  DEFW $4D5F
+  DEFW $4C5F
+  DEFW $4B5F
+  DEFW $4A5F
+  DEFW $495F
+  DEFW $485F
+  DEFW $4F3F
+  DEFW $4E3F
+  DEFW $4D3F
+  DEFW $4C3F
+  DEFW $4B3F
+  DEFW $4A3F
+  DEFW $493F
+  DEFW $483F
+  DEFW $4F1F
+  DEFW $4E1F
+  DEFW $4D1F
+  DEFW $4C1F
+  DEFW $4B1F
+  DEFW $4A1F
+  DEFW $491F
+  DEFW $481F
+  DEFW $47FF
+  DEFW $46FF
+  DEFW $45FF
+  DEFW $44FF
+  DEFW $43FF
+  DEFW $42FF
+  DEFW $41FF
+  DEFW $40FF
+  DEFW $47DF
+  DEFW $46DF
+  DEFW $45DF
+  DEFW $44DF
+  DEFW $43DF
+  DEFW $42DF
+  DEFW $41DF
+  DEFW $40DF
+  DEFW $47BF
+  DEFW $46BF
+  DEFW $45BF
+  DEFW $44BF
+  DEFW $43BF
+  DEFW $42BF
+  DEFW $41BF
+  DEFW $40BF
+  DEFW $479F
+  DEFW $469F
+  DEFW $459F
+  DEFW $449F
+  DEFW $439F
+  DEFW $429F
+  DEFW $419F
+  DEFW $409F
+  DEFW $477F
+  DEFW $467F
+  DEFW $457F
+  DEFW $447F
+  DEFW $437F
+  DEFW $427F
+  DEFW $417F
+  DEFW $407F
+  DEFW $475F
+  DEFW $465F
+  DEFW $455F
+  DEFW $445F
+  DEFW $435F
+  DEFW $425F
+  DEFW $415F
+  DEFW $405F
+  DEFW $473F
+  DEFW $463F
+  DEFW $453F
+  DEFW $443F
+  DEFW $433F
+  DEFW $423F
+  DEFW $413F
+  DEFW $403F
+  DEFW $471F
+  DEFW $461F
+  DEFW $451F
+  DEFW $441F
+  DEFW $431F
+  DEFW $421F
+  DEFW $411F
+  DEFW $401F
+  DEFW $5FFF
+  DEFW $5EFF
+  DEFW $5DFF
+  DEFW $5CFF
+  DEFW $5BFF
+  DEFW $5AFF
+  DEFW $59FF
 
 ; Tank shell explosion sprite (6 frames × 32 bytes).
 ;
