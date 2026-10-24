@@ -1,0 +1,18362 @@
+COLOR_BLACK   EQU $00
+COLOR_BLUE    EQU $01
+COLOR_RED     EQU $02
+COLOR_MAGENTA EQU $03
+COLOR_GREEN   EQU $04
+COLOR_CYAN    EQU $05
+COLOR_YELLOW  EQU $06
+COLOR_WHITE   EQU $07
+
+; Terrain colors
+COLOR_RIVER   EQU COLOR_BLUE
+COLOR_BANK    EQU COLOR_GREEN
+
+; Player colors
+COLOR_PLAYER_1 EQU COLOR_YELLOW
+COLOR_PLAYER_2 EQU COLOR_CYAN
+
+; Object colors
+COLOR_HELICOPTER EQU COLOR_YELLOW
+COLOR_SHIP       EQU COLOR_CYAN
+COLOR_BALLOON    EQU COLOR_YELLOW
+COLOR_FUEL       EQU COLOR_MAGENTA
+COLOR_ROCK       EQU COLOR_RED
+COLOR_MISSILE    EQU COLOR_GREEN
+COLOR_EXPLOSION  EQU COLOR_GREEN
+
+; The sprite does not impose its own color; existing screen attributes are preserved.
+ATTRIBUTES_INHERIT EQU $00
+
+EXT_ATTR_INK   EQU $10
+EXT_ATTR_PAPER EQU $11
+EXT_ATTR_AT    EQU $16
+
+; ASCII character codes
+CHAR_ENTER   EQU $0D
+
+; Z80 opcodes used in self-modifying code
+OPCODE_NOP   EQU $00
+OPCODE_JP    EQU $C3
+OPCODE_XOR_B EQU $A8
+OPCODE_OR_B  EQU $B0
+
+; ULA port speaker control
+ULA_SPEAKER_ON  EQU $10
+ULA_SPEAKER_OFF EQU $00
+
+INPUT_INTERFACE_KEYBOARD EQU $00
+INPUT_INTERFACE_SINCLAIR EQU $01
+INPUT_INTERFACE_KEMPSTON EQU $02
+INPUT_INTERFACE_CURSOR   EQU $03
+
+OVERVIEW_MODE_OFF EQU $00
+OVERVIEW_MODE_ON  EQU $01
+
+GAME_MODE_BIT_TWO_PLAYERS EQU 0
+
+PLAYER_1 EQU $01
+PLAYER_2 EQU $02
+
+LIVES_INITIAL EQU $04
+
+SPEED_STOP   EQU $01
+SPEED_SLOW   EQU $01
+SPEED_NORMAL EQU $02
+SPEED_FAST   EQU $04
+
+SOUND_BIT_FIRE            EQU 0
+SOUND_BIT_SPEED_NOT_FAST  EQU 1
+SOUND_BIT_SPEED_CHANGED   EQU 2
+SOUND_BIT_LOW_FUEL        EQU 3
+SOUND_BIT_BONUS_LIFE      EQU 4
+SOUND_BIT_EXPLODING       EQU 5
+
+SOUND_SPEED_MASK   EQU 1<<SOUND_BIT_SPEED_NOT_FAST|1<<SOUND_BIT_SPEED_CHANGED
+SOUND_SPEED_NORMAL EQU 1<<SOUND_BIT_SPEED_NOT_FAST
+SOUND_SPEED_FAST   EQU 1<<SOUND_BIT_SPEED_CHANGED
+SOUND_SPEED_SLOW   EQU 1<<SOUND_BIT_SPEED_NOT_FAST|1<<SOUND_BIT_SPEED_CHANGED
+
+TANK_SHELL_STATE_UNITIALIZED   EQU $00
+TANK_SHELL_MASK_SPEED          EQU $07
+TANK_SHELL_BIT_EXPLODING       EQU 5
+TANK_SHELL_BIT_FLYING          EQU 7
+TANK_SHELL_TRAJECTORY_MAX_STEP EQU $08
+
+HELICOPTER_MISSILE_STEP EQU $08
+
+; Tick-based timing constants for frame parity checks.
+; state_tick bit 0 alternates every frame (even/odd).
+; state_tick bit 2 alternates every 4 frames (fuel blink).
+TICK_MASK_FRAME_PARITY EQU $01
+TICK_PARITY_EVEN       EQU $00
+TICK_PARITY_ODD        EQU $01
+TICK_MASK_FUEL_BLINK   EQU $04
+
+FIGHTER_POSITION_LEFT_INIT   EQU $E8
+FIGHTER_POSITION_LEFT_LIMIT  EQU $00
+FIGHTER_POSITION_RIGHT_INIT  EQU $04
+FIGHTER_POSITION_RIGHT_LIMIT EQU $E8
+
+; Object characteristics summary:
+; +---------------+------+--------+------------+----------------------+
+; | Object        | Type | Points | Speed      | Special              |
+; +---------------+------+--------+------------+----------------------+
+; | Helicopter    | $01  | 60     | 2 px/frame | Patrols, no missiles |
+; | Ship          | $02  | 30     | 2 px/frame | Patrols river        |
+; | Helicopter+   | $03  | 150    | 2 px/frame | Patrols, FIRES       |
+; | Tank          | $04  | 250    | 2 px/frame | Fires parabolic      |
+; | Fighter       | $05  | 100    | 4 px/frame | Fast, wraps screen   |
+; | Balloon       | $06  | 60     | 2 px/frame | Floats, bounces      |
+; | Fuel Depot    | $07  | 80     | 0 (static) | Refuels plane        |
+; | Bridge        | --   | 500    | 0 (static) | Increases activation |
+; +---------------+------+--------+------------+----------------------+
+; Note: Points encoded as value/10 (e.g., POINTS_SHIP=$03 = 30 points).
+; Helicopter+ (ADV) fires missiles at player unlike regular helicopter.
+
+POINTS_SHIP           EQU $03
+POINTS_HELICOPTER_REG EQU $06
+POINTS_BALLOON        EQU $06
+POINTS_FUEL           EQU $08
+POINTS_FIGHTER        EQU $10
+POINTS_HELICOPTER_ADV EQU $15
+POINTS_TANK           EQU $25
+POINTS_BRIDGE         EQU $50
+
+OBJECT_HELICOPTER_REG EQU $01
+OBJECT_SHIP           EQU $02
+OBJECT_HELICOPTER_ADV EQU $03
+OBJECT_TANK           EQU $04
+OBJECT_FIGHTER        EQU $05
+OBJECT_BALLOON        EQU $06
+OBJECT_FUEL           EQU $07
+
+; Object definition byte bit fields (byte 2 of viewport_slots entries)
+; +-------+--------------------------------------------------+
+; | Bit   | Meaning                                          |
+; +-------+--------------------------------------------------+
+; | 0-2   | Object type (OBJECT_* constants, 0-7)            |
+; | 3     | Rock flag (1=rock decoration, 0=interactive)     |
+; | 4     | Alt shell init (set on direction reversal, triggers alternate tank shell init) |
+; | 5     | Tank location (1=river bank, 0=bridge)           |
+; | 6     | Orientation (1=right-facing, 0=left-facing)      |
+; | 7     | Activation (1=active/interactive, 0=spawning)    |
+; +-------+--------------------------------------------------+
+SLOT_BIT_ROCK              EQU $03
+SLOT_BIT_ALT_SHELL_INIT   EQU $04
+SLOT_BIT_TANK_ON_BANK     EQU $05
+SLOT_BIT_ORIENTATION  EQU $06
+SLOT_BIT_ACTIVATION   EQU $07
+SLOT_MASK_OBJECT_TYPE EQU $07
+
+SIZE_LEVEL_SLOTS      EQU $0100
+
+SET_MARKER_EMPTY_SLOT EQU $00
+SET_MARKER_END_OF_SET EQU $FF
+
+SPRITE_PLANE_WIDTH_TILES   EQU $02
+SPRITE_PLANE_HEIGHT_PIXELS EQU $08
+SPRITE_PLANE_FRAME_SIZE    EQU SPRITE_PLANE_WIDTH_TILES * SPRITE_PLANE_HEIGHT_PIXELS
+SPRITE_PLANE_ATTRIBUTES    EQU COLOR_RIVER<<3|COLOR_PLAYER_1
+
+SPRITE_3BY1_ENEMY_WIDTH_TILES   EQU $03
+SPRITE_3BY1_ENEMY_HEIGHT_PIXELS EQU $08
+SPRITE_3BY1_ENEMY_FRAME_SIZE    EQU SPRITE_3BY1_ENEMY_WIDTH_TILES * SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
+SPRITE_3BY1_ENEMY_ATTRIBUTES    EQU COLOR_RIVER<<3|COLOR_HELICOPTER
+
+SPRITE_SHIP_ATTRIBUTES         EQU COLOR_RIVER<<3|COLOR_SHIP
+SPRITE_TANK_ON_ROAD_ATTRIBUTES EQU ATTRIBUTES_INHERIT
+SPRITE_TANK_ON_BANK_ATTRIBUTES EQU COLOR_BLACK<<3|COLOR_BANK
+SPRITE_FIGHTER_ATTRIBUTES      EQU ATTRIBUTES_INHERIT
+
+SPRITE_ROTOR_WIDTH_TILES   EQU $02
+SPRITE_ROTOR_HEIGHT_PIXELS EQU $02
+SPRITE_ROTOR_FRAME_SIZE    EQU SPRITE_ROTOR_WIDTH_TILES * SPRITE_ROTOR_HEIGHT_PIXELS
+SPRITE_ROTOR_ATTRIBUTES    EQU COLOR_RIVER<<3|COLOR_HELICOPTER
+
+SPRITE_BALLOON_WIDTH_TILES   EQU $02
+SPRITE_BALLOON_HEIGHT_PIXELS EQU $10
+SPRITE_BALLOON_FRAME_SIZE    EQU SPRITE_BALLOON_WIDTH_TILES * SPRITE_BALLOON_HEIGHT_PIXELS
+SPRITE_BALLOON_ATTRIBUTES    EQU COLOR_RIVER<<3|COLOR_BALLOON
+
+; There is only one frame, so it's size is irrelevant.
+SPRITE_FUEL_STATION_WIDTH_TILES   EQU $02
+SPRITE_FUEL_STATION_HEIGHT_PIXELS EQU $19
+SPRITE_FUEL_STATION_FRAME_SIZE    EQU $0000
+SPRITE_FUEL_STATION_ATTRIBUTES    EQU COLOR_RIVER<<3|COLOR_FUEL
+
+SPRITE_ROCK_WIDTH_TILES   EQU $03
+SPRITE_ROCK_HEIGHT_PIXELS EQU $10
+SPRITE_ROCK_FRAME_SIZE    EQU SPRITE_ROCK_WIDTH_TILES * SPRITE_ROCK_HEIGHT_PIXELS
+SPRITE_ROCK_ATTRIBUTES    EQU COLOR_ROCK<<3|COLOR_BANK
+
+SPRITE_MISSILE_WIDTH_TILES      EQU $01
+SPRITE_MISSILE_HEIGHT_PIXELS    EQU $08
+SPRITE_MISSILE_FRAME_SIZE_BYTES EQU SPRITE_MISSILE_WIDTH_TILES * SPRITE_MISSILE_HEIGHT_PIXELS
+SPRITE_MISSILE_ATTRIBUTES       EQU COLOR_RIVER<<3|COLOR_MISSILE
+
+SPRITE_HELICOPTER_MISSILE_WIDTH_TILES EQU $01
+SPRITE_HELICOPTER_MISSILE_ATTRIBUTES  EQU ATTRIBUTES_INHERIT
+
+; Shell sprite is a truncated missile sprite, so the frame size should be calculated
+; based on the original height.
+SPRITE_SHELL_WIDTH_TILES      EQU $01
+SPRITE_SHELL_HEIGHT_PIXELS    EQU $01
+SPRITE_SHELL_FRAME_SIZE_BYTES EQU SPRITE_SHELL_WIDTH_TILES * SPRITE_MISSILE_HEIGHT_PIXELS
+SPRITE_SHELL_ATTRIBUTES       EQU $00
+
+SPRITE_SHELL_EXPLOSION_WIDTH_TILES      EQU $02
+SPRITE_SHELL_EXPLOSION_HEIGHT_PIXELS    EQU $10
+SPRITE_SHELL_EXPLOSION_FRAME_SIZE_BYTES EQU $0000
+SPRITE_SHELL_EXPLOSION_ATTRIBUTES       EQU COLOR_RIVER<<3|COLOR_EXPLOSION
+
+PLANE_COORDINATE_Y     EQU $80
+
+FUEL_CHECK_INTERVAL    EQU $03
+FUEL_INTAKE_AMOUNT     EQU $04
+FUEL_LEVEL_EMPTY       EQU $00
+FUEL_LEVEL_LOW         EQU $C0
+FUEL_LEVEL_ALMOST_FULL EQU $FC
+FUEL_LEVEL_FULL        EQU $FF
+
+; Player is actively playing: plane is rendered, objects can be interacted with.
+GAMEPLAY_MODE_NORMAL    EQU $00
+; Initial level scroll-in at start of play: plane is not rendered, objects
+; don't activate. Runs for $28 iterations with SPEED_FAST before switching
+; to GAMEPLAY_MODE_NORMAL.
+GAMEPLAY_MODE_SCROLL_IN EQU $01
+; Overview mode: plane is not rendered, objects don't activate, auto-scrolls
+; through levels. Set by init_state and used by the overview routine.
+GAMEPLAY_MODE_OVERVIEW  EQU $02
+; Player is refueling at a fuel station.
+GAMEPLAY_MODE_REFUEL    EQU $06
+
+COLLISION_MODE_NONE               EQU $00
+COLLISION_MODE_FUEL_DEPOT         EQU $01
+COLLISION_MODE_MISSILE            EQU $02
+COLLISION_MODE_FIGHTER            EQU $03
+COLLISION_MODE_HELICOPTER_MISSILE EQU $04
+
+TANK_SHELL_INACTIVE EQU $00
+TANK_SHELL_ACTIVE   EQU $01
+
+VIEWPORT_HEIGHT EQU $88
+
+ACTIVATION_INTERVAL_NORMAL EQU $1F
+ACTIVATION_INTERVAL_FAST   EQU $0F
+
+SCROLL_IN_ITERATIONS EQU $28
+
+TERRAIN_PROFILE_SIZE EQU $10
+
+EXPLOSION_ANIM_FRAMES  EQU $10
+EXPLOSION_SOUND_TICKS EQU $18
+
+BONUS_LIFE_SOUND_TICKS EQU $40
+
+SCORE_DIGIT_COUNT EQU $06
+
+IM1_VECTOR_TABLE_HI EQU $3F
+
+; STRUCTURES
+; ----------
+;
+; OBJECT_DEFINITION ::
+;
+; Bits 0..2 represent an interactive object type.
+; OBJECT_DEFINITION_MASK_INTERACTIVE_TYPE = $07,
+;
+; Bits 0..1 represent a rock type type.
+; OBJECT_DEFINITION_MASK_ROCK_TYPE        = $03,
+;
+; Bit 3 defines whether the slot contains an interactive object (reset)
+; or a rock (set).
+; OBJECT_DEFINITION_BIT_ROCK              = 3,
+;
+; Bit 4 is set when a tank reverses direction (via #R$7525). On the next
+; processing tick, it causes the tank to use the alternate shell
+; initialization path at #R$735E (check_shell_init_condition) instead of
+; the normal path at #R$7343 (init_tank_shell_state).
+; OBJECT_DEFINITION_BIT_ALT_SHELL_INIT           = 4,
+;
+; Bit 5 defines a tank location: bridge (unset) or river bank (set).
+; OBJECT_DEFINITION_BIT_TANK_LOCATION     = 5,
+;
+; Bit 6 defines object orientation: left (unset) or right (set).
+; OBJECT_DEFINITION_BIT_TANK_ORIENTATION  = 6,
+;
+; Bit 7 is an activation flag used by operate_viewport_slots to track
+; whether an object has been activated on its first frame.
+
+KEYBOARD EQU $02BF
+BEEPER EQU $03B5
+CHAN_OPEN EQU $1601
+OUT_NUM_1 EQU $1A1B
+PR_STRING EQU $203C
+LAST_K EQU $5C08
+UDG EQU $5C7B
+INT_VECTOR_TABLE_HI EQU $FC
+INT_VECTOR_ENTRY EQU $FE
+
+  ORG $4000
+
+; Screen pixels.
+screen_pixels:
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $AA,$AA,$AA,$AA,$AA,$AA,$A8,$1F,$FF,$FF,$00,$00,$00,$00,$00,$0F
+  DEFB $FF,$80,$00,$00,$00,$00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $00,$00,$00,$00,$00,$00,$00,$03,$FF,$C0,$00,$07,$01,$F0,$3E,$01
+  DEFB $FC,$03,$E0,$78,$00,$00,$78,$1F,$E0,$00,$0F,$F0,$0F,$F8,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$03,$E0,$7C,$1F,$FF,$FF,$01,$F0,$3F,$E0
+  DEFB $20,$3F,$E0,$70,$00,$0F,$F8,$1E,$07,$FF,$C0,$70,$00,$78,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FC,$00,$00,$1E,$07,$FF,$FF,$01,$F0,$3F,$FE
+  DEFB $03,$FF,$E0,$7F,$FF,$F0,$38,$1F,$03,$FF,$80,$F0,$3F,$00,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$BD
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$7F,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $55,$55,$55,$55,$55,$55,$54,$0F,$FF,$FF,$FF,$FF,$01,$FF,$E0,$07
+  DEFB $FF,$00,$3F,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $00,$00,$00,$00,$00,$00,$00,$03,$FF,$80,$00,$0F,$01,$F0,$3E,$01
+  DEFB $FC,$03,$E0,$70,$00,$00,$78,$1F,$C0,$00,$07,$F0,$07,$F8,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$03,$E0,$7C,$1F,$FF,$FF,$01,$F0,$3F,$E0
+  DEFB $20,$3F,$E0,$70,$00,$01,$F8,$1E,$0F,$FF,$E0,$70,$20,$38,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$F8,$00,$00,$0F,$03,$FF,$BF,$01,$F0,$3F,$FE
+  DEFB $03,$FF,$E0,$7F,$FF,$E0,$78,$1F,$01,$FF,$00,$F0,$3F,$00,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$46
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$7F,$FF,$FF,$E0,$00,$00,$00,$00,$3F
+  DEFB $FF,$E0,$00,$00,$00,$00,$00,$07,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $AA,$AA,$AA,$AA,$AA,$AA,$A8,$0F,$FF,$FF,$FF,$FF,$01,$FF,$F0,$07
+  DEFB $FF,$00,$7F,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $00,$00,$00,$00,$00,$00,$00,$81,$FF,$00,$FE,$1F,$01,$F0,$3F,$00
+  DEFB $F8,$07,$E0,$70,$00,$00,$78,$1F,$C0,$00,$03,$F0,$07,$F8,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$03,$E0,$7C,$1F,$FF,$FF,$01,$F0,$3F,$F0
+  DEFB $00,$7F,$E0,$78,$00,$00,$F8,$1E,$0F,$FF,$E0,$70,$30,$18,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$F8,$1F,$FC,$0F,$00,$FE,$1F,$01,$F0,$3F,$FF
+  DEFB $07,$FF,$E0,$7F,$FF,$80,$78,$1F,$80,$7C,$01,$F0,$3F,$80,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$5A
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FE,$3F,$FF,$FF,$C0,$00,$00,$00,$00,$1F
+  DEFB $FF,$C0,$00,$00,$00,$00,$00,$07,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $55,$55,$55,$55,$55,$55,$50,$0F,$FF,$FF,$FF,$FF,$01,$FF,$F0,$07
+  DEFB $FF,$00,$7F,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $00,$00,$00,$00,$00,$00,$00,$81,$FE,$03,$FF,$BF,$01,$F0,$3F,$00
+  DEFB $F8,$07,$E0,$70,$1F,$FF,$F8,$1F,$80,$00,$01,$F0,$03,$F8,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FE,$07,$F0,$3C,$1F,$FF,$FF,$01,$F0,$3F,$F0
+  DEFB $00,$7F,$E0,$7C,$00,$00,$78,$1E,$0F,$FF,$E0,$70,$30,$18,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$F8,$1F,$FC,$0F,$80,$00,$0F,$01,$F0,$3F,$FF
+  DEFB $07,$FF,$E0,$70,$00,$00,$78,$1F,$80,$00,$03,$F0,$3F,$C0,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$46
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FE,$3F,$FF,$FF,$C0,$00,$00,$00,$00,$1F
+  DEFB $FF,$C0,$00,$00,$00,$00,$00,$03,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $AA,$AA,$AA,$AA,$AA,$AA,$A0,$07,$FF,$FF,$FF,$FF,$01,$FF,$F8,$03
+  DEFB $FE,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $00,$00,$00,$00,$00,$00,$01,$C1,$FE,$07,$FF,$FF,$01,$F0,$3F,$80
+  DEFB $F8,$0F,$E0,$60,$3F,$FF,$F8,$1F,$80,$7C,$01,$F0,$01,$F8,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FE,$07,$F0,$3C,$1F,$FF,$FF,$01,$F0,$3F,$F8
+  DEFB $00,$FF,$E0,$7F,$80,$00,$78,$1E,$0F,$FF,$E0,$70,$38,$08,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$F0,$3F,$FE,$07,$C0,$00,$07,$01,$F0,$3F,$FF
+  DEFB $8F,$FF,$E0,$70,$00,$00,$F8,$1F,$C0,$00,$07,$F0,$3F,$C0,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$5A
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FE,$3F,$FF,$FF,$80,$00,$00,$00,$00,$1F
+  DEFB $FF,$C0,$00,$00,$00,$00,$00,$03,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $55,$55,$55,$55,$55,$55,$50,$07,$FF,$FF,$80,$FF,$01,$FF,$F8,$03
+  DEFB $FE,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $00,$00,$00,$00,$00,$00,$01,$C0,$FC,$0F,$FF,$FF,$01,$F0,$3F,$80
+  DEFB $70,$0F,$E0,$60,$7F,$FF,$F8,$1F,$01,$FF,$00,$F0,$01,$F8,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FE,$00,$00,$3C,$1F,$FF,$FF,$01,$F0,$3F,$F8
+  DEFB $00,$FF,$E0,$7F,$FF,$E0,$78,$1E,$0F,$FF,$E0,$70,$3C,$00,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$F0,$3F,$FE,$07,$E0,$00,$1F,$01,$F0,$3F,$FF
+  DEFB $8F,$FF,$E0,$70,$00,$01,$F8,$1F,$E0,$00,$1F,$F0,$3F,$E0,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$5A
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FC,$1F,$FF,$FF,$80,$00,$00,$00,$00,$0F
+  DEFB $FF,$80,$00,$00,$00,$00,$00,$01,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $AA,$AA,$AA,$AA,$AA,$AA,$A0,$07,$FF,$FC,$00,$3F,$01,$F0,$3C,$03
+  DEFB $FE,$01,$E0,$7F,$80,$00,$78,$1F,$FF,$00,$FF,$F0,$1F,$F8,$1F,$FF
+  DEFB $00,$00,$00,$00,$00,$00,$01,$C0,$FC,$0F,$FF,$FF,$01,$F0,$3F,$C0
+  DEFB $70,$1F,$E0,$60,$3F,$FF,$F8,$1F,$03,$FF,$80,$F0,$00,$F8,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FC,$00,$00,$1C,$0F,$FF,$FF,$01,$F0,$3F,$FC
+  DEFB $01,$FF,$E0,$7F,$FF,$F0,$38,$1E,$07,$FF,$C0,$70,$3C,$00,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$F0,$3F,$FE,$07,$F8,$00,$7F,$01,$F0,$3F,$FF
+  DEFB $DF,$FF,$E0,$70,$00,$03,$F8,$1F,$FC,$00,$3F,$F0,$3F,$F0,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$BD
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FC,$1F,$FF,$FF,$00,$00,$00,$00,$00,$0F
+  DEFB $FF,$80,$00,$00,$00,$00,$00,$01,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $55,$55,$55,$55,$55,$55,$40,$03,$FF,$F0,$00,$1F,$01,$F0,$3C,$01
+  DEFB $FC,$01,$E0,$7C,$00,$00,$78,$1F,$F8,$00,$3F,$F0,$1F,$F8,$1F,$FF
+  DEFB $00,$00,$00,$00,$00,$00,$01,$C0,$FC,$1F,$FF,$FF,$01,$F0,$3F,$C0
+  DEFB $70,$1F,$E0,$70,$1F,$FF,$F8,$1E,$07,$FF,$C0,$70,$00,$78,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FC,$00,$00,$1E,$0F,$FF,$FF,$01,$F0,$3F,$FC
+  DEFB $01,$FF,$E0,$7F,$FF,$F8,$38,$1E,$07,$FF,$C0,$70,$3E,$00,$1F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$E0,$7F,$FF,$03,$FF,$01,$FF,$01,$F0,$3F,$FF
+  DEFB $DF,$FF,$E0,$70,$00,$0F,$F8,$1F,$FF,$00,$FF,$F0,$3F,$F0,$1F,$C3
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$C3
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$F7,$DE,$FE,$FF,$F8,$00,$3F,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FE,$FF,$DD,$FF,$E7,$EF,$BF,$F7,$EF
+  DEFB $C3,$E1,$F8,$3F,$83,$F8,$3F,$83,$FF,$FC,$3E,$1F,$FC,$3E,$1F,$F0
+  DEFB $07,$FC,$1F,$83,$FE,$1F,$FF,$F4,$3F,$F7,$DF,$F7,$7F,$7F,$FB,$DF
+  DEFB $C3,$E1,$F8,$3F,$F0,$41,$FF,$83,$FF,$FC,$3E,$1F,$FC,$3E,$1F,$C1
+  DEFB $C1,$FC,$1F,$83,$FC,$1F,$FF,$FF,$C6,$9F,$FE,$3B,$ED,$FF,$FB,$DF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$3E,$3F,$3E,$7F,$FA,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$DF,$F7,$ED,$6F,$5E,$FB,$FF,$FF
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$F7,$FF,$FF,$EF,$BF,$F1,$BB,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$EF,$ED,$FF,$00,$07,$FF,$FF,$FF
+  DEFB $80,$01,$F0,$1E,$03,$F8,$0F,$00,$00,$78,$00,$1F,$F8,$00,$1F,$FE
+  DEFB $3F,$F8,$0F,$00,$1F,$FF,$FF,$FD,$FD,$DE,$FF,$F4,$F7,$7F,$FB,$EF
+  DEFB $C3,$C1,$F8,$3F,$83,$F8,$3F,$83,$FF,$FC,$3C,$1F,$FC,$3C,$1F,$F0
+  DEFB $87,$FC,$1F,$83,$FE,$0F,$FF,$EB,$C7,$FF,$DF,$F6,$FF,$7F,$FB,$DF
+  DEFB $C3,$E1,$F8,$3F,$F0,$41,$FF,$83,$FF,$FC,$3E,$1F,$FC,$3E,$1F,$83
+  DEFB $E0,$FC,$1F,$83,$F8,$3F,$FF,$FF,$C9,$E7,$FF,$BB,$DE,$FF,$FF,$DF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$C7,$CE,$F9,$FF,$E5,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$DF,$F7,$ED,$5E,$ED,$7D,$FF,$FF
+  DEFB $7C,$00,$00,$00,$00,$00,$00,$00,$00,$7C,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FB,$FF,$FF,$F7,$DF,$F4,$7D,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$E1,$DF,$EB,$FF,$BF,$FF,$FF,$FF,$FF
+  DEFB $80,$01,$F0,$1E,$03,$F8,$0F,$00,$00,$78,$00,$1F,$F8,$00,$1F,$FC
+  DEFB $3F,$F8,$0F,$00,$03,$FF,$FF,$FB,$FD,$DF,$7F,$F5,$77,$7F,$FB,$EF
+  DEFB $C0,$03,$F8,$3F,$C1,$F0,$7F,$80,$0F,$FC,$00,$3F,$FC,$00,$3F,$F1
+  DEFB $C7,$FC,$1F,$83,$FF,$0F,$FF,$D7,$F8,$FF,$FF,$EE,$FF,$7F,$FB,$DF
+  DEFB $C3,$E1,$F8,$3F,$F0,$41,$FF,$83,$FC,$7C,$3E,$1F,$FC,$3E,$1F,$83
+  DEFB $E0,$FC,$1F,$83,$F0,$3F,$FF,$FF,$D6,$79,$FF,$7B,$DE,$FF,$FF,$DF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$F3,$F1,$C3,$FF,$DE,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$DF,$F7,$EA,$BD,$F3,$FE,$FF,$FF
+  DEFB $42,$1C,$38,$3C,$1C,$38,$68,$00,$00,$42,$1C,$38,$3C,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FD,$FF,$FF,$F9,$EF,$F3,$3E,$EF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$9D,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$DE,$DF,$EB,$FF,$BF,$FF,$F8,$FF,$FD
+  DEFB $80,$01,$F0,$1E,$03,$F8,$0F,$00,$00,$78,$00,$1F,$F8,$00,$1F,$FC
+  DEFB $1F,$F8,$0F,$00,$00,$FF,$FF,$FB,$FD,$DF,$7F,$FD,$B7,$7F,$FB,$DF
+  DEFB $C0,$01,$F8,$3F,$C1,$F0,$7F,$80,$0F,$FC,$00,$1F,$FC,$00,$1F,$E1
+  DEFB $C3,$FC,$1F,$83,$FF,$0F,$FF,$AF,$FF,$1F,$FF,$EE,$FF,$FF,$FB,$DF
+  DEFB $C3,$E1,$F8,$3F,$F8,$03,$FF,$80,$00,$7C,$3E,$1F,$FC,$3E,$1F,$83
+  DEFB $E0,$FC,$1F,$83,$C0,$7F,$15,$FF,$AF,$9E,$7F,$74,$9E,$FF,$FF,$DF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FC,$DE,$3D,$FF,$BF,$7F,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$DF,$FB,$D9,$FB,$FD,$FF,$7F,$FF
+  DEFB $42,$20,$44,$44,$20,$04,$54,$10,$00,$42,$20,$44,$44,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FE,$FF,$FF,$FE,$F7,$F5,$DF,$57
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$61,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$BF,$3F,$E7,$FF,$BF,$FF,$E7,$1F,$FB
+  DEFB $C3,$C1,$F8,$3F,$07,$FC,$1F,$00,$00,$7C,$3C,$1F,$FC,$3C,$1F,$FC
+  DEFB $1F,$FC,$1F,$00,$00,$7F,$FF,$FF,$FD,$DF,$BF,$FB,$B7,$7F,$FB,$DF
+  DEFB $C0,$01,$F8,$3F,$C1,$F0,$7F,$80,$0F,$FC,$00,$1F,$FC,$00,$1F,$E3
+  DEFB $E3,$FC,$1F,$83,$FF,$0F,$FF,$53,$FF,$E3,$FF,$DD,$FF,$FF,$FB,$DF
+  DEFB $81,$C0,$F0,$1F,$F8,$03,$FF,$00,$00,$78,$1C,$0F,$F8,$1C,$0F,$03
+  DEFB $E0,$78,$0F,$00,$00,$FF,$B1,$FF,$5F,$E7,$9E,$96,$5D,$7F,$FF,$DF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$3F,$46,$FE,$7F,$BF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$DF,$FC,$C5,$F3,$FE,$7F,$BF,$FF
+  DEFB $7C,$20,$44,$44,$20,$3C,$54,$00,$00,$7C,$20,$44,$44,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FE,$FF,$FF,$FF,$7B,$EB,$E7,$AF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FE,$FD,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$7F,$BF,$F7,$FF,$BE,$3F,$DF,$EF,$F7
+  DEFB $C3,$E1,$F8,$3F,$07,$FC,$1F,$83,$FC,$7C,$3E,$1F,$FC,$3E,$1F,$F8
+  DEFB $0F,$FC,$1F,$83,$E0,$3F,$FF,$FE,$BF,$EF,$DF,$FB,$B7,$7F,$FB,$DF
+  DEFB $C3,$E1,$F8,$3F,$E0,$E0,$FF,$80,$0F,$FC,$3E,$1F,$FC,$3E,$1F,$E3
+  DEFB $E3,$FC,$1F,$83,$FF,$0F,$FF,$BC,$FF,$FC,$7F,$DD,$FF,$FF,$FB,$DF
+  DEFB $81,$C0,$F0,$1F,$F8,$03,$FF,$00,$00,$78,$1C,$0F,$F8,$1C,$0F,$01
+  DEFB $C0,$78,$0F,$00,$03,$FF,$B5,$FF,$3F,$F9,$BE,$71,$E3,$7F,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$DF,$C2,$FB,$7D,$FF,$DF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$EF,$FF,$3E,$E5,$FF,$BF,$DF,$FF
+  DEFB $40,$20,$44,$3C,$20,$44,$54,$00,$00,$40,$20,$44,$3C,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FE,$FF,$FF,$FF,$9D,$D7,$FB,$5F
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FE,$FD,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$7F,$FB,$FF,$DD,$DF,$BF,$F7,$F7
+  DEFB $C3,$E1,$F8,$3F,$07,$FC,$1F,$83,$FF,$FC,$3E,$1F,$FC,$3E,$1F,$F8
+  DEFB $0F,$FC,$1F,$83,$F8,$3F,$FF,$FD,$7F,$EF,$DF,$FB,$77,$7F,$FB,$DF
+  DEFB $C3,$E1,$F8,$3F,$E0,$E0,$FF,$83,$FF,$FC,$3E,$1F,$FC,$3E,$1F,$C0
+  DEFB $01,$FC,$1F,$83,$FE,$0F,$FF,$FF,$3F,$FF,$8F,$DD,$FF,$FF,$FB,$DF
+  DEFB $81,$C0,$F0,$1F,$FC,$07,$FF,$00,$00,$78,$1C,$0F,$F8,$1C,$0F,$01
+  DEFB $C0,$78,$0F,$00,$1F,$FF,$B5,$FE,$8F,$FE,$7E,$E7,$FF,$7F,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$DF,$FC,$3D,$7B,$FF,$EF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$EF,$FF,$FF,$4E,$FF,$CF,$EF,$FF
+  DEFB $40,$20,$38,$04,$20,$3C,$54,$10,$00,$40,$20,$38,$04,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FE,$FF,$FF,$FF,$EE,$EF,$FC,$BF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$F8,$3E,$FE,$FF,$FF,$FF,$C0,$01
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FE,$FF,$BB,$FF,$E3,$EF,$BF,$F7,$EF
+  DEFB $C3,$E1,$F8,$3F,$83,$F8,$3F,$83,$FF,$FC,$3E,$1F,$FC,$3E,$1F,$F8
+  DEFB $0F,$FC,$1F,$83,$FC,$1F,$FF,$FA,$FF,$EF,$DF,$F7,$77,$7F,$FB,$DF
+  DEFB $C3,$E1,$F8,$3F,$E0,$E0,$FF,$83,$FF,$FC,$3E,$1F,$FC,$3E,$1F,$C0
+  DEFB $81,$FC,$1F,$83,$FE,$1F,$FF,$FF,$DF,$7F,$F1,$BD,$F3,$FF,$FB,$DF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FC,$F1,$FF,$9D,$9F,$FF,$7F,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$DF,$F9,$DD,$77,$BF,$F7,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$EF,$FF,$FF,$9F,$7F,$F7,$F7,$FF
+  DEFB $00,$00,$00,$38,$00,$00,$00,$00,$00,$00,$00,$00,$38,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FE,$FF,$FF,$FF,$F5,$FF,$FD,$7F
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FA,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FE
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$F5,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $3C,$3C,$7C,$82,$7C,$3E,$3C,$42,$FE,$00,$00,$3C,$3C,$FE,$3E,$42
+  DEFB $3E,$3C,$3E,$3C,$42,$00,$18,$3C,$3C,$3C,$00,$18,$3C,$3C,$08,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FE
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$87,$81,$C3,$C1,$C3,$BD,$81,$87,$FF
+  DEFB $83,$7D,$FF,$FF,$83,$C3,$83,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$3C,$3C,$7C,$3C,$40,$00,$00
+  DEFB $3C,$42,$3C,$42,$00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$00,$00,$00,$00,$00,$3C,$78,$3C,$7C,$FE,$7E,$78,$00,$7C
+  DEFB $82,$00,$00,$00,$7C,$3C,$7C,$00,$00,$00,$00,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$3C,$3C,$7E,$FE,$42,$3C,$7C,$7E,$00,$3C,$3C,$42,$42
+  DEFB $7E,$7C,$3C,$3E,$3C,$42,$3C,$00,$40,$FE,$78,$00,$00,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $42,$42,$42,$44,$42,$08,$42,$42,$10,$00,$00,$42,$42,$10,$08,$42
+  DEFB $08,$40,$08,$42,$62,$00,$28,$42,$42,$42,$02,$28,$42,$42,$18,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FE
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$BB,$BF,$BF,$F7,$BD,$9D,$BF,$BB,$FF
+  DEFB $BD,$BB,$FF,$FD,$BD,$BD,$BD,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$42,$42,$42,$42,$40,$00,$00
+  DEFB $40,$42,$42,$42,$00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$00,$00,$00,$00,$00,$42,$44,$42,$42,$10,$40,$44,$00,$42
+  DEFB $44,$00,$02,$00,$42,$42,$42,$00,$00,$00,$00,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$40,$42,$40,$10,$42,$42,$42,$40,$00,$42,$42,$62,$42
+  DEFB $40,$42,$40,$08,$42,$62,$40,$00,$40,$10,$44,$00,$00,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $40,$42,$42,$28,$42,$08,$40,$7E,$10,$10,$00,$42,$40,$10,$08,$42
+  DEFB $08,$3C,$08,$42,$52,$00,$08,$42,$3C,$02,$04,$08,$42,$3C,$28,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FE
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$BD,$83,$C3,$F7,$BF,$AD,$83,$BD,$FF
+  DEFB $83,$D7,$FF,$FB,$BD,$BD,$BD,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$40,$42,$42,$42,$40,$00,$00
+  DEFB $3C,$7E,$42,$42,$00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$00,$00,$00,$00,$00,$42,$42,$42,$42,$10,$7C,$42,$00,$7C
+  DEFB $28,$00,$04,$00,$42,$42,$42,$00,$00,$00,$00,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$3C,$42,$7C,$10,$42,$42,$42,$7C,$00,$40,$42,$52,$42
+  DEFB $7C,$42,$3C,$08,$42,$52,$3C,$00,$40,$10,$42,$00,$00,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $40,$42,$7C,$10,$7C,$08,$4E,$42,$10,$00,$00,$7E,$40,$10,$08,$42
+  DEFB $08,$02,$08,$42,$4A,$00,$08,$3E,$42,$3C,$08,$08,$3E,$42,$48,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FE
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$BD,$BF,$FD,$F7,$B1,$B5,$BF,$BD,$FF
+  DEFB $BD,$EF,$FF,$F7,$83,$81,$83,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$40,$7E,$7C,$42,$40,$00,$00
+  DEFB $02,$42,$7E,$42,$00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$00,$00,$00,$00,$00,$7E,$42,$7E,$7C,$10,$40,$42,$00,$42
+  DEFB $10,$00,$08,$00,$7C,$7E,$7C,$00,$00,$00,$00,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$02,$42,$40,$10,$42,$7E,$7C,$40,$00,$40,$42,$4A,$42
+  DEFB $40,$7C,$02,$08,$42,$4A,$02,$00,$40,$10,$42,$00,$00,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $42,$42,$40,$10,$44,$08,$42,$42,$10,$00,$00,$42,$42,$10,$08,$24
+  DEFB $08,$42,$08,$42,$46,$00,$08,$02,$42,$40,$10,$08,$02,$42,$7E,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FE
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$BB,$BF,$BD,$F7,$BD,$B9,$BF,$BB,$FF
+  DEFB $BD,$EF,$FF,$EF,$BF,$BD,$BB,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$42,$42,$44,$42,$40,$00,$00
+  DEFB $42,$42,$42,$5A,$00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$00,$00,$00,$00,$00,$42,$44,$42,$40,$10,$40,$44,$00,$42
+  DEFB $10,$00,$10,$00,$40,$42,$44,$00,$00,$00,$00,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$42,$42,$40,$10,$5A,$42,$44,$40,$00,$42,$42,$46,$24
+  DEFB $40,$44,$42,$08,$42,$46,$42,$00,$40,$10,$44,$00,$00,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $3C,$3C,$40,$10,$42,$3E,$3C,$42,$10,$10,$00,$42,$3C,$10,$3E,$18
+  DEFB $3E,$3C,$3E,$3C,$42,$00,$3E,$3C,$3C,$7E,$20,$3E,$3C,$3C,$08,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FE
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$87,$81,$C3,$C1,$C3,$BD,$81,$87,$FF
+  DEFB $83,$EF,$FF,$DF,$BF,$BD,$BD,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$3C,$42,$42,$3C,$7E,$00,$00
+  DEFB $3C,$42,$42,$24,$00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$00,$00,$00,$00,$00,$42,$78,$42,$40,$10,$7E,$78,$00,$7C
+  DEFB $10,$00,$20,$00,$40,$42,$42,$00,$00,$00,$00,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$3C,$3C,$40,$10,$24,$42,$42,$7E,$00,$3C,$3C,$42,$18
+  DEFB $7E,$42,$3C,$3E,$3C,$42,$3C,$00,$7E,$10,$78,$00,$00,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FE
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$FF,$FF,$FF
+
+; Screen attributes.
+screen_attributes:
+  DEFB $38,$38,$38,$38,$38,$38,$38,$70,$70,$38,$38,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+
+; Screen attributes row 1.
+screen_attributes_row_1:
+  DEFB $72,$72,$72,$72,$72,$72,$72,$70,$70,$70,$70,$70,$70,$70,$70,$70
+  DEFB $70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$78
+  DEFB $72,$72,$72,$72,$72,$72,$72,$70,$70,$70,$70,$70,$70,$70,$70,$70
+  DEFB $70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$78
+  DEFB $72,$72,$72,$72,$72,$72,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70
+  DEFB $70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$78
+  DEFB $74,$74,$74,$74,$74,$74,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70
+  DEFB $70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$78
+  DEFB $71,$71,$71,$71,$71,$71,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70
+  DEFB $70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$78
+  DEFB $38,$38,$38,$38,$38,$38,$70,$70,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$70,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$78
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50
+  DEFB $50,$50,$50,$50,$50,$50,$50,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50
+  DEFB $50,$50,$50,$50,$50,$50,$50,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50,$50
+  DEFB $50,$50,$50,$50,$50,$50,$78,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$38,$38,$50,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+
+; Screen attributes row 16 (boundary for visible sprite area).
+screen_attributes_row_16:
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+
+; Screen attributes row 17 (start of lower screen area).
+screen_attributes_row_17:
+  DEFB $07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07
+  DEFB $07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07
+  DEFB $07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07
+  DEFB $07,$07,$07,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$38,$00
+  DEFB $38,$38,$38,$38,$38,$38,$38,$38,$07,$07,$07,$07,$07,$07,$07,$07
+  DEFB $07,$07,$07,$07,$07,$07,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $38,$38,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07
+  DEFB $07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$38,$38,$38,$38,$38
+  DEFB $38,$38,$38,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07
+  DEFB $07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$07,$38,$38,$38
+
+; Screen row address lookup table (64 entries × 2 bytes = 128 bytes).
+;
+; Pre-computed table mapping row indices (0-63) to screen memory addresses. Used by scroll_screen for fast vertical
+; scrolling. This table provides O(1) lookup: screen_addr = screen_row_table[row_index × 2].
+screen_row_table:
+  DEFW $401F
+  DEFW $411F
+  DEFW $421F
+  DEFW $431F
+  DEFW $441F
+  DEFW $451F
+  DEFW $461F
+  DEFW $471F
+  DEFW $403F
+  DEFW $413F
+  DEFW $423F
+  DEFW $433F
+  DEFW $443F
+  DEFW $453F
+  DEFW $463F
+  DEFW $473F
+  DEFW $405F
+  DEFW $415F
+  DEFW $425F
+  DEFW $435F
+  DEFW $445F
+  DEFW $455F
+  DEFW $465F
+  DEFW $475F
+  DEFW $407F
+  DEFW $417F
+  DEFW $427F
+  DEFW $437F
+  DEFW $447F
+  DEFW $457F
+  DEFW $467F
+  DEFW $477F
+  DEFW $409F
+  DEFW $419F
+  DEFW $429F
+  DEFW $439F
+  DEFW $449F
+  DEFW $459F
+  DEFW $469F
+  DEFW $479F
+  DEFW $40BF
+  DEFW $41BF
+  DEFW $42BF
+  DEFW $43BF
+  DEFW $44BF
+  DEFW $45BF
+  DEFW $46BF
+  DEFW $47BF
+  DEFW $40DF
+  DEFW $41DF
+  DEFW $42DF
+  DEFW $43DF
+  DEFW $44DF
+  DEFW $45DF
+  DEFW $46DF
+  DEFW $47DF
+  DEFW $40FF
+  DEFW $41FF
+  DEFW $42FF
+  DEFW $43FF
+  DEFW $44FF
+  DEFW $45FF
+  DEFW $46FF
+  DEFW $47FF
+
+; Unused area.
+data_unused_5B80:
+  DEFB $C3,$90,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $FF,$00,$00,$00,$FF,$00,$00,$00
+  DEFB $00,$23,$05,$00,$00,$00,$00,$00
+  DEFB $01,$00,$06,$00,$0B,$00,$01,$00
+  DEFB $01,$00,$06,$00,$10,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$3C
+  DEFB $40,$00,$00,$08,$00,$54,$FF,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $07,$00,$00,$CB,$5C,$00,$00,$B6
+  DEFB $5C,$B6,$5C,$CB,$5C,$00,$00,$CA
+  DEFB $5C,$CC,$5C,$00,$00,$00,$00,$00
+  DEFB $00,$CE,$5C,$CE,$5C,$CE,$5C,$00
+  DEFB $00,$00,$10,$02,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+
+; Interrupt counter. Incremented by the interrupt handler.
+int_counter:
+  DEFB $00
+
+; Unused
+data_unused_5C79:
+  DEFB $00,$00,$58,$FF,$00,$00,$21,$00
+  DEFB $5B,$05,$17,$00,$40,$FC,$50,$21
+  DEFB $18,$05,$17,$01,$00,$00,$38,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$57,$FF,$FF,$FF,$F4,$09,$A8
+  DEFB $10,$4B,$F4,$09,$C4,$15,$53,$81
+  DEFB $0F,$C4,$15,$52,$F4,$09,$C4,$15
+  DEFB $50,$80,$00,$01,$5C,$1A,$EA,$0D
+  DEFB $80
+
+; Game initialization and interrupt setup
+;
+; This is the main entry point invoked by the BASIC loader. It performs one-time initialization of the game engine,
+; including setting up the custom interrupt handler (IM 2 mode) and initializing global pointers.
+init:
+  LD HL,sound_flags                                ; Initialize ptr_sound_flags to point to sound_flags.
+  LD (ptr_sound_flags),HL                          ;
+  LD HL,collision_dispatcher                       ; Initialize collision_dispatcher_ptr to point to
+  LD (collision_dispatcher_ptr),HL                 ; collision_dispatcher
+  LD A,OPCODE_JP                                   ; Write the JP opcode to the address that all vector table entries
+  LD (INT_VECTOR_ENTRY<<8|INT_VECTOR_ENTRY),A      ; will point to.
+  LD HL,int_handler                                ; Write the interrupt handler address, completing the JP int_handler
+  LD (INT_VECTOR_ENTRY<<8|INT_VECTOR_ENTRY+1),HL   ; instruction.
+  LD HL,INT_VECTOR_TABLE_HI<<8                     ; Point HL to the start of interrupt vector table.
+  LD B,$00                                         ; Prepare to iterate 256 times.
+int_vector_table_write_loop:
+  LD (HL),INT_VECTOR_ENTRY                         ; Write INT_VECTOR_ENTRY to the current vector table entry.
+  INC HL
+  DJNZ int_vector_table_write_loop
+  LD (HL),INT_VECTOR_ENTRY                         ; Write INT_VECTOR_ENTRY to the final vector table entry.
+  LD A,INT_VECTOR_TABLE_HI                         ; Set the I register to the high byte of the interrupt vector table
+  LD I,A                                           ; address.
+  LD (saved_stack_pointer),SP
+  IM 2                                             ; Set interrupt mode 2 (vectored interrupts).
+  EI
+  LD HL,msg_credits                                ; Store the address of msg_credits in ptr_scroller.
+  LD (ptr_scroller),HL                             ;
+
+; Return to control selection dialog
+;
+; Used by the routines at select_controls and overview.
+;
+; This entry point is used when returning to the control selection dialog from the game (via select_controls) or from
+; the overview mode. It switches back to IM 1, then calls clear_and_setup to display the control selection dialog.
+;
+; After the user selects controls and game mode, execution continues at start_gameplay_or_overview.
+return_to_control_selection:
+  LD A,IM1_VECTOR_TABLE_HI                         ; Restore standard IM 1 interrupt vector table.
+  LD I,A                                           ; Set the I register to $3F for IM 1 mode.
+  IM 1                                             ; Set interrupt mode 1.
+  EI                                               ; Enable interrupts.
+  CALL clear_and_setup                             ; Display the control selection dialog.
+
+; Start gameplay or overview mode based on user selection
+;
+; This routine is called after the user selects controls and game mode from the control selection dialog.
+start_gameplay_or_overview:
+  LD A,INT_VECTOR_TABLE_HI                         ; Restore IM 2 (vectored interrupts) and enable interrupts.
+  LD I,A                                           ;
+  IM 2                                             ;
+  EI
+  LD A,(tmp_control_type)                          ; Copy selected control type to state_input_interface.
+  LD (state_input_interface),A                     ;
+  LD A,(state_overview_mode)                       ; If overview mode was selected, start overview; otherwise initialize
+  CP OVERVIEW_MODE_ON                              ; and start gameplay.
+  JP Z,start_overview                              ;
+  CALL init_state                                  ;
+  JP play                                          ;
+
+; Start overview mode
+;
+; Used by the routines at start_gameplay_or_overview and game_over.
+;
+; This routine is called when overview mode is selected (either from the control selection dialog or after game over).
+start_overview:
+  LD SP,(saved_stack_pointer)
+  CALL init_state
+  JP overview
+
+; Start gameplay mode
+;
+; Used by the routine at handle_enter.
+;
+; This routine is called when the player presses Enter during gameplay to restart.
+start_gameplay:
+  LD SP,(saved_stack_pointer)
+  CALL init_state
+  JP play
+
+; Array of possible starting bridge values.
+;
+; Index of list element is specified by the second and third bits of the state_game_mode.
+; The values correspond to the dialog rendered as msg_game_mode.
+starting_bridges:
+  DEFB $01,$05,$14,$1E
+
+; Game status buffer entry at 5D43
+state_overview_start_scroll:
+  DEFB $00
+
+; Initialize game state for overview/demo mode.
+;
+; Used by the routines at start_gameplay_or_overview, start_overview and start_gameplay.
+;
+; This routine sets up the initial game state used by the overview (attract mode) routine. It initializes player
+; positions, scores, lives, terrain state, and sets the gameplay mode to GAMEPLAY_MODE_OVERVIEW.
+init_state:
+  LD A,$78                                         ; Initialize plane X position to $78. Why isn't it $80?
+  LD (state_plane_x),A                             ;
+  CALL init_starting_bridge                        ; Set starting bridges for both players based on game mode.
+  LD HL,viewport_slots                             ; Initialize viewport objects list (set pointer, mark as empty).
+  LD (current_slot_ptr),HL                         ;
+  LD (HL),SET_MARKER_END_OF_SET                    ;
+  LD A,ACTIVATION_INTERVAL_NORMAL                  ; Set normal activation timing (every 32 frames).
+  LD (state_activation_interval),A                 ;
+  LD A,$00                                         ; Set border to black, silence speaker, clear tank shell state and
+  OUT ($FE),A                                      ; sound flags.
+  LD (state_tank_shell),A                          ;
+  LD (sound_flags),A                               ;
+  LD BC,$4C83                                      ; Initialize terrain element (C=$83: river center position, B=$4C:
+  LD (state_terrain_element_23),BC                 ; row offset).
+  LD A,$02                                         ; Initialize terrain profile, gameplay mode, and speed to $02
+  LD (state_terrain_profile_number),A              ; (GAMEPLAY_MODE_OVERVIEW / SPEED_NORMAL).
+  LD (state_gameplay_mode),A                       ;
+  LD (state_speed),A                               ;
+  LD (state_bridge_destroyed),A                    ; Store $02 to state_bridge_destroyed (unclear why $02 is used here).
+  LD HL,"00"                                       ; Initialize all player scores to zero.
+  LD (state_score_player_1_low),HL                 ;
+  LD (state_score_player_1_mid),HL                 ;
+  LD (state_score_player_1_high),HL                ;
+  LD (state_score_player_2_low),HL                 ;
+  LD (state_score_player_2_mid),HL                 ;
+  LD (state_score_player_2_high),HL                ;
+  LD A,$01                                         ; Set level fragment number and terrain position to 1.
+  LD (state_level_fragment_number),A               ;
+  LD (state_terrain_position),A                    ;
+  LD HL,LIVES_INITIAL<<8|LIVES_INITIAL             ; Set both players' lives to 4.
+  LD (state_lives_player_1),HL                     ;
+  LD (state_player),A                              ; Set current player to PLAYER_1.
+  RET
+
+; Decrease player 2 lives
+;
+; Used by the routine at play.
+decrease_lives_player_2:
+  LD HL,state_lives_player_2
+  DEC (HL)
+  JP after_life_lost
+
+; Initialize and start gameplay mode
+;
+; This routine prepares the game for play and is called when starting a new game or after losing a life.
+play:
+  LD A,$10                                         ; Initialize island line index (starting line for island rendering).
+  LD (state_island_line_idx),A                     ;
+  LD A,ACTIVATION_INTERVAL_NORMAL                  ; Initialize activation interval (every 32 frames).
+  LD (state_activation_interval),A                 ;
+  LD SP,(saved_stack_pointer)
+  LD D,COLOR_RIVER<<3|COLOR_BANK                   ; Clear screen with PAPER RIVER, INK BANK.
+  CALL clear_screen                                ;
+  CALL init_udg
+  LD DE,status_line_1                              ; Print status line 1.
+  LD BC,status_line_2 - status_line_1              ;
+  CALL PR_STRING                                   ;
+  LD A,$01                                         ; Initialize tick counter.
+  LD (state_tick),A                                ;
+  CALL CHAN_OPEN                                   ; Open channel 1 (upper screen).
+  LD DE,status_line_2                              ; Print status line 2.
+  LD BC,status_line_3 - status_line_2              ;
+  CALL PR_STRING                                   ;
+  LD A,$02                                         ; Open channel 2 (lower screen).
+  CALL CHAN_OPEN                                   ;
+  CALL print_bridge
+  LD A,$04                                         ; Initialize terrain fragment counter.
+  LD (state_terrain_fragment_counter),A            ;
+  LD A,$00                                         ; Clear state variables.
+  LD (state_bridge_section),A                      ;
+  LD (state_unused_5F6F),A                         ;
+  LD (state_terrain_position),A                    ;
+  LD (state_plane_sprite_bank),A                   ;
+  LD A,FUEL_LEVEL_FULL                             ; Initialize fuel level.
+  LD (state_fuel),A                                ;
+  LD BC,$0010                                      ; Initialize scroll offset.
+  LD (state_scroll_offset),BC                      ;
+  CALL init_current_bridge
+  LD A,$78                                         ; Initialize X position (horizontal center).
+  LD (state_plane_x),A                             ;
+  LD HL,viewport_slots                             ; Initialize viewport_slots list.
+  LD (current_slot_ptr),HL                         ;
+  LD (HL),SET_MARKER_END_OF_SET                    ; Mark viewport objects list as empty.
+  LD HL,exploding_fragments                        ; Initialize exploding_fragments list.
+  LD (exploding_fragments_ptr),HL                  ;
+  LD (HL),$FF                                      ; Mark exploding fragments list as empty.
+  LD BC,$0000
+  CALL print_lives
+  LD A,$01                                         ; Open channel 1 for score display.
+  CALL CHAN_OPEN                                   ;
+  LD A,EXT_ATTR_AT                                 ; AT 1,5
+  RST $10                                          ;
+  LD A,$01                                         ;
+  RST $10                                          ;
+  LD A,$05                                         ;
+  RST $10                                          ;
+  LD A,EXT_ATTR_INK                                ; INK PLAYER_1
+  RST $10                                          ;
+  LD A,COLOR_PLAYER_1                              ;
+  RST $10                                          ;
+  LD DE,state_score_player_1_low                            ; Print player 1 score.
+  LD BC,state_score_player_2_low - state_score_player_1_low ;
+  CALL PR_STRING                                            ;
+  LD A,$02                                         ; Open channel 2.
+  CALL CHAN_OPEN                                   ;
+  LD DE,status_line_4                              ; Print status line 4.
+  LD BC,status_line_4_end - status_line_4          ;
+  CALL PR_STRING                                   ;
+  LD A,(state_game_mode)                           ; Print game mode digit (1 or 2 player).
+  ADD A,"1"                                        ;
+  RST $10                                          ;
+  LD A,$01                                         ; Open channel 1.
+  CALL CHAN_OPEN                                   ;
+  LD A,$FF                                         ; Set terrain position to $FF (forces terrain regeneration).
+  LD (state_terrain_position),A                    ;
+  LD A,$02                                         ; Initialize terrain profile number.
+  LD (state_terrain_profile_number),A              ;
+  CALL CHAN_OPEN                                   ; Open channel 2.
+  LD A,$01                                         ; Initialize level fragment number, gameplay mode, and bridge
+  LD (state_level_fragment_number),A               ; destroyed flag.
+  LD (state_gameplay_mode),A                       ;
+  LD (state_bridge_destroyed),A
+  LD A,"h"                                         ; Set LAST_K to 'h' to start in paused state.
+  LD (LAST_K),A                                    ;
+  LD A,$00                                         ; Clear sound flags and tank shell state.
+  LD (sound_flags),A                               ;
+  LD (state_tank_shell),A                          ;
+  LD A,SPEED_FAST                                  ; Set speed for scroll-in animation.
+  LD (state_speed),A                               ;
+  LD BC,$4C83                                      ; Initialize terrain element (C=$83: river center position, B=$4C:
+  LD (state_terrain_element_23),BC                 ; row offset).
+  CALL print_player_2_score_area
+  CALL init_current_bridge
+  LD B,SCROLL_IN_ITERATIONS                        ; Set loop counter for scroll-in (40 iterations).
+scroll_in_loop:
+  PUSH BC                                          ; Save loop counter.
+  LD HL,state_tick                                 ; Increment tick counter.
+  INC (HL)                                         ;
+  CALL render_plane_and_terrain
+  CALL operate_viewport_slots
+  CALL advance_scroll
+  LD A,SPEED_FAST                                  ; Maintain speed during scroll-in.
+  LD (state_speed),A                               ;
+  POP BC                                           ; Restore loop counter.
+  DJNZ scroll_in_loop                              ; Loop until scroll-in complete.
+  LD A,$00                                         ; Clear sound flags.
+  LD (sound_flags),A                               ;
+  LD (state_gameplay_mode),A                       ; Set gameplay mode to normal (ready for player control).
+  CALL render_plane
+  LD A,CHAR_ENTER                                  ; Set last key to Enter (wait for start input).
+  LD (LAST_K),A                                    ;
+  LD A,(state_player)                              ; Decrement current player's lives.
+  CP PLAYER_2                                      ;
+  JP Z,decrease_lives_player_2                     ;
+  LD HL,state_lives_player_1                       ;
+  DEC (HL)                                         ;
+; This entry point is used by the routine at decrease_lives_player_2.
+after_life_lost:
+  CALL print_lives
+wait_for_start_input:
+  CALL KEYBOARD
+  EI                                               ; Enable interrupts.
+  LD A,(LAST_K)                                    ; If any key except Enter pressed, start game.
+  CP CHAR_ENTER                                    ;
+  JR NZ,start_game                                 ;
+  LD A,(state_input_interface)                     ; If not Kempston joystick, keep waiting.
+  CP INPUT_INTERFACE_KEMPSTON                      ;
+  JP NZ,wait_for_start_input                       ;
+  LD A,$FE                                         ; Read Kempston joystick; if centered, keep waiting.
+  IN A,($1F)                                       ;
+  CP $00                                           ;
+  JP Z,wait_for_start_input                        ;
+start_game:
+  LD A,$00                                         ; Clear bridge destroyed flag.
+  LD (state_bridge_destroyed),A                    ;
+  LD (state_bridge_y_position),A                   ;
+  LD A,$02                                         ;
+  LD (state_speed),A                               ;
+  LD (state_tick),A                                ;
+  JP main_loop                                     ;
+
+; Terrain fragment render counter (0-7). Tracks which of the 8 terrain fragments to render next. Incremented after each
+; fragment, wraps at 8.
+state_terrain_fragment_counter:
+  DEFB $00
+
+; Frame tick (0-255). Incremented each game frame for animation timing. Bit 0 alternates every frame, bits 0-1 cycle
+; every 4 frames, etc.
+state_tick:
+  DEFB $00
+
+; Current bridge number (0-47).
+state_bridge_index:
+  DEFB $00
+
+; Raw input port value from last keyboard/joystick read. Format depends on input interface type.
+state_input_readings:
+  DEFB $00
+
+; Road tank center flag ($00 = inactive, $01 = road tank is at center X=$80).
+state_tank_shell:
+  DEFB $00
+
+; Y coordinate of the active striker (missile or plane) in pixels (0-255). $00 when no missile is active.
+state_striker_y:
+  DEFB $00
+
+; X coordinate of the active striker (missile or plane) in pixels (0-255).
+state_striker_x:
+  DEFB $00
+
+; Collision detection mode for current render pass. Determines which collision handler to invoke on pixel overlap.
+state_collision_mode:
+  DEFB $00
+
+; Y coordinate where collision was detected, in pixels.
+state_collision_y:
+  DEFB $00
+
+; Pointer to current plane sprite data. Points into all_ff sprite bank, offset by speed for animation frame selection.
+ptr_plane_sprite:
+  DEFW $0000
+
+; Island rendering line counter. Tracks current scanline during island terrain rendering (0-23).
+state_island_render_idx:
+  DEFB $00
+
+; Island terrain profile index (0-7). Selects which of 8 island shapes from data_terrain_profiles to render.
+state_island_profile_idx:
+  DEFB $00
+
+; Island definition byte 2. Second byte from island data at data_islands, controls island width/shape.
+state_island_byte_2:
+  DEFB $00
+
+; Island definition byte 3. Third byte from island data at data_islands, controls island rendering parameters.
+state_island_byte_3:
+  DEFB $00
+
+; Island starting line index. Screen line (0-23) where island rendering begins. Initialized to $10 (16).
+state_island_line_idx:
+  DEFB $10
+
+; Unused
+data_unused_5EFE:
+  DEFB $FF,$FF
+
+; Viewport slots array (15 slots for active game objects).
+;
+; Each slot is a 3-byte entry that can hold one game object (enemy, fuel depot, etc.). Iterated by
+; operate_viewport_slots (operate) and check_missile_vs_objects (collision). New objects added via add_object_to_set.
+; See Data reference for terminology.
+;
+; +------+-------------------------------------------------------------+
+; | Byte | Contents                                                    |
+; +------+-------------------------------------------------------------+
+; | 0    | X position (0-255 pixels), or slot marker                   |
+; | 1    | Y position (0-255 pixels, increases as object scrolls down) |
+; | 2    | Object definition byte (type, orientation, activation)      |
+; +------+-------------------------------------------------------------+
+;
+; +-----------------------+-------+--------------------------------------+
+; | Marker                | Value | Meaning                              |
+; +-----------------------+-------+--------------------------------------+
+; | SET_MARKER_EMPTY_SLOT | $00   | Unused slot (skip during iteration)  |
+; | SET_MARKER_END_OF_SET | $FF   | End of active slots (reset iterator) |
+; +-----------------------+-------+--------------------------------------+
+viewport_slots:
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20
+
+; Explosion animation fragments array.
+;
+; Array of up to 16 explosion fragments. Each entry is 3 bytes. Animated by render_explosions. New explosions added via
+; add_object_to_set.
+;
+; +------+-----------------------------------------------------------+
+; | Byte | Contents                                                  |
+; +------+-----------------------------------------------------------+
+; | 0    | X position (0-255 pixels)                                 |
+; | 1    | Y offset (relative position, adjusted during scroll)      |
+; | 2    | Frame counter: bits 0-6 = frame (1-6), bit 7 = erase flag |
+; +------+-----------------------------------------------------------+
+;
+; Explosion frames: 1,5=sprite_explosion_f1 (small), 2,4=sprite_explosion_f2 (medium), 3=sprite_explosion_f3 (large),
+; 6=sprite_erasure (erase).
+exploding_fragments:
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20,$20,$20
+  DEFB $20
+
+; Object activation interval bitmask
+;
+; Controls when newly spawned objects become active (start moving/shooting). Objects spawn inactive (bit 7 clear in slot
+; definition) and activate when (interrupt_counter AND mask) == 0. Checked in operate_viewport_slots.
+;
+; +-------+-----------------+--------------------------+
+; | Value | Meaning         | When Set                 |
+; +-------+-----------------+--------------------------+
+; | $1F   | Every 32 frames | Normal gameplay          |
+; | $0F   | Every 16 frames | After bridge destruction |
+; +-------+-----------------+--------------------------+
+state_activation_interval:
+  DEFB $04
+
+; Current slot pointer. Iterator for traversing viewport_slots during object processing.
+current_slot_ptr:
+  DEFW $0000
+
+; Pointer to a slot from exploding_fragments
+exploding_fragments_ptr:
+  DEFW $0000
+
+; Current scroll speed in pixels per frame.
+;
+; +--------+-------+----------------+
+; | Speed  | Value | Terrain scroll |
+; +--------+-------+----------------+
+; | SLOW   | $01   | 1 pixel/frame  |
+; | NORMAL | $02   | 2 pixels/frame |
+; | FAST   | $04   | 4 pixels/frame |
+; +--------+-------+----------------+
+;
+; Also determines sprite animation frame and number of terrain fragments rendered per frame. Horizontal movement is
+; fixed at 2 pixels per input regardless of scroll speed.
+state_speed:
+  DEFB $02
+
+; Low fuel warning sound period (0-127). Used as delay loop iteration count for speaker ON/OFF phases. Lower values =
+; higher pitch. Decremented each frame, creating a rising-then-resetting warble effect.
+low_fuel_sound_period:
+  DEFB $00
+
+; Fuel level (0-255). $FF=full tank, $00=empty.
+state_fuel:
+  DEFB $00
+
+; Input interface type ($00=Keyboard, $01=Sinclair, $02=Kempston, $03=Cursor).
+state_input_interface:
+  DEFB $00
+
+; Current gameplay mode
+;
+; Controls what actions are allowed and how rendering/collision works.
+;
+; +-----------+-------+-----------------------------------------+
+; | Mode      | Value | Description                             |
+; +-----------+-------+-----------------------------------------+
+; | NORMAL    | $00   | Full player control, collision active   |
+; | SCROLL_IN | $01   | Terrain preview at game start, no input |
+; | OVERVIEW  | $02   | Attract mode demo                       |
+; | REFUEL    | $06   | Over fuel depot, adding fuel            |
+; +-----------+-------+-----------------------------------------+
+;
+; During SCROLL_IN and OVERVIEW, player input is ignored and no collision occurs. During REFUEL, fuel is added each
+; frame and collisions use plane position instead of missile position.
+state_gameplay_mode:
+  DEFB GAMEPLAY_MODE_NORMAL
+
+; Plane sprite bank offset. $00=centered, $04=banked left/right. Reset to $00 at the start of each frame, then set to
+; $04 by restore_plane_state_after_render after the banked sprite is rendered. Read by add_fuel, but always $00 at that
+; call site — the check is dead code.
+state_plane_sprite_bank:
+  DEFB $00
+
+; Player 1's current bridge number (0-47). Saved when switching players in 2-player mode.
+state_bridge_player_1:
+  DEFB $01
+
+; Player 2's current bridge number (0-47). Saved when switching players in 2-player mode.
+state_bridge_player_2:
+  DEFB $01
+
+; Bridge section indicator. $00=normal terrain, $02=bridge terrain section. Set when plane enters bridge area.
+state_bridge_section:
+  DEFB $00
+
+; Bridge destruction flag ($00 = intact, $01 = destroyed).
+state_bridge_destroyed:
+  DEFB $00
+
+; Y-position of destroyed bridge in pixels. Updated during scroll to track bridge debris position on screen.
+state_bridge_y_position:
+  DEFB $00
+
+; Unused.
+state_unused_5F6F:
+  DEFB $00
+
+; Vertical scroll offset (16-bit, little-endian). Accumulated distance traveled in pixels. Used to calculate level slot
+; index and bridge position.
+state_scroll_offset:
+  DEFB $00,$00
+
+; Player plane X coordinate in pixels (0-255). $78 (120) is horizontal center. Changes by 2 pixels per left/right input.
+state_plane_x:
+  DEFB $00
+
+; Pointer to helicopter missile coordinates in viewport_slots array. Updated when advanced helicopter fires.
+helicopter_missile_coordinates_ptr:
+  DEFB $00,$00
+
+; Helicopter missile state. Bit 7 set when missile active. Lower bits track missile animation/position.
+helicopter_missile_state:
+  DEFB $00
+
+; Current level terrain array index (1-255). Points to current element in level definition at level_terrains.
+; Incremented as terrain scrolls.
+state_level_fragment_number:
+  DEFB $00
+
+; Current terrain profile number (0-7). Index into terrain sprite table at data_terrain_profiles. Loaded from first byte
+; of level element at level_terrains.
+state_terrain_profile_number:
+  DEFB $00
+
+; Cached terrain element data (2 bytes). Stores bytes 2-3 of current level element for object spawning.
+state_terrain_element_23:
+  DEFB $00,$00
+
+; Terrain extras byte. Additional terrain rendering flags from level data.
+state_terrain_extras:
+  DEFB $00
+
+; Current screen memory pointer. Points to pixel address being rendered during terrain drawing.
+screen_ptr:
+  DEFW $0000
+
+; Terrain sub-position (0-3). Index within current terrain element. Incremented every 4 scroll units, triggers new
+; terrain load at 0.
+state_terrain_position:
+  DEFB $01
+
+; Pointer to the text to be displayed in the scroller.
+ptr_scroller:
+  DEFW $0000
+
+; Unused
+data_unused_5F80:
+  DEFB $00
+
+; Overview mode frame counter. Counts scroll iterations during attract mode. Game starts after 5 increments or key
+; press.
+state_overview_frame:
+  DEFB $00
+
+; Unused
+data_unused_5F82:
+  DEFB $00
+
+; Saved stack pointer. Captured at init, restored when starting new life to unwind any nested calls.
+saved_stack_pointer:
+  DEFW $0000
+
+; Saved HL register during collision detection. Preserved across collision handler calls.
+collision_saved_hl:
+  DEFW $0000
+
+; Saved DE register during collision detection. Preserved across collision handler calls.
+collision_saved_de:
+  DEFW $0000
+
+; Saved BC register during collision detection. Preserved across collision handler calls.
+collision_saved_bc:
+  DEFW $0000
+
+; Collision coordinates (Y in high byte, X in low byte). Set by collision detection when overlap found.
+collision_coordinates:
+  DEFW $0000
+
+; Saved object coordinates during rendering. Backup of object position for multi-pass rendering.
+state_saved_object_coords:
+  DEFW $0000
+
+; Missile coordinates preserved during plane rendering.
+state_plane_missile_coords_backup:
+  DEFW $0000
+
+; Main gameplay loop
+;
+; Central game loop that runs continuously during active gameplay. Orchestrates all game subsystems in a fixed sequence
+; each frame.
+;
+; * Input: Check Enter key (Caps+Enter → restart, Symbol+Enter → control select)
+; * Timing: Increment tick counter (state_tick)
+; * Render: Explosions, plane/terrain, viewport objects
+; * Missiles: Two-pass player missile (erase then draw)
+; * Projectiles: Tank shells, helicopter missiles
+; * Scroll: Advance game world (advance_scroll)
+; * Fuel: Consume fuel (consume_fuel)
+; * Controls: Dispatch to input handler based on state_input_interface
+;
+; The loop is infinite. It terminates only via: game over (fuel empty, collision) or player death (jumps to death
+; handler). Pressing Enter calls handle_enter (Caps+Enter → start_gameplay to restart gameplay; Symbol+Enter →
+; select_controls to return to control selection). The H key pause is handled entirely by the interrupt handler
+; (int_handler) and does not exit the loop.
+main_loop:
+  LD A,$BF                                         ; Check Enter key for mode transitions.
+  IN A,($FE)                                       ;
+  BIT 0,A                                          ;
+  CALL Z,handle_enter                              ;
+  LD HL,state_tick                                 ; Increment tick counter at state_tick.
+  INC (HL)                                         ;
+  CALL render_explosions
+  CALL render_plane_and_terrain
+  CALL operate_viewport_slots
+  LD A,$01                                         ; Player missile pass 1: erase at old position.
+  LD (missile_pass_selector),A                     ;
+  CALL animate_plane_missile                       ;
+  LD A,$00                                         ; Player missile pass 2: draw at new position.
+  LD (missile_pass_selector),A                     ;
+  CALL animate_plane_missile                       ;
+  CALL operate_tank_shell
+  CALL operate_helicopter_missile
+  CALL advance_scroll
+  CALL consume_fuel
+  LD A,$00                                         ; Reset plane sprite bank.
+  LD (state_plane_sprite_bank),A                   ;
+  LD A,(state_input_interface)                     ; Dispatch to input handler.
+  CP INPUT_INTERFACE_KEMPSTON                      ;
+  JP Z,scan_kempston                               ;
+  CP INPUT_INTERFACE_SINCLAIR                      ;
+  JP Z,scan_sinclair                               ;
+  CP INPUT_INTERFACE_KEYBOARD                      ;
+  JP Z,scan_keyboard                               ;
+
+; Scan cursor keys
+;
+; Reads keyboard half-rows via port $FE. Cursor keys use active-low bits (Z = pressed). Each detected press calls the
+; corresponding handler.
+scan_cursor:
+  LD A,$EF                                         ; Scan "8" (RIGHT)
+  IN A,($FE)                                       ;
+  LD (state_input_readings),A                      ;
+  BIT 2,A                                          ;
+  CALL Z,handle_right                              ;
+  LD A,$F7                                         ; Scan "5" (LEFT)
+  IN A,($FE)                                       ;
+  BIT 4,A                                          ;
+  CALL Z,handle_left                               ;
+  LD A,(state_input_readings)                      ; Scan "0" (FIRE)
+  BIT 0,A                                          ;
+  CALL Z,handle_fire                               ;
+  LD A,(state_input_readings)                      ; Scan "7" (UP)
+  BIT 3,A                                          ;
+  CALL Z,handle_up                                 ;
+  LD A,(state_input_readings)                      ; Scan "6" (DOWN)
+  BIT 4,A                                          ;
+  CALL Z,handle_down                               ;
+  JP main_loop                                     ;
+
+; Scan Kempston joystick
+;
+; Reads Kempston joystick port $1F. Unlike keyboard, Kempston uses active-high bits (NZ = pressed).
+scan_kempston:
+  LD A,$FE                                         ; Scan RIGHT
+  IN A,($1F)                                       ;
+  LD (state_input_readings),A                      ;
+  BIT 0,A                                          ;
+  CALL NZ,handle_right                             ;
+  LD A,(state_input_readings)                      ; Scan LEFT
+  BIT 1,A                                          ;
+  CALL NZ,handle_left                              ;
+  LD A,(state_input_readings)                      ; Scan DOWN
+  BIT 2,A                                          ;
+  CALL NZ,handle_down                              ;
+  LD A,(state_input_readings)                      ; Scan UP
+  BIT 3,A                                          ;
+  CALL NZ,handle_up                                ;
+  LD A,(state_input_readings)                      ; Scan FIRE
+  BIT 4,A                                          ;
+  CALL NZ,handle_fire                              ;
+  JP main_loop                                     ;
+
+; Scan Sinclair joystick
+;
+; Reads half-row $EF (keys 6-0) via port $FE. Maps Sinclair Interface 2 joystick 1 to game actions.
+scan_sinclair:
+  LD A,$EF                                         ; Scan "0" (FIRE)
+  IN A,($FE)                                       ;
+  LD (state_input_readings),A                      ;
+  BIT 0,A                                          ;
+  CALL Z,handle_fire                               ;
+  LD A,(state_input_readings)                      ; Scan "9" (UP)
+  BIT 1,A                                          ;
+  CALL Z,handle_up                                 ;
+  LD A,(state_input_readings)                      ; Scan "8" (DOWN)
+  BIT 2,A                                          ;
+  CALL Z,handle_down                               ;
+  LD A,(state_input_readings)                      ; Scan "7" (RIGHT)
+  BIT 3,A                                          ;
+  CALL Z,handle_right                              ;
+  LD A,(state_input_readings)                      ; Scan "6" (LEFT)
+  BIT 4,A                                          ;
+  CALL Z,handle_left                               ;
+  JP main_loop                                     ;
+
+; Scan keyboard
+;
+; Reads multiple half-rows via port $FE. Keys: P=right, O=left, 2=up, W=down, either bottom row=fire.
+scan_keyboard:
+  LD A,$DF                                         ; Scan "P" (RIGHT)
+  IN A,($FE)                                       ;
+  BIT 0,A                                          ;
+  CALL Z,handle_right                              ;
+  LD A,$DF                                         ; Scan "O" (LEFT)
+  IN A,($FE)                                       ;
+  BIT 1,A                                          ;
+  CALL Z,handle_left                               ;
+  LD A,$F7                                         ; Scan "2" (UP)
+  IN A,($FE)                                       ;
+  BIT 1,A                                          ;
+  CALL Z,handle_up                                 ;
+  LD A,$FB                                         ; Scan "W" (DOWN)
+  IN A,($FE)                                       ;
+  BIT 1,A                                          ;
+  CALL Z,handle_down                               ;
+  LD A,$7F                                         ; Scan lower row right (FIRE)
+  IN A,($FE)                                       ;
+  AND $1F                                          ;
+  CP $1F                                           ;
+  CALL NZ,handle_fire                              ;
+  LD A,$FE                                         ; Scan lower row left (FIRE)
+  IN A,($FE)                                       ;
+  AND $1F                                          ;
+  CP $1F                                           ;
+  CALL NZ,handle_fire                              ;
+  JP main_loop                                     ;
+
+; Render player plane and terrain fragments
+;
+; Top-level render routine called from main loop (main_loop). Orchestrates visual updates in a specific order to prevent
+; flicker.
+;
+; Render sequence:
+;
+; * Player plane sprite (GAMEPLAY_MODE_NORMAL only)
+; * Screen scroll system
+; * Terrain fragments (count = current speed)
+; * Attribute scroll (every 8 fragments)
+;
+; Speed affects the number of terrain fragments rendered per frame and the sprite animation frame selection.
+render_plane_and_terrain:
+  LD A,(state_gameplay_mode)                       ; Skip plane rendering if not GAMEPLAY_MODE_NORMAL.
+  CP GAMEPLAY_MODE_NORMAL                          ;
+  JP NZ,render_terrain_fragments                   ;
+  LD A,COLLISION_MODE_NONE                         ; Set collision mode to NONE for plane (no collision during render).
+  LD (state_collision_mode),A                      ;
+  LD A,(state_plane_x)                             ; Calculate plane sprite frame: offset = (8 - speed) * 2.
+  LD C,A                                           ;
+  LD A,(state_speed)                               ;
+  LD E,A                                           ;
+  LD A,$08                                         ;
+  SUB E                                            ;
+  LD D,$00                                         ;
+  LD E,A                                           ;
+  SLA E                                            ;
+  LD HL,(ptr_plane_sprite)                         ; Apply offset to sprite pointer.
+  ADD HL,DE                                        ;
+  LD (render_sprite_ptr),HL                        ;
+  ADD A,$80                                        ; Compute look-ahead Y: Y = 136 - speed (135 slow, 134 normal, 132
+  LD B,A                                           ; fast), placing the plane higher on screen at faster speeds to
+  LD A,(state_speed)                               ; reveal more upcoming terrain. Dead code: movement handlers
+  LD D,A                                           ; (handle_right, handle_left, render_plane) always overwrite this
+                                                   ; with the fixed PLANE_COORDINATE_Y.
+  LD (previous_object_coordinates),BC              ; Set plane coordinates for rendering.
+  LD (object_coordinates),BC                       ;
+  LD E,$00                                         ; Render plane: width=2, size=$10, attrs=$00.
+  LD BC,$0010                                      ;
+  LD A,$02                                         ;
+  LD HL,sprite_erasure                             ;
+  CALL render_object                               ;
+render_terrain_fragments:
+  CALL scroll_screen                               ; Render islands.
+  LD A,(state_speed)                               ; Calculate starting screen row based on speed.
+  LD DE,$0100                                      ;
+  LD HL,screen_pixels                              ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+calculate_screen_row_loop:
+  ADD HL,DE                                        ; HL = screen_start + (speed * $100).
+  DEC A                                            ;
+  JR NZ,calculate_screen_row_loop                  ;
+  LD (screen_ptr),HL                               ; Store screen pointer to screen_ptr.
+  LD A,(state_speed)                               ; Set up terrain fragment loop (count = speed).
+  LD B,A                                           ;
+  LD A,(state_terrain_fragment_counter)            ;
+  LD C,A                                           ;
+render_terrain_loop:
+  INC C                                            ; Increment fragment counter.
+  LD A,C                                           ;
+  PUSH BC                                          ;
+  AND $07                                          ; Every 8 fragments, scroll attributes.
+  CP $00                                           ;
+  CALL Z,scroll_attributes                         ;
+  CALL render_terrain_fragment                     ; Render terrain fragment.
+  LD DE,$0100                                      ; Move screen pointer up one row ($100 bytes).
+  LD HL,(screen_ptr)                               ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+  LD (screen_ptr),HL                               ;
+  POP BC                                           ;
+  DJNZ render_terrain_loop                         ; Loop until all fragments rendered.
+  LD A,C                                           ; Store updated fragment counter.
+  LD (state_terrain_fragment_counter),A            ;
+  RET                                              ;
+
+; Calculate fuel gauge sprite offset
+;
+; Computes a sprite data offset for the fuel gauge display using the formula: offset = (7 - B) * 8 + D. The result is
+; patched into the operand of the following RLC instruction via self-modifying code.
+;
+; I:B Fuel gauge row (0-7, top to bottom)
+; I:D Sub-row pixel offset within the gauge row
+; O:B Rotated fuel gauge row (used by caller for next iteration)
+calculate_fuel_gauge_offset:
+  LD A,$07                                         ; Calculate offset = (7 - B) * 8 + D and patch into next instruction.
+  PUSH DE                                          ;
+  SUB B                                            ;
+  SLA A                                            ;
+  SLA A                                            ;
+  SLA A                                            ;
+  POP DE                                           ;
+  ADD A,D                                          ;
+  LD ($6134),A                                     ;
+  RLC B                                            ; Rotate B left through carry.
+  RET
+
+; Collision detection dispatcher
+;
+; Central collision handler called during sprite rendering (via jp_collision_dispatcher) when pixel overlap is detected.
+; Saves registers, reads collision mode from state_collision_mode, and dispatches to the appropriate handler.
+;
+; +-----------------------------------------+------------------------------------------+-------------------+
+; | Mode                                    | Handler                                  | Description       |
+; +-----------------------------------------+------------------------------------------+-------------------+
+; | COLLISION_MODE_NONE ($00)               | handle_collision_mode_none               | Rendering only    |
+; | COLLISION_MODE_FUEL_DEPOT ($01)         | handle_collision_mode_fuel_depot         | Fuel depot refuel |
+; | COLLISION_MODE_MISSILE ($02)            | check_collision                          | Missile hit       |
+; | COLLISION_MODE_FIGHTER ($03)            | handle_collision_mode_fighter            | Fighter hit       |
+; | COLLISION_MODE_HELICOPTER_MISSILE ($04) | handle_collision_mode_helicopter_missile | Enemy missile     |
+; +-----------------------------------------+------------------------------------------+-------------------+
+collision_dispatcher:
+  POP HL                                           ; Save registers: return address to collision_saved_hl, DE to
+  LD (collision_saved_hl),HL                       ; collision_saved_de, BC to collision_saved_bc.
+  LD (collision_saved_de),DE                       ;
+  LD (collision_saved_bc),BC                       ;
+  LD A,(state_collision_mode)                      ; Load collision mode and dispatch to handler (see table above).
+  CP COLLISION_MODE_NONE                           ;
+  JP Z,handle_collision_mode_none                  ;
+  CP COLLISION_MODE_FUEL_DEPOT                     ;
+  JP Z,handle_collision_mode_fuel_depot            ;
+  CP COLLISION_MODE_MISSILE                        ;
+  JP Z,check_collision                             ;
+  CP COLLISION_MODE_FIGHTER                        ;
+  JP Z,handle_collision_mode_fighter               ;
+  CP COLLISION_MODE_HELICOPTER_MISSILE             ;
+  JP Z,handle_collision_mode_helicopter_missile    ;
+
+; Handle COLLISION_MODE_FIGHTER collision detection
+;
+; Used by the routine at collision_dispatcher.
+;
+; Checks if the player's missile has collided with a fighter aircraft. Uses bounding box collision detection by
+; comparing the missile coordinates (from state_striker_y) with the fighter's coordinates (from object_coordinates).
+;
+; The collision box is 6 pixels wide (horizontally) and uses vertical bounds of +10 and +1 pixels.
+;
+; If no collision is detected (any boundary check fails), jumps to no_collision_exit to reset collision mode and return.
+;
+; On collision: removes the fighter from the viewport, triggers two explosion fragments, awards POINTS_FIGHTER, and
+; continues to post-collision processing at deactivate_missile.
+handle_collision_mode_fighter:
+  LD BC,(state_striker_y)                          ; Load missile coordinates from state_striker_y and fighter
+  LD DE,(object_coordinates)                       ; coordinates from object_coordinates.
+; Y-axis collision check.
+  LD A,B                                           ; Check if missile_Y + 6 >= fighter_Y; exit to no_collision_exit if
+  ADD A,$06                                        ; not.
+  SUB D                                            ;
+  JP M,no_collision_exit                           ;
+  LD A,D                                           ; Check if fighter_Y + 6 >= missile_Y; exit to no_collision_exit if
+  ADD A,$06                                        ; not.
+  SUB B                                            ;
+  JP M,no_collision_exit                           ;
+; X-axis collision check.
+  LD H,$00                                         ; Check if fighter_X + 10 >= missile_X; exit to no_collision_exit if
+  LD A,E                                           ; not.
+  ADD A,$0A                                        ;
+  LD L,A                                           ;
+  LD B,$00                                         ;
+  OR A                                             ;
+  SBC HL,BC                                        ;
+  JP M,no_collision_exit                           ;
+  LD H,$00                                         ; Check if missile_X + 1 >= fighter_X; exit to no_collision_exit if
+  LD BC,(state_striker_y)                          ; not.
+  LD A,C                                           ;
+  INC A                                            ;
+  LD L,A                                           ;
+  LD B,$00                                         ;
+  LD C,E                                           ;
+  OR A                                             ;
+  SBC HL,BC                                        ;
+  JP M,no_collision_exit                           ;
+; Collision detected - process hit.
+  POP DE                                           ; Clean up stack (3x POP DE).
+  POP DE                                           ;
+  POP DE                                           ;
+  LD A,D                                           ; Store fighter Y coordinate to state_collision_y.
+  LD (state_collision_y),A                         ;
+  LD HL,(current_slot_ptr)                         ; Get object coordinates from viewport and mark slot as empty.
+  DEC HL                                           ;
+  DEC HL                                           ;
+  LD B,(HL)                                        ;
+  DEC HL                                           ;
+  LD C,(HL)                                        ;
+  LD (HL),SET_MARKER_EMPTY_SLOT                    ;
+  LD D,$00                                         ; Spawn two explosion fragments (second offset by X-6).
+  CALL spawn_explosion_fragment                    ;
+  DEC C                                            ;
+  DEC C                                            ;
+  DEC C                                            ;
+  DEC C                                            ;
+  DEC C                                            ;
+  DEC C                                            ;
+  CALL spawn_explosion_fragment                    ;
+  LD A,POINTS_FIGHTER                              ; Award POINTS_FIGHTER to player.
+  CALL add_points                                  ;
+  JP deactivate_missile                            ; Deactivate missile.
+
+; Check collision against bridges and viewport objects
+;
+; Used by the routines at collision_dispatcher and handle_collision_mode_fuel_depot.
+;
+; Checks if the entity (missile or plane) has collided with a bridge or any viewport object. The coordinates to check
+; are read from state_striker_y.
+;
+; Called in two contexts: (1) when COLLISION_MODE_MISSILE is set, checks missile collision; (2) when called from
+; handle_collision_mode_fuel_depot, checks plane collision with fuel depots.
+;
+; First checks if a bridge exists (state_bridge_y_position != 0) and whether the Y coordinate is within the bridge's
+; vertical bounds (bridge_y - $16 to bridge_y). If the bridge is hit, awards POINTS_BRIDGE, triggers 6 explosion
+; fragments in a 2x3 grid pattern, increments the player's bridge counter, and clears the bridge.
+;
+; If no bridge collision, falls through to check_missile_vs_objects to check collision against viewport objects.
+check_collision:
+  LD BC,(state_striker_y)                          ; Load entity coordinates from state_striker_y and bridge Y from
+  LD A,(state_bridge_y_position)                   ; state_bridge_y_position.
+  CP $00                                           ; If no bridge exists, jump to check_missile_vs_objects to check
+  JP Z,check_missile_vs_objects                    ; viewport objects.
+  LD D,A                                           ; Check if entity_Y <= bridge_Y; if not, check objects.
+  SUB B                                            ;
+  JP M,check_missile_vs_objects                    ;
+  LD A,D                                           ; Check if entity_Y >= bridge_Y - $16; if not, check objects.
+  SUB $16                                          ;
+  SUB B                                            ;
+  JP P,check_missile_vs_objects                    ;
+; Bridge hit - award points and spawn explosions.
+  LD A,POINTS_BRIDGE                               ; Award POINTS_BRIDGE to player.
+  CALL add_points                                  ;
+  LD A,ACTIVATION_INTERVAL_FAST                    ; Increase activation rate (every 16 frames after bridge
+  LD (state_activation_interval),A                 ; destruction).
+  POP DE                                           ; Clean up stack and store hit Y to state_collision_y.
+  POP DE                                           ;
+  POP DE                                           ;
+  POP BC                                           ;
+  LD A,D                                           ;
+  LD (state_collision_y),A                         ;
+  LD A,(state_bridge_y_position)                   ; Set up bottom explosion row: Y = bridge_Y - 4, X = $70, D = 0.
+  SUB $04                                          ;
+  LD B,A                                           ;
+  LD C,$70                                         ;
+  LD D,$00                                         ;
+  CALL spawn_explosion_fragment                    ; Spawn explosion 1 (bottom-left).
+  LD C,$80                                         ; Move to X = $80 and spawn explosion 2 (bottom-right).
+  CALL spawn_explosion_fragment                    ;
+  LD A,B                                           ; Move Y - 8 and spawn explosion 3 (middle-right).
+  SUB $08                                          ;
+  LD B,A                                           ;
+  CALL spawn_explosion_fragment                    ;
+  LD C,$70                                         ; Move to X = $70 and spawn explosion 4 (middle-left).
+  CALL spawn_explosion_fragment                    ;
+  LD A,B                                           ; Move Y - 8 and spawn explosion 5 (top-left).
+  SUB $08                                          ;
+  LD B,A                                           ;
+  CALL spawn_explosion_fragment                    ;
+  LD C,$80                                         ; Move to X = $80 and spawn explosion 6 (top-right).
+  CALL spawn_explosion_fragment                    ;
+  LD A,(state_bridge_section)                      ; If bridge section is $02, call clear_destroyed_bridge with screen
+  CP $02                                           ; screen_pixels.
+  LD HL,screen_pixels                              ;
+  CALL Z,clear_destroyed_bridge                    ; (continued from above).
+  LD A,(state_bridge_section)                      ; If bridge section is $02, call clear_destroyed_bridge with screen
+  CP $02                                           ; $4100.
+  LD HL,$4100                                      ;
+  CALL Z,clear_destroyed_bridge                    ; (continued from above).
+  LD A,$00                                         ; Clear bridge Y position (state_bridge_y_position).
+  LD (state_bridge_y_position),A                   ;
+  LD A,$01                                         ; Set bridge destroyed flag (state_bridge_destroyed).
+  LD (state_bridge_destroyed),A                    ;
+  LD BC,(state_saved_object_coords)                ; Restore entity coordinates from state_saved_object_coords to
+  LD (state_striker_y),BC                          ; state_striker_y.
+  LD A,(state_player)                              ; Check if player 2; if so, jump to next_bridge_player_2.
+  CP PLAYER_2                                      ;
+  JP Z,next_bridge_player_2                        ; (continued from above).
+next_bridge_player_1:
+  LD HL,state_bridge_player_1                      ; Increment player 1 bridge counter at state_bridge_player_1 and
+  INC (HL)                                         ; print.
+  CALL print_bridge                                ;
+  JP deactivate_missile                            ; Deactivate missile.
+
+; Increment player 2's bridge counter
+;
+; Used by the routine at check_collision.
+next_bridge_player_2:
+  LD HL,state_bridge_player_2                      ; Increment player 2 bridge counter at state_bridge_player_2 and
+  INC (HL)                                         ; print.
+  CALL print_bridge                                ;
+  JP deactivate_missile                            ; Deactivate missile.
+
+; Unused
+data_unused_6253:
+  DEFB $3E,$00,$C9
+
+; Handle COLLISION_MODE_FUEL_DEPOT (initiate refueling)
+;
+; Used by the routine at collision_dispatcher.
+;
+; Called from the collision dispatcher when COLLISION_MODE_FUEL_DEPOT is detected. Sets gameplay mode to
+; GAMEPLAY_MODE_REFUEL and uses the plane's coordinates (instead of missile coordinates) for collision detection.
+;
+; This allows the plane itself to interact with fuel depots via check_collision.
+handle_collision_mode_fuel_depot:
+  LD A,GAMEPLAY_MODE_REFUEL                        ; Set gameplay mode to GAMEPLAY_MODE_REFUEL in state_gameplay_mode.
+  LD (state_gameplay_mode),A                       ;
+  LD B,$80                                         ; Load plane coordinates (Y=$80, X from state_plane_x) into
+  LD A,(state_plane_x)                             ; state_striker_y.
+  LD C,A                                           ;
+  LD (state_striker_y),BC                          ;
+  JP check_collision                               ; Check for collision with fuel depot.
+
+; Check collision with explosion fragments
+;
+; Used by the routine at check_missile_vs_objects.
+;
+; Iterates through exploding_fragments (exploding_fragments) to check if the entity collides with any active debris.
+; Each fragment entry is 3 bytes: X, Y, and type/state.
+;
+; Collision uses 8x8 bounding box for the entity and 16x8 for fragments. Result stored in collision_coordinates: $02 =
+; collision detected, $00 = no collision (end of list reached).
+check_fragment_collision:
+  LD HL,(exploding_fragments_ptr)                  ; Load fragment coordinates (C=X, B=Y) from list pointer
+  LD C,(HL)                                        ; exploding_fragments_ptr and advance by 3.
+  INC HL                                           ;
+  LD B,(HL)                                        ;
+  INC HL                                           ;
+  INC HL                                           ;
+  LD (exploding_fragments_ptr),HL                  ; Store updated pointer; copy X to A for marker check.
+  LD A,C                                           ;
+  CP SET_MARKER_EMPTY_SLOT                         ; If empty slot, skip to next fragment.
+  JP Z,check_fragment_collision                    ;
+  CP SET_MARKER_END_OF_SET                         ; If end-of-set marker, jump to check_fragment_collision_end (no
+  JP Z,check_fragment_collision_end                ; collision).
+  CALL advance_object                              ; Adjust Y coordinate for scrolling.
+; Y-axis collision check (8-pixel height for both entity and fragment).
+  LD DE,(state_striker_y)                          ; Check if entity_Y + 8 >= fragment_Y; if not, next fragment.
+  LD A,D                                           ;
+  ADD A,$08                                        ;
+  LD H,$00                                         ;
+  LD L,A                                           ;
+  LD D,$00                                         ;
+  OR A                                             ;
+  LD E,B                                           ;
+  SBC HL,DE                                        ;
+  JP M,check_fragment_collision                    ; (continued).
+  LD A,B                                           ; Check if fragment_Y + 8 >= entity_Y; if not, next fragment.
+  ADD A,$08                                        ;
+  LD H,$00                                         ;
+  LD L,A                                           ;
+  LD E,D                                           ;
+  LD D,$00                                         ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+  JP M,check_fragment_collision                    ;
+; X-axis collision check (8-pixel width for entity, 16-pixel for fragment).
+  LD DE,(state_striker_y)                          ; Check if entity_X + 8 >= fragment_X; if not, next fragment.
+  LD H,$00                                         ;
+  LD A,E                                           ;
+  ADD A,$08                                        ;
+  LD L,A                                           ;
+  LD D,$00                                         ;
+  LD E,C                                           ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+  JP M,check_fragment_collision                    ; (continued).
+  LD A,C                                           ; Check if fragment_X + 16 >= entity_X; if not, next fragment.
+  ADD A,$10                                        ;
+  LD DE,(state_striker_y)                          ;
+  LD H,$00                                         ;
+  LD L,A                                           ;
+  OR A                                             ;
+  LD D,$00                                         ;
+  SBC HL,DE                                        ;
+  JP M,check_fragment_collision                    ;
+; Collision detected with fragment.
+  LD A,$02                                         ; Store $02 (collision) to collision_coordinates and return.
+  LD (collision_coordinates),A                     ;
+  RET                                              ;
+
+; End of fragment list - no collision found
+;
+; Used by the routine at check_fragment_collision.
+check_fragment_collision_end:
+  LD A,$00                                         ; Store $00 (no collision) to collision_coordinates and return.
+  LD (collision_coordinates),A                     ;
+  RET                                              ;
+
+; Get Y offset for balloon collision
+;
+; Used by the routine at check_missile_vs_objects.
+get_offset_balloon:
+  LD E,$09                                         ; Return $09 in E (balloon Y offset).
+  RET                                              ;
+
+; Get Y offset for fuel depot collision
+;
+; Used by the routine at check_missile_vs_objects.
+get_offset_fuel:
+  LD E,$11                                         ; Return $11 in E (fuel depot Y offset).
+  RET                                              ;
+
+; Increase vertical coordinate of the object by the value of state_speed.
+;
+; Adds the current scroll delta to an object's Y coordinate. Used during refueling mode to compensate for screen
+; scrolling when checking collisions.
+;
+; I:B Current Y coordinate
+; O:B New Y coordinate (B + scroll_delta)
+advance_object:
+  LD A,(state_speed)                               ; Load scroll delta from state_speed and add to B.
+  ADD A,B                                          ;
+  LD B,A                                           ;
+  RET
+
+; Decrease vertical coordinate of the object by the value of state_speed.
+;
+; Subtracts the current scroll delta from an object's Y coordinate. Used to reverse the adjustment made by
+; advance_object after collision checking.
+;
+; I:B Current Y coordinate
+; O:B New Y coordinate (B - scroll_delta)
+retract_object:
+  LD A,(state_speed)                               ; Load scroll delta from state_speed and subtract from B.
+  LD H,A                                           ;
+  LD A,B                                           ;
+  SUB H                                            ;
+  LD B,A                                           ;
+  RET
+
+; Check missile collision against viewport objects
+;
+; Used by the routine at check_collision.
+;
+; Iterates through viewport_slots (viewport_slots) checking if the player's missile collides with any object. Each slot
+; is 3 bytes: X, Y, and definition.
+;
+; Collision detection uses type-specific bounding boxes. Most objects are 10x8 pixels, but balloons and fuel depots are
+; taller (17-25 pixels), and ships are wider (19 pixels).
+;
+; On hit, dispatches to type-specific handlers: hit_helicopter_reg (helicopter), hit_ship (ship), hit_helicopter_adv
+; (advanced helicopter), hit_fighter (fighter), hit_balloon (balloon), hit_fuel (fuel). If no known type matches, checks
+; check_fragment_collision for fragment collision.
+;
+; During GAMEPLAY_MODE_REFUEL, object Y coordinates are adjusted for scrolling before and after collision checks.
+check_missile_vs_objects:
+  LD HL,(current_slot_ptr)                         ; Load object coordinates (C=X, B=Y) from list pointer
+  LD C,(HL)                                        ; current_slot_ptr and advance by 3.
+  INC HL                                           ;
+  LD B,(HL)                                        ;
+  INC HL                                           ;
+  INC HL                                           ;
+  LD (current_slot_ptr),HL                         ; Store updated pointer; copy X to A for marker check.
+  LD A,C                                           ;
+  CP SET_MARKER_EMPTY_SLOT                         ; If empty slot, skip to next object.
+  JP Z,check_missile_vs_objects                    ;
+  CP SET_MARKER_END_OF_SET                         ; If end-of-set marker, jump to check_missile_vs_objects_end for
+  JP Z,check_missile_vs_objects_end                ; fragment collision check.
+  LD A,(state_gameplay_mode)                       ; If GAMEPLAY_MODE_REFUEL, call advance_object to adjust object Y for
+  CP GAMEPLAY_MODE_REFUEL                          ; scrolling.
+  CALL Z,advance_object                            ;
+; Y-axis collision check (entity height: 9 pixels).
+  LD DE,(state_striker_y)                          ; Check if entity_Y + 9 >= object_Y; if not, next object.
+  LD A,D                                           ;
+  ADD A,$09                                        ;
+  LD H,$00                                         ;
+  LD L,A                                           ;
+  LD D,$00                                         ;
+  OR A                                             ;
+  LD E,B                                           ;
+  SBC HL,DE                                        ;
+  JP M,check_missile_vs_objects                    ; (continued).
+  LD A,B                                           ; Set up D = object_Y + 8, E = 0 (height offset).
+  ADD A,$08                                        ;
+  LD D,A                                           ;
+  LD E,$00                                         ;
+  LD HL,(current_slot_ptr)                         ; Load object type from viewport pointer.
+  DEC HL                                           ;
+  LD A,(HL)                                        ;
+  AND SLOT_MASK_OBJECT_TYPE                        ; If balloon, call get_offset_balloon (E = 9, taller).
+  CP OBJECT_BALLOON                                ;
+  CALL Z,get_offset_balloon                        ;
+  CP OBJECT_FUEL                                   ; If fuel depot, call get_offset_fuel (E = 17, tallest).
+  CALL Z,get_offset_fuel                           ;
+  LD A,D                                           ; Check if object_Y + 8 + offset >= entity_Y; if not, next object.
+  ADD A,E                                          ;
+  LD DE,(state_striker_y)                          ;
+  LD H,$00                                         ;
+  LD L,A                                           ;
+  LD E,D                                           ;
+  LD D,$00                                         ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+  JP M,check_missile_vs_objects                    ; (continued).
+; X-axis collision check (entity width: 8 pixels).
+  LD DE,(state_striker_y)                          ; Check if entity_X + 8 >= object_X; if not, next object.
+  LD A,E                                           ;
+  ADD A,$08                                        ;
+  LD E,A                                           ;
+  LD H,$00                                         ;
+  LD L,E                                           ;
+  LD D,$00                                         ;
+  LD E,C                                           ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+  JP M,check_missile_vs_objects                    ; (continued).
+  LD A,C                                           ; Set up D = object_X + 10, E = 0 (width offset).
+  ADD A,$0A                                        ;
+  LD D,A                                           ;
+  LD E,$00                                         ;
+  LD HL,(current_slot_ptr)                         ; Load object type from viewport pointer.
+  DEC HL                                           ;
+  LD A,(HL)                                        ;
+  AND SLOT_MASK_OBJECT_TYPE                        ; If ship, call get_offset_balloon (E = 9, wider).
+  CP OBJECT_SHIP                                   ;
+  CALL Z,get_offset_balloon                        ;
+  LD A,D                                           ; Store object coordinates to collision_coordinates for hit handlers.
+  ADD A,E                                          ;
+  LD DE,(state_striker_y)                          ;
+  LD (collision_coordinates),BC                    ; (continued).
+  LD H,$00                                         ; Check if object_X + 10 + offset >= entity_X; if not, next object.
+  LD L,A                                           ;
+  OR A                                             ;
+  LD D,$00                                         ;
+  SBC HL,DE                                        ;
+  JP M,check_missile_vs_objects                    ; (continued).
+; Collision detected - prepare for type dispatch.
+  LD A,(state_gameplay_mode)                       ; If GAMEPLAY_MODE_REFUEL, call retract_object to undo Y adjustment.
+  CP GAMEPLAY_MODE_REFUEL                          ;
+  CALL Z,retract_object                            ;
+  LD (collision_coordinates),BC                    ; Store object coordinates to collision_coordinates.
+  LD HL,(current_slot_ptr)                         ; Load object type from viewport pointer.
+  DEC HL                                           ;
+  LD A,(HL)                                        ;
+  AND SLOT_MASK_OBJECT_TYPE                        ; If type is 0, jump to process_collision_hit to process collision.
+  CP $00                                           ;
+  JP Z,process_collision_hit                       ;
+  DEC HL                                           ; Mark object slot as empty.
+  DEC HL                                           ;
+  LD (HL),$00                                      ;
+  LD D,$00                                         ; Clear D for type dispatch.
+  CP OBJECT_HELICOPTER_REG                         ; If helicopter, jump to hit_helicopter_reg.
+  JP Z,hit_helicopter_reg                          ;
+  CP OBJECT_SHIP                                   ; If ship, jump to hit_ship.
+  JP Z,hit_ship                                    ;
+  CP OBJECT_HELICOPTER_ADV                         ; If advanced helicopter, jump to hit_helicopter_adv.
+  JP Z,hit_helicopter_adv                          ;
+  CP OBJECT_FIGHTER                                ; If fighter, jump to hit_fighter.
+  JP Z,hit_fighter                                 ;
+  CP OBJECT_BALLOON                                ; If balloon, jump to hit_balloon.
+  JP Z,hit_balloon                                 ;
+  CP OBJECT_FUEL                                   ; If fuel depot, jump to hit_fuel.
+  JP Z,hit_fuel                                    ;
+; End of object list - check fragment collision and tank shell.
+check_missile_vs_objects_end:
+  CALL check_fragment_collision                    ; Reset current_slot_ptr/exploding_fragments_ptr to list starts.
+  LD HL,viewport_slots                             ;
+  LD (current_slot_ptr),HL                         ;
+  LD HL,exploding_fragments                        ;
+  LD (exploding_fragments_ptr),HL                  ;
+  LD A,(collision_coordinates)                     ; If fragment collision detected ($02), jump to reset_gameplay_mode.
+  CP $02                                           ;
+  JP Z,reset_gameplay_mode                         ;
+  LD BC,(tank_shell_coordinates)                   ; Compare missile Y with tank shell Y; if equal, jump to
+  LD DE,(object_coordinates)                       ; reset_gameplay_mode.
+  LD A,B                                           ;
+  CP D                                             ;
+  JP Z,reset_gameplay_mode
+; Entry point for collision hit processing. Cleans up stack and deactivates missile.
+process_collision_hit:
+  POP DE                                           ; Pop four words from stack (unwind call frames).
+  POP DE                                           ;
+  POP DE                                           ;
+  POP BC                                           ;
+  LD A,D                                           ; Store hit Y coordinate to state_collision_y.
+  LD (state_collision_y),A                         ;
+  LD HL,exploding_fragments                        ; Reset exploding_fragments_ptr and current_slot_ptr to list starts.
+  LD (exploding_fragments_ptr),HL                  ;
+  LD HL,viewport_slots                             ;
+  LD (current_slot_ptr),HL                         ;
+  LD BC,(state_saved_object_coords)                ; Load saved coordinates from state_saved_object_coords.
+  LD (state_striker_y),BC                          ; Store to state_striker_y.
+  JP deactivate_missile                            ; Deactivate missile.
+
+; Reset gameplay mode to normal and exit collision system
+;
+; Used by the routines at check_missile_vs_objects and refuel_from_depot.
+reset_gameplay_mode:
+  LD A,$00                                         ; Reset gameplay mode to GAMEPLAY_MODE_NORMAL.
+  LD (state_gameplay_mode),A                       ;
+; Exit collision system with no collision detected.
+no_collision_exit:
+  LD A,COLLISION_MODE_NONE                         ; Clear collision mode, restore saved registers, and continue
+  LD (state_collision_mode),A                      ; rendering.
+  LD HL,(collision_saved_hl)                       ;
+  LD DE,(collision_saved_de)                       ;
+  LD BC,(collision_saved_bc)                       ;
+  JP handle_collision_mode_none                    ;
+
+; Handle missile hit on regular helicopter
+;
+; Used by the routine at check_missile_vs_objects.
+;
+; Awards POINTS_HELICOPTER_REG and spawns 1 explosion fragment at the object coordinates.
+hit_helicopter_reg:
+  LD A,POINTS_HELICOPTER_REG                       ; Award POINTS_HELICOPTER_REG to player.
+  CALL add_points                                  ;
+  LD BC,(collision_coordinates)                    ; Spawn explosion at object coordinates from collision_coordinates.
+  CALL spawn_explosion_fragment                    ;
+  JP process_collision_hit                         ; Deactivate missile.
+
+; Handle missile hit on ship
+;
+; Used by the routine at check_missile_vs_objects.
+;
+; Awards POINTS_SHIP and spawns 3 explosion fragments in a triangular pattern to cover the ship's width.
+hit_ship:
+  LD A,POINTS_SHIP                                 ; Award POINTS_SHIP to player.
+  CALL add_points                                  ;
+  LD BC,(collision_coordinates)                    ; Load coordinates from collision_coordinates and spawn explosion 1
+  CALL spawn_explosion_fragment                    ; (left).
+  LD A,C                                           ; Move X+8 and spawn explosion 2 (right).
+  ADD A,$08                                        ;
+  LD C,A                                           ;
+  CALL spawn_explosion_fragment                    ;
+  LD A,C                                           ; Move X-8, Y+4 and spawn explosion 3 (center-bottom).
+  SUB $08                                          ;
+  LD C,A                                           ;
+  LD A,B                                           ;
+  ADD A,$04                                        ;
+  LD B,A                                           ;
+  CALL spawn_explosion_fragment                    ;
+  JP process_collision_hit                         ; Deactivate missile.
+
+; Handle missile hit on advanced helicopter
+;
+; Used by the routine at check_missile_vs_objects.
+;
+; Awards POINTS_HELICOPTER_ADV and spawns 1 explosion fragment.
+hit_helicopter_adv:
+  LD A,POINTS_HELICOPTER_ADV                       ; Award POINTS_HELICOPTER_ADV to player.
+  CALL add_points                                  ;
+  LD BC,(collision_coordinates)                    ; Spawn explosion at object coordinates from collision_coordinates.
+  CALL spawn_explosion_fragment                    ;
+  JP process_collision_hit                         ; Deactivate missile.
+
+; Handle missile hit on fighter
+;
+; Used by the routine at check_missile_vs_objects.
+;
+; Awards POINTS_FIGHTER and spawns 1 explosion fragment.
+hit_fighter:
+  LD A,POINTS_FIGHTER                              ; Award POINTS_FIGHTER to player.
+  CALL add_points                                  ;
+  LD BC,(collision_coordinates)                    ; Spawn explosion at object coordinates from collision_coordinates.
+  CALL spawn_explosion_fragment                    ;
+  JP process_collision_hit                         ; Deactivate missile.
+
+; Handle missile hit on balloon
+;
+; Used by the routine at check_missile_vs_objects.
+;
+; Awards POINTS_BALLOON and spawns 2 explosion fragments vertically (balloon is taller than other objects).
+hit_balloon:
+  LD A,POINTS_BALLOON                              ; Award POINTS_BALLOON to player.
+  CALL add_points                                  ;
+  LD BC,(collision_coordinates)                    ; Load coordinates from collision_coordinates and spawn explosion 1
+  CALL spawn_explosion_fragment                    ; (top).
+  LD A,B                                           ; Move Y+8 and spawn explosion 2 (bottom).
+  ADD A,$08                                        ;
+  LD B,A                                           ;
+  CALL spawn_explosion_fragment                    ;
+  JP process_collision_hit                         ; Deactivate missile.
+
+; Handle collision with fuel depot
+;
+; Used by the routine at check_missile_vs_objects.
+;
+; Handles both missile hits and plane refueling at fuel depots.
+;
+; If in GAMEPLAY_MODE_REFUEL: marks the depot slot as empty and calls add_fuel to add fuel to the player's tank.
+;
+; Otherwise (missile hit): awards POINTS_FUEL and spawns 4 explosion fragments vertically (fuel depot is the tallest
+; object).
+hit_fuel:
+  LD A,(state_gameplay_mode)                       ; Check if in REFUEL mode; if so, jump to refuel_from_depot.
+  CP GAMEPLAY_MODE_REFUEL                          ;
+  JP Z,refuel_from_depot                           ;
+; Missile hit on fuel depot - destroy it.
+  LD A,POINTS_FUEL                                 ; Award POINTS_FUEL to player.
+  CALL add_points                                  ;
+  LD BC,(collision_coordinates)                    ; Load coordinates from collision_coordinates and spawn explosion 1.
+  CALL spawn_explosion_fragment                    ;
+  LD A,B                                           ; Move Y+8 and spawn explosion 2.
+  ADD A,$08                                        ;
+  LD B,A                                           ;
+  CALL spawn_explosion_fragment                    ;
+  LD A,B                                           ; Move Y+8 and spawn explosion 3.
+  ADD A,$08                                        ;
+  LD B,A                                           ;
+  CALL spawn_explosion_fragment                    ;
+  INC B                                            ; Move Y+1 and spawn explosion 4.
+  CALL spawn_explosion_fragment                    ;
+
+; Jump to collision finalization
+hit_fuel_done:
+  JP process_collision_hit                         ; Deactivate missile.
+
+; Handle refueling from fuel depot
+;
+; Used by the routine at hit_fuel.
+;
+; Called when the plane touches a fuel depot during REFUEL mode. Marks the depot slot as empty and adds fuel.
+refuel_from_depot:
+  LD (HL),C                                        ; Mark depot slot as empty.
+  LD HL,viewport_slots                             ; Reset current_slot_ptr and exploding_fragments_ptr to list starts.
+  LD (current_slot_ptr),HL                         ;
+  LD HL,exploding_fragments                        ;
+  LD (exploding_fragments_ptr),HL                  ;
+  CALL add_fuel                                    ; Add fuel and jump to reset_gameplay_mode to reset gameplay mode.
+  JP reset_gameplay_mode                           ;
+
+; Unused
+data_unused_64B4:
+  DEFB $D1,$D1,$D1,$D1,$D1,$C3,$0A,$65
+
+; Print current bridge number on status line
+;
+; Used by the routines at play, check_collision, next_bridge_player_2, setup_overview_status_player_2 and overview.
+;
+; Displays the current bridge number for the active player on the status line. Sets the appropriate ink color (yellow
+; for Player 1, cyan for Player 2) and prints the bridge counter with leading space padding for single-digit numbers.
+;
+; Uses ROM routine at $203C to print status line text and $1A1B (OUT_NUM_1) to print the numeric value.
+print_bridge:
+  LD A,(state_player)                              ; If Player 2, jump to print_bridge_player_2.
+  CP PLAYER_2                                      ;
+  JP Z,print_bridge_player_2
+  LD A,EXT_ATTR_INK                                ; INK PLAYER_1
+  RST $10                                          ;
+  LD A,COLOR_PLAYER_1                              ;
+  RST $10                                          ;
+  LD DE,status_line_3                              ; Print status_line_3 (11 bytes) to position cursor.
+  LD BC,status_line_4 - status_line_3              ;
+  CALL PR_STRING                                   ;
+  LD A,(state_bridge_player_1)                     ; If bridge count < 10, print leading space.
+  SUB $0A                                          ;
+  CALL M,print_space                               ; (continued).
+  LD A,(state_bridge_player_1)                     ; Print bridge count from state_bridge_player_1.
+  LD B,$00                                         ;
+  LD C,A                                           ;
+  CALL OUT_NUM_1                                   ;
+  RET
+
+; Print bridge number for Player 2
+;
+; Used by the routine at print_bridge.
+;
+; Entry point when current player is Player 2. Sets ink color and falls through to common printing logic.
+print_bridge_player_2:
+  LD A,EXT_ATTR_INK                                ; INK PLAYER_2
+  RST $10                                          ;
+  LD A,COLOR_PLAYER_2                              ;
+  RST $10                                          ;
+  LD DE,status_line_3                              ; Set up DE=$804F, BC=11 for status text.
+  LD BC,status_line_4 - status_line_3              ;
+
+; Common bridge printing for Player 2
+;
+; Used by the routine at setup_overview_status_player_2.
+;
+; Shared code for printing Player 2's bridge number. Called directly when printing Player 2's status line in two-player
+; mode.
+print_bridge_player_2_common:
+  CALL PR_STRING                                   ; Print status line text and check if bridge < 10.
+  LD A,(state_bridge_player_2)                     ;
+  SUB $0A                                          ; (continued) If so, print leading space.
+  CALL M,print_space                               ;
+  LD A,(state_bridge_player_2)                     ; Print bridge count from state_bridge_player_2.
+  LD B,$00                                         ;
+  LD C,A                                           ;
+  CALL OUT_NUM_1                                   ;
+  RET
+
+; Print a space character
+;
+; Used by the routines at print_bridge and print_bridge_player_2_common.
+print_space:
+  LD A," "                                         ; Output space via RST $10.
+  RST $10
+  RET
+
+; Handle player death
+;
+; General player death handler. It stops the plane, creates two explosion fragments at the plane's position, animates
+; the explosions over 16 frames, waits for a delay, then determines the next game state based on the current player and
+; remaining lives in single or two-player mode.
+;
+; Two-player mode uses alternating turns. After death, the switching logic is:
+;
+; +---------+----------+----------+--------------+
+; | Current | P1 Lives | P2 Lives | Action       |
+; +---------+----------+----------+--------------+
+; | P1      | >0       | >0       | Switch to P2 |
+; | P1      | >0       | 0        | Restart P1   |
+; | P1      | 0        | >0       | Switch to P2 |
+; | P1      | 0        | 0        | Game Over    |
+; | P2      | >0       | >0       | Switch to P1 |
+; | P2      | >0       | 0        | Restart P2   |
+; | P2      | 0        | >0       | Switch to P1 |
+; | P2      | 0        | 0        | Game Over    |
+; +---------+----------+----------+--------------+
+;
+; In single-player mode, the game simply restarts P1 if lives remain, otherwise Game Over.
+handle_player_death:
+  LD A,(state_plane_x)                             ; Load plane X-coordinate
+  AND $F8                                          ; Align to 8-pixel boundary (clear lower 3 bits)
+  LD C,A                                           ; Store aligned X-coordinate in C register
+  LD B,PLANE_COORDINATE_Y-1                        ; Set fragment Y to PLANE_COORDINATE_Y-1.
+  LD A,$00                                         ; Stop plane movement: clear scroll speed, missile Y, and missile X.
+  LD (state_speed),A                               ;
+  LD (state_striker_y),A                           ;
+  LD (state_striker_x),A                           ;
+  LD D,$00                                         ; Set explosion frame index to 0.
+  CALL spawn_explosion_fragment                    ; Create first explosion fragment at plane position
+  LD A,B                                           ; Offset Y-coordinate by $05 pixels for second explosion
+  ADD A,$05                                        ;
+  LD B,A                                           ;
+  CALL spawn_explosion_fragment                    ; Create second explosion fragment
+  LD A,EXPLOSION_ANIM_FRAMES                       ; Set animation frame counter (16 frames).
+animate_explosion_loop:
+  PUSH AF                                          ; Save frame counter
+  LD B,$40                                         ; Set outer delay loop counter to $40 (64 iterations)
+explosion_delay_outer:
+  LD D,$00                                         ; Set inner delay loop counter to $00 (256 iterations)
+explosion_delay_inner:
+  DEC D                                            ; Tight delay loop (256 iterations)
+  JR NZ,explosion_delay_inner                      ;
+  DJNZ explosion_delay_outer                       ; Repeat outer delay loop (64 times)
+  CALL render_explosions                           ; Render current explosion animation frame
+  POP AF                                           ; Restore and decrement frame counter
+  DEC A                                            ;
+  JP NZ,animate_explosion_loop                     ; Repeat animation loop for all 16 frames
+  LD D,$0C                                         ; Set final delay counter to $0C (12 iterations)
+  LD A,$00                                         ;
+  LD B,$00                                         ; Initialize inner loop counter to $00
+final_delay_loop:
+  DJNZ final_delay_loop                            ; Triple-nested delay loop for extended pause after explosion
+  DEC A                                            ;
+  JR NZ,final_delay_loop                           ;
+  DEC D                                            ;
+  JR NZ,final_delay_loop                           ;
+  LD A,$00                                         ; Clear sound flags.
+  LD (sound_flags),A                               ; Store cleared sound flags.
+  LD A,(state_player)                              ; Load current player number
+  CP PLAYER_2                                      ; Check if current player is Player 2
+  JP Z,handle_player_2_death                       ; If Player 2, jump to Player 2 death handler
+  LD A,(state_lives_player_1)                      ; Load Player 1 lives remaining
+  CP $00                                           ; Check if Player 1 has no lives left
+  JP Z,check_player_2_lives                        ; If no lives, jump to check for game over
+  LD A,(state_game_mode)                           ; Load game mode (1 or 2 player)
+  BIT GAME_MODE_BIT_TWO_PLAYERS,A                  ; Check if two-player mode is active
+  JP NZ,switch_to_player_2_in_two_player_mode      ; If two-player mode, jump to switch to Player 2
+
+; Restart gameplay for current player
+;
+; This entry point is used by multiple death handler routines to restart gameplay for the current player. It restores
+; the stack pointer and jumps back to the main play routine.
+restart_current_player:
+  LD SP,(saved_stack_pointer)                      ; Restore stack pointer to main game loop
+  JP play                                          ; Restart gameplay for current player
+
+; Check if Player 2 has lives remaining when Player 1 is out
+;
+; This routine is called when Player 1 has no lives left. In two-player mode, it checks if Player 2 has lives and
+; switches to Player 2 if so, otherwise triggers game over.
+check_player_2_lives:
+  LD A,(state_game_mode)                           ; If two-player mode, switch to Player 2.
+  BIT GAME_MODE_BIT_TWO_PLAYERS,A                  ;
+  JP NZ,switch_to_player_2                         ;
+
+; Game Over
+;
+; This routine displays the "GAME OVER" message, plays the game over sequence, and returns to the overview/demo mode.
+game_over:
+  LD HL,msg_game_over                              ; Set scroller to "GAME OVER" message.
+  LD (ptr_scroller),HL                             ;
+  CALL update_high_score                           ; Update high score, restore stack, and return to overview mode.
+  LD SP,(saved_stack_pointer)                      ;
+  JP start_overview                                ;
+
+; Setup Player 2 status line during overview mode
+;
+; Called during overview mode in two-player games to add the Player 2 status line to the display. Resets state_player to
+; PLAYER_1 so the game starts with Player 1, then manually renders Player 2's bridge and status with cyan color scheme.
+setup_overview_status_player_2:
+  LD A,(state_game_mode)                           ; Return if single-player mode.
+  BIT GAME_MODE_BIT_TWO_PLAYERS,A                  ;
+  RET Z                                            ;
+  LD A,$01                                         ; Reset current player to PLAYER_1 for game start.
+  LD (state_player),A                              ;
+  CALL print_bridge                                ; Print Player 1's bridge number.
+  LD A,EXT_ATTR_INK                                ; INK PLAYER_2
+  RST $10                                          ;
+  LD A,COLOR_PLAYER_2                              ;
+  RST $10                                          ;
+  LD A,EXT_ATTR_AT                                 ; AT 20,...
+  RST $10                                          ;
+  LD A,$14                                         ;
+  RST $10                                          ;
+  LD DE,status_line_3_text
+  LD BC,$0008
+  CALL print_bridge_player_2_common                ; Print Player 2 status line text
+  RET
+
+; Switch to Player 2 after Player 1 death
+;
+; This routine is called when Player 1 dies and Player 2 has lives remaining in two-player mode. It checks if Player 2
+; has lives, triggers game over if not, otherwise switches to Player 2 and restarts gameplay.
+switch_to_player_2:
+  LD A,(state_lives_player_2)                      ; If Player 2 has no lives, trigger game over.
+  CP $00                                           ;
+  JP Z,game_over                                   ;
+  LD A,$02                                         ; Switch to Player 2 and restart gameplay.
+  LD (state_player),A                              ;
+  JP restart_current_player                        ;
+
+; Switch to Player 2 when Player 1 dies in two-player mode
+;
+; This routine is called when Player 1 dies in two-player mode and still has lives. It checks if Player 2 has lives, and
+; if so, switches to Player 2. If Player 2 has no lives, it restarts Player 1 instead.
+switch_to_player_2_in_two_player_mode:
+  LD A,(state_lives_player_2)                      ; If Player 2 has no lives, restart Player 1.
+  CP $00                                           ;
+  JP Z,restart_current_player                      ;
+  LD A,$02                                         ; Switch to Player 2 and restart gameplay.
+  LD (state_player),A                              ;
+  JP restart_current_player                        ;
+
+; Handle Player 2 death and determine next game state
+;
+; This routine is called when Player 2 dies. It checks both players' lives to determine whether to switch to Player 1,
+; continue with Player 2, or trigger game over.
+handle_player_2_death:
+  LD A,(state_lives_player_2)                      ; If Player 2 has no lives, check Player 1 status.
+  CP $00                                           ;
+  JP Z,check_player_1_lives                        ;
+  LD A,(state_lives_player_1)                      ; If Player 1 has lives, switch to Player 1; otherwise restart Player
+  CP $00                                           ; 2.
+  JP NZ,switch_to_player_1                         ;
+  JP restart_current_player                        ;
+
+; Switch to Player 1 after Player 2 death
+;
+; This routine is called when Player 2 dies and Player 1 has lives remaining. It switches the current player to Player 1
+; and restarts gameplay, or triggers game over if Player 1 has no lives.
+switch_to_player_1:
+  LD A,$01                                         ; Set current player to PLAYER_1.
+  LD (state_player),A                              ;
+; This entry point is used by the routine at handle_player_2_death.
+check_player_1_lives:
+  LD A,(state_lives_player_1)                      ; If Player 1 has no lives, trigger game over.
+  CP $00                                           ;
+  JP Z,game_over                                   ;
+  LD A,$01                                         ; Set current player to PLAYER_1 and restart gameplay.
+  LD (state_player),A                              ;
+  JP restart_current_player                        ;
+
+; Move player plane right by 2 pixels
+;
+; This routine is called when the player presses right on the joystick or keyboard. It moves the plane 2 pixels to the
+; right (INC A twice), backs up the missile coordinates, renders the plane at the new position, then restores the
+; missile coordinates and sets the sprite bank selector.
+handle_right:
+  LD A,(state_plane_x)
+  LD HL,(state_striker_y)                          ; Back up missile coordinates.
+  LD (state_plane_missile_coords_backup),HL        ;
+  INC A                                            ; Move plane 2 pixels right.
+  INC A                                            ;
+  LD (state_plane_x),A                             ;
+  LD C,A
+  LD B,PLANE_COORDINATE_Y                          ; Set position and collision mode (FUEL_DEPOT) for rendering.
+  LD A,COLLISION_MODE_FUEL_DEPOT                   ;
+  LD (state_collision_mode),A                      ;
+  LD (object_coordinates),BC                       ;
+  DEC C                                            ; Calculate previous position for sprite erasure (2 pixels back).
+  DEC C                                            ;
+  LD (previous_object_coordinates),BC              ;
+  LD BC,SPRITE_PLANE_FRAME_SIZE                    ; Configure sprite and render plane; use ship attributes for Player
+  LD HL,(ptr_plane_sprite)                         ; 2.
+  LD (render_sprite_ptr),HL                        ;
+  LD E,SPRITE_PLANE_ATTRIBUTES                     ;
+  LD A,(state_player)                              ;
+  CP PLAYER_2                                      ;
+  CALL Z,ld_attributes_ship                        ;
+  LD D,SPRITE_PLANE_HEIGHT_PIXELS                  ;
+  LD A,SPRITE_PLANE_WIDTH_TILES                    ;
+  LD HL,sprite_plane_banked                        ;
+  CALL render_object                               ;
+
+; Restore plane state after rendering
+;
+; Shared cleanup for handle_right, handle_left, and render_plane. Restores missile coordinates and sprite bank selector
+; after rendering the plane sprite.
+restore_plane_state_after_render:
+  LD HL,(state_plane_missile_coords_backup)        ; Restore missile coordinates from backup.
+  LD (state_striker_y),HL                          ;
+  LD HL,(render_sprite_ptr_out)                    ; Update plane sprite pointer from render output.
+  LD (ptr_plane_sprite),HL                         ;
+  LD A,$04                                         ; Set sprite bank selector to $04 (select banked plane sprite).
+  LD (state_plane_sprite_bank),A                   ;
+  RET
+
+; Move player plane left by 2 pixels
+;
+; Mirrors handle_right but moves the plane 2 pixels left instead of right.
+handle_left:
+  LD A,(state_plane_x)
+  LD HL,(state_striker_y)                          ; Back up missile coordinates.
+  LD (state_plane_missile_coords_backup),HL        ;
+  DEC A                                            ; Move plane 2 pixels left.
+  DEC A                                            ;
+  LD (state_plane_x),A                             ;
+  LD C,A
+  LD B,PLANE_COORDINATE_Y                          ; Set position and collision mode (FUEL_DEPOT) for rendering.
+  LD A,COLLISION_MODE_FUEL_DEPOT                   ;
+  LD (state_collision_mode),A                      ;
+  LD (object_coordinates),BC                       ;
+  INC C                                            ; Calculate previous position for sprite erasure (2 pixels back).
+  INC C                                            ;
+  LD (previous_object_coordinates),BC              ;
+  LD BC,SPRITE_PLANE_FRAME_SIZE                    ; Configure sprite, render plane, and restore state; use ship
+  LD HL,(ptr_plane_sprite)                         ; attributes for Player 2.
+  LD (render_sprite_ptr),HL                        ;
+  LD E,SPRITE_PLANE_ATTRIBUTES                     ;
+  LD A,(state_player)                              ;
+  CP PLAYER_2                                      ;
+  CALL Z,ld_attributes_ship                        ;
+  LD D,SPRITE_PLANE_HEIGHT_PIXELS                  ;
+  LD A,SPRITE_PLANE_WIDTH_TILES                    ;
+  LD HL,sprite_plane_banked                        ;
+  CALL render_object                               ;
+  JP restore_plane_state_after_render              ;
+
+; Render player plane sprite
+;
+; Used by the routines at play and scroll_screen.
+;
+; Renders the player's plane at its current position. Only executes in GAMEPLAY_MODE_NORMAL; returns immediately in
+; other modes (scroll-in, overview, refuel).
+;
+; Sets COLLISION_MODE_FUEL_DEPOT so the collision system checks for fuel depot contact during rendering. Backs up
+; missile coordinates to state_plane_missile_coords_backup before modifying them for collision detection.
+;
+; Selects between normal sprite (sprite_plane) and banked sprite (sprite_plane_banked) based on state_plane_sprite_bank.
+; Player 2 uses different attributes (same as ship).
+render_plane:
+  LD A,(state_gameplay_mode)                       ; Return if not in GAMEPLAY_MODE_NORMAL.
+  CP GAMEPLAY_MODE_NORMAL                          ;
+  RET NZ                                           ;
+  LD A,(state_plane_x)                             ; Backup missile coords to state_plane_missile_coords_backup; set up
+  LD HL,(state_striker_y)                          ; plane position (Y=$80, X from state_plane_x).
+  LD (state_plane_missile_coords_backup),HL        ;
+  LD C,A                                           ; Set COLLISION_MODE_FUEL_DEPOT and store plane coords.
+  LD B,$80                                         ;
+  LD A,COLLISION_MODE_FUEL_DEPOT                   ;
+  LD (state_collision_mode),A                      ;
+  LD (object_coordinates),BC                       ;
+  CALL advance_object                              ; Calculate previous position for sprite erasure.
+  LD (previous_object_coordinates),BC              ;
+  LD BC,SPRITE_PLANE_FRAME_SIZE                    ; Set frame size and sprite pointer from ptr_plane_sprite.
+  LD HL,(ptr_plane_sprite)                         ;
+  LD (render_sprite_ptr),HL                        ;
+  LD E,SPRITE_PLANE_ATTRIBUTES                     ; Set attributes; call ld_attributes_ship for Player 2 (uses ship
+  LD A,(state_player)                              ; attributes).
+  CP PLAYER_2                                      ;
+  CALL Z,ld_attributes_ship                        ;
+  LD D,SPRITE_PLANE_HEIGHT_PIXELS                  ; Set height, load sprite base; if bank=$04, use sprite_plane_banked.
+  LD HL,sprite_plane                               ;
+  LD A,(state_plane_sprite_bank)                   ;
+  CP $04                                           ;
+  CALL Z,ld_sprite_plane_banked
+  LD A,SPRITE_PLANE_WIDTH_TILES                    ; Set width and call render_object to render.
+  CALL render_object                               ;
+  JP restore_plane_state_after_render              ; Restore state.
+
+; Load banked plane sprite address
+;
+; Used by the routine at render_plane.
+;
+; Helper to load the banked sprite address (sprite_plane_banked) into HL when sprite bank selector is $04.
+ld_sprite_plane_banked:
+  LD HL,sprite_plane_banked
+  RET
+
+; Advance game scroll and update bridge position
+;
+; Used by the routines at play, main_loop and overview.
+;
+; Called each frame to advance the vertical scroll position. Adds current speed (state_speed) to scroll offset
+; (state_scroll_offset), updates the bridge's Y position, then resets speed to SPEED_NORMAL and updates sound flags.
+;
+; The control bits modified are: clears SOUND_BIT_SPEED_CHANGED, sets SOUND_BIT_SPEED_NOT_FAST. This triggers
+; beep_engine_normal to play the normal speed engine sound.
+advance_scroll:
+  LD BC,(state_scroll_offset)                      ; Add speed to scroll offset and store result.
+  LD H,$00                                         ;
+  LD A,(state_speed)                               ;
+  LD L,A                                           ;
+  ADD HL,BC                                        ;
+  LD (state_scroll_offset),HL                      ; Update bridge position; reset speed to SPEED_NORMAL.
+  CALL update_bridge_scroll                        ;
+  LD A,SPEED_NORMAL
+  LD (state_speed),A
+  LD HL,sound_flags                                ; Clear SOUND_BIT_SPEED_CHANGED, set SOUND_BIT_SPEED_NOT_FAST in
+  RES SOUND_BIT_SPEED_CHANGED,(HL)                 ; sound_flags.
+  SET SOUND_BIT_SPEED_NOT_FAST,(HL)                ;
+  RET
+
+; Update bridge Y position during scroll
+;
+; Used by the routine at advance_scroll.
+;
+; Adjusts the bridge's Y position (state_bridge_y_position) based on current scrolling. If no bridge exists (Y=0),
+; returns immediately. If the bridge scrolls off the bottom of the screen (Y AND $88 == $88), clears it.
+update_bridge_scroll:
+  LD A,(state_bridge_y_position)                   ; If no bridge, return; otherwise advance bridge Y position.
+  CP $00                                           ;
+  RET Z                                            ;
+  LD B,A                                           ;
+  CALL advance_object                              ; If bridge scrolled off screen, call clear_bridge to clear it.
+  AND VIEWPORT_HEIGHT                              ;
+  CP VIEWPORT_HEIGHT                               ;
+  LD A,B                                           ;
+  CALL Z,clear_bridge                              ; Store updated bridge Y and return.
+  LD (state_bridge_y_position),A                   ;
+  RET
+
+; Clear bridge when scrolled off screen
+;
+; Used by the routine at update_bridge_scroll.
+;
+; Clears the bridge destroyed flag (state_bridge_destroyed) and returns 0 in A, which the caller stores to
+; state_bridge_y_position to mark no bridge present.
+clear_bridge:
+  LD A,$00                                         ; Clear bridge destroyed flag.
+  LD (state_bridge_destroyed),A                    ;
+  RET
+
+; Handle up/accelerate input
+;
+; Used by the routines at scan_cursor, scan_kempston, scan_sinclair and scan_keyboard.
+;
+; Sets speed to SPEED_FAST and updates sound flags. Called when player presses up on joystick/keyboard.
+handle_up:
+  LD A,SPEED_FAST                                  ; Set speed to SPEED_FAST.
+  LD (state_speed),A                               ;
+  LD HL,sound_flags                                ; Set SOUND_BIT_SPEED_CHANGED, clear SOUND_BIT_SPEED_NOT_FAST.
+  SET SOUND_BIT_SPEED_CHANGED,(HL)                 ;
+  RES SOUND_BIT_SPEED_NOT_FAST,(HL)                ;
+  RET
+
+; Handle down/decelerate input
+;
+; Used by the routines at scan_cursor, scan_kempston, scan_sinclair and scan_keyboard.
+;
+; Sets speed to SPEED_SLOW and updates sound flags. Called when player presses down on joystick/keyboard.
+handle_down:
+  LD A,SPEED_SLOW                                  ; Set speed to SPEED_SLOW.
+  LD (state_speed),A                               ;
+  LD HL,sound_flags                                ; Set SOUND_BIT_SPEED_CHANGED and SOUND_BIT_SPEED_NOT_FAST.
+  SET SOUND_BIT_SPEED_CHANGED,(HL)                 ;
+  SET SOUND_BIT_SPEED_NOT_FAST,(HL)                ;
+  RET
+
+; Handle fire button input
+;
+; Used by the routines at scan_cursor, scan_kempston, scan_sinclair and scan_keyboard.
+;
+; Creates a new missile if none is currently active. Positions missile at plane X + 4, Y = $7E (just above plane). Sets
+; SOUND_BIT_FIRE to trigger the fire sound effect.
+handle_fire:
+  LD A,(state_striker_y)                           ; Return if missile already active (Y != 0).
+  CP $00                                           ;
+  RET NZ                                           ;
+  LD A,(state_plane_x)                             ; Create missile at (plane_X + 4, $7E).
+  ADD A,$04                                        ;
+  LD B,$7E                                         ;
+  LD C,A                                           ;
+  LD (state_striker_y),BC                          ;
+  LD HL,sound_flags                                ; Set SOUND_BIT_FIRE in sound_flags.
+  SET SOUND_BIT_FIRE,(HL)                          ;
+  RET
+
+; Missile animation pass selector. $01=first pass (erase at old position), $00=second pass (draw at new position).
+; Two-pass rendering prevents flicker.
+missile_pass_selector:
+  DEFB $00
+
+; Animate and render player missile
+;
+; Missile speed: 6 pixels upward per frame. Called twice per frame for two-pass rendering (erase then draw).
+;
+; On the first pass (missile_pass_selector = $01), adjusts missile position for screen scrolling. On both passes, moves
+; missile up by 6 pixels.
+;
+; If missile reaches top of screen (Y AND $F8 == 0), jumps to deactivate_missile to deactivate missile. Clears
+; SOUND_BIT_FIRE when missile is in lower screen area ($70 - Y >= 0).
+;
+; Sets COLLISION_MODE_MISSILE so the rendering system checks for object collisions.
+animate_plane_missile:
+  LD A,(state_striker_y)                           ; Return if no missile active (Y == 0).
+  CP $00                                           ;
+  RET Z                                            ;
+  LD BC,(state_striker_y)                          ; Save current position to state_saved_object_coords.
+  LD (state_saved_object_coords),BC                ;
+  LD A,(missile_pass_selector)                     ; If first pass, adjust position for scroll.
+  CP $01                                           ;
+  CALL Z,advance_object                            ;
+  LD (previous_object_coordinates),BC              ; Store current position as previous for sprite erasure.
+  LD BC,(state_striker_y)                          ; X = plane_X + 4.
+  LD A,(state_plane_x)                             ;
+  ADD A,$04                                        ;
+  LD C,A                                           ;
+  LD A,B                                           ; Y = missile_Y - 6.
+  SUB $06                                          ;
+  LD B,A                                           ;
+  AND $F8                                          ; If missile reached top of screen, jump to deactivate_missile.
+  CP $00                                           ;
+  JP Z,deactivate_missile                          ;
+  LD (state_striker_y),BC                          ; Store new missile position.
+  LD A,$70                                         ; If missile has risen to Y ≤ $70, stop fire sound.
+  SUB B                                            ;
+  CALL P,clear_fire_bit                            ;
+  LD (object_coordinates),BC                       ; Store position to object_coordinates.
+  LD A,COLLISION_MODE_MISSILE                      ; Set COLLISION_MODE_MISSILE in state_collision_mode.
+  LD (state_collision_mode),A                      ;
+  LD DE,SPRITE_MISSILE_HEIGHT_PIXELS<<8|SPRITE_MISSILE_ATTRIBUTES ; Set up sprite params.
+  LD HL,sprite_missile                                            ;
+  LD BC,SPRITE_MISSILE_FRAME_SIZE_BYTES                           ;
+  LD A,SPRITE_MISSILE_WIDTH_TILES                                 ;
+  CALL render_sprite
+  RET
+
+; Clear SOUND_BIT_FIRE flag
+;
+; Used by the routine at animate_plane_missile.
+;
+; Called when missile Y <= $70 (112), stopping the fire sound effect. Does not affect firing — a new missile is gated by
+; missile Y being 0.
+clear_fire_bit:
+  LD HL,sound_flags                                ; Clear SOUND_BIT_FIRE in sound_flags.
+  RES SOUND_BIT_FIRE,(HL)                          ;
+  RET
+
+; Deactivate missile
+;
+; Used by the routines at handle_collision_mode_fighter, check_collision, next_bridge_player_2, check_missile_vs_objects
+; and animate_plane_missile.
+;
+; Erases the missile sprite from the screen, clears the missile coordinates, resets collision mode to
+; COLLISION_MODE_NONE, and resets SOUND_BIT_SPEED_NOT_FAST. Called both after a collision and when the missile leaves
+; the top of the screen.
+;
+; If in GAMEPLAY_MODE_REFUEL, jumps to handle_player_death instead.
+;
+; The sprite frame selection uses the X coordinate's lower 3 bits to choose the correct pixel-aligned erasure frame
+; (1-4).
+deactivate_missile:
+  LD BC,(state_striker_y)                          ; Load missile coordinates from state_striker_y and call
+  CALL blending_mode_or_or                         ; blending_mode_or_or to set OR blending.
+  LD A,(state_gameplay_mode)                       ; If GAMEPLAY_MODE_REFUEL, jump to handle_player_death.
+  CP GAMEPLAY_MODE_REFUEL                          ;
+  JP Z,handle_player_death                         ;
+  LD A,COLLISION_MODE_NONE                         ; Reset collision mode in state_collision_mode to NONE.
+  LD (state_collision_mode),A                      ;
+  LD A,$01                                         ; Set up sprite parameters: width=1, base=sprite_missile_trail,
+  LD HL,sprite_missile_trail                       ; frame_size=8.
+  LD DE,$0008                                      ;
+  LD A,C                                           ; Calculate frame index from X coordinate's lower 3 bits.
+  AND $07                                          ;
+  SRL A                                            ;
+  INC A                                            ;
+  OR A                                             ;
+  SBC HL,DE                                        ; Prepare for frame selection loop.
+deactivate_missile_erase_loop:
+  ADD HL,DE                                        ; Select correct frame by adding frame_size A times.
+  DEC A                                            ;
+  JR NZ,deactivate_missile_erase_loop              ;
+  LD A,(missile_pass_selector)                     ; If first missile pass, call advance_object to advance position.
+  CP $01                                           ;
+  CALL Z,advance_object                            ;
+  LD (render_sprite_ptr),HL                        ; Store sprite pointer and coordinates to rendering vars.
+  LD (object_coordinates),BC                       ;
+  LD (previous_object_coordinates),BC              ;
+  LD A,$01                                         ; Set sprite dimensions: width=1, frame_size=8, height=8, attrs=$0C.
+  LD BC,$0008                                      ;
+  LD DE,$080C                                      ;
+  LD HL,sprite_erasure                             ; Erase missile sprite.
+  CALL render_object                               ;
+  LD HL,sound_flags                                ; Reset SOUND_BIT_SPEED_NOT_FAST in sound_flags.
+  RES SOUND_BIT_SPEED_NOT_FAST,(HL)                ;
+  LD BC,(state_striker_y)                          ; Reload coordinates from state_striker_y, then clear them.
+  LD HL,$0000                                      ;
+  LD (state_striker_y),HL                          ;
+  LD A,B                                           ; Calculate residue Y position (missile_Y - 6).
+  SUB $06                                          ;
+  LD B,A                                           ;
+  CP $06                                           ;
+  RET Z                                            ;
+  LD A,(state_plane_x)                             ; Set X = plane_X + 4 for centered erasure.
+  ADD A,$04                                        ;
+  LD C,A                                           ;
+  LD HL,sprite_missile_trail                       ; Set up sprite parameters for residue erasure.
+  LD DE,$0008                                      ;
+  LD A,C                                           ;
+  AND $07                                          ;
+  SRL A                                            ; Same frame selection as missile loop above (X lower 3 bits).
+  INC A                                            ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+deactivate_missile_erase_residue_loop:
+  ADD HL,DE                                        ;
+  DEC A                                            ;
+  JR NZ,deactivate_missile_erase_residue_loop      ;
+  LD A,(state_collision_y)                         ; Calculate remaining height from state_collision_y; return if zero.
+  LD D,A                                           ;
+  LD A,$08                                         ;
+  SUB D                                            ;
+  CP $00                                           ;
+  RET Z                                            ;
+  LD D,A                                           ; Set height and attributes (height in D, attrs=$0C in E).
+  LD E,$0C                                         ;
+  LD A,$01                                         ; Store sprite params and call render_object to erase residue.
+  LD (render_sprite_ptr),HL                        ;
+  LD HL,sprite_erasure                             ;
+  LD (object_coordinates),BC                       ;
+  LD (previous_object_coordinates),BC              ;
+  LD BC,$0000                                      ;
+  CALL render_object                               ;
+  RET
+
+; Add $0800 offset to screen pointer
+;
+; Used by the routine at scroll_screen.
+add_screen_bank_800:
+  LD DE,$0800                                      ; Set DE to $0800
+  ADD HL,DE                                        ; Add DE to HL (adjust screen pointer)
+  RET
+
+; Add $1000 offset to screen pointer
+;
+; Used by the routine at scroll_screen.
+add_screen_bank_1000:
+  LD DE,$1000                                      ; Set DE to $1000
+  ADD HL,DE                                        ; Add DE to HL (adjust screen pointer)
+  RET
+
+; Scroll screen pixels vertically
+;
+; Core vertical scroll engine. Scrolls all screen content by copying pixel data between screen lines. Called every frame
+; from render_plane_and_terrain.
+;
+; Copies screen line (n - speed) to line n for n = 143 down to 1, 32 bytes per line right to left, so the playfield
+; moves down by speed lines. Line addresses come from scroll_row_table: IY steps through destination lines and IX through
+; source lines speed entries further on, so no address arithmetic runs inside the loop.
+;
+; IY is left pointing into scroll_row_table on return.
+scroll_screen:
+  LD A,$8F                                        ; Initialize line counter to $8F (143 lines to process).
+  LD (state_island_render_idx),A                  ;
+  LD IY,scroll_row_table                          ; IY walks destination rows, IX walks source rows speed entries ahead.
+  LD A,(state_speed)                              ;
+  ADD A,A                                         ;
+  LD E,A                                          ;
+  LD D,$00                                        ;
+  LD IX,scroll_row_table                          ;
+  ADD IX,DE                                       ;
+scroll_screen_line:
+  LD E,(IY+$00)                                   ; Copy 32 bytes from source row to destination row, right to left.
+  LD D,(IY+$01)                                   ;
+  LD L,(IX+$00)                                   ;
+  LD H,(IX+$01)                                   ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  LDD                                             ;
+  INC IY                                          ; Advance both pointers to the next row up.
+  INC IY                                          ;
+  INC IX                                          ;
+  INC IX                                          ;
+  LD A,(state_island_render_idx)                  ; If counter reached 0, jump to clear_top_rows to clear top rows.
+  DEC A                                           ;
+  JP Z,clear_top_rows                             ;
+  CP $7F                                          ; At counter $7F, render plane sprite mid-scroll.
+  JR NZ,scroll_screen_next                        ;
+  PUSH IX                                         ;
+  PUSH IY                                         ;
+  CALL render_plane                               ;
+  POP IY                                          ;
+  POP IX                                          ;
+scroll_screen_next:
+  LD A,(state_island_render_idx)                  ; Decrement and continue loop.
+  DEC A                                           ;
+  LD (state_island_render_idx),A                  ;
+  JP scroll_screen_line                           ;
+
+; Scroll row address table
+;
+; Address of the last byte of each screen line, from line 143 down to line 0, followed by lines 255 down to 249. The
+; source line n - speed wraps to those when it falls below line 0.
+scroll_row_table:
+  DEFW $573F
+  DEFW $563F
+  DEFW $553F
+  DEFW $543F
+  DEFW $533F
+  DEFW $523F
+  DEFW $513F
+  DEFW $503F
+  DEFW $571F
+  DEFW $561F
+  DEFW $551F
+  DEFW $541F
+  DEFW $531F
+  DEFW $521F
+  DEFW $511F
+  DEFW $501F
+  DEFW $4FFF
+  DEFW $4EFF
+  DEFW $4DFF
+  DEFW $4CFF
+  DEFW $4BFF
+  DEFW $4AFF
+  DEFW $49FF
+  DEFW $48FF
+  DEFW $4FDF
+  DEFW $4EDF
+  DEFW $4DDF
+  DEFW $4CDF
+  DEFW $4BDF
+  DEFW $4ADF
+  DEFW $49DF
+  DEFW $48DF
+  DEFW $4FBF
+  DEFW $4EBF
+  DEFW $4DBF
+  DEFW $4CBF
+  DEFW $4BBF
+  DEFW $4ABF
+  DEFW $49BF
+  DEFW $48BF
+  DEFW $4F9F
+  DEFW $4E9F
+  DEFW $4D9F
+  DEFW $4C9F
+  DEFW $4B9F
+  DEFW $4A9F
+  DEFW $499F
+  DEFW $489F
+  DEFW $4F7F
+  DEFW $4E7F
+  DEFW $4D7F
+  DEFW $4C7F
+  DEFW $4B7F
+  DEFW $4A7F
+  DEFW $497F
+  DEFW $487F
+  DEFW $4F5F
+  DEFW $4E5F
+  DEFW $4D5F
+  DEFW $4C5F
+  DEFW $4B5F
+  DEFW $4A5F
+  DEFW $495F
+  DEFW $485F
+  DEFW $4F3F
+  DEFW $4E3F
+  DEFW $4D3F
+  DEFW $4C3F
+  DEFW $4B3F
+  DEFW $4A3F
+  DEFW $493F
+  DEFW $483F
+  DEFW $4F1F
+  DEFW $4E1F
+  DEFW $4D1F
+  DEFW $4C1F
+  DEFW $4B1F
+  DEFW $4A1F
+  DEFW $491F
+  DEFW $481F
+  DEFW $47FF
+  DEFW $46FF
+  DEFW $45FF
+  DEFW $44FF
+  DEFW $43FF
+  DEFW $42FF
+  DEFW $41FF
+  DEFW $40FF
+  DEFW $47DF
+  DEFW $46DF
+  DEFW $45DF
+  DEFW $44DF
+  DEFW $43DF
+  DEFW $42DF
+  DEFW $41DF
+  DEFW $40DF
+  DEFW $47BF
+  DEFW $46BF
+  DEFW $45BF
+  DEFW $44BF
+  DEFW $43BF
+  DEFW $42BF
+  DEFW $41BF
+  DEFW $40BF
+  DEFW $479F
+  DEFW $469F
+  DEFW $459F
+  DEFW $449F
+  DEFW $439F
+  DEFW $429F
+  DEFW $419F
+  DEFW $409F
+  DEFW $477F
+  DEFW $467F
+  DEFW $457F
+  DEFW $447F
+  DEFW $437F
+  DEFW $427F
+  DEFW $417F
+  DEFW $407F
+  DEFW $475F
+  DEFW $465F
+  DEFW $455F
+  DEFW $445F
+  DEFW $435F
+  DEFW $425F
+  DEFW $415F
+  DEFW $405F
+  DEFW $473F
+  DEFW $463F
+  DEFW $453F
+  DEFW $443F
+  DEFW $433F
+  DEFW $423F
+  DEFW $413F
+  DEFW $403F
+  DEFW $471F
+  DEFW $461F
+  DEFW $451F
+  DEFW $441F
+  DEFW $431F
+  DEFW $421F
+  DEFW $411F
+  DEFW $401F
+  DEFW $5FFF
+  DEFW $5EFF
+  DEFW $5DFF
+  DEFW $5CFF
+  DEFW $5BFF
+  DEFW $5AFF
+  DEFW $59FF
+
+; Clear top screen rows after scrolling
+;
+; Clears the top rows of the screen based on scroll speed. After screen content scrolls upward, the topmost rows contain
+; old data that needs to be zeroed.
+clear_top_rows:
+  LD HL,screen_pixels                              ; Initialize screen pointer, row offset, and row count from speed.
+  LD DE,$00E0                                      ;
+  LD A,(state_speed)                               ;
+clear_row_loop:
+  LD B,$20                                         ; Set bytes per row (32).
+clear_byte_loop:
+  LD (HL),$00                                      ; Clear byte, advance pointer, loop 32 times.
+  INC HL                                           ;
+  DJNZ clear_byte_loop                             ;
+  ADD HL,DE                                        ; Advance to next row and loop until all rows cleared.
+  DEC A                                            ;
+  JP NZ,clear_row_loop                             ;
+  RET
+
+; Scroll screen attributes up by one row
+;
+; This routine is called every 8 terrain fragments to scroll the screen attributes. It copies attribute data from one
+; row to the next, effectively scrolling the attributes upward. It also handles special bridge attribute rendering.
+scroll_attributes:
+  LD HL,$5A1F                                      ; Copy 524 attribute bytes backward, scrolling all rows up by one.
+  LD DE,$5A3F                                      ;
+  LD BC,$020C                                      ;
+  LDDR                                             ;
+  LD HL,$5BDF                                      ; Point HL at the bottom attribute row.
+
+; Copy bottom attribute row to row 1 and refill bottom
+;
+; Copies the bottom attribute row to row 1, then fills the bottom row with either river (green) or bridge attributes
+; depending on state_bridge_section. This leaves attribute row 0 unchanged, creating an 8-pixel blank zone at the top.
+update_top_visible_row_and_refill_bottom:
+  LD DE,screen_attributes_row_1                    ; Copy bottom attribute row to row 1 (screen_attributes_row_1).
+  LD BC,$0020                                      ;
+  LDIR                                             ;
+  LD A,(state_bridge_section)                      ; If bridge section 1 or 2, jump to render bridge attributes.
+  CP $01                                           ;
+  JP Z,render_bridge_attributes                    ;
+  CP $02                                           ;
+  JP Z,render_bridge_attributes                    ;
+; This entry point is used by the routine at init_current_bridge.
+fill_river_attributes:
+  LD DE,$5BDF                                      ; Initialize bottom row fill with river attribute (green).
+  LD A,$0C                                         ;
+  LD B,$20                                         ;
+fill_attribute_loop:
+  LD (DE),A                                        ; Store attribute, advance pointer, loop 32 times.
+  INC DE                                           ;
+  DJNZ fill_attribute_loop                         ;
+  CALL spawn_objects_from_level_slot               ; Process objects for new row.
+  RET
+
+; Initialize bridge state for current player
+;
+; Clears the top attribute row, removes any active tank shell, and calculates the starting bridge index based on the
+; current player's saved progress.
+;
+; Bridge progression algorithm: The game has 48 unique bridge sections (1-48). Each bridge has 64 terrain fragments.
+; When a player's progress exceeds 48, the algorithm calculates a wraparound: new_bridge = ((progress - 48) mod 15) +
+; 33. This creates an infinite loop through bridges 33-48 (15 bridges) after completing all 48.
+init_current_bridge:
+  LD HL,screen_attributes                          ; Initialize to clear top attribute row (32 bytes).
+  LD B,$20                                         ;
+clear_top_attributes_loop:
+  LD (HL),$00                                      ; Clear byte, advance pointer, loop 32 times.
+  INC HL                                           ;
+  DJNZ clear_top_attributes_loop                   ;
+  CALL remove_tank_shell                           ; Clear tank shell and helicopter missile state.
+  LD (helicopter_missile_coordinates_ptr),HL       ;
+  LD A,(state_bridge_player_1)                     ; Load current player's bridge progress (swaps for player 2).
+  LD B,A                                           ;
+  LD A,(state_player)                              ;
+  CP PLAYER_2                                      ;
+  CALL Z,get_player_2_bridge                       ;
+  LD A,B                                           ; Check if progress exceeds initial section threshold (48).
+  DEC A                                            ;
+  LD DE,$0030                                      ;
+  LD H,$00                                         ;
+  LD L,A                                           ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+  JP M,finalize_bridge_index                       ;
+  LD E,$0F                                         ; Load section size (15) for division.
+divide_progress_loop:
+  OR A                                             ; Divide excess progress by 15 to find wraparound offset.
+  SBC HL,DE                                        ;
+  JP P,divide_progress_loop                        ;
+  ADD HL,DE                                        ;
+  LD E,$21                                         ;
+finalize_bridge_index:
+  ADD HL,DE                                        ; Calculate final bridge index and fill river attributes.
+  LD A,L                                           ;
+  INC A                                            ;
+  LD (state_bridge_index),A                        ;
+  JP fill_river_attributes                         ;
+
+; Render bridge attributes to bottom row
+;
+; Copies road/bridge attributes to the bottom attribute row and clears the bridge section flag.
+render_bridge_attributes:
+  LD DE,$5BDF                                      ; Copy bridge/road attributes to bottom row.
+  LD HL,sprite_road_attributes                     ;
+  LD BC,$0020                                      ;
+  LDIR                                             ;
+  LD A,$00                                         ; Clear bridge section flag and spawn objects for new row.
+  LD (state_bridge_section),A                      ;
+  CALL spawn_objects_from_level_slot               ;
+  RET
+
+; Terrain edge rendering counter
+terrain_edge_counter:
+  DEFB $00                                         ; Incremented each time terrain edge is rendered.
+
+; Initialize bridge approach state
+;
+; Called when terrain profile byte is $03, indicating the start of a bridge approach section. Sets up the bridge Y
+; position counter and fragment counter for the upcoming bridge.
+init_bridge_approach:
+  LD A,$01                                         ; Mark bridge approaching (Y position = 1).
+  LD (state_bridge_y_position),A                   ;
+  LD A,$06                                         ; Start 6-fragment countdown to bridge.
+  LD (state_terrain_fragment_counter),A            ;
+  RET
+
+; Clear bridge destroyed flag
+;
+; Called when terrain profile byte is $02, indicating bridge structure. Clears the destroyed flag so the bridge renders
+; intact (unless player has destroyed it).
+clear_bridge_destroyed:
+  LD A,$00                                         ; Reset destroyed flag so bridge renders intact.
+  LD (state_bridge_destroyed),A                    ;
+  RET
+
+; Advance to next bridge/level
+;
+; Called when all 64 terrain fragments of the current bridge are completed. Resets Y-position and advances to the next
+; bridge. Bridge index wraps from 49 back to 1, but the player's progress counter in state_bridge_player_1 continues
+; incrementing for the wraparound calculation in init_current_bridge.
+;
+; O:A Always set to 0
+increase_bridge_index:
+  LD DE,$0000                                      ; Reset Y-position to start of new bridge.
+  LD (state_scroll_offset),DE                      ;
+  LD A,(state_bridge_index)                        ; Increment bridge index at state_bridge_index.
+  INC A                                            ;
+  LD (state_bridge_index),A                        ;
+  CP $31                                           ; If index reaches $31 (49), wrap to 1.
+  JP Z,next_bridge_index_overflow                  ;
+  LD A,$00                                         ;
+  RET                                              ;
+
+; Wrap bridge index from 49 to 1
+;
+; Resets bridge index to 1 when it would exceed 48. Note: player progress at state_bridge_player_1 is not reset,
+; allowing the wraparound algorithm to work.
+next_bridge_index_overflow:
+  LD A,$01                                         ; Reset bridge index to 1.
+  LD (state_bridge_index),A                        ;
+  LD A,$00
+  RET
+
+; Initialize island state from terrain data
+;
+; Called when terrain data indicates an island should appear. Looks up island parameters from data_islands table and
+; stores them to state variables for use during island line rendering.
+;
+; I:A Island index (upper 6 bits of terrain byte, will be divided by 4).
+handle_island:
+  LD HL,data_islands                               ; Convert input to island table index and prepare lookup.
+  LD DE,$0003                                      ;
+  SRL A                                            ;
+  SRL A                                            ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+locate_island_element:
+  ADD HL,DE                                        ; Locate island entry in data_islands (3 bytes per entry).
+  DEC A                                            ;
+  JR NZ,locate_island_element                      ;
+  LD A,(HL)                                        ; Store island profile index and width offset to state.
+  LD (state_island_profile_idx),A                  ;
+  INC HL                                           ;
+  LD A,(HL)                                        ;
+  LD (state_island_byte_2),A                       ;
+  INC HL                                           ;
+  LD A,(HL)                                        ; Store extra byte and reset island line counter.
+  LD (state_island_byte_3),A                       ;
+  LD A,$00                                         ;
+  LD (state_island_line_idx),A                     ;
+  RET
+
+; Render one line of island terrain
+;
+; Renders the left and right edges of an island on the current screen line. Islands are rendered as two diagonal edges
+; (left and right) with solid terrain ($FF) filling the space from screen edge to each diagonal edge.
+;
+; The left edge X position is calculated as: state_island_byte_2 + profile_value + $80. The $80 centers the coordinate
+; system (screen center). The profile_value comes from data_terrain_profiles indexed by state_island_profile_idx and
+; state_terrain_position.
+;
+; The right edge position depends on state_island_byte_3: 0=use byte_3 directly, 1=mirror around center (2*$3C - left),
+; 2=offset from left ($3C + left). $3C (60) is the default river half-width.
+render_island_line:
+  LD HL,state_island_line_idx                      ; Increment island line counter.
+  INC (HL)                                         ;
+  LD A,(state_island_profile_idx)                  ; Set up lookup: HL=data_terrain_profiles, DE=TERRAIN_PROFILE_SIZE.
+  LD HL,data_terrain_profiles                      ;
+  LD DE,TERRAIN_PROFILE_SIZE                       ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+locate_island_profile:
+  ADD HL,DE                                        ; Locate 16-byte profile entry by state_island_profile_idx.
+  DEC A                                            ;
+  JR NZ,locate_island_profile                      ;
+  LD A,(state_terrain_position)                    ; Index into profile by (state_terrain_position AND $0F) to get edge
+  AND $0F                                          ; offset byte.
+  LD D,$00                                         ;
+  LD E,A                                           ;
+  ADD HL,DE                                        ;
+  LD A,(state_island_byte_2)                       ; Left edge X = state_island_byte_2 + profile_byte + $80. Save X on
+  ADD A,(HL)                                       ; stack.
+  PUSH AF                                          ;
+  LD B,$00                                         ;
+  ADD A,$80                                        ;
+  LD D,A                                           ;
+  LD HL,terrain_edge_left                          ;
+  LD A,D                                           ; Look up 2-byte edge sprite from terrain_edge_left using (X AND $06)
+  AND $07                                          ; as sprite index.
+  SRL A                                            ;
+  LD C,A                                           ;
+  SLA C                                            ;
+  LD A,D                                           ;
+  ADD HL,BC                                        ;
+  EX DE,HL                                         ;
+  LD C,A                                           ; Calculate screen address = screen_ptr + (X >> 3). Copy 2-byte edge
+  LD HL,(screen_ptr)                               ; sprite via LDIR.
+  LD B,$00                                         ;
+  SRL C                                            ;
+  SRL C                                            ;
+  SRL C                                            ;
+  ADD HL,BC                                        ;
+  EX DE,HL                                         ;
+  LD BC,$0002                                      ;
+  LDIR                                             ;
+  DEC DE                                           ; Calculate fill count = (X >> 3) - 16. This is number of solid tiles
+  DEC DE                                           ; left of edge.
+  SRL A                                            ;
+  SRL A                                            ;
+  SRL A                                            ;
+  SUB $10                                          ;
+  AND $0F                                          ;
+  LD B,A                                           ;
+  CP $00                                           ;
+  JP Z,prepare_right_edge                          ;
+  LD A,$FF                                         ; Fill leftward with $FF bytes (solid terrain) for fill count
+fill_island_left_loop:
+  DEC DE                                           ; iterations.
+  LD (DE),A                                        ;
+  DJNZ fill_island_left_loop                       ;
+prepare_right_edge:
+  POP AF                                           ; Restore left X from stack. Set D=left X, C=$3C (river half-width),
+  LD B,$00                                         ; B=state_island_byte_2.
+  LD D,A                                           ;
+  LD C,$3C                                         ;
+  LD A,(state_island_byte_2)                       ;
+  LD B,A                                           ;
+  LD A,(state_island_byte_3)                       ; Dispatch based on state_island_byte_3: 1=calc_mirrored_edge,
+  CP $01                                           ; 2=calc_offset_edge, else use byte_3 as right X.
+  JP Z,calc_mirrored_edge                          ;
+  LD A,(state_island_byte_3)                       ;
+  CP $02                                           ;
+  JP Z,calc_offset_edge                            ;
+; This entry point is used by the routines at calc_mirrored_edge and calc_offset_edge.
+draw_right_edge:
+  LD D,A                                           ; Look up 2-byte edge sprite from terrain_edge_right using (right X
+  LD HL,terrain_edge_right                         ; AND $06) as index.
+  LD A,D                                           ;
+  AND $06                                          ;
+  LD C,A                                           ;
+  LD B,$00                                         ;
+  LD A,D                                           ;
+  ADD HL,BC                                        ;
+  EX DE,HL                                         ;
+  LD C,A                                           ;
+  LD HL,(screen_ptr)                               ; Calculate screen address = screen_ptr + (right X >> 3). Copy 2-byte
+  SRL C                                            ; edge sprite via LDIR.
+  SRL C                                            ;
+  SRL C                                            ;
+  ADD HL,BC                                        ;
+  EX DE,HL                                         ;
+  LD BC,$0002                                      ;
+  LDIR                                             ; Calculate fill count = 15 - (right X >> 3). This is number of solid
+  LD B,A                                           ; tiles right of edge.
+  SRL B                                            ;
+  SRL B                                            ;
+  SRL B                                            ;
+  LD A,$0F                                         ;
+  SUB B                                            ;
+  LD B,A                                           ;
+  AND $0F                                          ;
+  CP $00                                           ;
+  RET Z                                            ;
+  LD A,$FF                                         ; Load $FF (solid terrain byte) into A.
+fill_island_right_loop:
+  LD (DE),A                                        ; Write A to (DE), increment DE, loop B times to fill rightward.
+  INC DE                                           ;
+  DJNZ fill_island_right_loop                      ;
+  RET                                              ; Return after filling right terrain.
+
+; Calculate mirrored right edge position
+;
+; For symmetric islands (state_island_byte_3=1). Right edge = 2*$3C - left = 120 - left. This mirrors the left edge
+; around screen center, creating a symmetric island shape.
+calc_mirrored_edge:
+  LD A,C                                           ; A = 2*C - D = 120 - left_x, then jump to draw_right_edge.
+  SUB D                                            ;
+  ADD A,C                                          ;
+  JP draw_right_edge                               ;
+
+; Calculate offset right edge position
+;
+; For offset islands (state_island_byte_3=2). Right edge = $3C + left. This creates an asymmetric island where right
+; edge follows left edge with fixed river width.
+calc_offset_edge:
+  LD A,C                                           ; A = C + D = 60 + left_x, then jump to draw_right_edge.
+  ADD A,D                                          ;
+  JP draw_right_edge                               ;
+
+; Get player 2's bridge progress
+;
+; Helper routine that loads player 2's bridge progress into B, replacing player 1's value.
+get_player_2_bridge:
+  LD A,(state_bridge_player_2)                     ; Load player 2's bridge progress into B.
+  LD B,A                                           ;
+  RET
+
+; Load next terrain fragment and initialize rendering state
+;
+; Called when a terrain fragment finishes (after 16 pixel lines). Loads the next 4-byte terrain fragment from
+; level_terrains[bridge_index][fragment_number] and initializes state for rendering.
+;
+; Terrain fragment format (4 bytes): byte 0 = profile number (index into data_terrain_profiles), bytes 1-2 = row offset
+; (added to profile values), byte 3 = upper 6 bits: island index (0=no island), lower 2 bits: edge calculation mode.
+;
+; Profile numbers 2 and 3 have special meaning: 2 = bridge structure (clears destroyed flag), 3 = bridge approach (sets
+; countdown). Fragment number wraps at 64, incrementing bridge_index.
+render_terrain_row:
+  LD A,$FF                                         ; Reset state_terrain_position to $FF (will be incremented to 0).
+  LD (state_terrain_position),A                    ;
+  LD HL,level_terrains                             ; Set up level_terrains lookup: HL = level_terrains, DE = $100 (level
+  LD DE,$0100                                      ; size).
+  LD A,(state_bridge_index)                        ;
+  OR A                                             ;
+  SBC HL,DE
+locate_level_terrain:
+  ADD HL,DE                                        ; Locate level_terrains[state_bridge_index] (256 bytes per level).
+  DEC A                                            ;
+  JR NZ,locate_level_terrain                       ;
+  LD A,(state_level_fragment_number)               ; Increment fragment number (0-63), store to
+  INC A                                            ; state_level_fragment_number.
+  AND $3F                                          ;
+  LD (state_level_fragment_number),A               ;
+  CP $00                                           ; If fragment wrapped to 0, call increase_bridge_index to advance to
+  CALL Z,increase_bridge_index                     ; next bridge/level.
+  LD DE,$0004                                      ; Set up fragment lookup: DE = 4 (fragment size).
+  INC A                                            ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+locate_level_terrain_fragment:
+  ADD HL,DE                                        ; Locate fragment within level: level_terrains[bridge][fragment].
+  DEC A                                            ;
+  JR NZ,locate_level_terrain_fragment              ;
+  LD A,(HL)                                        ; Load byte 0 (profile number) to state_terrain_profile_number.
+  LD (state_terrain_profile_number),A              ; Handle special values.
+  CP $03                                           ;
+  CALL Z,init_bridge_approach                      ;
+  CP $02                                           ; Load bytes 1-2 (row offset) to state_terrain_element_23.
+  CALL Z,clear_bridge_destroyed                    ;
+  INC HL                                           ; Byte 3: if upper 6 bits non-zero, call handle_island to initialize
+  LD C,(HL)                                        ; island.
+  INC HL                                           ;
+  LD B,(HL)                                        ;
+  INC HL                                           ;
+  LD (state_terrain_element_23),BC                 ;
+  LD A,(HL)                                        ; Store lower 2 bits of byte 3 to state_terrain_extras (edge mode:
+  PUSH AF                                          ; 0=direct, 1=mirrored, 2=offset).
+  AND $FC                                          ;
+  CP $00                                           ;
+  CALL NZ,handle_island
+  POP AF
+  AND $03
+  LD (state_terrain_extras),A
+
+; Render one pixel line of terrain
+;
+; Renders a single pixel line of the current terrain fragment. Called 16 times per fragment (lines 0-15). Draws left
+; edge sprite, fills left terrain, draws right edge sprite, fills right terrain. Handles special fragments
+; (bridges/roads) separately.
+;
+; Left edge X = profile_byte + row_offset - 16. The profile_byte comes from data_terrain_profiles[profile_number][line].
+; The -16 adjusts for the edge sprite width. Right edge depends on state_terrain_extras mode.
+render_terrain_fragment:
+  LD A,(state_terrain_profile_number)              ; Set up profile lookup: HL = data_terrain_profiles, DE =
+  LD HL,data_terrain_profiles                      ; TERRAIN_PROFILE_SIZE.
+  LD DE,TERRAIN_PROFILE_SIZE                       ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+locate_terrain_profile:
+  ADD HL,DE                                        ; Locate profile:
+  DEC A                                            ; data_terrain_profiles[state_terrain_profile_number].
+  JR NZ,locate_terrain_profile                     ;
+  LD A,(state_terrain_position)                    ; Increment state_terrain_position (line 0-15).
+  INC A                                            ;
+  LD (state_terrain_position),A                    ;
+  CP TERRAIN_PROFILE_SIZE                          ; If line reached TERRAIN_PROFILE_SIZE, jump to render_terrain_row to
+  JP Z,render_terrain_row                          ; load next fragment.
+  AND TERRAIN_PROFILE_SIZE-1                       ; Index into profile: HL = profile_base + (line mod
+  LD D,$00                                         ; TERRAIN_PROFILE_SIZE).
+  LD E,A                                           ;
+  ADD HL,DE                                        ;
+  LD BC,(state_terrain_element_23)                 ; Load row offset (B) from state_terrain_element_23 and profile byte
+  LD A,(HL)                                        ; (A).
+  BIT 7,A                                          ; If bit 7 of profile byte set, jump to
+  JP NZ,handle_special_terrain_fragment            ; handle_special_terrain_fragment (special fragment).
+  ADD A,B                                          ; Left edge X = profile_byte + row_offset - 16. Save original X, work
+  PUSH AF                                          ; with adjusted X.
+  LD B,$00                                         ;
+  SUB $10                                          ;
+  LD D,A                                           ; Increment terrain_edge_counter. Set up sprite lookup from
+  LD HL,terrain_edge_counter                       ; terrain_edge_left.
+  INC (HL)                                         ;
+  LD HL,terrain_edge_left                          ; Sprite index = (X AND $06). Look up 2-byte edge sprite from
+  LD A,D                                           ; terrain_edge_left.
+  AND $07                                          ;
+  SRL A                                            ;
+  LD C,A                                           ;
+  SLA C                                            ;
+  LD A,D                                           ; Screen address = screen_ptr + (X >> 3). Copy 2-byte sprite via
+  ADD HL,BC                                        ; LDIR.
+  EX DE,HL                                         ;
+  LD C,A                                           ;
+  LD HL,(screen_ptr)                               ;
+  LD B,$00                                         ;
+  SRL C                                            ;
+  SRL C
+  SRL C
+  ADD HL,BC                                        ; Fill count = X >> 3. Fill leftward with $FF (solid terrain).
+  EX DE,HL                                         ;
+  LD BC,$0002                                      ;
+  LDIR                                             ;
+  DEC DE                                           ; Restore original X. Dispatch based on state_terrain_extras:
+  DEC DE                                           ; 1=calc_terrain_right_mirrored, 2=calc_terrain_right_offset.
+  LD B,A                                           ;
+  SRL B                                            ;
+  SRL B                                            ;
+  SRL B                                            ;
+  LD A,$FF                                         ;
+fill_terrain_left_loop:
+  DEC DE                                           ;
+  LD (DE),A                                        ;
+  DJNZ fill_terrain_left_loop                      ;
+  POP AF
+  LD D,A
+  LD BC,(state_terrain_element_23)
+  LD A,(state_terrain_extras)                      ; Right sprite index = (right_X AND $06). Look up from
+  CP $01                                           ; terrain_edge_right.
+  JP Z,calc_terrain_right_mirrored                 ;
+  LD A,(state_terrain_extras)                      ;
+  CP $02                                           ;
+  JP Z,calc_terrain_right_offset                   ;
+; This entry point is used by the routines at calc_terrain_right_mirrored and calc_terrain_right_offset.
+draw_terrain_right_edge:
+  LD D,A                                           ; }
+  LD B,$00                                         ; Screen address = screen_ptr + (right_X >> 3). Copy 2-byte sprite
+  LD HL,terrain_edge_right                         ; via LDIR.
+  LD A,D                                           ;
+  AND $06                                          ;
+  LD C,A                                           ;
+  LD A,D                                           ;
+  ADD HL,BC                                        ;
+  EX DE,HL                                         ;
+  LD C,A                                           ;
+  LD HL,(screen_ptr)                               ;
+  SRL C                                            ; Fill count = 30 - (right_X >> 3). Fill rightward with $FF.
+  SRL C                                            ;
+  SRL C                                            ;
+  ADD HL,BC                                        ;
+  EX DE,HL                                         ;
+  LD BC,$0002                                      ;
+  LDIR                                             ;
+  LD B,A
+  SRL B
+  SRL B
+  SRL B
+  LD A,$1E                                         ; If island active (state_island_line_idx != 16), call
+  SUB B                                            ; render_island_line.
+  LD B,A                                           ;
+  LD A,$FF                                         ;
+fill_terrain_right_loop:
+  LD (DE),A                                        ;
+  INC DE                                           ;
+  DJNZ fill_terrain_right_loop                     ;
+  LD A,(state_island_line_idx)                     ;
+  CP TERRAIN_PROFILE_SIZE
+  CALL NZ,render_island_line
+  RET
+
+; Calculate mirrored right edge (terrain extras mode 1)
+;
+; For symmetric river sections. Right edge = 2*C - D where C is the default river width from state_terrain_element_23
+; low byte and D is the left edge coordinate. This mirrors the left edge around the river center.
+;
+; I:C River center position (from state_terrain_element_23 low byte).
+; I:D Left terrain edge coordinate.
+; O:A Right terrain edge coordinate = 2*C - D.
+calc_terrain_right_mirrored:
+  LD A,C                                           ; A = 2*C - D (mirror left around center), jump to
+  SUB D                                            ; draw_terrain_right_edge.
+  ADD A,C                                          ;
+  JP draw_terrain_right_edge                       ;
+
+; Calculate offset right edge (terrain extras mode 2)
+;
+; For fixed-width river sections. Right edge = C + D where C is the river width and D is the left edge coordinate. This
+; maintains constant river width regardless of left edge position.
+;
+; I:C River width (from state_terrain_element_23 low byte).
+; I:D Left terrain edge coordinate.
+; O:A Right terrain edge coordinate = C + D.
+calc_terrain_right_offset:
+  LD A,C                                           ; A = C + D (fixed width from left), jump to draw_terrain_right_edge.
+  ADD A,D                                          ;
+  JP draw_terrain_right_edge                       ;
+
+; Load canal sprite (river-adjacent side)
+;
+; Helper for special terrain: loads canal/water transition sprite for the side adjacent to the river. Sets
+; bridge_section = 0 (no special attributes).
+load_canal_river_side:
+  LD A,$00                                         ; A = 0 (no special section), HL = sprite_terrain_pre_post_bridge,
+  LD HL,sprite_terrain_pre_post_bridge             ; jump to continue.
+  JP handle_special_terrain_fragment_continue      ;
+
+; Load canal sprite (road-adjacent side)
+;
+; Helper for special terrain: loads canal sprite for the side adjacent to the road. Sets bridge_section = 2 (road
+; attributes).
+load_canal_road_side:
+  LD A,$02                                         ; A = 2 (road section), HL = sprite_terrain_pre_post_bridge, jump to
+  LD HL,sprite_terrain_pre_post_bridge             ; continue.
+  JP handle_special_terrain_fragment_continue      ;
+
+; Load road/bridge sprite
+;
+; Helper for special terrain: loads the road and bridge crossing sprite. Sets bridge_section = 2 (road attributes).
+load_road_sprite:
+  LD A,$02                                         ; A = 2 (road section), HL = sprite_road_and_bridge_pixels, jump to
+  LD HL,sprite_road_and_bridge_pixels              ; continue.
+  JP handle_special_terrain_fragment_continue      ;
+
+; Render special terrain fragment (bridge/road area)
+;
+; Handles terrain lines with bit 7 set in profile byte, indicating bridge/road sections. These use full-width 32-byte
+; sprites instead of edge rendering. Dispatches based on profile byte value: $80 = canal (river side), $E0 = canal (road
+; side), $F0 = road, else = bridge.
+;
+; After copying the 32-byte sprite to screen, sets state_bridge_section for attribute handling. If bridge was destroyed,
+; clears a 4-byte hole in the middle of the road sprite.
+handle_special_terrain_fragment:
+  CP $80                                           ; Dispatch: $80=load_canal_river_side, $E0=load_canal_road_side,
+  JP Z,load_canal_river_side                       ; $F0=load_road_sprite, else=bridge (A=1).
+  CP $E0                                           ;
+  JP Z,load_canal_road_side                        ;
+  CP $F0                                           ;
+  JP Z,load_road_sprite                            ;
+  LD A,$01                                         ; Load bridge sprite (sprite_road_and_bridge_pixels), A = 1 (bridge
+  LD HL,sprite_road_and_bridge_pixels              ; section).
+; This entry point is used by the routines at load_canal_river_side, load_canal_road_side and load_road_sprite.
+handle_special_terrain_fragment_continue:
+  LD DE,(screen_ptr)                               ; Copy 32-byte sprite row to screen via LDIR. Store A to
+  LD BC,$0020                                      ; state_bridge_section.
+  LDIR                                             ;
+  LD (state_bridge_section),A                      ; If state_bridge_destroyed = 0, return (bridge intact).
+  LD A,(state_bridge_destroyed)                    ;
+  CP $00                                           ;
+  RET Z                                            ;
+  LD HL,(screen_ptr)                               ; Load screen_ptr for destroyed bridge clearing.
+; This entry point is used by the routine at check_collision.
+clear_destroyed_bridge:
+  LD DE,$000E                                      ; Set up loop to clear 4 bytes at offset $0E.
+  LD B,$04                                         ;
+  ADD HL,DE                                        ;
+clear_bridge_bytes_loop:
+  LD (HL),$00                                      ; Clear byte, advance pointer, loop 4 times.
+  INC HL                                           ;
+  DJNZ clear_bridge_bytes_loop                     ;
+  RET                                              ;
+
+; Sound event and speed flag bitmask. Bit 0=FIRE_SOUND, 1=SPEED_NOT_FAST, 2=SPEED_CHANGED, 3=LOW_FUEL, 4=BONUS_LIFE,
+; 5=EXPLODING.
+sound_flags:
+  DEFB $00
+
+; Keep the game paused
+;
+; Used by the routine at int_handler.
+pause:
+  CALL KEYBOARD
+  LD A,(LAST_K)
+  CP "h"                                           ; Loop until anything else than H is pressed
+  JP Z,pause                                       ;
+  JP dispatch_sounds
+
+; Handle the Enter key pressed
+;
+; Used by the routines at main_loop and overview.
+handle_enter:
+  LD A,$FE                                         ; Scan Caps Shift
+  IN A,($FE)                                       ;
+  BIT 0,A                                          ;
+  JP Z,start_gameplay                              ;
+  LD A,$7F                                         ; Scan Symbol Shift
+  IN A,($FE)                                       ;
+  BIT 1,A                                          ;
+  JP Z,select_controls                             ;
+  RET                                              ;
+
+; Reset to control selection screen.
+;
+; Resets the scrolling text pointer and jumps back to the title screen.
+select_controls:
+  LD HL,msg_credits                                ; Reset text pointer to msg_credits (credits text start).
+  LD (ptr_scroller),HL                             ;
+  JP return_to_control_selection                   ; Jump to title screen initialization.
+
+; Maskable interrupt handler (IM 2)
+;
+; Frame interrupt handler triggered ~50 times/second. Installed via IM 2 at game startup (see init). Uses RETN instead
+; of RETI (functionally equivalent).
+;
+; The handler performs three functions each frame:
+;
+; * Increment interrupt counter (int_counter)
+; * Check H key for pause (jumps to pause)
+; * Process sound flags (falls through to dispatch_sounds)
+;
+; Note: The game tick counter (state_tick) is incremented in the main loop (main_loop), not here. int_counter is used
+; for system timing, state_tick for game logic.
+int_handler:
+  DI                                               ; Disable interrupts and save registers.
+  PUSH HL                                          ;
+  PUSH DE                                          ;
+  PUSH BC                                          ;
+  PUSH AF                                          ;
+  LD HL,int_counter                                ; Increment interrupt counter.
+  INC (HL)                                         ;
+  LD A,$BF                                         ; Check H key for pause.
+  IN A,($FE)                                       ;
+  BIT 4,A                                          ;
+  JP Z,pause                                       ;
+
+; Dispatch sound effects from flag state
+;
+; Sound processing dispatcher called from interrupt handler. Reads sound_flags sound flags and dispatches to sound
+; routines. FIRE, BONUS_LIFE, and EXPLODING use <code>CALL NZ</code> — the routine returns and the dispatcher continues
+; to the next check. LOW_FUEL uses <code>JP NZ</code> — execution jumps away and the engine check is never reached.
+; Engine plays only when LOW_FUEL is clear.
+;
+; +-----+-----------------+-----------------------------------+-------------------+
+; | Bit | Flag            | Sound Handler                     | Dispatch          |
+; +-----+-----------------+-----------------------------------+-------------------+
+; | 0   | FIRE_SOUND      | do_fire (fire)                    | CALL NZ           |
+; | 4   | BONUS_LIFE      | do_bonus_life (jingle)            | CALL NZ           |
+; | 5   | EXPLODING       | beep_explosion (explosion)        | CALL NZ           |
+; | 3   | LOW_FUEL        | do_low_fuel (warning)             | JP NZ (tail-call) |
+; | 1   | SPEED_NOT_FAST  | beep_engine_normal (normal speed) | JP Z (tail-call)  |
+; | 2   | SPEED_CHANGED   | beep_engine_fast (fast speed)     | JP Z (tail-call)  |
+; | 1+2 | Both speed bits | beep_engine_slow (slow speed)     | JP Z (tail-call)  |
+; +-----+-----------------+-----------------------------------+-------------------+
+;
+; Flags are set by game logic (input handlers, collision, fuel system) and cleared by sound routines when complete.
+;
+; Because EXPLODING uses <code>CALL NZ</code> and the engine check follows, explosion mixes with the engine in the same
+; interrupt frame — this happens every time an enemy or the player is destroyed. Fire and explosion cannot mix:
+; spawn_explosion_fragment clears SOUND_BIT_FIRE when setting SOUND_BIT_EXPLODING. LOW_FUEL and engine are mutually
+; exclusive: the <code>JP NZ</code> to do_low_fuel bypasses all engine checks.
+dispatch_sounds:
+  LD A,(LAST_K)                                    ; Skip if LAST_K is 'h'.
+  CP "h"                                           ;
+  JP Z,int_return                                  ;
+  LD HL,sound_flags                                ; Check FIRE_SOUND → do_fire.
+  BIT SOUND_BIT_FIRE,(HL)                          ;
+  CALL NZ,do_fire                                  ;
+  BIT SOUND_BIT_BONUS_LIFE,(HL)                    ; Check BONUS_LIFE → do_bonus_life.
+  CALL NZ,do_bonus_life                            ;
+  LD HL,sound_flags                                ;
+  BIT SOUND_BIT_EXPLODING,(HL)                     ; Check EXPLODING → beep_explosion.
+  CALL NZ,beep_explosion                           ;
+  LD HL,sound_flags                                ;
+  BIT SOUND_BIT_LOW_FUEL,(HL)                      ; Check LOW_FUEL → do_low_fuel.
+  JP NZ,do_low_fuel                                ;
+  LD A,(HL)                                        ;
+  AND SOUND_SPEED_MASK                             ; Mask speed bits.
+  CP SOUND_SPEED_NORMAL                            ; Normal speed → beep_engine_normal.
+  JP Z,beep_engine_normal                          ;
+  CP SOUND_SPEED_FAST                              ; Fast speed → beep_engine_fast.
+  JP Z,beep_engine_fast                            ;
+  CP SOUND_SPEED_SLOW                              ; Slow speed → beep_engine_slow.
+  JP Z,beep_engine_slow                            ;
+
+; Return from interrupt handler
+;
+; Restores registers and returns. Uses RETN instead of RETI (both work identically).
+int_return:
+  POP AF                                           ; Restore registers.
+  POP BC                                           ;
+  POP DE                                           ;
+  POP HL                                           ;
+  EI                                               ; Enable interrupts and return.
+  RETN                                             ;
+
+; Unused
+data_unused_6C2B:
+  DEFB $ED,$56,$C3,$08,$00
+
+; Bonus life sound progress counter (0-64). Incremented each interrupt during jingle. Sound completes when reaching $40
+; (64).
+bonus_life_sound_counter:
+  DEFB $00
+
+; Play bonus life sound effect
+;
+; Generates a rising pitch sound effect when player earns an extra life. Called once per interrupt while
+; SOUND_BIT_BONUS_LIFE is set. The sound plays over 64 interrupts (~1.28 seconds).
+;
+; * Counter increments from 0 to 64 over successive interrupts
+; * Pitch = ($40 - counter) >> 3, giving values 7→0 as counter increases
+; * Lower pitch values = higher frequency, so sound rises in pitch
+; * Calls ROM BEEPER routine at $03B5 with duration L=$FF, repeat DE=$0001
+do_bonus_life:
+  LD A,(bonus_life_sound_counter)                  ; Increment counter and check if reached $40 (64). If so, sound is
+  INC A                                            ; complete.
+  LD (bonus_life_sound_counter),A                  ;
+  CP BONUS_LIFE_SOUND_TICKS                        ; Check if counter reached BONUS_LIFE_SOUND_TICKS. If done, finish
+  JP Z,bonus_life_sound_done                       ; sound sequence.
+  LD B,A                                           ; Calculate pitch: pitch = BONUS_LIFE_SOUND_TICKS - counter.
+  LD A,BONUS_LIFE_SOUND_TICKS                      ;
+  SUB B                                            ;
+  LD L,$FF                                         ; Set up BEEPER parameters: H = pitch >> 3 (range 7-0), L = $FF
+  LD H,A                                           ; (duration).
+  SRL H                                            ;
+  SRL H                                            ;
+  SRL H                                            ;
+  LD DE,$0001                                      ; Call ROM BEEPER at $03B5 with DE=$0001 (one iteration). Disable
+  CALL BEEPER                                      ; interrupts after.
+  DI                                               ;
+  RET
+
+; Complete bonus life sound sequence
+;
+; Resets the sound counter and clears the SOUND_BIT_BONUS_LIFE flag to stop the sound effect.
+bonus_life_sound_done:
+  LD A,$00                                         ; Reset counter to 0.
+  LD (bonus_life_sound_counter),A                  ;
+  LD HL,sound_flags                                ; Clear SOUND_BIT_BONUS_LIFE in sound_flags to indicate sound is
+  RES SOUND_BIT_BONUS_LIFE,(HL)                    ; complete.
+  RET
+
+; Play normal speed engine sound
+;
+; Generates the engine sound for normal speed. Called when only SOUND_BIT_SPEED_NOT_FAST is set (player not pressing up
+; or down). HL points to the sound flags byte on entry.
+;
+; * Period = (sound_flags AND $0F), used for both on and off delays
+; * Symmetric square wave: same delay for high and low phases
+; * Loops 8 cycles then returns
+;
+; I:HL Pointer to sound_flags (sound flags byte)
+beep_engine_normal:
+  LD A,(HL)                                        ; Extract period from low 4 bits of sound flags byte. Higher value =
+  AND $0F                                          ; lower pitch.
+  LD E,A                                           ;
+  LD C,$08                                         ; Loop counter: 8 cycles of the waveform.
+beep_engine_normal_loop:
+  LD A,ULA_SPEAKER_ON                              ; Speaker ON.
+  OUT ($FE),A                                      ;
+  LD D,E                                           ; Load period into D.
+beep_engine_normal_delay_on:
+  DEC D                                            ; Delay loop for speaker ON phase.
+  JR NZ,beep_engine_normal_delay_on                ;
+  LD A,ULA_SPEAKER_OFF                             ; Speaker OFF.
+  OUT ($FE),A                                      ;
+  LD D,E                                           ; Load period into D.
+beep_engine_normal_delay_off:
+  DEC D                                            ; Delay loop for speaker OFF phase.
+  JR NZ,beep_engine_normal_delay_off               ;
+  DEC C                                            ; Decrement cycle counter, loop if not zero. Return from interrupt
+  JP NZ,beep_engine_normal_loop                    ; when done.
+  JP int_return                                    ;
+
+; Explosion sound tick counter. Counts down from $18 (24) to 0. Value also controls pitch - higher values = lower
+; frequency.
+explosion_counter:
+  DEFB $18
+
+; Play explosion sound effect
+;
+; Generates an explosion sound that plays over 24 interrupts ($18). Called once per interrupt while SOUND_BIT_EXPLODING
+; is set. The ON delay is derived from (DE)&7, but DE is not set up by the caller - it retains whatever value the
+; interrupted main loop code had, making the pitch vary semi-randomly between interrupts and giving the explosion its
+; noisy character.
+;
+; * Counter decrements from $18 (24) to 0 over successive interrupts
+; * ON delay = ((DE) AND $07) << 3 + $10, range $10-$48 (16-72)
+; * OFF delay = counter value, decreasing each interrupt (sound speeds up)
+; * 4 cycles of waveform per interrupt
+; * As counter decreases, OFF delay shortens, making sound more rapid/urgent
+;
+; I:DE Not intentionally set - residual value from interrupted code, read as (DE)&7 to derive ON delay
+beep_explosion:
+  LD A,(explosion_counter)                         ; Decrement explosion counter.
+  DEC A                                            ;
+  LD (explosion_counter),A
+  CP $00                                           ; If counter reached 0, jump to explosion_render_finish to finish.
+  JP Z,explosion_render_finish                     ;
+  LD A,(DE)                                        ; Calculate ON delay: ((DE) AND $07) << 3 + $10. Gives value $10-$48
+  AND $07                                          ; based on low 3 bits of (DE).
+  SLA A                                            ;
+  SLA A                                            ;
+  SLA A                                            ;
+  ADD A,$10                                        ;
+  LD E,A                                           ; Set ON delay in E, loop counter = 4 cycles.
+  LD C,$04                                         ;
+beep_explosion_loop:
+  LD A,ULA_SPEAKER_ON                              ; Speaker ON.
+  OUT ($FE),A                                      ;
+  LD D,E                                           ; Load ON delay into D.
+beep_explosion_delay_on:
+  DEC D                                            ; Delay loop for speaker ON phase.
+  JR NZ,beep_explosion_delay_on                    ;
+  LD A,ULA_SPEAKER_OFF                             ; Speaker OFF.
+  OUT ($FE),A                                      ;
+  LD A,(explosion_counter)                         ; Load counter value as OFF delay.
+  LD D,A                                           ;
+beep_explosion_delay_off:
+  DEC D                                            ; Delay loop for speaker OFF phase (speeds up as counter decreases).
+  JR NZ,beep_explosion_delay_off                   ;
+  DEC C                                            ; Decrement cycle counter, loop for 4 cycles per interrupt.
+  JP NZ,beep_explosion_loop                        ;
+  RET                                              ;
+
+; Complete explosion sound sequence
+;
+; Resets the explosion counter and clears SOUND_BIT_EXPLODING flag.
+explosion_render_finish:
+  LD A,EXPLOSION_SOUND_TICKS                       ; Reset explosion counter for next explosion.
+  LD (explosion_counter),A                         ;
+  LD HL,sound_flags                                ; Clear SOUND_BIT_EXPLODING in sound_flags.
+  RES SOUND_BIT_EXPLODING,(HL)                     ;
+  RET
+
+; Play fast speed engine sound
+;
+; Generates the engine sound for fast speed. Called when only SOUND_BIT_SPEED_CHANGED is set (player holding up). HL
+; points to the sound flags byte on entry.
+;
+; * Period = (sound_flags AND $07), used for speaker ON delay
+; * Fixed OFF delay of 4 iterations (shorter than ON = asymmetric wave)
+; * Asymmetric wave gives a higher-pitched timbre than normal speed
+;
+; I:HL Pointer to sound_flags (sound flags byte)
+beep_engine_fast:
+  LD A,(HL)                                        ; Extract period from low 3 bits of sound flags byte.
+  AND $07                                          ;
+  LD E,A                                           ;
+  LD C,$08                                         ; Loop counter: 8 cycles of the waveform.
+beep_engine_fast_loop:
+  LD A,ULA_SPEAKER_ON                              ; Speaker ON.
+  OUT ($FE),A                                      ;
+  LD D,E                                           ; Load period into D.
+beep_engine_fast_delay_on:
+  DEC D                                            ; Delay loop for speaker ON phase.
+  JR NZ,beep_engine_fast_delay_on                  ;
+  LD A,ULA_SPEAKER_OFF                             ; Speaker OFF.
+  OUT ($FE),A                                      ;
+  LD D,$04                                         ; Load fixed delay ($04) into D.
+beep_engine_fast_delay_off:
+  DEC D                                            ; Delay loop for speaker OFF phase (asymmetric wave).
+  JR NZ,beep_engine_fast_delay_off                 ;
+  DEC C                                            ; Decrement cycle counter, loop if not zero. Return from interrupt
+  JP NZ,beep_engine_fast_loop                      ; when done.
+  JP int_return                                    ;
+
+; Play slow speed engine sound
+;
+; Generates the engine sound for slow speed. Called when both SOUND_BIT_SPEED_NOT_FAST and SOUND_BIT_SPEED_CHANGED are
+; set (player holding down). HL points to the sound flags byte on entry.
+;
+; * Period = (sound_flags AND $17), uses bits 0-2 and bit 4
+; * Fixed OFF delay of $0C (12) iterations (longer than fast speed sound)
+; * Lower-pitched timbre than normal and fast speeds
+;
+; I:HL Pointer to sound_flags (sound flags byte)
+beep_engine_slow:
+  LD A,(HL)                                        ; Extract period from bits 0-2 and bit 4 of sound flags byte.
+  AND $17                                          ;
+  LD E,A                                           ;
+  LD C,$08                                         ; Loop counter: 8 cycles of the waveform.
+beep_engine_slow_loop:
+  LD A,ULA_SPEAKER_ON                              ; Speaker ON.
+  OUT ($FE),A                                      ;
+  LD D,E                                           ; Load period into D.
+beep_engine_slow_delay_on:
+  DEC D                                            ; Delay loop for speaker ON phase.
+  JR NZ,beep_engine_slow_delay_on                  ;
+  LD A,ULA_SPEAKER_OFF                             ; Speaker OFF.
+  OUT ($FE),A                                      ;
+  LD D,$0C                                         ; Load fixed delay ($0C) into D.
+beep_engine_slow_delay_off:
+  DEC D                                            ; Delay loop for speaker OFF phase.
+  JR NZ,beep_engine_slow_delay_off                 ;
+  DEC C                                            ; Decrement cycle counter, loop if not zero. Return from interrupt
+  JP NZ,beep_engine_slow_loop                      ; when done.
+  JP int_return                                    ;
+
+; Play low fuel warning sound
+;
+; Generates a warbling warning sound when fuel is low. Called once per interrupt while SOUND_BIT_LOW_FUEL is set. The
+; sound pitch varies each interrupt creating an urgent warbling effect.
+;
+; * Decrements low_fuel_sound_period each interrupt, wrapping at $7F (0-127 range)
+; * Uses this value as period for symmetric square wave
+; * 3 cycles of waveform per invocation
+; * As period decrements, pitch rises then resets, creating warble
+do_low_fuel:
+  LD C,$03                                         ; Loop counter: 3 cycles of waveform.
+do_low_fuel_loop:
+  LD A,(low_fuel_sound_period)                     ; Decrement period (low_fuel_sound_period), wrap at $7F. Store new
+  DEC A                                            ; period in E.
+  AND $7F                                          ;
+  LD (low_fuel_sound_period),A                     ;
+  LD E,A                                           ; Speaker ON.
+  LD A,ULA_SPEAKER_ON                              ;
+  OUT ($FE),A                                      ;
+  LD D,E                                           ; Load period into D.
+do_low_fuel_delay_on:
+  DEC D                                            ; Delay loop for speaker ON phase.
+  JR NZ,do_low_fuel_delay_on                       ;
+  LD A,ULA_SPEAKER_OFF                             ; Speaker OFF.
+  OUT ($FE),A                                      ;
+  LD D,E                                           ; Load period into D.
+do_low_fuel_delay_off:
+  DEC D                                            ; Delay loop for speaker OFF phase.
+  JR NZ,do_low_fuel_delay_off                      ;
+  DEC C                                            ; Decrement cycle counter, loop for 3 cycles. Return from interrupt
+  JP NZ,do_low_fuel_loop                           ; when done.
+  JP int_return                                    ;
+
+; Level overview screen
+;
+; Displays a preview fly-over of the upcoming terrain before the game starts. Shows scrolling terrain with game number
+; and scrolling title text. Player can press Enter to start the game early, or wait for 5 scroll units to auto-start.
+;
+; * Initializes screen with PAPER RIVER, INK BANK
+; * Prints status line and "GAME n" where n is the game mode (1-4)
+; * Runs a main loop that scrolls terrain and displays title text
+; * Exits to game start after 5 scroll increments or Enter key
+overview:
+  LD BC,$0010                                      ; Initialize scroll position (state_scroll_offset = $0010) and scroll
+  LD (state_scroll_offset),BC                      ; speed (state_island_line_idx = $10).
+  LD A,$10                                         ;
+  LD (state_island_line_idx),A
+  LD D,COLOR_RIVER<<3|COLOR_BANK                   ; Set screen colors (PAPER RIVER, INK BANK) via clear_screen.
+  CALL clear_screen                                ;
+  CALL init_udg                                    ; Clear/initialize screen via init_udg.
+  LD DE,status_line_1                              ; Print status line 1 (status_line_1, length $31 bytes) using ROM
+  LD BC,status_line_2 - status_line_1              ; PR_STRING ($203C).
+  CALL PR_STRING                                   ;
+  CALL print_bridge                                ; Initialize gameplay: call print_bridge,
+  CALL setup_overview_status_player_2              ; setup_overview_status_player_2, init_starting_bridge
+  CALL init_starting_bridge                        ; (init_starting_bridge).
+  CALL init_current_bridge                         ; Initialize terrain rendering.
+  LD A,$04                                         ; Print "GAME" text (status_line_4, length 5) using ROM PR_STRING.
+  LD (state_terrain_fragment_counter),A            ;
+  LD DE,status_line_4                              ;
+  LD BC,status_line_4_end - status_line_4          ;
+  CALL PR_STRING
+  LD A,(state_game_mode)                           ; Print game number: load game mode from state_game_mode, add "1" for
+  ADD A,"1"                                        ; ASCII digit, output via RST $10.
+  RST $10                                          ;
+  LD A,"h"                                         ; Initialize state: set LAST_K to 'h' (paused state), clear
+  LD (LAST_K),A                                    ; state_terrain_position, save initial scroll value to
+  LD A,$00                                         ; state_overview_start_scroll.
+  LD (state_terrain_position),A                    ;
+  LD A,(state_bridge_index)                        ;
+  LD (state_overview_start_scroll),A
+; This entry point is used by the routine at reset_scroll_text.
+overview_loop:
+  LD A,$BF                                         ; Check Enter key (row 6, bit 0). Handle Enter if pressed.
+  IN A,($FE)                                       ;
+  BIT 0,A                                          ;
+  CALL Z,handle_enter                              ;
+  LD A,(state_overview_start_scroll)               ; Check if 5 scroll units passed: if (state_bridge_index -
+  LD B,A                                           ; state_overview_start_scroll) == 5, jump to
+  LD A,(state_bridge_index)                        ; return_to_control_selection to start game.
+  SUB B                                            ;
+  CP $05                                           ;
+  JP Z,return_to_control_selection                 ;
+  CALL scroll_text_crawl                           ; Text crawl: 1st of 2 pixel shifts this frame.
+  CALL render_plane_and_terrain                    ; Render plane and terrain, increment tick counter, operate viewport
+  LD HL,state_tick                                 ; objects and projectiles.
+  INC (HL)                                         ;
+  CALL operate_viewport_slots                      ;
+  CALL operate_tank_shell                          ;
+  CALL operate_helicopter_missile                  ;
+  CALL advance_scroll                              ; Advance terrain scroll and render terrain.
+  CALL scroll_text_crawl                           ; Text crawl: 2nd of 2 pixel shifts this frame.
+  LD HL,state_overview_frame                       ; Increment frame counter state_overview_frame, scan keyboard, enable
+  INC (HL)                                         ; interrupts.
+  CALL KEYBOARD                                    ;
+  EI                                               ;
+  LD A,(LAST_K)                                    ; Check if Enter was pressed. If so, jump to play.
+  CP CHAR_ENTER                                    ;
+  JP Z,play                                        ;
+  LD A,(state_overview_frame)                      ; Check frame counter AND 3: if not zero, loop back to overview_loop.
+  AND $03                                          ;
+  CP $00                                           ;
+  JP NZ,overview_loop
+  LD A,$01                                         ; Open lower screen (K) channel via ROM CHAN_OPEN ($1601) to print
+  CALL CHAN_OPEN                                   ; next text crawl character.
+  LD A,EXT_ATTR_INK                                ; INK BLACK
+  RST $10                                          ;
+  LD A,COLOR_BLACK                                 ;
+  RST $10                                          ;
+  LD A,EXT_ATTR_PAPER                              ; PAPER BLACK
+  RST $10                                          ;
+  LD A,COLOR_BLACK                                 ;
+  RST $10                                          ;
+  LD A,EXT_ATTR_AT                                 ; AT 1,31 — bottom-right corner of the lower screen (char row 23,
+  RST $10                                          ; column 31).
+  LD A,$01                                         ;
+  RST $10                                          ;
+  LD A,$1F                                         ;
+  RST $10                                          ;
+  LD HL,(ptr_scroller)                             ; Advance text pointer (ptr_scroller) and read next character. Every
+  INC HL                                           ; 4 frames = 8 pixels scrolled = 1 character width.
+  LD (ptr_scroller),HL                             ;
+  LD A,(HL)                                        ;
+  CP $FF                                           ;
+  JP Z,reset_scroll_text                           ; If $FF (end of text), jump to reset_scroll_text to reset pointer.
+  RST $10                                          ; Otherwise print character via RST $10, reopen upper screen (S)
+  LD A,$02                                         ; channel (A=2), and fall through to loop.
+  CALL CHAN_OPEN                                   ;
+  JP overview_loop
+
+; Reset scrolling title text
+;
+; Resets the scrolling text pointer to the beginning of the title text at msg_credits and continues the overview loop.
+reset_scroll_text:
+  LD HL,msg_credits                                ; Reset text pointer ptr_scroller to msg_credits (start of title
+  LD (ptr_scroller),HL                             ; text).
+  LD A,$00                                         ;
+  LD (state_bridge_destroyed),A                    ; Clear state_bridge_destroyed and jump back to overview_loop.
+  JP overview_loop                                 ;
+
+; Initializes the starting bridge based on the value of state_game_mode using starting_bridges for the lookup.
+;
+; Used by the routines at init_state and overview.
+init_starting_bridge:
+  LD A,(state_game_mode)
+  SRL A                                            ; Shift the game mode right discarding the bit corresponding to the
+                                                   ; number of players and leaving the ones corresponding to the
+                                                   ; starting bridge.
+  LD HL,starting_bridges                           ; Point to the beginning of the list
+  LD B,$00                                         ; Advance to the element corresponding to the game mode.
+  LD C,A                                           ;
+  ADD HL,BC                                        ;
+  LD A,(HL)                                        ; Get the starting bridge number
+  LD (state_bridge_player_1),A
+  LD (state_bridge_player_2),A
+  RET
+
+; Consume fuel and update gauge display
+;
+; Decrements fuel level by 1 every 2 frames (on even ticks only). At 50fps, this equals ~25 units/second. A full tank
+; (255) lasts ~10 seconds. Fuel consumption does NOT vary with scroll speed.
+;
+; * Gauge updates every 4th decrement (fuel AND 3 == 0)
+; * Low fuel warning when top 2 bits = 0 (fuel < $40)
+; * Empty fuel (fuel = 0) triggers game over via handle_player_death
+; * Gauge position: column = (fuel >> 2) + $40, row = $A8
+consume_fuel:
+  LD A,(state_tick)                                ; Skip if odd tick (fuel only consumed on even ticks).
+  AND TICK_MASK_FRAME_PARITY                       ;
+  CP TICK_PARITY_EVEN                              ;
+  RET NZ                                           ;
+  LD A,(state_fuel)                                ; Decrement fuel level in state_fuel.
+  DEC A                                            ;
+  LD (state_fuel),A                                ;
+  AND FUEL_CHECK_INTERVAL                          ; Skip gauge update unless (fuel AND 3) == 0 (every 4th decrement).
+  CP $00                                           ;
+  RET NZ                                           ;
+  LD A,(state_fuel)                                ; If fuel == 0, game over (jump to handle_player_death).
+  CP FUEL_LEVEL_EMPTY                              ;
+  JP Z,handle_player_death                         ;
+  AND FUEL_LEVEL_LOW                               ; If fuel low (top 2 bits = 0), call register_low_fuel to set low
+  CP $00                                           ; fuel warning.
+  CALL Z,register_low_fuel                         ;
+update_fuel_gauge:
+  LD A,(state_fuel)                                ; Calculate gauge position: B = $A8 (row), C = (fuel >> 2) + $40
+  LD B,$A8                                         ; (column).
+  SRL A                                            ;
+  SRL A                                            ;
+  ADD A,$40                                        ;
+  LD C,A                                           ;
+  CALL calculate_pixel_address                     ; Compute screen address from B,C coordinates.
+draw_fuel_gauge_loop:
+  LD A,$08                                         ; Loop counter: 8 rows of gauge.
+  LD D,$86                                         ; Set pixel pattern $86 for gauge.
+draw_fuel_gauge_row_loop:
+  PUSH AF                                          ; Draw row, move down, decrement counter, loop for 8 rows.
+  CALL calculate_fuel_gauge_offset                 ;
+  INC H                                            ;
+  POP AF                                           ;
+  DEC A                                            ;
+  JP NZ,draw_fuel_gauge_row_loop                   ;
+  RET
+
+; Add fuel during refueling
+;
+; Adds FUEL_INTAKE_AMOUNT (4 units) per frame while plane is over a fuel depot. At 50fps, this equals ~200 units/second.
+; A full refuel from empty takes ~1.3 seconds.
+;
+; * Checks state_plane_sprite_bank == 4, but this is always $00 at call time (set to $04 only after render completes) —
+;   effectively dead code
+; * Plays high-pitched refuel sound via ROM BEEPER
+; * If fuel almost full ($FC), plays tank full sound via signal_fuel_level_excessive
+; * Clears low fuel warning when fuel becomes sufficient
+add_fuel:
+  LD A,(state_plane_sprite_bank)                   ; Check state_plane_sprite_bank == 4 (dead code: always $00 at call
+  CP $04                                           ; time).
+  RET Z                                            ;
+  LD A,(state_fuel)                                ; Check if fuel almost full (AND $FC == $FC). If so, jump to
+  AND FUEL_LEVEL_ALMOST_FULL                       ; signal_fuel_level_excessive for tank full sound.
+  CP FUEL_LEVEL_ALMOST_FULL                        ;
+  JP Z,signal_fuel_level_excessive                 ;
+  LD DE,$0007                                      ; Play refueling sound: BEEPER with DE=$0007, HL=$0333.
+  LD HL,$0333                                      ;
+  CALL BEEPER                                      ;
+  LD A,(state_fuel)                                ; Add 4 to fuel level. If now sufficient (AND $C0 != 0), call
+  ADD A,FUEL_INTAKE_AMOUNT                         ; register_sufficient_fuel to clear low fuel warning.
+  LD (state_fuel),A                                ;
+  AND FUEL_LEVEL_LOW                               ;
+  CP $00                                           ;
+  CALL NZ,register_sufficient_fuel
+update_fuel_gauge_refuel:
+  LD A,(state_fuel)                                ; Calculate gauge position: B = $A8, C = (fuel >> 2) + $3F.
+  LD B,$A8                                         ;
+  SRL A                                            ;
+  SRL A                                            ;
+  ADD A,$3F                                        ;
+  LD C,A                                           ;
+  CALL calculate_pixel_address                     ; Compute screen address.
+  LD A,$08                                         ; Loop counter: 8 rows.
+  LD D,$C6                                         ; Draw 8 rows of fuel gauge with pattern $C6 (filled). Increment H
+draw_fuel_gauge_refuel_loop:
+  PUSH AF                                          ; each row.
+  CALL calculate_fuel_gauge_offset                 ;
+  INC H                                            ;
+  POP AF                                           ;
+  DEC A                                            ;
+  JP NZ,draw_fuel_gauge_refuel_loop                ;
+  RET
+
+; Set low fuel warning flag
+;
+; Sets SOUND_BIT_LOW_FUEL in sound_flags to trigger the warbling low fuel warning sound.
+register_low_fuel:
+  LD HL,sound_flags                                ; Set SOUND_BIT_LOW_FUEL in sound_flags.
+  SET SOUND_BIT_LOW_FUEL,(HL)                      ;
+  RET
+
+; Clear low fuel warning flag
+;
+; Clears SOUND_BIT_LOW_FUEL in sound_flags to stop the low fuel warning sound.
+register_sufficient_fuel:
+  LD HL,sound_flags                                ; Clear SOUND_BIT_LOW_FUEL in sound_flags.
+  RES SOUND_BIT_LOW_FUEL,(HL)                      ;
+  RET
+
+; Play tank full sound
+;
+; Plays a short beep (~1450 Hz, ~6ms) when fuel tank is already full and cannot accept more fuel.
+signal_fuel_level_excessive:
+  LD DE,$0008                                      ; Play tank full sound: BEEPER with DE=$0008, HL=$0111.
+  LD HL,$0111                                      ;
+  CALL BEEPER                                      ;
+  RET
+
+; Create explosion fragment at coordinates
+;
+; Called when an enemy is destroyed or the player collides. Sets up explosion state and adds an explosion entry to the
+; explosions set at exploding_fragments.
+;
+; * Sets SOUND_BIT_EXPLODING to trigger explosion sound
+; * Clears SOUND_BIT_FIRE to stop the fire sound during explosion
+; * Resets explosion_counter (explosion counter) to EXPLOSION_SOUND_TICKS
+; * Falls through to add_object_to_set to add explosion to set
+;
+; I:BC Fragment coordinates: B=Y offset, C=X position
+; I:D Initial explosion frame index (0 = start at frame 1)
+spawn_explosion_fragment:
+  LD HL,sound_flags                                ; Set SOUND_BIT_EXPLODING in sound_flags.
+  SET SOUND_BIT_EXPLODING,(HL)                     ;
+  RES SOUND_BIT_FIRE,(HL)                          ; Clear SOUND_BIT_FIRE.
+  LD A,EXPLOSION_SOUND_TICKS                       ; Reset explosion counter.
+  LD (explosion_counter),A                         ;
+  LD HL,exploding_fragments                        ; Point HL to explosions set at exploding_fragments, fall through to
+                                                   ; add_object_to_set.
+
+; Add object entry to a set
+;
+; Finds an empty slot or end-of-set marker in the object set and writes a 3-byte entry (C, B, D). Each entry represents
+; an object with X position, Y offset, and type.
+;
+; * Searches forward through set, 3 bytes per entry
+; * Skips non-empty entries until finding SET_MARKER_EMPTY_SLOT or SET_MARKER_END_OF_SET
+;
+; I:B Y offset (usually 0 for new objects)
+; I:C X position
+; I:D Object type/definition
+; I:HL Pointer to start of object set
+add_object_to_set:
+  LD A,(HL)                                        ; Load current entry's first byte. If empty slot, jump to write.
+  CP SET_MARKER_EMPTY_SLOT                         ;
+  JP Z,write_object_to_set                         ;
+  CP SET_MARKER_END_OF_SET                         ; If end-of-set marker, jump to write (will extend set).
+  JP Z,write_object_to_set                         ;
+  INC HL                                           ; Entry occupied: advance HL by 3 bytes and loop.
+  INC HL                                           ;
+  INC HL                                           ;
+  JP add_object_to_set                             ;
+
+; Write object entry to set
+;
+; Writes a 3-byte object entry at the current position. If replacing the end-of-set marker, writes a new end marker
+; after the entry.
+;
+; I:A Previous value at slot (used to check if extending set)
+; I:B Y offset
+; I:C X position
+; I:D Object type
+; I:HL Pointer to slot in set
+write_object_to_set:
+  LD (HL),C                                        ; Write 3-byte entry: [C, B, D] = [X, Y_offset, type].
+  INC HL                                           ;
+  LD (HL),B                                        ;
+  INC HL                                           ;
+  LD (HL),D                                        ;
+  CP SET_MARKER_END_OF_SET                         ; If replacing end marker, write new $FF marker after entry.
+  RET NZ                                           ;
+  INC HL                                           ;
+  LD (HL),SET_MARKER_END_OF_SET
+  RET
+
+; Process and render all active explosions
+;
+; Iterates through the explosions set at exploding_fragments via pointer exploding_fragments_ptr. Each explosion has 6
+; animation frames before being removed. Adjusts Y position based on scroll speed.
+;
+; * Entry format: [X_pos, Y_offset, frame_counter] where frame_counter bits 0-6 = frame (1-6), bit 7 = erase flag
+; * Frame 1,5: small explosion (ld_sprite_explosion_f1)
+; * Frame 2,4: medium explosion (ld_sprite_explosion_f2)
+; * Frame 3: large explosion (ld_sprite_explosion_f3)
+; * Frame 6: erase explosion (ld_sprite_explosion_erasure) then remove entry
+render_explosions:
+  LD HL,(exploding_fragments_ptr)                  ; Load 3-byte entry from set: C=X, B=Y offset, D=frame. Advance
+  LD C,(HL)                                        ; pointer exploding_fragments_ptr.
+  INC HL                                           ;
+  LD B,(HL)                                        ;
+  INC HL                                           ;
+  LD D,(HL)                                        ;
+  INC HL                                           ;
+  LD (exploding_fragments_ptr),HL                  ;
+  LD A,C                                           ; Skip empty entries, continue to next.
+  CP SET_MARKER_EMPTY_SLOT                         ;
+  JP Z,render_explosions                           ;
+  CP SET_MARKER_END_OF_SET                         ; If end-of-set marker, jump to reset_explosions_pointer to reset
+  JP Z,reset_explosions_pointer                    ; pointer.
+  LD A,(state_speed)                               ; Add scroll speed (state_speed) to Y offset, store back.
+  ADD A,B                                          ;
+  DEC HL                                           ;
+  DEC HL                                           ;
+  LD (HL),A                                        ;
+  LD A,D                                           ; Extract frame number (bits 0-6), increment. If frame == 7, entry
+  AND $7F                                          ; complete.
+  INC A                                            ;
+  CP $07                                           ;
+  JP Z,remove_explosion_entry                      ;
+  LD A,D                                           ; Increment frame counter and store back.
+  INC A                                            ;
+  INC HL                                           ;
+  LD (HL),A                                        ;
+  LD A,B                                           ; Check if Y position is off-screen (AND $88 == $88). Skip if so.
+  AND VIEWPORT_HEIGHT                              ;
+  CP VIEWPORT_HEIGHT                               ;
+  JP Z,render_explosions                           ;
+  LD A,B                                           ; Check if Y position is off-screen (AND $90 == $90). Skip if so.
+  AND $90                                          ;
+  CP $90                                           ;
+  JP Z,render_explosions                           ;
+  LD A,(HL)                                        ; Get frame number. Load sprite for frame 1.
+  AND $7F                                          ;
+  CP $01                                           ;
+  CALL Z,ld_sprite_explosion_f1                    ; Load sprite for frame 2.
+  CP $02                                           ;
+  CALL Z,ld_sprite_explosion_f2                    ; Load sprite for frame 3.
+  CP $03                                           ;
+  CALL Z,ld_sprite_explosion_f3                    ; Load sprite for frame 4 (same as 2).
+  CP $04                                           ;
+  CALL Z,ld_sprite_explosion_f2                    ; Load sprite for frame 5 (same as 1).
+  CP $05                                           ;
+  CALL Z,ld_sprite_explosion_f1                    ; Load erasure sprite for frame 6.
+  CP $06                                           ;
+  CALL Z,ld_sprite_explosion_erasure               ;
+  LD A,(HL)                                        ; Set up sprite rendering: store sprite pointer, set collision mode
+  LD HL,all_ff                                     ; to none, configure rendering parameters.
+  LD (render_sprite_ptr),HL                        ;
+  LD (render_old_sprite_ptr),DE                    ;
+  LD D,A                                           ;
+  LD A,COLLISION_MODE_NONE                         ;
+  LD (state_collision_mode),A                      ;
+  LD A,$02                                         ;
+  LD (render_object_width),A                       ;
+  LD A,D                                           ;
+  LD DE,$080C                                      ;
+  LD (previous_object_coordinates),BC              ;
+  LD (object_coordinates),BC                       ;
+  LD BC,$0000                                      ; Check bit 7 of frame. If set, skip first render call.
+  BIT 7,A                                          ;
+  JP NZ,render_explosions_next                     ;
+  PUSH DE                                          ;
+  PUSH BC                                          ;
+  PUSH AF                                          ;
+  PUSH HL                                          ;
+  LD A,$02                                         ; Call first sprite rendering pass.
+  CALL set_sprite_attributes                       ;
+  POP HL                                           ; Restore registers from stack.
+  POP AF                                           ;
+  POP BC                                           ;
+  POP DE                                           ;
+render_explosions_next:
+  LD A,$02                                         ; Call second sprite rendering pass, loop to next entry.
+  CALL render_object_entry                         ;
+  JP render_explosions                             ;
+
+; Load frame 1/5 explosion sprite
+;
+; Used by the routine at render_explosions.
+;
+; O:DE Pointer to small explosion sprite at sprite_explosion_f1.
+ld_sprite_explosion_f1:
+  LD DE,sprite_explosion_f1
+  RET
+
+; Load frame 2/4 explosion sprite
+;
+; Used by the routine at render_explosions.
+;
+; O:DE Pointer to medium explosion sprite at sprite_explosion_f2.
+ld_sprite_explosion_f2:
+  LD DE,sprite_explosion_f2
+  RET
+
+; Load frame 3 explosion sprite
+;
+; Used by the routine at render_explosions.
+;
+; O:DE Pointer to large explosion sprite at sprite_explosion_f3.
+ld_sprite_explosion_f3:
+  LD DE,sprite_explosion_f3
+  RET
+
+; Load explosion erasure sprite
+;
+; Used by the routine at render_explosions.
+;
+; O:DE Pointer to erasure sprite at sprite_erasure.
+ld_sprite_explosion_erasure:
+  LD DE,sprite_erasure
+  RET
+
+; Reset explosions set pointer
+;
+; Resets exploding_fragments_ptr to point to start of explosions set at exploding_fragments.
+reset_explosions_pointer:
+  LD HL,exploding_fragments                        ; Reset pointer and return.
+  LD (exploding_fragments_ptr),HL                  ;
+  RET                                              ;
+
+; Remove completed explosion from set
+;
+; Called when explosion animation reaches frame 7 (complete). Marks the entry as empty so it can be reused, then
+; continues processing remaining explosions.
+;
+; I:HL Pointer past the current explosion entry's frame counter byte
+remove_explosion_entry:
+  DEC HL                                           ; Move back to frame counter byte and mark entry as empty.
+  LD (HL),SET_MARKER_EMPTY_SLOT                    ;
+  JP render_explosions                             ; Continue processing remaining explosions.
+
+; Spawn objects from level data slot
+;
+; Called when a new attribute row scrolls into view (every 8 terrain fragments). Reads the level data slot for the
+; current scroll position and spawns the appropriate object (rock, fuel depot, or enemy).
+;
+; * Level data starts at level_objects, with SIZE_LEVEL_SLOTS ($100) bytes per level
+; * Slot format: 2 bytes [D, E] where E = X position (0 = empty), D = type/flags
+; * D bit 3: rock flag, D bits 0-2: object type (7 = fuel depot)
+spawn_objects_from_level_slot:
+  LD A,COLLISION_MODE_NONE                         ; Clear collision mode (state_collision_mode).
+  LD (state_collision_mode),A                      ;
+  LD HL,level_objects                              ; Calculate level base address: HL = level_objects +
+  LD DE,SIZE_LEVEL_SLOTS                           ; (state_bridge_index * SIZE_LEVEL_SLOTS).
+  LD A,(state_bridge_index)                        ;
+  OR A
+  SBC HL,DE
+locate_level:
+  ADD HL,DE                                        ; Loop: advance HL by SIZE_LEVEL_SLOTS for each level up to current.
+  DEC A                                            ;
+  JR NZ,locate_level                               ;
+  LD BC,(state_scroll_offset)                      ; Calculate slot offset: BC = (state_scroll_offset >> 2) with bit 0
+  SRL B                                            ; cleared. Read [D, E] from (HL + BC).
+  RR C                                             ;
+  SRL B                                            ;
+  RR C                                             ;
+  RES 0,C                                          ;
+  ADD HL,BC                                        ;
+  LD D,(HL)
+  INC HL
+  LD E,(HL)
+  LD A,E                                           ; If E == 0 (empty slot), return.
+  CP $00                                           ;
+  RET Z                                            ;
+  BIT SLOT_BIT_ROCK,D                              ; If D bit 3 set (rock), jump to render_rock.
+  JP NZ,render_rock                                ;
+  LD A,D                                           ; Get object type (D AND $07). If type == OBJECT_FUEL (7), jump to
+  AND SLOT_MASK_OBJECT_TYPE                        ; render_fuel.
+  CP OBJECT_FUEL                                   ;
+  JP Z,render_fuel                                 ; Otherwise render enemy.
+  JP render_enemy                                  ;
+
+; Render rock sprite
+;
+; Renders a rock decoration at the specified position. Uses 3x2 tile sprites (24x16 pixels) stored sequentially at
+; sprite_rock with $30 bytes per frame.
+;
+; * Sprite address = sprite_rock + (frame_index * $30)
+; * Frame index from bits 0-2 of D (0-7 rock variants)
+; * Sprite stored at render_sprite_ptr, position at previous_object_coordinates and object_coordinates
+; * Width=3 tiles, height=16 pixels
+;
+; I:D Object type byte (bits 0-2 = rock frame index)
+; I:E X position
+render_rock:
+  LD A,D                                           ; Extract rock frame index: A = D AND $07. Set flags with OR A.
+  AND SLOT_MASK_OBJECT_TYPE                        ;
+  OR A                                             ;
+  LD HL,sprite_rock                                ; Load sprite base address sprite_rock and frame size $30. Prepare
+  LD BC,SPRITE_ROCK_FRAME_SIZE                     ; loop: INC A, subtract BC once to offset the first ADD.
+  INC A                                            ;
+  SBC HL,BC                                        ;
+locate_rock_sprite:
+  ADD HL,BC                                        ; Loop: HL += $30 for each frame index. Result: HL = sprite_rock +
+  DEC A                                            ; (frame * $30).
+  JR NZ,locate_rock_sprite                         ;
+  LD B,$00                                         ; Set BC = X position (B=0, C=E from input).
+  LD C,E                                           ;
+  LD (render_sprite_ptr),HL                        ; Store rendering state: sprite pointer at render_sprite_ptr, X
+  LD HL,sprite_erasure                             ; position at object_coordinates and previous_object_coordinates
+  LD (object_coordinates),BC                       ; (duplicated). Load erase sprite sprite_erasure.
+  LD (previous_object_coordinates),BC              ;
+  LD A,SPRITE_ROCK_WIDTH_TILES                              ; Set dimensions: A=3 (width in tiles), D=$10 (height 16
+  LD DE,SPRITE_ROCK_HEIGHT_PIXELS<<8|SPRITE_ROCK_ATTRIBUTES ; pixels), E=$14 (attributes). Render rock.
+  CALL render_object                                        ;
+  RET
+
+; Load pointer to right-facing enemy sprites
+;
+; Returns pointer to sprite array for enemies facing right. Used by ld_enemy_sprites to select sprite direction based on
+; enemy movement.
+;
+; O:HL Pointer to right-facing enemy sprite array at sprite_enemies_right.
+ld_enemy_sprites_right:
+  LD HL,sprite_enemies_right                       ; Load HL with sprite_enemies_right (right-facing sprites base
+  RET                                              ; address).
+
+; Set up object screen position for rendering
+;
+; Calculates screen coordinates and stores the result in both previous_object_coordinates and object_coordinates for
+; sprite rendering.
+setup_object_position:
+  CALL advance_object                              ; Calculate position and store result BC in both position registers.
+  LD (object_coordinates),BC                       ;
+  LD (previous_object_coordinates),BC              ;
+  RET                                              ;
+
+; Spawn and render enemy on screen
+;
+; Creates a new enemy from level data and renders it. Handles different enemy types (helicopter, ship, tank, fighter,
+; balloon) with appropriate sprites and attributes.
+;
+; * Balloon (type 6) uses separate routine render_balloon
+; * Fighter/Tank (types 4,5) need XOR blending mode setup
+; * Adds enemy to active objects set at viewport_slots
+; * Sprite size: 3 tiles wide, 8 pixels high ($18 bytes per frame)
+;
+; I:A Object type (from D AND $07)
+; I:D Object definition byte from level data
+; I:E X position
+render_enemy:
+  CP OBJECT_BALLOON                                ; If balloon (type 6), use separate balloon renderer at
+  JP Z,render_balloon                              ; render_balloon.
+  CP OBJECT_FIGHTER                                ; If fighter (type 5), set XOR blending mode.
+  CALL Z,blending_mode_xor_nop                     ;
+  CP OBJECT_TANK                                   ; If tank (type 4), set XOR blending mode.
+  CALL Z,blending_mode_xor_nop                     ;
+  CALL ld_enemy_sprites                            ; Get sprite pointer based on enemy direction.
+  LD B,$00                                         ; Add enemy to active objects set: BC = (0, X_pos), call
+  LD C,E                                           ; add_object_to_set with HL = viewport_slots.
+  PUSH HL                                          ;
+  LD HL,viewport_slots                             ;
+  CALL add_object_to_set                           ;
+  POP HL
+  CALL setup_object_position                       ; Set up screen position.
+  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE               ; Set sprite frame size ($18 = 24 bytes) and default attributes
+  LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES                ; ($0E).
+  LD A,D                                           ; Get object type (D AND $07). Load type-specific attributes:
+  AND SLOT_MASK_OBJECT_TYPE                        ; ship=ld_attributes_ship ($0D), fighter=ld_attributes_fighter ($00),
+  CP OBJECT_SHIP                                   ; tank=ld_attributes_tank ($00/$04).
+  CALL Z,ld_attributes_ship                        ;
+  CP OBJECT_FIGHTER                                ;
+  CALL Z,ld_attributes_fighter                     ;
+  CP OBJECT_TANK                                   ;
+  CALL Z,ld_attributes_tank                        ;
+  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES               ; Set sprite dimensions: A=3 (width tiles), D=8 (height pixels).
+  LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS             ; Render enemy.
+  CALL render_sprite                               ;
+  CALL blending_mode_or_or                         ;
+  RET
+
+; Load ship screen attributes
+;
+; Returns SPRITE_SHIP_ATTRIBUTES ($0D) = PAPER RIVER, INK SHIP.
+;
+; O:E Attributes value $0D.
+ld_attributes_ship:
+  LD E,SPRITE_SHIP_ATTRIBUTES                      ; Load E with $0D (ship attributes).
+  RET                                              ;
+
+; Load fighter screen attributes
+;
+; Returns SPRITE_FIGHTER_ATTRIBUTES = PAPER BLACK, INK BLACK (invisible/XOR mode).
+;
+; O:E Attributes value (SPRITE_FIGHTER_ATTRIBUTES).
+ld_attributes_fighter:
+  LD E,SPRITE_FIGHTER_ATTRIBUTES                   ; Load E with $00 (fighter attributes).
+  RET                                              ;
+
+; Load tank screen attributes
+;
+; Returns tank attributes: $00 normally, $04 if tank is on river bank (bit 5 of D set).
+;
+; I:D Object definition byte (bit 5 = tank on bank flag).
+; O:E Attributes value $00 or $04.
+ld_attributes_tank:
+  LD E,SPRITE_TANK_ON_ROAD_ATTRIBUTES              ; Load E=$00. If D bit 5 set (tank on bank), load E=$04 instead.
+  BIT SLOT_BIT_TANK_ON_BANK,D                      ;
+  RET Z                                            ;
+  LD E,SPRITE_TANK_ON_BANK_ATTRIBUTES              ;
+  RET                                              ;
+
+; Set XOR blending mode for sprite rendering
+;
+; Modifies sprite rendering code via self-modifying instructions. Patches sprite_draw_op with XOR B and sprite_erase_op
+; with NOP to enable XOR blending mode for fighters/tanks.
+blending_mode_xor_nop:
+  LD A,OPCODE_XOR_B                                ; Patch OPCODE_XOR_B into sprite_draw_op and OPCODE_NOP into
+  LD (sprite_draw_op),A                            ; sprite_erase_op for XOR rendering.
+  LD A,OPCODE_NOP                                  ;
+  LD (sprite_erase_op),A                           ;
+  RET                                              ;
+
+; Render fuel station
+;
+; Renders a fuel station sprite at the specified X position. Fuel stations are static 2-tile wide (16 pixels) objects
+; that the player can fly over to refuel.
+;
+; * Adds fuel station to viewport_slots active objects set
+; * Sprite located at sprite_fuel (single frame, no animation)
+; * Dimensions: 2 tiles wide (16px) × 25 pixels tall
+; * Attributes: $0B (PAPER RIVER, INK FUEL)
+;
+; I:E X position of fuel station
+render_fuel:
+  LD B,$00                                         ; BC = (0, E): set X position in BC for object entry.
+  LD C,E                                           ;
+  LD HL,viewport_slots                             ; Add fuel station to active objects set.
+  CALL add_object_to_set                           ;
+  LD HL,sprite_fuel                                ; Load fuel sprite address sprite_fuel and call setup_object_position
+  CALL setup_object_position                       ; to set up screen position.
+  LD BC,SPRITE_FUEL_STATION_FRAME_SIZE                                      ; Set sprite parameters: frame size=0,
+  LD A,SPRITE_FUEL_STATION_WIDTH_TILES                                      ; width=2 tiles, height=25 pixels,
+  LD DE,SPRITE_FUEL_STATION_HEIGHT_PIXELS<<8|SPRITE_FUEL_STATION_ATTRIBUTES ; attributes=$0B.
+  CALL render_sprite                               ; Render fuel station sprite.
+  RET
+
+; Render balloon
+;
+; Renders a balloon enemy sprite at the specified X position. Balloons are 2-tile wide animated objects that float above
+; the river. Unlike other enemies, balloons disable collision detection during rendering.
+;
+; * Disables collision mode via state_collision_mode (allows plane to pass through during render)
+; * Animated sprite with $20 byte frames at sprite_balloon
+; * Dimensions: 2 tiles wide (16px) × 16 pixels tall
+; * Attributes: $0E (PAPER RIVER, INK BALLOON)
+;
+; I:E X position of balloon
+render_balloon:
+  LD B,$00                                         ; BC = (0, E): set X position in BC for object entry.
+  LD C,E                                           ;
+  LD HL,sprite_balloon                             ; Load balloon sprite sprite_balloon, set COLLISION_MODE_NONE to
+  LD A,COLLISION_MODE_NONE                         ; state_collision_mode.
+  LD (state_collision_mode),A                      ;
+  PUSH HL                                          ; Push sprite addr, add balloon to viewport_slots objects set, pop
+  LD HL,viewport_slots                             ; and call setup_object_position.
+  CALL add_object_to_set                           ;
+  POP HL                                           ;
+  CALL setup_object_position                       ;
+  LD BC,SPRITE_BALLOON_FRAME_SIZE                                 ; Render sprite: frame size=$20, width=2, height=16px,
+  LD A,SPRITE_BALLOON_WIDTH_TILES                                 ; attributes=$0E.
+  LD DE,SPRITE_BALLOON_HEIGHT_PIXELS<<8|SPRITE_BALLOON_ATTRIBUTES ;
+  CALL render_sprite                                              ;
+  RET
+
+; Main viewport slot processing loop.
+;
+; Used by the routines at play, main_loop, overview, render_ship_or_helicopter, operate_fighter_continue,
+; operate_tank_shell_explosion, handle_inactive_object, animate_object, render_helicopter_rotor, operate_tank,
+; operate_tank_on_bank, cancel_and_remove_shell, handle_tank_at_boundary, operate_fuel, reverse_enemy_direction,
+; remove_object_from_viewport, operate_balloon, jp_operate_viewport_slots and reverse_balloon_direction.
+;
+; Iterates through the viewport_slots array (viewport_slots), processing each active object. Each slot is a 3-byte
+; structure: [X position, Y position, object definition byte].
+;
+; The routine performs the following steps for each object:
+;
+; 1. Skip empty slots (SET_MARKER_EMPTY_SLOT) and reset to the beginning when reaching the end marker
+; (SET_MARKER_END_OF_SET).
+;
+; 2. Advance the object's Y position (move it down the screen).
+;
+; 3. Remove objects that have moved beyond the viewport boundary (VIEWPORT_HEIGHT).
+;
+; 4. Render missiles for advanced helicopters (OBJECT_HELICOPTER_ADV).
+;
+; 5. Skip further processing if in GAMEPLAY_MODE_SCROLL_IN.
+;
+; 6. Activate objects on their first frame using an interrupt counter and activation mask (sets bit 7 of the
+; OBJECT_DEFINITION byte).
+;
+; 7. Dispatch to type-specific handlers based on object type: OBJECT_FIGHTER, OBJECT_BALLOON, OBJECT_FUEL, OBJECT_TANK,
+; or ships/helicopters (other types).
+operate_viewport_slots:
+  LD A,COLLISION_MODE_NONE                         ; Reset state_collision_mode to COLLISION_MODE_NONE.
+  LD (state_collision_mode),A                      ;
+  LD HL,(current_slot_ptr)                         ; Load slot [X, Y, definition] into C, B, D; advance current_slot_ptr
+  LD C,(HL)                                        ; to next slot.
+  INC HL                                           ;
+  LD B,(HL)                                        ;
+  INC HL                                           ;
+  LD D,(HL)                                        ;
+  INC HL                                           ;
+  LD (current_slot_ptr),HL                         ;
+  LD A,C                                           ; Skip empty slots; reset to beginning on end-of-set marker.
+  CP SET_MARKER_EMPTY_SLOT                         ;
+  JP Z,operate_viewport_slots                      ;
+  CP SET_MARKER_END_OF_SET                         ;
+  JP Z,reset_slot_ptr                              ;
+  CALL advance_object                              ; Advance object Y position and write back to slot.
+  DEC HL                                           ;
+  DEC HL                                           ;
+  LD (HL),B                                        ;
+  LD A,B                                           ; If object moved beyond viewport boundary, remove it.
+  AND VIEWPORT_HEIGHT                              ;
+  CP VIEWPORT_HEIGHT                               ;
+  JP Z,remove_object_from_viewport                 ;
+  LD A,D                                           ; If advanced helicopter, render its missile.
+  AND SLOT_MASK_OBJECT_TYPE                        ;
+  CP OBJECT_HELICOPTER_ADV                         ;
+  PUSH DE                                          ;
+  PUSH HL                                          ;
+  PUSH BC                                          ;
+  CALL Z,render_helicopter_missile                 ;
+  POP BC                                           ;
+  POP HL                                           ;
+  POP DE                                           ;
+  LD A,(state_gameplay_mode)                       ; Skip further processing during GAMEPLAY_MODE_SCROLL_IN.
+  CP GAMEPLAY_MODE_SCROLL_IN                       ;
+  JP Z,operate_viewport_slots                      ;
+  BIT SLOT_BIT_ACTIVATION,D                        ; If already activated (bit 7 set), skip to type dispatch.
+  JP NZ,dispatch_object_type                       ;
+  LD A,(state_activation_interval)                 ; Check if interrupt counter matches activation interval; skip to
+  LD E,A                                           ; handle_inactive_object if not time yet.
+  LD A,(int_counter)                               ;
+  AND E                                            ;
+  CP $00                                           ;
+  JP NZ,handle_inactive_object                     ;
+  SET SLOT_BIT_ACTIVATION,D                        ; Mark object as activated (set bit 7) and increment interrupt
+  INC HL                                           ; counter.
+  LD (HL),D                                        ;
+  LD HL,int_counter                                ;
+  INC (HL)                                         ;
+dispatch_object_type:
+  LD A,D                                           ; Dispatch by object type (bits 0-2).
+  AND SLOT_MASK_OBJECT_TYPE                        ;
+  CP OBJECT_FIGHTER                                ;
+  JP Z,operate_fighter                             ;
+  CP OBJECT_BALLOON                                ;
+  JP Z,operate_balloon                             ;
+  CP OBJECT_FUEL                                   ;
+  JP Z,operate_fuel                                ;
+  CP OBJECT_TANK                                   ;
+  JP Z,operate_tank                                ;
+  CP $00                                           ;
+  JP Z,operate_tank_shell_explosion                ;
+
+; Ship or helicopter operation routine
+;
+; Animates and moves ships and helicopters. On odd ticks, advances the object by 2 pixels toward the opposite river
+; bank. When the object gets within 16 pixels of the bank edge, it reverses direction. On even ticks, jumps to
+; animate_object to animate the helicopter rotor instead.
+;
+; * Checks tick parity for movement timing
+; * Determines direction from bit 6 (SLOT_BIT_ORIENTATION)
+; * Left-facing objects advance left, right-facing advance right
+; * Collision with terrain triggers direction reversal
+;
+; I:B Y position of object
+; I:C X position of object
+; I:D Object definition byte
+operate_ship_or_helicopter:
+  LD A,(state_tick)
+  AND TICK_MASK_FRAME_PARITY
+  CP TICK_PARITY_EVEN
+  JP Z,animate_object
+  BIT SLOT_BIT_ORIENTATION,D                       ; Check orientation: if bit 6 clear (right-facing), jump to
+  JP Z,ship_or_helicopter_right_advance            ; ship_or_helicopter_right_advance.
+
+; Advance left-facing ship or helicopter
+;
+; Moves a left-facing ship/helicopter 2 pixels left, checking for terrain collision.
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition
+ship_or_helicopter_left_advance:
+  PUSH BC                                          ; Save BC, calculate terrain check position: C -= 16 pixels.
+  LD A,C                                           ;
+  SUB $10                                          ;
+  LD C,A                                           ;
+  CALL calculate_pixel_address                     ; Get terrain byte at (C, B). Load result into A.
+  LD A,(HL)                                        ;
+  POP BC                                           ; Restore BC. If terrain != 0, reverse direction.
+  CP $00                                           ;
+  CALL NZ,reverse_enemy_direction                  ;
+  LD (previous_object_coordinates),BC              ; Store position to previous_object_coordinates. Advance X position
+  DEC C                                            ; left by 2 pixels (DEC C twice).
+  DEC C                                            ;
+
+; Render ship or helicopter body sprite
+;
+; Updates the object's position in the viewport array and renders the sprite.
+render_ship_or_helicopter:
+  LD HL,(current_slot_ptr)                         ; Load current_slot_ptr, navigate back to current slot, update [X, Y,
+  DEC HL                                           ; D] values.
+  LD D,(HL)                                        ;
+  DEC HL                                           ;
+  LD (HL),B                                        ;
+  DEC HL                                           ;
+  LD (HL),C                                        ;
+  LD (object_coordinates),BC                       ; Store current position.
+  LD HL,all_ff                                     ; render_sprite_ptr = all_ff (all $FF): render_object will use this
+  LD (render_sprite_ptr),HL                        ; to clear the full 8-row body area, including the 2 blade rows where
+                                                   ; the rotor was drawn.
+  CALL ld_enemy_sprites                            ; Get body sprite pointer.
+  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE               ; Set frame size=$18, default attributes=$0E.
+  LD E,SPRITE_3BY1_ENEMY_ATTRIBUTES                ;
+  LD A,D                                           ; If object type is OBJECT_SHIP, load ship attributes via
+  AND SLOT_MASK_OBJECT_TYPE                        ; ld_attributes_ship.
+  CP OBJECT_SHIP                                   ;
+  CALL Z,ld_attributes_ship
+  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES               ; Render sprite: width=3 tiles, height=8 pixels.
+  LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS             ;
+  CALL render_object                               ;
+  JP operate_viewport_slots
+
+; Reset left-moving fighter position
+;
+; Resets X position to FIGHTER_POSITION_LEFT_INIT ($E8) when fighter reaches left edge.
+fighter_left_reset:
+  LD C,FIGHTER_POSITION_LEFT_INIT                  ; Set C = $E8 (initial left position).
+  RET
+
+; Fighter operation routine
+;
+; Operates fighter jets that fly horizontally across the screen. Fighters move 4 pixels per frame and wrap around when
+; reaching screen edges. Uses XOR blending mode for rendering.
+;
+; * Moves 4 pixels per frame (faster than ships/helicopters)
+; * Left-facing: decrements X, wraps at $00 to $E8
+; * Right-facing: increments X, wraps at $E8 to $04
+; * Sets COLLISION_MODE_FIGHTER for collision detection
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition byte
+operate_fighter:
+  LD (previous_object_coordinates),BC              ; Store current position to previous_object_coordinates for
+                                                   ; rendering.
+  BIT SLOT_BIT_ORIENTATION,D                       ; Check orientation: if bit 6 clear (right-facing), jump to
+  JP Z,fighter_right_advance                       ; fighter_right_advance.
+fighter_left_advance:
+  DEC C                                            ; Move left 4 pixels (DEC C × 4). If C == 0, reset via
+  DEC C                                            ; fighter_left_reset.
+  DEC C                                            ;
+  DEC C                                            ;
+  LD A,C                                           ;
+  CP FIGHTER_POSITION_LEFT_LIMIT                   ;
+  CALL Z,fighter_left_reset
+
+; Continue fighter operation
+;
+; Updates fighter position in viewport array and renders the sprite with XOR blending.
+operate_fighter_continue:
+  LD HL,(current_slot_ptr)                         ; Load current_slot_ptr, navigate to current slot, update [X, Y, D]
+  DEC HL                                           ; values.
+  LD D,(HL)                                        ;
+  DEC HL                                           ;
+  LD (HL),B                                        ;
+  DEC HL                                           ;
+  LD (HL),C                                        ;
+  LD (object_coordinates),BC                       ; Store position to object_coordinates, get sprite pointer.
+  CALL ld_enemy_sprites                            ;
+  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE               ; Set frame size=$18, call blending_mode_xor_xor to set XOR blending
+  CALL blending_mode_xor_xor                       ; mode.
+  LD A,COLLISION_MODE_FIGHTER                      ; Set collision mode to COLLISION_MODE_FIGHTER ($03) at
+  LD (state_collision_mode),A                      ; state_collision_mode.
+  LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_FIGHTER_ATTRIBUTES ; Render sprite: height=8px, attributes=$00.
+  CALL render_sprite                                                 ; Restore blending.
+  CALL blending_mode_or_or                                           ;
+  JP operate_viewport_slots                        ; Return to main viewport loop.
+
+; Advance right-facing fighter
+;
+; Moves right-facing fighter 4 pixels right, wrapping at the right edge.
+fighter_right_advance:
+  INC C                                            ; Move right 4 pixels (INC C × 4). If C == $E8, reset via
+  INC C                                            ; fighter_right_reset.
+  INC C                                            ;
+  INC C                                            ;
+  LD A,C                                           ;
+  CP FIGHTER_POSITION_RIGHT_LIMIT                  ;
+  CALL Z,fighter_right_reset                       ; Continue to operate_fighter_continue for rendering.
+  JP operate_fighter_continue                      ;
+
+; Reset right-moving fighter position
+;
+; Resets X position to FIGHTER_POSITION_RIGHT_INIT ($04) when fighter reaches right edge.
+fighter_right_reset:
+  LD C,FIGHTER_POSITION_RIGHT_INIT                 ; Set C = $04 (initial right position).
+  RET
+
+; Animate tank shell explosion
+;
+; Handles animation of tank shell explosions. Called when object type is 0 (special marker for shell explosions).
+; Advances explosion frame counter and renders the current frame.
+;
+; * Only processes on odd ticks
+; * Extracts frame index from bits 3-5 of object definition
+; * Finishes explosion when frame reaches 7 or Y position is off-screen
+; * Uses sprite at sprite_tank_shell_explosion with varying attributes for color cycling
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition (bits 3-5 = frame index)
+operate_tank_shell_explosion:
+  LD A,(state_tick)                                ; Skip if even tick (explosions animate on odd ticks).
+  AND TICK_MASK_FRAME_PARITY                       ;
+  CP TICK_PARITY_ODD                               ;
+  JP NZ,operate_viewport_slots                     ; Store position to previous_object_coordinates and
+  LD (previous_object_coordinates),BC              ; object_coordinates for rendering.
+  LD (object_coordinates),BC                       ; Check Y position: if bit 7 set (off-screen), finish explosion.
+  LD A,B                                           ;
+  AND $80                                          ;
+  CP $80                                           ;
+  JP Z,finish_tank_shell_explosion                 ; Extract frame index from D bits 3-5, increment. If frame == 7,
+  LD A,D                                           ; finish.
+  SRL A                                            ;
+  SRL A                                            ;
+  SRL A                                            ;
+  AND $07                                          ;
+  INC A                                            ;
+  CP $07                                           ;
+  JP Z,finish_tank_shell_explosion                 ; Shift frame back to bits 3-5 position, store in E.
+  SLA A                                            ;
+  SLA A                                            ;
+  SLA A                                            ;
+  LD E,A                                           ; Merge new frame into D, update object definition in viewport array.
+  LD A,D                                           ;
+  AND $C7                                          ;
+  OR E                                             ;
+  LD HL,(current_slot_ptr)                         ;
+  DEC HL                                           ;
+  LD (HL),A                                        ;
+  LD HL,sprite_tank_shell_explosion                ; Load sprite base sprite_tank_shell_explosion, calculate frame
+  SRL A                                            ; offset: HL -= (frame * $20).
+  SRL A                                            ;
+  SRL A                                            ;
+  AND $07                                          ;
+  LD BC,$0020
+  OR A
+  SBC HL,BC
+tank_shell_frame_calc_loop:
+  ADD HL,BC                                        ; Add frame size, loop until frame index exhausted.
+  DEC A                                            ;
+  JR NZ,tank_shell_frame_calc_loop                 ;
+; This entry point is used by the routine at finish_tank_shell_explosion.
+tank_shell_render_entry:
+  LD BC,all_ff                                     ; Store erase sprite all_ff to render_sprite_ptr, get frame-based
+  LD (render_sprite_ptr),BC                        ; attributes.
+  LD A,(state_tick)                                ; Calculate attributes with color cycling, set sprite params:
+  AND $06                                          ; width=2, height=16.
+  SRL A                                            ;
+  ADD A,SPRITE_SHELL_EXPLOSION_ATTRIBUTES          ;
+  LD E,A                                           ;
+  LD BC,SPRITE_SHELL_EXPLOSION_FRAME_SIZE_BYTES    ;
+  LD D,SPRITE_SHELL_EXPLOSION_HEIGHT_PIXELS        ;
+  LD A,SPRITE_SHELL_EXPLOSION_WIDTH_TILES          ;
+  CALL render_object                               ; Render and return to main loop.
+  JP operate_viewport_slots                        ;
+
+; Finish tank shell explosion animation
+;
+; Clears the explosion object from the viewport and resets the tank shell state.
+finish_tank_shell_explosion:
+  LD HL,(current_slot_ptr)                         ; Navigate to object slot, clear X position to remove from viewport.
+  DEC HL                                           ;
+  DEC HL                                           ;
+  DEC HL                                           ;
+  LD (HL),$00                                      ;
+  LD HL,sprite_erasure                             ; Clear TANK_SHELL_BIT_EXPLODING in tank_shell_state, continue to
+  LD A,(tank_shell_state)                          ; render final frame.
+  RES TANK_SHELL_BIT_EXPLODING,A                   ;
+  LD (tank_shell_state),A                          ;
+  JP tank_shell_render_entry
+
+; Handle non-activated object
+;
+; Processes objects that haven't been activated yet. Routes balloons to jp_operate_viewport_slots. For helicopters, the
+; blade animation requires both renderers to alternate every tick: on odd ticks calls animate_object (rotor sprite), on
+; even ticks falls through to render_ship_or_helicopter (body sprite). Active helicopters dispatch the opposite way
+; (even → rotor, odd → body via operate_ship_or_helicopter), so the blade animation runs regardless of activation state.
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition byte
+handle_inactive_object:
+  LD A,D                                           ; If object is OBJECT_BALLOON, jump to jp_operate_viewport_slots.
+  CP OBJECT_BALLOON                                ;
+  JP Z,jp_operate_viewport_slots                   ;
+  LD A,(state_tick)                                ; Animate on odd ticks only.
+  AND TICK_MASK_FRAME_PARITY                       ;
+  CP TICK_PARITY_ODD                               ;
+  JP Z,animate_object
+  LD A,D                                           ; If helicopter (REG or ADV), store position and continue to
+  AND SLOT_MASK_OBJECT_TYPE                        ; render_ship_or_helicopter.
+  CP OBJECT_HELICOPTER_REG                         ;
+  JP Z,store_and_continue_ship                     ;
+  CP OBJECT_HELICOPTER_ADV                         ;
+  JP NZ,operate_viewport_slots                     ; Not a helicopter: return to main loop.
+store_and_continue_ship:
+  LD (previous_object_coordinates),BC              ; Helicopters store position and jump to render_ship_or_helicopter.
+  JP render_ship_or_helicopter                     ;
+
+; Load right-facing helicopter rotor sprite
+;
+; Returns pointer to right-facing helicopter rotor sprite at sprite_helicopter_rotor_right.
+;
+; O:HL Pointer to the sprite
+ld_sprite_helicopter_rotor_right:
+  LD HL,sprite_helicopter_rotor_right              ; Load HL with sprite_helicopter_rotor_right (right-facing rotor
+                                                   ; sprite).
+  RET
+
+; Animate object (helicopter rotor)
+;
+; Routes helicopters to rotor animation. Non-helicopters return to main loop.
+;
+; I:D Object definition byte
+animate_object:
+  LD A,D                                           ; If helicopter (REG or ADV), animate rotor via
+  AND SLOT_MASK_OBJECT_TYPE                        ; render_helicopter_rotor. Otherwise return to main loop.
+  CP OBJECT_HELICOPTER_REG                         ;
+  JP Z,render_helicopter_rotor                     ;
+  CP OBJECT_HELICOPTER_ADV                         ;
+  JP NZ,operate_viewport_slots
+
+; Render helicopter rotor sprite
+;
+; Draws the rotor sprite at the helicopter's position (rows 0-1 only, 2 pixels tall). The blade animation emerges from
+; alternating this render with the body render (render_ship_or_helicopter): the body sprite's top 2 rows contain blade
+; pixels in one position; the rotor sprite contains the same rows vertically swapped (the other blade position). Each
+; pass erases its area with all_ff before drawing, so the two blade positions alternate every tick. Uses left-facing
+; (sprite_helicopter_rotor_left) or right-facing (sprite_helicopter_rotor_right) rotor sprite.
+render_helicopter_rotor:
+  LD HL,(current_slot_ptr)                         ; Load current_slot_ptr, extract [D, B, C] from current slot.
+  DEC HL                                           ;
+  LD D,(HL)                                        ;
+  DEC HL                                           ;
+  LD B,(HL)                                        ;
+  DEC HL                                           ;
+  LD C,(HL)                                        ;
+  LD HL,sprite_helicopter_rotor_left               ; Load left rotor sprite sprite_helicopter_rotor_left. If
+  BIT SLOT_BIT_ORIENTATION,D                       ; right-facing (bit 6 clear), load sprite_helicopter_rotor_right.
+  CALL Z,ld_sprite_helicopter_rotor_right          ;
+  LD (object_coordinates),BC                       ; Set both coordinates to BC so erase and draw target the same
+  LD (previous_object_coordinates),BC              ; position. Push rotor sprite; call ld_enemy_sprites (result
+  PUSH HL                                          ; discarded).
+  CALL ld_enemy_sprites                            ;
+  LD HL,all_ff                                     ; render_sprite_ptr = all_ff (all $FF): clears the 2 blade rows,
+  LD (render_sprite_ptr),HL                        ; removing the body sprite's blade pixels drawn on the previous tick.
+  POP HL                                           ; Pop rotor sprite.
+  LD DE,SPRITE_ROTOR_HEIGHT_PIXELS<<8|SPRITE_ROTOR_ATTRIBUTES ; Render rotor with height=2, targeting only the 2 blade
+  LD BC,SPRITE_ROTOR_FRAME_SIZE                               ; rows at the top of the body sprite area.
+  LD A,SPRITE_ROTOR_WIDTH_TILES                               ;
+  CALL render_object                                          ;
+  JP operate_viewport_slots
+
+; Advance tank right by 4 pixels
+;
+; Increments X position by 4 pixels for right-moving tank.
+tank_advance_right:
+  INC C                                            ; INC C × 4: move right 4 pixels.
+  INC C                                            ;
+  INC C                                            ;
+  INC C                                            ;
+  RET
+
+; Signal road tank at center
+;
+; Sets state_tank_shell to TANK_SHELL_ACTIVE when the road tank reaches the center (X=$80). This suppresses the bank
+; tank shell via check_shell_init_condition: if a road tank is at center, the bank tank cancels its shell rather than
+; firing.
+set_tank_shell_active:
+  LD A,TANK_SHELL_ACTIVE                           ; Set state_tank_shell to TANK_SHELL_ACTIVE.
+  LD (state_tank_shell),A                          ;
+  RET
+
+; Tank operation routine
+;
+; Operates tanks on the river. Tanks move 2 pixels per frame and signal their center position ($80) to suppress the bank
+; tank shell. Tanks on the river bank are handled separately via operate_tank_on_bank.
+;
+; * Skips processing every other frame (tick check)
+; * Tanks on bank (bit 5 set) handled via operate_tank_on_bank
+; * River tanks move left/right, set TANK_SHELL_ACTIVE at X=$80
+; * Uses XOR blending mode for rendering
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition byte
+operate_tank:
+  LD A,(state_tick)                                ; Skip if odd tick (tanks move on even ticks).
+  AND TICK_MASK_FRAME_PARITY                       ;
+  CP TICK_PARITY_ODD                               ;
+  JP Z,operate_viewport_slots                      ; Store position, check bank bit, handle terrain check.
+  LD (previous_object_coordinates),BC              ;
+  PUSH DE                                          ;
+  PUSH BC
+  BIT SLOT_BIT_TANK_ON_BANK,D                      ; If SLOT_BIT_TANK_ON_BANK set, handle via operate_tank_on_bank.
+  JP NZ,operate_tank_on_bank                       ;
+  POP BC                                           ; Pop regs. If state_bridge_destroyed != 0, jump to
+  POP DE                                           ; handle_tank_at_boundary.
+  LD A,(state_bridge_destroyed)                    ;
+  CP $00                                           ;
+  JP NZ,handle_tank_at_boundary                    ;
+; This entry point is used by the routine at operate_tank_on_bank.
+tank_move_entry:
+  DEC C                                            ; Move tank: DEC C twice (left), then INC C × 4 if right-facing.
+  DEC C                                            ;
+  BIT SLOT_BIT_ORIENTATION,D                       ;
+  CALL Z,tank_advance_right                        ;
+  LD A,C                                           ; If X == $80 (center), signal road tank at center via
+  CP $80                                           ; set_tank_shell_active.
+  CALL Z,set_tank_shell_active
+  LD HL,(current_slot_ptr)                         ; Update position in viewport array, store to object_coordinates, get
+  DEC HL                                           ; sprite pointer.
+  LD D,(HL)                                        ;
+  DEC HL                                           ;
+  LD (HL),B                                        ;
+  DEC HL                                           ;
+  LD (HL),C                                        ;
+  LD (object_coordinates),BC                       ;
+  CALL ld_enemy_sprites
+  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE               ; Set frame size=$18, enable XOR blending via blending_mode_xor_xor.
+  CALL blending_mode_xor_xor                       ;
+  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES                                      ; Render sprite: width=3, height=8,
+  LD DE,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS<<8|SPRITE_TANK_ON_ROAD_ATTRIBUTES ; attributes=$00. Restore blending.
+  CALL render_sprite                                                      ;
+  CALL blending_mode_or_or                                                ;
+  JP operate_viewport_slots
+
+; Set XOR/XOR blending mode
+;
+; Patches sprite renderer to use XOR for both mask and sprite operations. Used for tanks and fighters.
+blending_mode_xor_xor:
+  LD A,OPCODE_XOR_B                                ; Load OPCODE_XOR_B.
+  LD (sprite_erase_op),A                           ; Patch XOR B into sprite_erase_op.
+  LD (sprite_draw_op),A                            ; Patch XOR B into sprite_draw_op.
+  RET
+
+; Set OR/OR blending mode
+;
+; Patches sprite renderer to use OR for both mask and sprite operations. Restores default blending after XOR rendering.
+blending_mode_or_or:
+  LD A,OPCODE_OR_B                                 ; Load OPCODE_OR_B.
+  LD (sprite_erase_op),A                           ; Patch OR B into sprite_erase_op.
+  LD (sprite_draw_op),A                            ; Patch OR B into sprite_draw_op.
+  RET
+
+; Adjust tank position for left orientation
+;
+; Subtracts $20 from X position to compensate for right-bias offset. Called for left-facing tanks on bank.
+;
+; I:C X position + $10 offset
+; O:C Corrected X position
+invert_tank_offset_delta:
+  LD A,C                                           ; C = C - $20.
+  SUB $20                                          ;
+  LD C,A                                           ;
+  RET
+
+; Adjust tank position for right orientation
+;
+; Adds $28 to X position for right-facing tank shell spawn point.
+;
+; I:C X position
+; O:C X position + $28
+add_tank_offset_delta:
+  LD A,C                                           ; C = C + $28.
+  ADD A,$28                                        ;
+  LD C,A                                           ;
+  RET
+
+; Operate tank on river bank
+;
+; Handles tanks positioned on the river bank. While the probe point (16 pixels ahead in the facing direction) reads
+; solid terrain ($FF), the tank moves normally via tank_move_entry. When the probe reads anything other than $FF (river
+; edge reached), the tank stops moving and fires a shell. While the shell is flying or exploding, the tank returns to
+; the main loop without updating its position, keeping it stationary. The tank never reverses direction. Shell
+; trajectory depends on tank orientation and uses pseudo-random speed.
+;
+; I:B Y position (on stack)
+; I:C X position (on stack)
+; I:D Object definition byte
+operate_tank_on_bank:
+  LD BC,(previous_object_coordinates)              ; Load stored position, check terrain 16 pixels ahead in facing
+  LD A,C                                           ; direction.
+  ADD A,$10                                        ;
+  LD C,A
+  BIT SLOT_BIT_ORIENTATION,D                       ; If left-facing, negate offset via invert_tank_offset_delta.
+  CALL NZ,invert_tank_offset_delta                 ;
+  CALL calculate_pixel_address                     ; If terrain is solid ($FF), move tank normally.
+  LD A,(HL)                                        ;
+  CP $FF                                           ;
+  POP BC                                           ;
+  POP DE                                           ;
+  JP Z,tank_move_entry                             ; Pop BC/DE, jump to tank_move_entry if terrain clear.
+  LD A,(tank_shell_state)                          ; Check shell state: if already flying, return to main loop.
+  BIT TANK_SHELL_BIT_FLYING,A                      ;
+  JP NZ,operate_viewport_slots
+  BIT TANK_SHELL_BIT_EXPLODING,A                   ; If shell exploding, return to main loop.
+  JP NZ,operate_viewport_slots                     ;
+  CP TANK_SHELL_STATE_UNITIALIZED                  ; If shell uninitialized, initialize via init_tank_shell_state.
+  JP Z,init_tank_shell_state                       ;
+  RES TANK_SHELL_BIT_EXPLODING,A                   ; Clear exploding bit.
+; This entry point is used by the routines at init_tank_shell_state and check_shell_init_condition.
+tank_fire_shell_entry:
+  SET TANK_SHELL_BIT_FLYING,A                      ; Set flying bit.
+  LD (tank_shell_state),A                          ; Store shell state, calculate spawn X position.
+  LD A,C                                           ;
+  SUB $10                                          ;
+  LD C,A
+  BIT SLOT_BIT_ORIENTATION,D                       ; If right-facing, add offset via add_tank_offset_delta. Store shell
+  CALL Z,add_tank_offset_delta                     ; coordinates.
+  LD (tank_shell_coordinates),BC                   ;
+  JP operate_viewport_slots
+
+; Initialize tank shell state
+;
+; Sets up shell with orientation from tank and pseudo-random speed from interrupt counter.
+;
+; I:D Object definition byte (bit 6 = orientation)
+; O:A Shell state with orientation and speed bits
+init_tank_shell_state:
+  BIT SLOT_BIT_ALT_SHELL_INIT,D                    ; If SLOT_BIT_ALT_SHELL_INIT is set, use alternate initialization via
+  JP NZ,check_shell_init_condition                 ; check_shell_init_condition.
+  LD A,D                                           ; Copy orientation bit from object definition to shell state.
+  AND 1<<SLOT_BIT_ORIENTATION                      ;
+  LD D,A                                           ;
+  LD A,(int_counter)                               ; Derive speed from interrupt counter (pseudo-random 1-4).
+  AND $03                                          ;
+  LD E,A                                           ; Store in E, load D into A.
+  LD A,D                                           ;
+  INC E                                            ; Ensure speed >= 1, combine with orientation, continue to fire
+  ADD A,E                                          ; shell.
+  JP tank_fire_shell_entry                         ;
+
+; Cancel and remove tank shell
+;
+; Removes the tank shell and returns to main loop.
+cancel_and_remove_shell:
+  CALL remove_tank_shell                           ; Remove shell, return to main loop.
+  JP operate_viewport_slots                        ;
+
+; Check shell initialization condition
+;
+; Alternative shell initialization when bit 4 is set. Checks if tank can fire based on shell active state and position.
+check_shell_init_condition:
+  LD A,(state_tank_shell)                          ; If TANK_SHELL_ACTIVE, cancel shell via cancel_and_remove_shell.
+  CP TANK_SHELL_ACTIVE                             ;
+  JP Z,cancel_and_remove_shell                     ;
+  PUSH BC                                          ; Push BC, check X position sign bit, invert if positive via
+  LD A,C                                           ; invert_coordinate_sign.
+  BIT 7,A                                          ;
+  CALL Z,invert_coordinate_sign                    ;
+  RES 7,A                                          ;
+  SRL A                                            ;
+  SRL A                                            ;
+divide_by_8:
+  SRL A                                            ; Shift right 4 times to get upper nibble.
+  SRL A                                            ;
+  LD B,A                                           ;
+  LD A,D                                           ;
+  AND 1<<SLOT_BIT_ORIENTATION                      ;
+  ADD A,B                                          ; Combine with orientation, pop BC, continue to fire shell.
+  POP BC                                           ;
+  JP tank_fire_shell_entry                         ;
+
+; Invert coordinate for position calculation
+;
+; XORs A with $7F to flip coordinate sign for shell trajectory.
+invert_coordinate_sign:
+  XOR $7F                                          ; A = A XOR $7F.
+  RET
+
+; Tank shell state flags and speed
+;
+; Controls tank shell behavior during flight and explosion.
+;
+; +--------+------------------------------------------------------+
+; | Bit(s) | Meaning                                              |
+; +--------+------------------------------------------------------+
+; | 0-2    | Speed (1-4): horizontal pixels per frame             |
+; | 5      | TANK_SHELL_BIT_EXPLODING: explosion animation active |
+; | 6      | Orientation (same as SLOT_BIT_ORIENTATION)           |
+; | 7      | TANK_SHELL_BIT_FLYING: shell in flight               |
+; +--------+------------------------------------------------------+
+;
+; Speed is pseudo-random (1-4), set when shell is fired at tank_fire_shell_entry.
+tank_shell_state:
+  DEFB $00
+
+; Tank shell trajectory step (0-7)
+;
+; Current step in the shell's parabolic arc. Incremented each frame while flying. At step 8, shell explodes via
+; render_tank_shell_explosion.
+;
+; Higher steps produce lower-pitched whistle sounds (BEEPER with HL = step × 256).
+tank_shell_trajectory_step:
+  DEFB $00
+
+; Tank shell position (BC format: C=X, B=Y)
+;
+; Current screen position of the flying shell. Updated each frame based on speed and orientation. Cleared to $0000 when
+; shell is removed.
+tank_shell_coordinates:
+  DEFW $0000
+
+; Invert shell coordinate delta
+;
+; Subtracts E×4 from C for left-facing tank shell trajectory adjustment.
+;
+; I:C Current X position
+; I:E Delta value
+; O:C Adjusted X position
+invert_shell_coordinate_delta:
+  LD A,C                                           ; C = C - E×4 (SUB E four times).
+  SUB E                                            ;
+  SUB E                                            ;
+  SUB E                                            ;
+  SUB E                                            ;
+  LD C,A                                           ;
+  RET
+
+; Invert helicopter missile offset
+;
+; Adds HELICOPTER_MISSILE_STEP×2 ($10) to C for right-facing missile trajectory.
+;
+; I:C Current X position
+; O:C X position + $10
+invert_helicopter_missile_offset:
+  LD A,C                                           ; C = C + $10.
+  ADD A,HELICOPTER_MISSILE_STEP*2                  ;
+  LD C,A                                           ;
+  RET
+
+; Operate helicopter missile
+;
+; Advances the helicopter missile position and renders it. Missiles move down and sideways based on helicopter
+; orientation. Removed when reaching viewport boundary.
+;
+; * Loads position from helicopter_missile_coordinates_ptr
+; * Advances Y position
+; * Moves X position by HELICOPTER_MISSILE_STEP ($08)
+; * Removed at VIEWPORT_HEIGHT boundary
+; * Sets COLLISION_MODE_HELICOPTER_MISSILE for collision
+operate_helicopter_missile:
+  LD BC,(helicopter_missile_coordinates_ptr)       ; Load missile coordinates from helicopter_missile_coordinates_ptr.
+  LD A,B                                           ; Return if B==0 (no missile).
+  CP $00                                           ;
+  RET Z
+  CALL advance_object                              ; Advance Y position, store to previous_object_coordinates, move X
+  LD (previous_object_coordinates),BC              ; left by $08.
+  LD A,C
+  SUB HELICOPTER_MISSILE_STEP
+  LD C,A
+  LD A,B                                           ; Check viewport boundary. If off-screen, remove missile via
+  AND VIEWPORT_HEIGHT                              ; remove_helicopter_missile.
+  CP VIEWPORT_HEIGHT                               ;
+  JP Z,remove_helicopter_missile                   ;
+  LD A,(helicopter_missile_state)                  ; If right-facing (from helicopter_missile_state), adjust X offset
+  BIT SLOT_BIT_ORIENTATION,A                       ; via invert_helicopter_missile_offset.
+  CALL Z,invert_helicopter_missile_offset          ;
+  LD (object_coordinates),BC                       ; Store position to object_coordinates and
+  LD (helicopter_missile_coordinates_ptr),BC       ; helicopter_missile_coordinates_ptr.
+  LD A,COLLISION_MODE_HELICOPTER_MISSILE           ; Render missile: collision mode=$04, width=1, attributes=$00,
+  LD (state_collision_mode),A                      ; height=1.
+  LD A,SPRITE_HELICOPTER_MISSILE_WIDTH_TILES       ;
+  LD E,SPRITE_HELICOPTER_MISSILE_ATTRIBUTES        ;
+  LD D,$01                                         ;
+  LD HL,all_ff                                     ;
+  CALL render_sprite                               ;
+  RET
+
+; Remove helicopter missile
+;
+; Clears helicopter missile coordinates at helicopter_missile_coordinates_ptr to remove it from the game.
+remove_helicopter_missile:
+  LD BC,$0000                                      ; Set helicopter_missile_coordinates_ptr to $0000.
+  LD (helicopter_missile_coordinates_ptr),BC       ;
+  RET
+
+; Add X offset for right-facing missile spawn
+;
+; Adds $08 to X position for spawning missile from right-facing helicopter.
+add_missile_x_offset:
+  LD A,C                                           ; C = C + $08.
+  ADD A,$08                                        ;
+  LD C,A                                           ;
+  RET
+
+; Render helicopter missile (spawn new)
+;
+; Spawns a new helicopter missile from an advanced helicopter. Called when processing OBJECT_HELICOPTER_ADV in the
+; viewport loop. Plays a sound and initializes missile trajectory.
+;
+; * Returns immediately during GAMEPLAY_MODE_SCROLL_IN
+; * Returns if missile already active (B != 0)
+; * Plays missile launch sound via ROM BEEPER
+; * Extracts helicopter position and orientation
+; * Stores initial missile coordinates to helicopter_missile_coordinates_ptr
+render_helicopter_missile:
+  LD A,(state_gameplay_mode)                       ; Return if in GAMEPLAY_MODE_SCROLL_IN.
+  CP GAMEPLAY_MODE_SCROLL_IN                       ;
+  RET Z                                            ;
+  LD BC,(helicopter_missile_coordinates_ptr)       ; Load missile coords from helicopter_missile_coordinates_ptr. Return
+  LD A,B                                           ; if missile active (B != 0).
+  CP $00                                           ;
+  RET NZ
+  LD DE,$0001                                      ; Play missile launch sound: BEEPER with DE=$0001, HL=$2800.
+  LD HL,$2800                                      ;
+  CALL BEEPER                                      ;
+  LD HL,(current_slot_ptr)                         ; Load current_slot_ptr, extract [D, B, C] from helicopter's slot.
+  DEC HL                                           ;
+  LD D,(HL)                                        ;
+  DEC HL                                           ;
+  LD B,(HL)                                        ;
+  DEC HL                                           ;
+  LD C,(HL)                                        ;
+  LD A,C                                           ; Align X to 8-pixel boundary (AND $F8), extract orientation bit.
+  AND $F8                                          ;
+  LD C,A                                           ;
+  LD A,D                                           ;
+  AND 1<<SLOT_BIT_ORIENTATION                      ;
+  LD (helicopter_missile_state),A                  ; Store orientation to helicopter_missile_state. If right-facing, add
+  BIT SLOT_BIT_ORIENTATION,A                       ; offset via add_missile_x_offset.
+  CALL Z,add_missile_x_offset                      ;
+  INC B                                            ; Add 4 to Y position (INC B × 4), store to
+  INC B                                            ; helicopter_missile_coordinates_ptr.
+  INC B                                            ;
+  INC B                                            ;
+  LD (helicopter_missile_coordinates_ptr),BC       ;
+  RET
+
+; Handle helicopter missile collision
+;
+; Called by the sprite renderer's pixel collision when the missile's $FF byte overlaps solid screen pixels (bank or
+; island terrain). Checks whether the overlap is actually the player plane; if not, clears the missile.
+;
+; * Triggered by terrain contact (solid pixels), not player proximity
+; * If missile Y is not at player level (bit 7 clear), clear missile immediately
+; * Otherwise check missile X against player X; if match, player hit
+; * On miss: clears missile and pops return addresses to abort collision chain
+handle_collision_mode_helicopter_missile:
+  LD BC,(helicopter_missile_coordinates_ptr)       ; Load missile coords. If Y bit 7 clear, clear missile and return.
+  BIT 7,B                                          ;
+  JP Z,handle_collision_mode_missile_miss          ; Clear Y bit 7, check if Y-8 is negative (missile above screen).
+  RES 7,B                                          ;
+  LD A,B                                           ;
+  SUB $08                                          ;
+  JP P,handle_collision_mode_missile_miss          ; Compare missile X with player X (from state_plane_x). If match,
+  LD A,(state_plane_x)                             ; player hit.
+  AND $F8                                          ;
+  CP C                                             ;
+  JP Z,handle_player_death                         ;
+  ADD A,$08                                        ; Check adjacent X position. If match, player hit.
+  CP C                                             ;
+  JP Z,handle_player_death                         ;
+handle_collision_mode_missile_miss:
+  LD BC,$0000                                      ; Clear missile coords, pop 4 return addresses, return.
+  LD (helicopter_missile_coordinates_ptr),BC       ;
+  POP DE                                           ;
+  POP DE                                           ;
+  POP DE                                           ;
+  POP DE                                           ;
+  RET
+
+; Operate tank shell
+;
+; Advances the tank shell along its trajectory and renders it. Shell moves in a parabolic arc based on speed and step
+; count.
+;
+; * Returns if shell not flying (bit 7 of tank_shell_state)
+; * Increments trajectory step, explodes at step 8
+; * Plays descending pitch sound based on step
+; * Moves shell based on speed and orientation
+; * Renders shell sprite or triggers explosion
+operate_tank_shell:
+  LD A,(tank_shell_state)                          ; Return if TANK_SHELL_BIT_FLYING not set.
+  BIT TANK_SHELL_BIT_FLYING,A                      ;
+  RET Z
+  LD BC,(tank_shell_coordinates)                   ; Load shell coords, increment trajectory step, store.
+  LD A,(tank_shell_trajectory_step)                ;
+  INC A
+  LD (tank_shell_trajectory_step),A
+  CP TANK_SHELL_TRAJECTORY_MAX_STEP                ; If step == 8 (max), explode via render_tank_shell_explosion.
+  JP Z,render_tank_shell_explosion                 ;
+  LD DE,$0002                                      ; Play shell whistle: BEEPER with DE=$0002, HL=(step, 0).
+  LD H,A                                           ;
+  LD L,$00                                         ;
+  CALL BEEPER                                      ;
+  LD BC,(tank_shell_coordinates)                   ; Reload shell coords, advance Y position, store to
+  CALL advance_object                              ; previous_object_coordinates.
+  LD (previous_object_coordinates),BC
+  LD A,(tank_shell_state)                          ; Get shell speed from state, add speed×2 to X position.
+  LD D,A                                           ;
+  AND TANK_SHELL_MASK_SPEED                        ;
+  LD E,A                                           ;
+  LD A,C                                           ;
+  ADD A,E                                          ;
+  ADD A,E                                          ;
+  LD C,A
+  BIT SLOT_BIT_ORIENTATION,D                       ; If left-facing, invert X delta via invert_shell_coordinate_delta.
+  CALL NZ,invert_shell_coordinate_delta            ;
+  INC B                                            ; Increment Y, store position to object_coordinates and
+  LD (object_coordinates),BC                       ; tank_shell_coordinates.
+  LD (tank_shell_coordinates),BC                   ;
+  LD A,COLLISION_MODE_NONE                         ; Set collision mode to COLLISION_MODE_NONE.
+  LD (state_collision_mode),A                      ;
+  LD A,B                                           ; Check viewport boundary. If off-screen, handle via
+  AND VIEWPORT_HEIGHT                              ; erase_tank_shell_offscreen.
+  CP VIEWPORT_HEIGHT                               ;
+  JP Z,erase_tank_shell_offscreen                  ;
+  LD HL,sprite_missile                                        ; Render shell sprite: height=1, width=1, frame=$08.
+  LD DE,SPRITE_SHELL_HEIGHT_PIXELS<<8|SPRITE_SHELL_ATTRIBUTES ;
+  LD A,SPRITE_SHELL_WIDTH_TILES                               ;
+  LD BC,SPRITE_SHELL_FRAME_SIZE_BYTES                         ;
+  CALL render_sprite                                          ;
+  RET
+
+; Erase off-screen tank shell
+;
+; Erases the tank shell sprite when it goes off-screen and removes it from the game.
+erase_tank_shell_offscreen:
+  LD BC,(previous_object_coordinates)              ; Load shell position from previous_object_coordinates, shell sprite
+  LD HL,sprite_missile                             ; sprite_missile.
+  LD A,C                                           ; Calculate sprite frame offset from X position: (X AND 6) << 2.
+  AND $06                                          ;
+  SLA A                                            ;
+  SLA A                                            ;
+  LD D,$00                                         ;
+  LD E,A                                           ;
+  ADD HL,DE                                        ;
+  LD (render_sprite_ptr),HL                        ; Add offset to sprite address, store to render_sprite_ptr. Load
+  LD HL,sprite_erasure                             ; erase sprite sprite_erasure.
+  LD DE,$0100                                      ; Render erase sprite and remove shell.
+  LD A,$01                                         ;
+  LD BC,$0008                                      ;
+  CALL render_object                               ;
+  JP remove_tank_shell                             ; Remove shell.
+
+; Trigger tank shell explosion
+;
+; Converts the flying tank shell into an explosion. Clears flying bit, sets exploding bit, and adds explosion to
+; viewport objects.
+render_tank_shell_explosion:
+  LD D,$80                                         ; Set D=$80 (explosion marker), clear shell coordinates.
+  LD HL,$0000                                      ;
+  LD (tank_shell_coordinates),HL                   ; Store $0000 to tank_shell_coordinates.
+  LD A,(tank_shell_state)                          ; Load shell state, clear FLYING bit, set EXPLODING bit.
+  RES TANK_SHELL_BIT_FLYING,A                      ;
+  SET TANK_SHELL_BIT_EXPLODING,A                   ;
+  LD (tank_shell_state),A                          ; Store updated state, add explosion to viewport_slots objects set.
+  LD HL,viewport_slots                             ;
+  CALL add_object_to_set                           ;
+  LD A,$00                                         ; Reset trajectory step to 0.
+  LD (tank_shell_trajectory_step),A                ;
+  RET
+
+; Remove tank shell from game
+;
+; Clears all tank shell state variables to remove it from the game.
+remove_tank_shell:
+  LD HL,$0000                                      ; Clear tank_shell_state (state) and tank_shell_coordinates
+  LD (tank_shell_state),HL                         ; (coordinates) to $0000.
+  LD (tank_shell_coordinates),HL                   ;
+  RET
+
+; Handle tank after bridge destruction
+;
+; Called each frame when a road tank's bridge has been destroyed (state_bridge_destroyed != 0). Normal movement is
+; skipped (no rendering), so the tank's sprite stays frozen on screen as a ghost image. This routine checks whether the
+; tank's X position overlaps the river gap ($70-$90). If yes, the slot is cleared, 1 explosion fragment is spawned, and
+; POINTS_TANK are awarded. If no overlap, the slot is either cleared (bridge <= 7) or converted to a bank-tank (bridge >
+; 7); in the cleared case the ghost image persists on screen with no explosion.
+handle_tank_at_boundary:
+  LD HL,(current_slot_ptr)                         ; Load current_slot_ptr, navigate to X position in current slot.
+  DEC HL                                           ;
+  DEC HL                                           ;
+  DEC HL                                           ;
+  LD C,(HL)                                        ;
+  LD H,$00                                         ; If X+10 <= $70 (112): tank is on the left bank, convert to
+  LD L,$70                                         ; bank-tank.
+  LD D,$00                                         ;
+  LD A,C                                           ;
+  ADD A,$0A                                        ;
+  LD E,A                                           ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+  JP P,convert_tank_to_bank                        ;
+  LD H,$00                                         ; If X > $90 (144): tank is on the right bank, convert to bank-tank.
+  LD L,$90                                         ;
+  LD D,$00                                         ;
+  LD E,C                                           ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+  JP M,convert_tank_to_bank                        ;
+  LD HL,(current_slot_ptr)                         ; Tank destroyed: clear X position, set D=$80 (explosion marker).
+  DEC HL                                           ;
+  DEC HL                                           ;
+  LD B,(HL)                                        ; Add explosion and award POINTS_TANK.
+  DEC HL                                           ;
+  LD (HL),$00                                      ;
+  LD D,$80                                         ;
+  CALL spawn_explosion_fragment                    ;
+  LD A,POINTS_TANK
+  CALL add_points
+convert_tank_to_bank:
+  LD HL,(current_slot_ptr)                         ; Reload current_slot_ptr and convert to bank-tank
+  DEC HL                                           ; (SLOT_BIT_ALT_SHELL_INIT + SLOT_BIT_TANK_ON_BANK).
+  SET SLOT_BIT_ALT_SHELL_INIT,(HL)                 ;
+  SET SLOT_BIT_TANK_ON_BANK,(HL)
+  DEC HL                                           ; Check active player at state_player. If player 1, use
+  DEC HL                                           ; state_bridge_player_1.
+  LD A,(state_player)                              ;
+  CP PLAYER_1                                      ;
+  JP Z,get_bridge_number_player_1                  ; Load bridge number from state_bridge_player_2.
+  LD A,(state_bridge_player_2)                     ;
+; This entry point is used by the routine at get_bridge_number_player_1.
+tank_bridge_check:
+  LD B,A                                           ; Check if bridge_number > 7.
+  LD A,$07                                         ;
+  SUB B                                            ;
+  JP M,operate_viewport_slots                      ; If so, keep the slot (bank-tank bits already set at
+                                                   ; convert_tank_to_bank).
+  LD (HL),$00                                      ; Otherwise, clear slot X byte (ghost image remains on screen).
+  JP operate_viewport_slots                        ;
+
+; Get bridge number for player 1
+;
+; Returns bridge number from state_bridge_player_1 instead of state_bridge_player_2 for player 1.
+get_bridge_number_player_1:
+  LD A,(state_bridge_player_1)                     ; Load bridge number from state_bridge_player_1, continue at
+                                                   ; tank_bridge_check.
+  JP tank_bridge_check
+
+; Operate fuel station
+;
+; Processes fuel station rendering with animated lights. Blinks every 4 frames by toggling attribute bit 2
+; (TICK_MASK_FUEL_BLINK).
+;
+; * Stores position for rendering
+; * Checks if fuel station is within viewport
+; * Blink animation: attributes = base + (tick AND $04), toggles every 4 frames
+; * Renders 2-tile wide, 25-pixel tall sprite
+operate_fuel:
+  LD (previous_object_coordinates),BC              ; Store position to previous_object_coordinates and
+  LD (object_coordinates),BC                       ; object_coordinates. Set height=$19.
+  LD D,$19
+  LD A,B                                           ; Check if Y+$19 is off-screen (boundary check).
+  ADD A,$19                                        ;
+  AND $90                                          ;
+  CP $90                                           ;
+  CALL Z,handle_fuel_off_viewport                  ; If off-screen, return to main loop.
+  LD BC,(previous_object_coordinates)              ;
+  LD A,B                                           ;
+  AND VIEWPORT_HEIGHT                              ;
+  CP VIEWPORT_HEIGHT                               ;
+  JP Z,operate_viewport_slots                      ; Load fuel sprite sprite_fuel, get sprite pointer.
+  LD A,B                                           ;
+  AND $87                                          ;
+  CP $87                                           ;
+  JP Z,operate_viewport_slots                      ;
+  LD HL,sprite_fuel
+  LD BC,SPRITE_FUEL_STATION_FRAME_SIZE             ; Set frame size=0, calculate animated attributes from tick.
+  LD A,(state_tick)                                ;
+  AND TICK_MASK_FUEL_BLINK                         ;
+  ADD A,SPRITE_FUEL_STATION_ATTRIBUTES             ;
+  LD E,A                                           ;
+  LD A,SPRITE_FUEL_STATION_WIDTH_TILES             ; Render fuel station: width=2.
+  CALL render_sprite                               ;
+  JP operate_viewport_slots                        ;
+
+; Clip fuel station height to viewport
+;
+; Called when the fuel station extends past the viewport bottom. Calculates the visible portion height by subtracting
+; the overflow from the full height.
+;
+; * Input: B = Y position, D = full height ($19)
+; * Calculates: overflow = (Y + height) - VIEWPORT_HEIGHT
+; * Output: D = visible height = height - overflow
+;
+; I:B Y position of fuel station
+; I:D Full sprite height ($19 = 25 pixels)
+; O:D Clipped height (visible portion only)
+handle_fuel_off_viewport:
+  LD H,$00                                         ; Calculate overflow: HL = (Y + height) - $90.
+  LD L,B                                           ;
+  LD BC,SPRITE_FUEL_STATION_HEIGHT_PIXELS          ;
+  ADD HL,BC                                        ;
+  LD BC,$0090                                      ;
+  OR A                                             ;
+  SBC HL,BC                                        ;
+  LD B,$00                                         ; Calculate visible height: D = $19 - overflow.
+  LD C,L                                           ;
+  LD H,$00                                         ;
+  LD L,D                                           ;
+  OR A                                             ;
+  SBC HL,BC                                        ;
+  LD D,L
+  RET
+
+; Advance right-facing ship or helicopter
+;
+; Moves a right-facing ship/helicopter 2 pixels right, checking for terrain collision ahead.
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition
+ship_or_helicopter_right_advance:
+  PUSH BC                                          ; Save BC, calculate terrain check position: C += $20 pixels.
+  LD A,C                                           ;
+  ADD A,$20                                        ;
+  LD C,A                                           ;
+  CALL calculate_pixel_address                     ; Get terrain byte at (C, B). Load result into A.
+  LD A,(HL)                                        ;
+  POP BC                                           ; Restore BC. If terrain != 0, reverse direction.
+  CP $00                                           ;
+  CALL NZ,reverse_enemy_direction                  ;
+  LD (previous_object_coordinates),BC              ; Store position to previous_object_coordinates. Advance X position
+  INC C                                            ; right by 2 pixels (INC C twice).
+  INC C                                            ;
+  JP render_ship_or_helicopter                     ; Continue to render_ship_or_helicopter for rendering.
+
+; Load enemy sprite pointer
+;
+; Calculates sprite pointer for enemy objects based on type and orientation. Uses left-facing sprites by default,
+; switches to right-facing via ld_enemy_sprites_right.
+;
+; I:D Object definition (bits 0-2 = type, bit 6 = orientation)
+; O:HL Pointer to sprite data
+ld_enemy_sprites:
+  LD HL,sprite_enemies_left                        ; Load left-facing sprite base sprite_enemies_left, frame size $60.
+  LD BC,$0060                                      ;
+  BIT SLOT_BIT_ORIENTATION,D                       ; If right-facing (bit 6 clear), get right sprites via
+  CALL Z,ld_enemy_sprites_right                    ; ld_enemy_sprites_right.
+  LD A,D                                           ; Extract object type (bits 0-2), prepare for loop.
+  AND SLOT_MASK_OBJECT_TYPE                        ;
+  OR A                                             ;
+  SBC HL,BC                                        ; Loop: HL += $60 for each type. Result: HL = base + (type * $60).
+ld_enemy_sprites_loop:
+  ADD HL,BC                                        ;
+  DEC A                                            ;
+  JR NZ,ld_enemy_sprites_loop                      ;
+  RET                                              ;
+
+; Reverse enemy direction at river bank
+;
+; Reverses the direction of a ship or helicopter when it approaches a river bank. Inverts the orientation bit and
+; re-renders with new facing. Ignores objects in top half of screen (Y >= $80).
+;
+; I:BC Object coordinates
+reverse_enemy_direction:
+  LD (previous_object_coordinates),BC
+  LD A,B                                           ; Return if Y >= $80 (object in top half, might be player).
+  SUB $80                                          ;
+  RET P                                            ;
+  LD BC,(previous_object_coordinates)              ; Reload position, pop return address, load current_slot_ptr, get
+  POP HL                                           ; object definition.
+  LD HL,(current_slot_ptr)                         ;
+  DEC HL                                           ;
+  LD D,(HL)                                        ;
+  CALL ld_enemy_sprites                            ; Get sprite pointer, reload position.
+  LD BC,(previous_object_coordinates)              ;
+  LD A,C                                           ; Calculate animation frame offset from X position.
+  AND $07                                          ;
+  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE               ; Set frame size, shift and increment offset.
+  SRL A                                            ;
+  OR A                                             ;
+  INC A                                            ;
+  SBC HL,BC                                        ; Subtract frame size for pre-decrement.
+reverse_enemy_direction_frame_loop:
+  ADD HL,BC                                        ; Loop to add frame offset to sprite pointer, store to
+  DEC A                                            ; render_sprite_ptr.
+  JR NZ,reverse_enemy_direction_frame_loop         ;
+  LD (render_sprite_ptr),HL                        ;
+  LD BC,(previous_object_coordinates)              ; Reload position, store to object_coordinates.
+  LD (object_coordinates),BC                       ;
+  LD A,D                                           ; Invert object orientation.
+  XOR 1<<SLOT_BIT_ORIENTATION                      ;
+  LD D,A                                           ;
+  LD HL,(current_slot_ptr)                         ; Update orientation in viewport array, get new sprite pointer.
+  DEC HL                                           ;
+  LD (HL),A                                        ;
+  CALL ld_enemy_sprites                            ;
+  LD E,$0E
+  LD A,D
+  AND SLOT_MASK_OBJECT_TYPE
+  CP OBJECT_SHIP
+  CALL Z,ld_attributes_ship
+  LD D,SPRITE_3BY1_ENEMY_HEIGHT_PIXELS
+  LD A,SPRITE_3BY1_ENEMY_WIDTH_TILES
+  LD BC,SPRITE_3BY1_ENEMY_FRAME_SIZE
+  CALL render_object
+  JP operate_viewport_slots
+
+; Reset current_slot_ptr to the start of viewport_slots.
+;
+; Resets the current slot pointer to the beginning of the viewport slots array.
+reset_slot_ptr:
+  LD HL,viewport_slots                             ; Set current_slot_ptr to start of viewport_slots.
+  LD (current_slot_ptr),HL                         ;
+  RET
+
+; Remove an object from the viewport array.
+;
+; Clears the object's slot marker and handles tank shell cleanup if the object was a tank.
+;
+; I:HL Pointer to object's Y position in viewport array
+; I:D Object definition byte
+remove_object_from_viewport:
+  DEC HL                                           ; Decrement to definition byte and mark slot as empty.
+  LD (HL),SET_MARKER_EMPTY_SLOT                    ;
+  LD A,D                                           ; Extract object type. If not OBJECT_TANK, continue main loop.
+  AND SLOT_MASK_OBJECT_TYPE                        ;
+  CP OBJECT_TANK                                   ;
+  JP NZ,operate_viewport_slots
+  LD A,TANK_SHELL_INACTIVE                         ; Mark tank shell as inactive.
+  LD (state_tank_shell),A                          ;
+  BIT SLOT_BIT_TANK_ON_BANK,D                      ; Check if tank was on right bank.
+  JP Z,operate_viewport_slots                      ;
+  CALL remove_tank_shell                           ; If so, call remove_tank_shell for right-bank tank shell removal.
+  JP operate_viewport_slots                        ;
+
+; Operate balloon movement and rendering.
+;
+; Moves a balloon horizontally, checking for terrain collisions. Balloons bounce off riverbanks by reversing direction.
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition (bit 6 = orientation: 0=right, 1=left)
+operate_balloon:
+  BIT 7,B                                          ; If balloon is off-screen (Y bit 7 set), skip to main loop.
+  JP NZ,jp_operate_viewport_slots                  ;
+  LD A,(state_tick)                                ; Only operate every 4th frame (frame counter AND 3 == 1). Check
+  AND $03                                          ; orientation.
+  CP $01                                           ;
+  JP NZ,jp_operate_viewport_slots                  ;
+  BIT SLOT_BIT_ORIENTATION,D
+  JP Z,operate_balloon_right
+  PUSH BC                                          ; Left-facing: Check terrain 16 pixels left of sprite origin (top
+  LD A,C                                           ; row). Reverse on collision.
+  SUB $10                                          ;
+  LD C,A                                           ;
+  CALL calculate_pixel_address                     ;
+  LD A,(HL)                                        ;
+  POP BC                                           ;
+  CP $00                                           ;
+  CALL NZ,reverse_balloon_direction                ;
+  PUSH BC                                          ; Check terrain 16 pixels left, 8 pixels down (bottom row). Reverse
+  LD A,C                                           ; on collision.
+  SUB $10                                          ;
+  LD C,A                                           ;
+  LD A,B                                           ;
+  ADD A,$08                                        ;
+  LD B,A                                           ;
+  CALL calculate_pixel_address                     ;
+  LD A,(HL)                                        ;
+  POP BC                                           ;
+  CP $00                                           ;
+  CALL NZ,reverse_balloon_direction                ;
+  LD (previous_object_coordinates),BC              ; Save position, move left by 2 pixels.
+  DEC C                                            ;
+  DEC C                                            ;
+; Shared entry point for balloon rendering (also used by right-facing balloon).
+operate_balloon_shared:
+  LD HL,(current_slot_ptr)                         ; Read object definition from viewport, write updated position back.
+  DEC HL                                           ;
+  LD D,(HL)                                        ;
+  DEC HL                                           ;
+  LD (HL),B                                        ;
+  DEC HL                                           ;
+  LD (HL),C                                        ;
+  LD (object_coordinates),BC                       ; Store render position and load balloon sprite pointer.
+  LD HL,sprite_balloon                             ;
+dead_frame_offset:
+  LD A,(state_tick)                                ; Calculate frame offset from frame counter (unused - overwritten
+  AND $03                                          ; below).
+  ADD A,$0C                                        ;
+  LD E,A                                           ;
+  LD A,SPRITE_BALLOON_WIDTH_TILES
+  LD BC,SPRITE_BALLOON_FRAME_SIZE
+  LD E,SPRITE_BALLOON_ATTRIBUTES
+  LD D,SPRITE_BALLOON_HEIGHT_PIXELS
+  CALL render_sprite                               ; Render balloon, return to main loop.
+  JP operate_viewport_slots                        ;
+
+; A useless procedure that unconditionally jumps to operate_viewport_slots.
+;
+; Used by the routines at handle_inactive_object and operate_balloon.
+jp_operate_viewport_slots:
+  JP operate_viewport_slots
+
+; Right-facing balloon movement.
+;
+; Handles terrain collision checks and movement for a right-facing balloon.
+;
+; I:B Y position
+; I:C X position
+; I:D Object definition
+operate_balloon_right:
+  PUSH BC                                          ; Check terrain 32 pixels right of sprite origin (past right edge).
+  LD A,C                                           ; Reverse on collision.
+  ADD A,$20                                        ;
+  LD C,A                                           ;
+  CALL calculate_pixel_address                     ;
+  LD A,(HL)                                        ;
+  POP BC                                           ;
+  CP $00                                           ;
+  CALL NZ,reverse_balloon_direction                ;
+  PUSH BC                                          ; Check terrain 24 pixels right, 8 pixels down (bottom row). Reverse
+  LD A,C                                           ; on collision.
+  ADD A,$18                                        ;
+  LD C,A                                           ;
+  LD A,B                                           ;
+  ADD A,$08                                        ;
+  LD B,A                                           ;
+  CALL calculate_pixel_address                     ;
+  LD A,(HL)                                        ;
+  POP BC                                           ;
+  CP $00                                           ;
+  CALL NZ,reverse_balloon_direction                ;
+  LD (previous_object_coordinates),BC              ; Save position, move right by 2 pixels, jump to render at
+  INC C                                            ; operate_balloon_shared.
+  INC C                                            ;
+  JP operate_balloon_shared                        ;
+
+; Handle balloon terrain collision.
+;
+; Reverses balloon direction when it collides with terrain. Also handles rendering.
+;
+; I:BC Position
+; I:D Object definition
+reverse_balloon_direction:
+  LD (previous_object_coordinates),BC              ; Save position. If Y >= 128 (off visible area), return early.
+  LD A,B                                           ;
+  SUB $80                                          ;
+  RET P                                            ;
+  LD BC,(previous_object_coordinates)              ; Reload position, get object definition from viewport.
+  POP HL                                           ;
+  LD HL,(current_slot_ptr)                         ;
+  DEC HL                                           ;
+  LD D,(HL)                                        ;
+  LD HL,sprite_balloon                             ; Calculate sprite frame offset from X position bits 1-2.
+  LD BC,(previous_object_coordinates)              ;
+  LD A,C                                           ;
+  AND $06                                          ;
+  LD BC,$0020                                      ;
+  SRL A                                            ;
+  INC A                                            ;
+reverse_balloon_frame_loop:
+  OR A                                             ; Loop to select correct frame in sprite data.
+  SBC HL,BC                                        ;
+reverse_balloon_direction_0:
+  ADD HL,BC                                        ;
+  DEC A                                            ;
+  JR NZ,reverse_balloon_direction_0                ;
+  LD (render_sprite_ptr),HL                        ; Store sprite pointer and render position.
+  LD BC,(previous_object_coordinates)              ;
+  LD (object_coordinates),BC                       ;
+  LD A,D                                           ; Flip orientation bit and update in viewport array.
+  XOR $40                                          ;
+  LD HL,(current_slot_ptr)                         ;
+  DEC HL                                           ;
+  LD (HL),A                                        ;
+  LD HL,sprite_balloon                             ; Load sprite parameters, render balloon with new orientation, return
+  LD DE,$100D                                      ; to main loop.
+  LD A,$02                                         ;
+  LD BC,$0020                                      ;
+  CALL render_object                               ;
+  JP operate_viewport_slots                        ;
+
+; Unused
+data_unused_7727:
+  DEFB $C3,$90,$EA,$0D,$00,$05,$1F,$00
+  DEFB $F5,$AC,$30,$0E,$00,$00,$00,$00
+  DEFB $00,$2C,$30,$0E,$00,$00,$00,$00
+  DEFB $00,$3B,$C0,$32,$33,$37,$36,$32
+  DEFB $0E,$00,$00,$D2,$5C,$00,$0D,$9A
+  DEFB $05,$2C,$00,$F8,$22,$52,$69,$76
+  DEFB $65,$72,$20,$72,$61,$69,$64,$22
+  DEFB $CA,$36,$0E,$00,$00,$06,$00,$00
+  DEFB $3A,$D7,$35,$0E,$00,$00,$05,$00
+  DEFB $00,$2C,$31,$30,$0E,$00,$00,$0A
+  DEFB $00,$00,$3A,$D6,$22,$22,$0D,$00
+  DEFB $06,$0C,$00,$F9,$C0,$36,$65,$34
+  DEFB $0E,$00,$00,$60,$EA,$00,$0D,$80
+  DEFB $EF,$22,$22,$0D,$80,$00,$00,$D2
+  DEFB $5C,$00,$00,$00,$00,$00,$00,$20
+  DEFB $17,$01,$00,$80,$04,$01,$00,$50
+  DEFB $72,$6F,$67,$20,$20,$20,$20,$20
+  DEFB $20,$C3,$1A,$05,$00,$C3,$1A,$0D
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00
+
+; Control type chosen from the dialog before the validation
+tmp_control_type:
+  DEFB $00
+
+; Overview mode flag ($00 - No, $01 - Yes)
+state_overview_mode:
+  DEFB $00
+
+; Stores the number of remaining iterations before the control choice dialog switches to overview mode
+controls_timer:
+  DEFW $0000
+
+; Clear screen and enter setup menu.
+;
+; Saves stack pointer, clears screen with white-on-black attributes, then jumps to setup routine.
+clear_and_setup:
+  LD (setup_sp),SP                                 ; Save current stack pointer to setup_sp.
+  LD D,COLOR_BLACK<<3|COLOR_WHITE                  ; Clear screen with white-on-black attributes.
+  CALL clear_screen                                ;
+  JP setup                                         ; Continue with setup.
+
+; Temporary stack pointer used by the control choice dialog
+setup_sp:
+  DEFW $0000
+
+; Keyboard configuration;
+msg_keyboard_config:
+  DEFM EXT_ATTR_INK,COLOR_RED                      ; INK RED
+  DEFM EXT_ATTR_AT,$00,$08                         ; AT 0,8
+  DEFM "LEFT........O"
+  DEFM EXT_ATTR_INK,COLOR_MAGENTA                  ; INK MAGENTA
+  DEFM EXT_ATTR_AT,$02,$08                         ; AT 2,8
+  DEFM "RIGHT.......P"
+  DEFM EXT_ATTR_INK,COLOR_YELLOW                   ; INK YELLOW
+  DEFM EXT_ATTR_AT,$04,$08                         ; AT 4,8
+  DEFM "FASTER......2"
+  DEFM EXT_ATTR_INK,COLOR_GREEN                    ; INK GREEN
+  DEFM EXT_ATTR_AT,$06,$08                         ; AT 6,8
+  DEFM "SLOWER......W"
+  DEFM EXT_ATTR_INK,COLOR_CYAN                     ; INK CYAN
+  DEFM EXT_ATTR_AT,$08,$08                         ; AT 8,8
+  DEFM "FIRE......Bottom"
+  DEFM EXT_ATTR_AT,$09,$08                         ; AT 9,8
+  DEFM "           row"
+  DEFM EXT_ATTR_INK,COLOR_WHITE                    ; INK WHITE
+msg_instructions:
+  DEFM EXT_ATTR_AT,$0B,$07                         ; AT 11,7
+  DEFM "Press H to pause"
+  DEFM EXT_ATTR_AT,$0D,$06                         ; AT 13,6
+  DEFM "Press ENTER to play"
+  DEFM EXT_ATTR_AT,$0F,$04                         ; AT 15,4
+  DEFM "Press CAPS SHIFT & ENTER"
+  DEFM EXT_ATTR_AT,$10,$03                         ; AT 16,3
+  DEFM "to reset the game you have"
+  DEFM EXT_ATTR_AT,$11,$09                         ; AT 17,9
+  DEFM "just played"
+  DEFM EXT_ATTR_AT,$13,$00                         ; AT 19,0
+  DEFM "Press SYM SHIFT & ENTER to reset"
+  DEFM EXT_ATTR_AT,$14,$05                         ; AT 20,5
+  DEFM "the menu selections"
+msg_game_mode:
+  DEFM EXT_ATTR_INK,COLOR_WHITE                    ; INK WHITE
+  DEFM EXT_ATTR_PAPER,COLOR_BLACK                  ; PAPER BLACK
+  DEFM EXT_ATTR_AT,$02,$03                         ; AT 2,3
+  DEFM "Press corresponding number"
+  DEFM EXT_ATTR_AT,$03,$0A                         ; AT 3,10
+  DEFM "on keyboard"
+  DEFM EXT_ATTR_AT,$06,$06                         ; AT 6,6
+  DEFM " Game    No of  Starting"
+  DEFM EXT_ATTR_AT,$07,$06                         ; AT 7,6
+  DEFM "Number  Players  Bridge"
+  DEFM EXT_ATTR_AT,$09,$09                         ; AT 9,9
+  DEFM "1       1       1"
+  DEFM EXT_ATTR_AT,$0A,$09                         ; AT 10,9
+  DEFM "2       2       1"
+  DEFM EXT_ATTR_AT,$0C,$09                         ; AT 12,9
+  DEFM "3       1       5"
+  DEFM EXT_ATTR_AT,$0D,$09                         ; AT 13,7
+  DEFM "4       2       5"
+  DEFM EXT_ATTR_AT,$0F,$09                         ; AT 15,9
+  DEFM "5       1      20"
+  DEFM EXT_ATTR_AT,$10,$09                         ; AT 16,9
+  DEFM "6       2      20"
+  DEFM EXT_ATTR_AT,$12,$09                         ; AT 18,9
+  DEFM "7       1      30"
+  DEFM EXT_ATTR_AT,$13,$09                         ; AT 19,9
+  DEFM "8       2      30"
+msg_control_types:
+  DEFM EXT_ATTR_INK,COLOR_WHITE                    ; INK WHITE
+  DEFM EXT_ATTR_PAPER,COLOR_BLACK                  ; PAPER BLACK
+  DEFM EXT_ATTR_AT,$03,$03                         ; AT 3,3
+  DEFM "Press corresponding number"
+  DEFM EXT_ATTR_AT,$04,$0A                         ; AT 4,10
+  DEFM "on keyboard"
+  DEFM EXT_ATTR_AT,$08,$06                         ; AT 8,6
+  DEFM "1. KEYBOARD CONTROL"
+  DEFM EXT_ATTR_AT,$0A,$06                         ; AT 10,6
+  DEFM "2. SINCLAIR INTERFACE"
+  DEFM EXT_ATTR_AT,$0C,$06                         ; AT 12,6
+  DEFM "3. KEMPSTON INTERFACE"
+  DEFM EXT_ATTR_AT,$0E,$06                         ; AT 14,6
+  DEFM "4. CURSOR INTERFACE"
+
+; Initial game setup
+;
+; Displays the control selection dialog, waits for user input (or times out to overview mode), then shows the game mode
+; dialog. Stores the selected control type in tmp_control_type, overview flag in state_overview_mode, and game mode in
+; state_game_mode. Uses a stack trick: sets SP to setup_sp so RET jumps to start_gameplay_or_overview.
+setup:
+  LD DE,msg_control_types                          ; Print control types dialog
+  LD BC,$008B                                      ;
+  CALL PR_STRING                                   ;
+  LD HL,$FFFF                                      ; Initialize timer
+  LD (controls_timer),HL                           ;
+  LD A,CHAR_ENTER
+  LD (LAST_K),A
+
+; Wait until the user chooses a valid control type or switch to the overview mode on timeout.
+controls_input:
+  LD HL,(controls_timer)                           ; Decrease timer
+  DEC HL                                           ;
+  LD (controls_timer),HL                           ;
+  LD A,H                                           ; Check if the time is up
+  OR L                                             ;
+  JP Z,switch_to_overview_mode                     ;
+  LD A,(LAST_K)
+  CALL KEYBOARD                                    ; Scan keyboard
+  EI                                               ;
+  SUB "1"                                          ; Subtract "1" from the pressed key ASCII code, mapping "1" to 0, "2"
+                                                   ; to 1, etc.
+  LD (tmp_control_type),A
+  AND $FC                                          ; Validate the pressed key by making sure that none of the bits older
+  CP $00                                           ; than the first two are set, effectively allowing values 0 through
+                                                   ; 3.
+  JR NZ,controls_input                             ; Repeat if a valid key was not pressed.
+  LD A,$FF
+game_mode_print:
+  LD B,$00                                         ; Initialize delay counter.
+controls_input_delay_loop:
+  DJNZ controls_input_delay_loop                   ; Delay loop (purpose unclear).
+  DEC A                                            ;
+  JR NZ,game_mode_print                            ;
+  LD D,COLOR_BLACK<<3|COLOR_WHITE                  ; PAPER BLACK; INK WHITE
+  CALL clear_screen
+  LD DE,msg_game_mode                              ; Print game mode dialog
+  LD BC,$0104                                      ;
+  CALL PR_STRING                                   ;
+  LD A,CHAR_ENTER
+  LD (LAST_K),A
+
+; Wait until the user chooses a valid game mode.
+game_mode_input:
+  LD A,(LAST_K)
+  CALL KEYBOARD                                    ; Scan keyboard
+  EI                                               ;
+  SUB "1"                                          ; Subtract "1" from the pressed key ASCII code, mapping "1" to 0, "2"
+                                                   ; to 1, etc.
+  LD (state_game_mode),A
+  AND $F8                                          ; Validate the pressed key by making sure that none of the bits older
+  CP $00                                           ; than the first three are set, effectively allowing values 0 through
+                                                   ; 7.
+  JP NZ,game_mode_input                            ; Repeat if a valid key was not pressed.
+  LD D,COLOR_BLACK<<3|COLOR_WHITE                  ; PAPER BLACK; INK WHITE
+  CALL clear_screen
+  LD A,(tmp_control_type)
+  CP $00
+  JP NZ,instructions_print
+  LD DE,msg_keyboard_config                        ; Print keyboard configuration
+  LD BC,$0070                                      ;
+  CALL PR_STRING                                   ;
+; Print instructions and wait for Enter key.
+instructions_print:
+  LD DE,msg_instructions                           ; Print instructions text (msg_instructions, 168 bytes) via ROM
+  LD BC,$00A8                                      ; PR_STRING.
+  CALL PR_STRING                                   ;
+  LD A," "                                         ; Initialize LAST_K to space character.
+  LD (LAST_K),A
+; Wait for user to press Enter.
+instructions_input:
+  LD A,(LAST_K)                                    ; Read last key pressed from LAST_K.
+  CALL KEYBOARD                                    ; Scan keyboard via ROM routine.
+  EI                                               ;
+  LD A,(LAST_K)                                    ; Loop until Enter is pressed.
+  CP CHAR_ENTER                                    ;
+  JP NZ,instructions_input                         ; Exit loop when Enter detected.
+  LD A,$00                                         ; Clear overview mode flag (start game).
+  LD (state_overview_mode),A                       ;
+  LD SP,(setup_sp)
+  RET
+
+; Switch to overview/demo mode on timeout.
+;
+; Called when the control selection timer expires without user input.
+switch_to_overview_mode:
+  LD A,$01                                         ; Set overview mode flag to $01 (enabled).
+  LD (state_overview_mode),A                       ;
+  LD SP,(setup_sp)                                 ; Restore stack pointer and return to caller.
+  RET                                              ;
+
+; Unused
+data_unused_7B61:
+  DEFB $C3,$90,$EA,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00
+
+; Status line 1: fuel gauge and lives display.
+status_line_1:
+  DEFM EXT_ATTR_PAPER,COLOR_BLACK                  ; PAPER BLACK
+  DEFM EXT_ATTR_INK,COLOR_WHITE                    ; INK WHITE
+  DEFM EXT_ATTR_AT,$13,$02                         ; AT 19,2
+  DEFM "GAME  E   "
+  DEFB $93                                         ; One half UDG
+  DEFM "   F"
+  DEFM EXT_ATTR_AT,$14,$08                         ; AT 20,8
+  DEFB $91,$90,$90,$90,$91,$90,$90,$90             ; Fuel gauge scale UDG
+  DEFB $92                                         ;
+  DEFM EXT_ATTR_AT,$15,$08                         ; AT 21,8
+  DEFM EXT_ATTR_INK,COLOR_MAGENTA                  ; INK MAGENTA
+  DEFB $8F,$8F,$8F,$8F,$8F,$8F,$8F,$8F             ; Fuel gauge reading UDG
+  DEFM EXT_ATTR_INK,COLOR_PLAYER_1                 ; INK PLAYER_1
+
+; Status line 2: player scores header.
+status_line_2:
+  DEFM EXT_ATTR_AT,$01,$02                         ; AT 1,2
+  DEFM EXT_ATTR_INK,COLOR_PLAYER_1                 ; INK PLAYER_1
+  DEFM "P1 0000000"
+  DEFM EXT_ATTR_INK,COLOR_WHITE                    ; INK WHITE
+  DEFM EXT_ATTR_AT,$01,$12                         ; AT 1,18
+  DEFM "HI 0000000"
+
+; Status line 3: bridge number position.
+status_line_3:
+  DEFM EXT_ATTR_AT,$13,$12                         ; AT 19,18
+
+; Status line 3 text: "BRIDGE" label.
+status_line_3_text:
+  DEFM "BRIDGE  "
+
+; Status line 4: "FUEL" label.
+status_line_4:
+  DEFM EXT_ATTR_AT,$14,$04                         ; AT 20,4
+  DEFM EXT_ATTR_INK,COLOR_WHITE                    ; INK WHITE
+
+; End marker for status_line_4 length calculation
+status_line_4_end:
+  DEFB $01,$05,$0A,$0F
+
+; River bank shape profiles (15 profiles × 16 bytes = 240 bytes).
+;
+; Defines how the river banks curve. Each profile has 16 bytes, one per scanline within a terrain fragment. Each byte is
+; the X offset for the left bank edge at that line. Used by render_terrain_fragment (terrain) and render_island_line
+; (islands).
+;
+; +---------+---------+---------------------------------+
+; | Profile | Type    | Description                     |
+; +---------+---------+---------------------------------+
+; | 0       | Normal  | Standard river section          |
+; | 1       | Normal  | Alternate river shape           |
+; | 2       | Special | Pre-bridge approach (bit 7 set) |
+; | 3       | Special | Bridge structure (bit 7 set)    |
+; | 4       | Special | Post-bridge transition          |
+; | 5-10    | Normal  | Various river widths            |
+; | 11      | Narrow  | River narrows significantly     |
+; | 12      | Wide    | River widens significantly      |
+; | 13-14   | Normal  | Additional variations           |
+; +---------+---------+---------------------------------+
+;
+; When bit 7 of a profile byte is set, render_terrain_fragment jumps to special bridge/road rendering at
+; handle_special_terrain_fragment. Left edge X = profile_byte + row_offset - 16.
+data_terrain_profiles:
+  DEFB $02,$04,$04,$06,$08,$08,$0A,$0A             ; Profile 0: standard river
+  DEFB $0C,$0A,$0A,$08,$06,$04,$02,$00             ;
+  DEFB $80,$80,$80,$80,$80,$80,$80,$80             ; Profile 1: pre-bridge (special, bit 7 set)
+  DEFB $E0,$E0,$E0,$E0,$E0,$E0,$E0,$E0             ;
+  DEFB $C0,$C0,$C0,$C0,$C0,$C0,$C0,$F0             ; Profile 2: bridge structure (special, bit 7 set)
+  DEFB $F0,$C0,$C0,$C0,$C0,$C0,$C0,$C0             ;
+  DEFB $E0,$E0,$E0,$E0,$E0,$E0,$E0,$E0             ; Profile 3: post-bridge transition
+  DEFB $80,$80,$80,$80,$80,$80,$80,$80             ;
+  DEFB $00,$00,$02,$02,$04,$04,$06,$06             ; Profile 4
+  DEFB $08,$08,$06,$06,$04,$04,$06,$06             ;
+  DEFB $06,$06,$06,$06,$04,$04,$04,$04             ; Profile 5
+  DEFB $02,$02,$02,$02,$00,$00,$00,$00             ;
+  DEFB $00,$00,$02,$02,$04,$04,$06,$06             ; Profile 6
+  DEFB $08,$08,$0A,$0A,$0C,$0C,$0E,$0E             ;
+  DEFB $0E,$0E,$0C,$0A,$0A,$08,$08,$06             ; Profile 7
+  DEFB $06,$08,$08,$06,$04,$02,$02,$00             ;
+  DEFB $00,$00,$02,$04,$04,$06,$08,$08             ; Profile 8
+  DEFB $0A,$0C,$0E,$0E,$10,$12,$14,$16             ;
+  DEFB $16,$16,$14,$12,$10,$10,$0E,$0C             ; Profile 9
+  DEFB $0A,$08,$0A,$0A,$08,$06,$04,$02             ;
+  DEFB $02,$02,$04,$04,$06,$06,$04,$04             ; Profile 10
+  DEFB $02,$02,$00,$00,$02,$02,$02,$02             ;
+  DEFB $00,$02,$04,$06,$0A,$0C,$10,$12             ; Profile 11: river narrows
+  DEFB $16,$18,$1C,$1E,$22,$24,$26,$28             ;
+  DEFB $28,$26,$24,$22,$1E,$1C,$18,$16             ; Profile 12: river widens
+  DEFB $12,$10,$0C,$0A,$06,$04,$02,$00             ;
+  DEFB $00,$02,$00,$00,$02,$02,$04,$02             ; Profile 13
+  DEFB $02,$00,$00,$02,$02,$04,$02,$00             ;
+  DEFB $00,$02,$04,$02,$02,$04,$04,$02             ; Profile 14
+  DEFB $00,$00,$00,$02,$02,$02,$00,$00             ;
+
+; Game Over message.
+;
+; Set as the scroller start by game_over on game over. Immediately followed by msg_credits with no $FF separator, so the
+; ticker falls through into the credits after the GAME OVER text. The scroller resets to msg_credits (not here) on $FF,
+; so GAME OVER appears only once.
+msg_game_over:
+  DEFM " .....GAME OVER.....                           "
+
+; Credits message with copyright and Activision logo.
+msg_credits:
+  DEFM " RIVER RAID"
+  DEFM $94                                         ; Trademark UDG symbol
+  DEFM "      by Carol Shaw       "
+  DEFM $7F                                         ; Copyright symbol
+  DEFM " 1983 "
+  DEFM $95,$96,$97,$98,$99,$9A,$9B                 ; Activision logo UDG symbols
+  DEFM " Inc. All rights reserved                     "
+  DEFB $FF
+
+; Unused
+data_unused_81E5:
+  DEFB $C3,$90,$EA
+  DEFM " rights reserved        Press ENTER to play or C to change contro"
+  DEFM "l or S to select game                              "
+  DEFB $FF
+
+; User-defined graphics data (13 characters).
+udg_data:
+  DEFB $00,$00,$00,$80,$80,$AA,$AA,$FF
+  DEFB $80,$80,$80,$80,$80,$AA,$AA,$FF
+  DEFB $80,$80,$80,$80,$80,$80,$80,$80
+  DEFB $40,$C4,$48,$50,$26,$61,$02,$07
+  DEFB $F1,$5B,$55,$51,$00,$00,$00,$00
+  DEFB $00,$03,$07,$0F,$19,$3F,$61,$C1
+  DEFB $00,$3F,$01,$39,$21,$21,$21,$39
+  DEFB $00,$FC,$04,$24,$24,$27,$27,$26
+  DEFB $00,$1F,$30,$61,$C9,$89,$08,$09
+  DEFB $00,$FC,$00,$E4,$04,$E4,$24,$E4
+  DEFB $00,$00,$00,$F2,$93,$93,$92,$F2
+  DEFB $00,$00,$00,$20,$20,$E0,$60,$20
+  DEFB $10,$10,$38,$7C,$D6,$92,$38,$54
+
+; Solid fill pattern (48 bytes of $FF).
+all_ff:
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+
+; Sprite erasure pattern (60 bytes of $00).
+sprite_erasure:
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00
+
+; Terrain pixels for pre/post bridge sections (2×16 bytes).
+sprite_terrain_pre_post_bridge:
+  DEFB $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$00
+  DEFB $00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+
+; Road and bridge pixel patterns (2×16 bytes).
+sprite_road_and_bridge_pixels:
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$FF,$FF
+  DEFB $FF,$FF,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+
+; Road and bridge color attributes (2×16 bytes).
+sprite_road_attributes:
+  DEFB $3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$0E,$0E
+  DEFB $0E,$0E,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C,$3C
+
+; Unused alternate road attributes.
+;
+; 32 bytes with the same structure as sprite_road_attributes but different values: $3F (white-on-white, invisible) and
+; $C0 (flash, black). Possibly an early version or debug variant of road attributes.
+data_unused_8391:
+  DEFB $3F,$3F,$3F,$3F,$3F,$3F,$3F,$3F
+  DEFB $3F,$3F,$3F,$3F,$3F,$3F,$C0,$C0
+  DEFB $C0,$C0,$3F,$3F,$3F,$3F,$3F,$3F
+  DEFB $3F,$3F,$3F,$3F,$3F,$3F,$3F,$3F
+
+; Player plane sprite (4 frames × 16 bytes).
+;
+sprite_plane:
+  DEFB $10,$00                                     ; Frame 1
+  DEFB $10,$00                                     ;
+  DEFB $38,$00                                     ;
+  DEFB $7C,$00                                     ;
+  DEFB $D6,$00                                     ;
+  DEFB $92,$00                                     ;
+  DEFB $38,$00                                     ;
+  DEFB $54,$00                                     ;
+  DEFB $04,$00                                     ; Frame 2
+  DEFB $04,$00                                     ;
+  DEFB $0E,$00                                     ;
+  DEFB $1F,$00                                     ;
+  DEFB $35,$80                                     ;
+  DEFB $24,$80                                     ;
+  DEFB $0E,$00                                     ;
+  DEFB $15,$00                                     ;
+  DEFB $01,$00                                     ; Frame 3
+  DEFB $01,$00                                     ;
+  DEFB $03,$80                                     ;
+  DEFB $07,$C0                                     ;
+  DEFB $0D,$60                                     ;
+  DEFB $09,$20                                     ;
+  DEFB $03,$80                                     ;
+  DEFB $05,$40                                     ;
+  DEFB $00,$40                                     ; Frame 4
+  DEFB $00,$40                                     ;
+  DEFB $00,$E0                                     ;
+  DEFB $01,$F0                                     ;
+  DEFB $03,$58                                     ;
+  DEFB $02,$48                                     ;
+  DEFB $00,$E0                                     ;
+  DEFB $01,$50                                     ;
+
+; Player plane banked sprite (4 frames × 16 bytes).
+;
+sprite_plane_banked:
+  DEFB $10,$00                                     ; Frame 1
+  DEFB $10,$00                                     ;
+  DEFB $38,$00                                     ;
+  DEFB $7C,$00                                     ;
+  DEFB $54,$00                                     ;
+  DEFB $10,$00                                     ;
+  DEFB $38,$00                                     ;
+  DEFB $28,$00                                     ;
+  DEFB $04,$00                                     ; Frame 2
+  DEFB $04,$00                                     ;
+  DEFB $0E,$00                                     ;
+  DEFB $1F,$00                                     ;
+  DEFB $15,$00                                     ;
+  DEFB $04,$00                                     ;
+  DEFB $0E,$00                                     ;
+  DEFB $0A,$00                                     ;
+  DEFB $01,$00                                     ; Frame 3
+  DEFB $01,$00                                     ;
+  DEFB $03,$80                                     ;
+  DEFB $07,$C0                                     ;
+  DEFB $05,$40                                     ;
+  DEFB $01,$00                                     ;
+  DEFB $03,$80                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$40                                     ; Frame 4
+  DEFB $00,$40                                     ;
+  DEFB $00,$E0                                     ;
+  DEFB $01,$F0                                     ;
+  DEFB $01,$50                                     ;
+  DEFB $00,$40                                     ;
+  DEFB $00,$E0                                     ;
+  DEFB $00,$A0                                     ;
+
+; Player missile sprite (4 frames × 8 bytes).
+;
+sprite_missile:
+  DEFB $C0                                         ; Frame 1
+  DEFB $C0                                         ;
+  DEFB $C0                                         ;
+  DEFB $C0                                         ;
+  DEFB $C0                                         ;
+  DEFB $C0                                         ;
+  DEFB $00                                         ;
+  DEFB $00                                         ;
+  DEFB $30                                         ; Frame 2
+  DEFB $30                                         ;
+  DEFB $30                                         ;
+  DEFB $30                                         ;
+  DEFB $30                                         ;
+  DEFB $30                                         ;
+  DEFB $00                                         ;
+  DEFB $00                                         ;
+  DEFB $0C                                         ; Frame 3
+  DEFB $0C                                         ;
+  DEFB $0C                                         ;
+  DEFB $0C                                         ;
+  DEFB $0C                                         ;
+  DEFB $0C                                         ;
+  DEFB $00                                         ;
+  DEFB $00                                         ;
+  DEFB $03                                         ; Frame 4
+  DEFB $03                                         ;
+  DEFB $03                                         ;
+  DEFB $03                                         ;
+  DEFB $03                                         ;
+  DEFB $03                                         ;
+  DEFB $00                                         ;
+  DEFB $00                                         ;
+
+; Missile trail sprite (4 frames × 8 bytes).
+;
+sprite_missile_trail:
+  DEFB $C0                                         ; Frame 1
+  DEFB $C0                                         ;
+  DEFB $C0                                         ;
+  DEFB $C0                                         ;
+  DEFB $C0                                         ;
+  DEFB $C0                                         ;
+  DEFB $C0                                         ;
+  DEFB $C0                                         ;
+  DEFB $30                                         ; Frame 2
+  DEFB $30                                         ;
+  DEFB $30                                         ;
+  DEFB $30                                         ;
+  DEFB $30                                         ;
+  DEFB $30                                         ;
+  DEFB $30                                         ;
+  DEFB $30                                         ;
+  DEFB $0C                                         ; Frame 3
+  DEFB $0C                                         ;
+  DEFB $0C                                         ;
+  DEFB $0C                                         ;
+  DEFB $0C                                         ;
+  DEFB $0C                                         ;
+  DEFB $0C                                         ;
+  DEFB $0C                                         ;
+  DEFB $03                                         ; Frame 4
+  DEFB $03                                         ;
+  DEFB $03                                         ;
+  DEFB $03                                         ;
+  DEFB $03                                         ;
+  DEFB $03                                         ;
+  DEFB $03                                         ;
+  DEFB $03                                         ;
+
+; Explosion sprite frame 1 (2×1 tiles).
+;
+sprite_explosion_f1:
+  DEFB $02,$40
+  DEFB $09,$20
+  DEFB $05,$00
+  DEFB $20,$50
+  DEFB $15,$00
+  DEFB $08,$28
+  DEFB $02,$40
+  DEFB $00,$00
+
+; Explosion sprite frame 2 (2×1 tiles).
+;
+sprite_explosion_f2:
+  DEFB $22,$20
+  DEFB $0D,$04
+  DEFB $90,$52
+  DEFB $46,$88
+  DEFB $A8,$54
+  DEFB $04,$40
+  DEFB $11,$88
+  DEFB $00,$00
+
+; Explosion sprite frame 3 (2×1 tiles).
+;
+sprite_explosion_f3:
+  DEFB $01,$90
+  DEFB $64,$A6
+  DEFB $AA,$48
+  DEFB $05,$A2
+  DEFB $A8,$19
+  DEFB $92,$64
+  DEFB $49,$12
+  DEFB $0A,$48
+
+; Array [4] of rock sprites (3×2 tiles, 48 bytes).
+;
+sprite_rock:
+  DEFB $00,$00,$00                                 ; Rock 1
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$02,$00                                 ;
+  DEFB $00,$0D,$00                                 ;
+  DEFB $00,$3A,$80                                 ;
+  DEFB $00,$F5,$40                                 ;
+  DEFB $03,$FA,$A0                                 ;
+  DEFB $0F,$F7,$50                                 ;
+  DEFB $3F,$FF,$A8                                 ;
+  DEFB $FF,$FF,$54                                 ;
+  DEFB $00,$02,$00                                 ; Rock 2
+  DEFB $00,$06,$00                                 ;
+  DEFB $03,$06,$00                                 ;
+  DEFB $07,$0E,$00                                 ;
+  DEFB $07,$8F,$00                                 ;
+  DEFB $0F,$8F,$10                                 ;
+  DEFB $0F,$DF,$10                                 ;
+  DEFB $0F,$DF,$18                                 ;
+  DEFB $0F,$0F,$F8                                 ;
+  DEFB $0F,$BF,$B8                                 ;
+  DEFB $1F,$DE,$FC                                 ;
+  DEFB $1F,$7D,$3C                                 ;
+  DEFB $1F,$BE,$FE                                 ;
+  DEFB $3E,$FE,$FE                                 ;
+  DEFB $7F,$7D,$FF                                 ;
+  DEFB $FD,$FD,$FF                                 ;
+  DEFB $00,$00,$00                                 ; Rock 3
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$20                                 ;
+  DEFB $00,$00,$D0                                 ;
+  DEFB $00,$03,$B0                                 ;
+  DEFB $00,$0F,$58                                 ;
+  DEFB $00,$1F,$A8                                 ;
+  DEFB $01,$BF,$54                                 ;
+  DEFB $03,$DF,$AC                                 ;
+  DEFB $17,$E7,$D6                                 ;
+  DEFB $3B,$F3,$EA                                 ;
+  DEFB $7D,$F9,$F5                                 ;
+  DEFB $FE,$FC,$FB                                 ;
+  DEFB $FF,$7E,$FF                                 ;
+  DEFB $00,$00,$00                                 ; Rock 4
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $01,$80,$20                                 ;
+  DEFB $01,$E8,$50                                 ;
+  DEFB $03,$F4,$E8                                 ;
+  DEFB $07,$F3,$F4                                 ;
+  DEFB $07,$ED,$F4                                 ;
+  DEFB $0F,$DC,$FA                                 ;
+  DEFB $1E,$BE,$FA                                 ;
+  DEFB $1D,$7F,$7D                                 ;
+  DEFB $3F,$FF,$1D                                 ;
+  DEFB $7F,$FF,$DF                                 ;
+  DEFB $FF,$FF,$EF                                 ;
+
+; Control selection menu text.
+msg_control_menu:
+  DEFM $11,$00
+  DEFB $10,$07
+  DEFB $16,$05,$05
+  DEFM "0 CURSOR KEYS & 0"
+  DEFB $16,$06,$07
+  DEFM "(PROTEK AGF etc)"
+  DEFB $16,$08,$05
+  DEFM "1 KEMPSTON"
+  DEFB $16,$0A,$05
+  DEFM "2 SINCLAIR"
+  DEFB $16,$0C,$05
+  DEFM "3 KEYBOARD"
+
+; Array [5] arrays of enemy headed left sprites (each element is 3×1 tiles × 4 frames = 96 bytes).
+;
+; Array [4] of regular helicopter headed left sprites (3×1 tiles, 24 bytes).
+sprite_enemies_left:
+  DEFB $F0,$00,$00                                 ; Frame 1
+  DEFB $1E,$00,$00                                 ;
+  DEFB $30,$00,$00                                 ;
+  DEFB $7C,$40,$00                                 ;
+  DEFB $FF,$C0,$00                                 ;
+  DEFB $78,$40,$00                                 ;
+  DEFB $10,$00,$00                                 ;
+  DEFB $7C,$00,$00                                 ;
+  DEFB $3C,$00,$00                                 ; Frame 2
+  DEFB $07,$80,$00                                 ;
+  DEFB $0C,$00,$00                                 ;
+  DEFB $1F,$10,$00                                 ;
+  DEFB $3F,$F0,$00                                 ;
+  DEFB $1E,$10,$00                                 ;
+  DEFB $04,$00,$00                                 ;
+  DEFB $1F,$00,$00                                 ;
+  DEFB $0F,$00,$00                                 ; Frame 3
+  DEFB $01,$E0,$00                                 ;
+  DEFB $03,$00,$00                                 ;
+  DEFB $07,$C4,$00                                 ;
+  DEFB $0F,$FC,$00                                 ;
+  DEFB $07,$84,$00                                 ;
+  DEFB $01,$00,$00                                 ;
+  DEFB $07,$C0,$00                                 ;
+  DEFB $03,$C0,$00                                 ; Frame 4
+  DEFB $00,$78,$00                                 ;
+  DEFB $00,$C0,$00                                 ;
+  DEFB $01,$F1,$00                                 ;
+  DEFB $03,$FF,$00                                 ;
+  DEFB $01,$E1,$00                                 ;
+  DEFB $00,$40,$00                                 ;
+  DEFB $01,$F0,$00                                 ;
+; Array [4] of ship headed left sprites (each element is 3×1 tiles = 24 bytes).
+  DEFB $00,$00,$00                                 ; Frame 1
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$60,$00                                 ;
+  DEFB $00,$F8,$00                                 ;
+  DEFB $07,$FE,$00                                 ;
+  DEFB $FF,$FF,$C0                                 ;
+  DEFB $7F,$FF,$C0                                 ;
+  DEFB $1F,$FF,$80                                 ;
+  DEFB $00,$00,$00                                 ; Frame 2
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$18,$00                                 ;
+  DEFB $00,$3E,$00                                 ;
+  DEFB $01,$FF,$80                                 ;
+  DEFB $3F,$FF,$F0                                 ;
+  DEFB $1F,$FF,$F0                                 ;
+  DEFB $07,$FF,$E0                                 ;
+  DEFB $00,$00,$00                                 ; Frame 3
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$06,$00                                 ;
+  DEFB $00,$0F,$80                                 ;
+  DEFB $00,$7F,$E0                                 ;
+  DEFB $0F,$FF,$FC                                 ;
+  DEFB $07,$FF,$FC                                 ;
+  DEFB $01,$FF,$F8                                 ;
+  DEFB $00,$00,$00                                 ; Frame 4
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$01,$80                                 ;
+  DEFB $00,$03,$E0                                 ;
+  DEFB $00,$1F,$F8                                 ;
+  DEFB $03,$FF,$FF                                 ;
+  DEFB $01,$FF,$FF                                 ;
+  DEFB $00,$7F,$FE                                 ;
+; Array [4] of advanced helicopter headed left sprites (each element is 3×1 tiles = 24 bytes).
+  DEFB $F0,$00,$00                                 ; Frame 1
+  DEFB $1E,$00,$00                                 ;
+  DEFB $30,$00,$00                                 ;
+  DEFB $7C,$40,$00                                 ;
+  DEFB $87,$C0,$00                                 ;
+  DEFB $7C,$40,$00                                 ;
+  DEFB $10,$00,$00                                 ;
+  DEFB $7C,$00,$00                                 ;
+  DEFB $3C,$00,$00                                 ; Frame 2
+  DEFB $07,$80,$00                                 ;
+  DEFB $0C,$00,$00                                 ;
+  DEFB $1F,$10,$00                                 ;
+  DEFB $21,$F0,$00                                 ;
+  DEFB $1F,$10,$00                                 ;
+  DEFB $04,$00,$00                                 ;
+  DEFB $1F,$00,$00                                 ;
+  DEFB $0F,$00,$00                                 ; Frame 3
+  DEFB $01,$E0,$00                                 ;
+  DEFB $03,$00,$00                                 ;
+  DEFB $07,$C4,$00                                 ;
+  DEFB $08,$7C,$00                                 ;
+  DEFB $07,$C4,$00                                 ;
+  DEFB $01,$00,$00                                 ;
+  DEFB $07,$C0,$00                                 ;
+  DEFB $03,$C0,$00                                 ; Frame 4
+  DEFB $00,$78,$00                                 ;
+  DEFB $00,$C0,$00                                 ;
+  DEFB $01,$F1,$00                                 ;
+  DEFB $02,$1F,$00                                 ;
+  DEFB $01,$F1,$00                                 ;
+  DEFB $00,$40,$00                                 ;
+  DEFB $01,$F0,$00                                 ;
+; Array [4] of tank headed left sprites (each element is 3×1 tiles = 24 bytes).
+  DEFB $00,$00,$00                                 ; Frame 1
+  DEFB $7F,$00,$00                                 ;
+  DEFB $07,$00,$00                                 ;
+  DEFB $7F,$C0,$00                                 ;
+  DEFB $FF,$C0,$00                                 ;
+  DEFB $2A,$80,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $2A,$80,$00                                 ;
+  DEFB $00,$00,$00                                 ; Frame 2
+  DEFB $1F,$C0,$00                                 ;
+  DEFB $01,$C0,$00                                 ;
+  DEFB $1F,$F0,$00                                 ;
+  DEFB $3F,$F0,$00                                 ;
+  DEFB $05,$40,$00                                 ;
+  DEFB $10,$00,$00                                 ;
+  DEFB $05,$40,$00                                 ;
+  DEFB $00,$00,$00                                 ; Frame 3
+  DEFB $07,$F0,$00                                 ;
+  DEFB $00,$70,$00                                 ;
+  DEFB $07,$FC,$00                                 ;
+  DEFB $0F,$FC,$00                                 ;
+  DEFB $02,$A8,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $02,$A8,$00                                 ;
+  DEFB $00,$00,$00                                 ; Frame 4
+  DEFB $01,$FC,$00                                 ;
+  DEFB $00,$1C,$00                                 ;
+  DEFB $01,$FF,$00                                 ;
+  DEFB $03,$FF,$00                                 ;
+  DEFB $00,$54,$00                                 ;
+  DEFB $00,$01,$00                                 ;
+  DEFB $00,$54,$00                                 ;
+; Array [4] of fighter headed left sprites (each element is 3×1 tiles = 24 bytes).
+  DEFB $00,$00,$00                                 ; Frame 1
+  DEFB $00,$40,$00                                 ;
+  DEFB $70,$C0,$00                                 ;
+  DEFB $FF,$C0,$00                                 ;
+  DEFB $FC,$80,$00                                 ;
+  DEFB $07,$00,$00                                 ;
+  DEFB $03,$80,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ; Frame 2
+  DEFB $00,$10,$00                                 ;
+  DEFB $1C,$30,$00                                 ;
+  DEFB $3F,$F0,$00                                 ;
+  DEFB $3F,$20,$00                                 ;
+  DEFB $01,$C0,$00                                 ;
+  DEFB $00,$E0,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ; Frame 3
+  DEFB $00,$04,$00                                 ;
+  DEFB $07,$0C,$00                                 ;
+  DEFB $0F,$FC,$00                                 ;
+  DEFB $0F,$C8,$00                                 ;
+  DEFB $00,$70,$00                                 ;
+  DEFB $00,$38,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ; Frame 4
+  DEFB $00,$01,$00                                 ;
+  DEFB $01,$C3,$00                                 ;
+  DEFB $03,$FF,$00                                 ;
+  DEFB $03,$F2,$00                                 ;
+  DEFB $00,$1C,$00                                 ;
+  DEFB $00,$0E,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+
+; Array [5] arrays of enemy headed right sprites (each element is 3×1 tiles × 4 frames = 96 bytes).
+;
+; Array [4] of regular helicopter headed right sprites (each element is 3×1 tiles = 24 bytes).
+sprite_enemies_right:
+  DEFB $03,$C0,$00                                 ; Frame 1
+  DEFB $1E,$00,$00                                 ;
+  DEFB $03,$00,$00                                 ;
+  DEFB $8F,$80,$00                                 ;
+  DEFB $FF,$C0,$00                                 ;
+  DEFB $87,$80,$00                                 ;
+  DEFB $02,$00,$00                                 ;
+  DEFB $0F,$80,$00                                 ;
+  DEFB $00,$F0,$00                                 ; Frame 2
+  DEFB $07,$80,$00                                 ;
+  DEFB $00,$C0,$00                                 ;
+  DEFB $23,$E0,$00                                 ;
+  DEFB $3F,$F0,$00                                 ;
+  DEFB $21,$E0,$00                                 ;
+  DEFB $00,$80,$00                                 ;
+  DEFB $03,$E0,$00                                 ;
+  DEFB $00,$3C,$00                                 ; Frame 3
+  DEFB $01,$E0,$00                                 ;
+  DEFB $00,$30,$00                                 ;
+  DEFB $08,$F8,$00                                 ;
+  DEFB $0F,$FC,$00                                 ;
+  DEFB $08,$78,$00                                 ;
+  DEFB $00,$20,$00                                 ;
+  DEFB $00,$F8,$00                                 ;
+  DEFB $00,$0F,$00                                 ; Frame 4
+  DEFB $00,$78,$00                                 ;
+  DEFB $00,$0C,$00                                 ;
+  DEFB $02,$3E,$00                                 ;
+  DEFB $03,$FF,$00                                 ;
+  DEFB $02,$1E,$00                                 ;
+  DEFB $00,$08,$00                                 ;
+  DEFB $00,$3E,$00                                 ;
+; Array [4] of ship headed right sprites (each element is 3×1 tiles = 24 bytes).
+  DEFB $00,$00,$00                                 ; Frame 1
+  DEFB $00,$00,$00                                 ;
+  DEFB $01,$80,$00                                 ;
+  DEFB $07,$C0,$00                                 ;
+  DEFB $1F,$F8,$00                                 ;
+  DEFB $FF,$FF,$C0                                 ;
+  DEFB $FF,$FF,$80                                 ;
+  DEFB $7F,$FF,$00                                 ;
+  DEFB $00,$00,$00                                 ; Frame 2
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$60,$00                                 ;
+  DEFB $01,$F0,$00                                 ;
+  DEFB $07,$FE,$00                                 ;
+  DEFB $3F,$FF,$F0                                 ;
+  DEFB $3F,$FF,$E0                                 ;
+  DEFB $1F,$FF,$80                                 ;
+  DEFB $00,$00,$00                                 ; Frame 3
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$18,$00                                 ;
+  DEFB $00,$7C,$00                                 ;
+  DEFB $01,$FF,$80                                 ;
+  DEFB $0F,$FF,$FC                                 ;
+  DEFB $0F,$FF,$F8                                 ;
+  DEFB $07,$FF,$E0                                 ;
+  DEFB $00,$00,$00                                 ; Frame 4
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$06,$00                                 ;
+  DEFB $00,$1F,$00                                 ;
+  DEFB $00,$7F,$E0                                 ;
+  DEFB $03,$FF,$FF                                 ;
+  DEFB $03,$FF,$FE                                 ;
+  DEFB $01,$FF,$F8                                 ;
+; Array [4] of advanced helicopter headed right sprites (each element is 3×1 tiles = 24 bytes).
+  DEFB $03,$C0,$00                                 ; Frame 1
+  DEFB $1E,$00,$00                                 ;
+  DEFB $03,$00,$00                                 ;
+  DEFB $8F,$80,$00                                 ;
+  DEFB $F8,$40,$00                                 ;
+  DEFB $8F,$80,$00                                 ;
+  DEFB $02,$00,$00                                 ;
+  DEFB $0F,$80,$00                                 ;
+  DEFB $00,$F0,$00                                 ; Frame 2
+  DEFB $07,$80,$00                                 ;
+  DEFB $00,$C0,$00                                 ;
+  DEFB $23,$E0,$00                                 ;
+  DEFB $3E,$10,$00                                 ;
+  DEFB $23,$E0,$00                                 ;
+  DEFB $00,$80,$00                                 ;
+  DEFB $03,$E0,$00                                 ;
+  DEFB $00,$3C,$00                                 ; Frame 3
+  DEFB $01,$E0,$00                                 ;
+  DEFB $00,$30,$00                                 ;
+  DEFB $08,$F8,$00                                 ;
+  DEFB $0F,$84,$00                                 ;
+  DEFB $08,$F8,$00                                 ;
+  DEFB $00,$20,$00                                 ;
+  DEFB $00,$F8,$00                                 ;
+  DEFB $00,$0F,$00                                 ; Frame 4
+  DEFB $00,$78,$00                                 ;
+  DEFB $00,$0C,$00                                 ;
+  DEFB $02,$3E,$00                                 ;
+  DEFB $03,$E1,$00                                 ;
+  DEFB $02,$3E,$00                                 ;
+  DEFB $00,$08,$00                                 ;
+  DEFB $00,$3E,$00                                 ;
+; Array [4] of tank headed right sprites (each element is 3×1 tiles = 24 bytes).
+  DEFB $00,$00,$00                                 ; Frame 1
+  DEFB $3F,$80,$00                                 ;
+  DEFB $38,$00,$00                                 ;
+  DEFB $FF,$80,$00                                 ;
+  DEFB $FF,$C0,$00                                 ;
+  DEFB $2A,$00,$00                                 ;
+  DEFB $80,$00,$00                                 ;
+  DEFB $2A,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ; Frame 2
+  DEFB $0F,$E0,$00                                 ;
+  DEFB $0E,$00,$00                                 ;
+  DEFB $3F,$E0,$00                                 ;
+  DEFB $3F,$F0,$00                                 ;
+  DEFB $15,$40,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $15,$40,$00                                 ;
+  DEFB $00,$00,$00                                 ; Frame 3
+  DEFB $03,$F8,$00                                 ;
+  DEFB $03,$80,$00                                 ;
+  DEFB $0F,$F8,$00                                 ;
+  DEFB $0F,$FC,$00                                 ;
+  DEFB $02,$A0,$00                                 ;
+  DEFB $00,$08,$00                                 ;
+  DEFB $02,$A0,$00                                 ;
+  DEFB $00,$00,$00                                 ; Frame 4
+  DEFB $00,$FE,$00                                 ;
+  DEFB $00,$E0,$00                                 ;
+  DEFB $03,$FE,$00                                 ;
+  DEFB $03,$FF,$00                                 ;
+  DEFB $01,$54,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $01,$54,$00                                 ;
+; Array [4] of fighter headed right sprites (each element is 3×1 tiles = 24 bytes).
+  DEFB $00,$00,$00                                 ; Frame 1
+  DEFB $80,$00,$00                                 ;
+  DEFB $C3,$80,$00                                 ;
+  DEFB $FF,$C0,$00                                 ;
+  DEFB $4F,$C0,$00                                 ;
+  DEFB $38,$00,$00                                 ;
+  DEFB $70,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ; Frame 2
+  DEFB $20,$00,$00                                 ;
+  DEFB $30,$E0,$00                                 ;
+  DEFB $3F,$F0,$00                                 ;
+  DEFB $13,$F0,$00                                 ;
+  DEFB $0F,$00,$00                                 ;
+  DEFB $1C,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ; Frame 3
+  DEFB $08,$00,$00                                 ;
+  DEFB $0C,$38,$00                                 ;
+  DEFB $0F,$FC,$00                                 ;
+  DEFB $04,$FC,$00                                 ;
+  DEFB $03,$80,$00                                 ;
+  DEFB $07,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ;
+  DEFB $00,$00,$00                                 ; Frame 4
+  DEFB $02,$00,$00                                 ;
+  DEFB $03,$0E,$00                                 ;
+  DEFB $03,$FF,$00                                 ;
+  DEFB $01,$3F,$00                                 ;
+  DEFB $00,$E0,$00                                 ;
+  DEFB $01,$C0,$00                                 ;
+  DEFB $00,$00                                     ;
+
+; Array [4] of balloon sprites (2×2 tiles, 32 bytes).
+;
+sprite_balloon:
+  DEFB $0C,$00                                     ; Frame 1
+  DEFB $3F,$00                                     ;
+  DEFB $7F,$80                                     ;
+  DEFB $7F,$80                                     ;
+  DEFB $FF,$C0                                     ;
+  DEFB $FF,$C0                                     ;
+  DEFB $7F,$80                                     ;
+  DEFB $7F,$80                                     ;
+  DEFB $7F,$80                                     ;
+  DEFB $4C,$80                                     ;
+  DEFB $21,$00                                     ;
+  DEFB $21,$00                                     ;
+  DEFB $12,$00                                     ;
+  DEFB $12,$00                                     ;
+  DEFB $1E,$00                                     ;
+  DEFB $1E,$00                                     ;
+  DEFB $03,$00                                     ; Frame 2
+  DEFB $0F,$C0                                     ;
+  DEFB $1F,$E0                                     ;
+  DEFB $1F,$E0                                     ;
+  DEFB $3F,$F0                                     ;
+  DEFB $3F,$F0                                     ;
+  DEFB $1F,$E0                                     ;
+  DEFB $1F,$E0                                     ;
+  DEFB $1F,$E0                                     ;
+  DEFB $13,$20                                     ;
+  DEFB $08,$40                                     ;
+  DEFB $08,$40                                     ;
+  DEFB $04,$80                                     ;
+  DEFB $04,$80                                     ;
+  DEFB $07,$80                                     ;
+  DEFB $07,$80                                     ;
+  DEFB $00,$C0                                     ; Frame 3
+  DEFB $03,$F0                                     ;
+  DEFB $07,$F8                                     ;
+  DEFB $07,$F8                                     ;
+  DEFB $0F,$FC                                     ;
+  DEFB $0F,$FC                                     ;
+  DEFB $07,$F8                                     ;
+  DEFB $07,$F8                                     ;
+  DEFB $07,$F8                                     ;
+  DEFB $04,$C8                                     ;
+  DEFB $02,$10                                     ;
+  DEFB $02,$10                                     ;
+  DEFB $01,$20                                     ;
+  DEFB $01,$20                                     ;
+  DEFB $01,$E0                                     ;
+  DEFB $01,$E0                                     ;
+  DEFB $00,$30                                     ; Frame 4
+  DEFB $00,$FC                                     ;
+  DEFB $01,$FE                                     ;
+  DEFB $01,$FE                                     ;
+  DEFB $03,$FF                                     ;
+  DEFB $03,$FF                                     ;
+  DEFB $01,$FE                                     ;
+  DEFB $01,$FE                                     ;
+  DEFB $01,$FE                                     ;
+  DEFB $01,$32                                     ;
+  DEFB $00,$84                                     ;
+  DEFB $00,$84                                     ;
+  DEFB $00,$48                                     ;
+  DEFB $00,$48                                     ;
+  DEFB $00,$78                                     ;
+  DEFB $00,$78                                     ;
+
+; Left terrain edge masks (4 widths: 10, 12, 14, 16 pixels).
+terrain_edge_left:
+  DEFB %11111111,%11000000                         ; 10 pixels
+  DEFB %11111111,%11110000                         ; 12 pixels
+  DEFB %11111111,%11111100                         ; 14 pixels
+  DEFB %11111111,%11111111                         ; 16 pixels
+
+; Right terrain edge masks (4 widths: 16, 14, 12, 10 pixels).
+terrain_edge_right:
+  DEFB %11111111,%11111111                         ; 16 pixels
+  DEFB %00111111,%11111111                         ; 14 pixels
+  DEFB %00001111,%11111111                         ; 12 pixels
+  DEFB %00000011,%11111111                         ; 10 pixels
+
+; Generate firing sound effect.
+;
+; Produces the "pew" sound when the player fires a missile by toggling the speaker port rapidly.
+do_fire:
+  LD C,$08                                         ; Loop 8 pulses for sound duration.
+do_fire_pulse_loop:
+  LD A,ULA_SPEAKER_ON                              ; Speaker ON, 32-iteration delay loop (~150 µs ON phase).
+  OUT ($FE),A                                      ;
+  LD D,$20                                         ;
+do_fire_delay_loop:
+  DEC D                                            ;
+  JR NZ,do_fire_delay_loop                         ;
+  LD A,ULA_SPEAKER_OFF                             ; Speaker OFF. No delay loop: two LD D,$20 are timing filler (7T
+  OUT ($FE),A                                      ; each); $FD prefix before DEC C adds 4T. OFF phase = 50T (~14 µs),
+  LD D,$20                                         ; giving a 91% duty cycle waveform.
+  LD D,$20                                         ;
+  DEFB $FD                                         ;
+  DEC C                                            ;
+  JP NZ,do_fire_pulse_loop                         ;
+  RET                                              ;
+
+; Scroll the text crawl row left by 1 pixel.
+;
+; Shifts all 8 scanlines of character row 23 (the bottom character row) left by 1 pixel. Called twice per overview
+; frame, producing a 2-pixel-per-frame horizontal scroll. New pixels enter as 0 from the right; leftmost pixels fall off
+; the screen.
+scroll_text_crawl:
+  LD HL,$57FF                                      ; Start at the last byte of char row 23's bottom scanline.
+  LD C,$08                                         ; 8 scanlines to process.
+scroll_crawl_outer:
+  LD B,$20                                         ; Bytes per scanline
+  OR A                                             ; Clear carry before the first RL
+scroll_crawl_inner:
+  RL (HL)                                          ;
+  DEC HL                                           ;
+  DJNZ scroll_crawl_inner                          ;
+  LD DE,$00E0                                      ; Load step offset DE=$E0 (= $100 − $20: one scanline period minus
+                                                   ; one row width).
+  OR A                                             ; Clear carry.
+  SBC HL,DE                                        ; Step HL back to the last byte of the previous scanline.
+  DEC C                                            ; Decrement outer counter and loop until all 8 scanlines are
+  JP NZ,scroll_crawl_outer                         ; processed.
+  RET
+
+; Initialize UDG and screen attributes.
+;
+; Sets border to black, fills lower screen attributes with white-on-black, and copies UDG graphics to the UDG area.
+init_udg:
+  LD A,$00                                         ; Set border to black via OUT to port $FE.
+  OUT ($FE),A                                      ;
+  LD B,screen_row_table-screen_attributes_row_17   ; Fill screen attributes starting at screen_attributes_row_17.
+  LD HL,screen_attributes_row_17                   ;
+init_udg_loop:
+  LD (HL),COLOR_BLACK<<3|COLOR_WHITE               ;
+  INC HL                                           ;
+  DJNZ init_udg_loop                               ;
+  LD HL,udg_data                                   ; Copy $68 bytes from udg_data to UDG area pointed by CHARS system
+  LD DE,(UDG)                                      ; variable.
+  LD BC,$0068                                      ;
+  LDIR                                             ;
+  RET
+
+; Calculate screen address from pixel coordinates.
+;
+; Converts X,Y pixel coordinates to a ZX Spectrum screen memory address.
+;
+; I:B Vertical coordinate of the object in pixels.
+; I:C Horizontal coordinate of the object in pixels.
+; O:B Horizontal coordinate of the object in pixels relative to its tile.
+; O:HL Screen address corresponding to the coordinates.
+calculate_pixel_address:
+  LD DE,$0800
+  LD HL,$3800
+  LD A,B                                           ; Load the number of the third of the screen corresponding to the
+  RLCA                                             ; vertical coordinate of the object into A.
+  RLCA                                             ;
+  AND $03                                          ;
+  INC A                                            ;
+calc_pixel_screen_third_loop:
+  ADD HL,DE                                        ; Load the starting address of the third of the screen into HL.
+  DEC A                                            ;
+  JP NZ,calc_pixel_screen_third_loop               ;
+  LD A,B                                           ; Leave only the 6 lowest bits in B which define the coordinate of
+  AND $3F                                          ; the object relative to its third of the screen.
+  LD B,A                                           ;
+  AND $38                                          ; Unset the 3 lowest bits, so now A contains the coordinate of
+                                                   ; starting tile relative to its third of the screen.
+  PUSH HL
+  LD H,$00                                         ; Multiply the value of A by 4 and put into DE which makes the offset
+  LD L,A                                           ; of the starting tile address from its third of the screen.
+  ADD HL,HL                                        ;
+  ADD HL,HL                                        ;
+  EX DE,HL                                         ;
+  POP HL                                           ; Now HL contains the screen address of the tile.
+  ADD HL,DE                                        ;
+  LD A,B                                           ; Leave only the 3 lowest bits in B which define the coordinate of
+  AND $07                                          ; the object relative to it tile.
+  LD B,A                                           ;
+  INC B                                            ; Prepare for row loop.
+  DEC H                                            ;
+calc_pixel_row_loop:
+  INC H                                            ; Increment H (row within tile) B times.
+  DJNZ calc_pixel_row_loop                         ;
+  LD A,C                                           ;
+  SRL A                                            ; Add column offset and extract bit position.
+  SRL A                                            ;
+  SRL A                                            ;
+  LD D,C                                           ;
+  LD C,A                                           ;
+  ADD HL,BC                                        ;
+  LD A,D                                           ;
+  AND $07                                          ;
+  LD B,A                                           ;
+  RET                                              ;
+
+; Fuel sprite
+;
+sprite_fuel:
+  DEFB $0F,$F0
+  DEFB $0C,$30
+  DEFB $0D,$F0
+  DEFB $0C,$70
+  DEFB $0D,$F0
+  DEFB $0D,$F0
+  DEFB $0F,$F0
+  DEFB $0D,$B0
+  DEFB $0D,$B0
+  DEFB $0D,$B0
+  DEFB $0D,$B0
+  DEFB $0E,$70
+  DEFB $0F,$F0
+  DEFB $0C,$30
+  DEFB $0D,$F0
+  DEFB $0C,$70
+  DEFB $0D,$F0
+  DEFB $0C,$30
+  DEFB $0F,$F0
+  DEFB $0D,$F0
+  DEFB $0D,$F0
+  DEFB $0D,$F0
+  DEFB $0D,$F0
+  DEFB $0C,$30
+  DEFB $0F,$F0
+
+; Helicopter rotor sprite (left-facing, 4 sub-pixel variants × 4 bytes).
+;
+; Four pre-shifted 2-tile × 2-pixel variants (2-bit shift each). Only frame 4 (offset $0C) is used — selected by
+; SPRITE_ROTOR_ATTRIBUTES ($0E) via the frame selection in jp_collision_dispatcher. Its two rows are the vertically
+; swapped version of the helicopter body sprite's top 2 rows, providing the alternate blade position for the animation.
+;
+sprite_helicopter_rotor_left:
+  DEFB $1E,$00                                     ; Frame 1
+  DEFB $F0,$00                                     ;
+  DEFB $07,$80                                     ; Frame 2
+  DEFB $3C,$00                                     ;
+  DEFB $01,$E0                                     ; Frame 3
+  DEFB $0F,$00                                     ;
+  DEFB $00,$78                                     ; Frame 4
+  DEFB $03,$C0                                     ;
+
+; Helicopter rotor sprite (right-facing, 4 sub-pixel variants × 4 bytes).
+;
+; Four pre-shifted 2-tile × 2-pixel variants (2-bit shift each). Only frame 4 (offset $0C) is used — selected by
+; SPRITE_ROTOR_ATTRIBUTES ($0E) via the frame selection in jp_collision_dispatcher. Its two rows are the vertically
+; swapped version of the helicopter body sprite's top 2 rows, providing the alternate blade position for the animation.
+;
+sprite_helicopter_rotor_right:
+  DEFB $1E,$00                                     ; Frame 1
+  DEFB $03,$C0                                     ;
+  DEFB $07,$80                                     ; Frame 2
+  DEFB $00,$F0                                     ;
+  DEFB $01,$E0                                     ; Frame 3
+  DEFB $00,$3C                                     ;
+  DEFB $00,$78                                     ; Frame 4
+  DEFB $00,$0F                                     ;
+
+; Unused explosion animation sprite (6 frames × 8 bytes).
+;
+; A 6-frame animation showing a diamond shape expanding from a single pixel to a full diamond. Each frame is 8×8 pixels
+; (1 tile). This appears to be an unused or early explosion effect that was not included in the final game.
+;
+sprite_unused_explosion:
+  DEFB $00                                         ; Frame 1
+  DEFB $00                                         ;
+  DEFB $00                                         ;
+  DEFB $10                                         ;
+  DEFB $00                                         ;
+  DEFB $00                                         ;
+  DEFB $00                                         ;
+  DEFB $00                                         ;
+  DEFB $00                                         ; Frame 2
+  DEFB $00                                         ;
+  DEFB $00                                         ;
+  DEFB $18                                         ;
+  DEFB $18                                         ;
+  DEFB $00                                         ;
+  DEFB $00                                         ;
+  DEFB $00                                         ;
+  DEFB $00                                         ; Frame 3
+  DEFB $00                                         ;
+  DEFB $38                                         ;
+  DEFB $38                                         ;
+  DEFB $38                                         ;
+  DEFB $00                                         ;
+  DEFB $00                                         ;
+  DEFB $00                                         ;
+  DEFB $00                                         ; Frame 4
+  DEFB $10                                         ;
+  DEFB $38                                         ;
+  DEFB $7C                                         ;
+  DEFB $38                                         ;
+  DEFB $10                                         ;
+  DEFB $00                                         ;
+  DEFB $00                                         ;
+  DEFB $10                                         ; Frame 5
+  DEFB $38                                         ;
+  DEFB $7C                                         ;
+  DEFB $FE                                         ;
+  DEFB $7C                                         ;
+  DEFB $38                                         ;
+  DEFB $10                                         ;
+  DEFB $00                                         ;
+  DEFB $18                                         ; Frame 6
+  DEFB $3C                                         ;
+  DEFB $7E                                         ;
+  DEFB $FF                                         ;
+  DEFB $FF                                         ;
+  DEFB $7E                                         ;
+  DEFB $3C                                         ;
+  DEFB $18                                         ;
+
+; Pointer to collision handler routine at collision_dispatcher. Called when sprite rendering detects pixel overlap.
+collision_dispatcher_ptr:
+  DEFW $0000
+
+; Previous object coordinates (Y high, X low). Position before movement, used for sprite erasure.
+previous_object_coordinates:
+  DEFW $0000
+
+; Current object coordinates (Y high, X low). Position after movement, used for sprite drawing.
+object_coordinates:
+  DEFW $0000
+
+; Pointer to current sprite frame data. Set before calling render routines.
+render_sprite_ptr:
+  DEFW $0000
+
+; Pointer to sprite data for erasure. Points to previous frame or erase pattern.
+render_old_sprite_ptr:
+  DEFW $0000
+
+; Screen memory address for drawing new sprite position. Calculated from object_coordinates.
+render_new_screen_addr:
+  DEFW $2020
+
+; Screen memory address for erasing old sprite position. Calculated from previous_object_coordinates.
+render_old_screen_addr:
+  DEFW $2020
+
+; Output sprite pointer after rendering. Advanced by frame size during render loop.
+render_sprite_ptr_out:
+  DEFW $2020
+
+; Unused
+data_unused_8B18:
+  DEFB $20,$20
+
+; Sprite width in tiles (1-3). Used by render loop to process correct number of bytes per row.
+render_object_width:
+  DEFB $00
+
+; Unused
+data_unused_8B1B:
+  DEFS $03
+
+; Render a sprite at position from previous_object_coordinates.
+;
+; Selects the pre-shifted sprite frame based on X position bits 1-2 (4 frames at 2-pixel alignment intervals) and
+; renders it.
+;
+; I:A Sprite width in tiles
+; I:BC Sprite frame size
+; I:D Sprite height in pixels
+; I:E Screen attributes
+; I:HL Pointer to the sprite array
+render_sprite:
+  PUSH DE                                          ; Save attributes/height, store sprite width.
+  LD (render_object_width),A                       ;
+  LD DE,(previous_object_coordinates)              ; Calculate animation frame index from X position bits 1-2.
+  LD A,E                                           ;
+  AND $07                                          ;
+  SRL A                                            ;
+  INC A
+  PUSH HL                                          ; Prepare for frame calculation loop.
+  OR A                                             ;
+  SBC HL,BC                                        ;
+render_sprite_frame_loop:
+  ADD HL,BC                                        ; Add frame offset to sprite pointer, loop until done.
+  DEC A                                            ;
+  JR NZ,render_sprite_frame_loop                   ;
+  LD (render_sprite_ptr),HL                        ; Store result to render_sprite_ptr.
+  POP HL                                           ; Reload width and restore attributes/height, fall through to
+  LD A,(render_object_width)                       ; render_object.
+  POP DE
+
+; Render an object with collision detection.
+;
+; Two-phase rendering pipeline: (1) erase old sprite at previous_object_coordinates using XOR blending, (2) draw new
+; sprite at object_coordinates using OR blending, checking for pixel collisions during the draw phase. Sprite frame is
+; selected from E's lower bits for sub-pixel alignment.
+;
+; I:A Sprite width in tiles (1-3)
+; I:BC Sprite frame size in bytes
+; I:D Sprite height in pixels
+; I:E Screen attributes (lower bits also select animation frame)
+; I:HL Pointer to sprite data array (base of all frames)
+render_object:
+  PUSH DE                                          ; Store width and set screen attributes for the sprite area.
+  LD (render_object_width),A                       ;
+  NOP                                              ;
+  CALL set_sprite_attributes
+  LD A,E                                           ; Select sprite frame from E's lower bits (sub-pixel alignment).
+  AND $07                                          ;
+  SRL A                                            ;
+  INC A                                            ;
+  OR A                                             ;
+  SBC HL,BC                                        ;
+render_object_frame_loop:
+  ADD HL,BC                                        ;
+  DEC A                                            ;
+  JR NZ,render_object_frame_loop                   ;
+  LD (render_old_sprite_ptr),HL                    ; Store selected frame pointer for both erase and draw passes.
+  LD (render_sprite_ptr_out),HL                    ;
+  POP DE
+; This entry point is used by the routine at render_explosions.
+render_object_entry:
+  PUSH DE                                          ; Calculate screen addresses for new and old positions.
+  LD BC,(object_coordinates)                       ;
+  CALL calculate_pixel_address                     ;
+  LD (render_new_screen_addr),HL                   ;
+  LD BC,(previous_object_coordinates)              ;
+  CALL calculate_pixel_address                     ;
+  LD (render_old_screen_addr),HL                   ;
+  JP adjust_old_screen_third_loop                  ; Jump to render loop.
+
+; Process one row of sprite rendering.
+;
+; Handles screen memory boundary wrapping. The screen address increments by $0100 per pixel row, but crossing character
+; row or screen-third boundaries requires corrections: subtract $07E0 at character row boundaries (within same third),
+; or subtract $00E0 at third-of-screen boundaries.
+render_row_loop:
+  PUSH DE                                          ; Check if new Y position crosses a character row boundary (Y AND $07
+  LD BC,(object_coordinates)                       ; = 0).
+  LD A,B                                           ;
+  AND $07                                          ;
+  CP $00                                           ;
+  JP NZ,adjust_old_position                        ;
+  LD A,B                                           ; If at a third-of-screen boundary (Y AND $3F = 0), jump to subtract
+  AND $3F                                          ; $00E0 instead.
+  CP $00                                           ;
+  JP Z,adjust_new_screen_third                     ;
+  LD HL,(render_new_screen_addr)                   ; Subtract $07E0 from screen address for character row crossing.
+  LD DE,$07E0                                      ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+  LD (render_new_screen_addr),HL                   ;
+  JP adjust_old_position
+
+; Adjust screen address for third-of-screen crossing.
+;
+; Subtracts $00E0 to correct screen address when crossing a screen-third boundary.
+adjust_new_screen_third:
+  LD HL,(render_new_screen_addr)                   ; HL -= $E0 (adjust for character row boundary).
+  LD DE,$00E0                                      ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+  LD (render_new_screen_addr),HL                   ;
+  JP adjust_old_position
+
+; Process old position screen address adjustment.
+;
+; Similar boundary handling for the old (erasure) position.
+adjust_old_position:
+  LD BC,(previous_object_coordinates)              ; Check if old Y position crosses a character row boundary.
+  LD A,B                                           ;
+  AND $07                                          ;
+  CP $00                                           ;
+  JP NZ,adjust_old_screen_third_loop
+  LD A,B                                           ; If at a third-of-screen boundary, jump to subtract $00E0 instead.
+  AND $3F                                          ;
+  CP $00                                           ;
+  JP Z,adjust_old_screen_third                     ;
+  LD HL,(render_old_screen_addr)                   ; Subtract $07E0 from old screen address for character row crossing.
+  LD DE,$07E0                                      ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+  LD (render_old_screen_addr),HL                   ;
+  JP adjust_old_screen_third_loop
+
+; Adjust old position for third-of-screen crossing.
+;
+; Used by the routine at adjust_old_position.
+adjust_old_screen_third:
+  LD HL,(render_old_screen_addr)                   ; HL -= $E0, fall through to sprite renderer.
+  LD DE,$00E0                                      ;
+  OR A                                             ;
+  SBC HL,DE                                        ;
+  LD (render_old_screen_addr),HL
+; Main rendering loop - draws sprite row and advances to next pixel row.
+adjust_old_screen_third_loop:
+  CALL render_sprite_row                           ; Render this sprite row.
+  LD A,(render_object_width)                       ; Advance sprite pointers by width.
+  LD D,$00                                         ;
+  LD E,A                                           ;
+  LD HL,(render_sprite_ptr)                        ;
+  ADD HL,DE                                        ;
+  LD (render_sprite_ptr),HL                        ;
+  LD HL,(render_old_sprite_ptr)                    ;
+  ADD HL,DE                                        ;
+  LD (render_old_sprite_ptr),HL                    ;
+  LD HL,(previous_object_coordinates)              ; Increment Y coordinate for all position/address variables.
+  INC H                                            ;
+  LD (previous_object_coordinates),HL              ;
+  LD HL,(object_coordinates)                       ;
+  INC H                                            ;
+  LD (object_coordinates),HL                       ;
+  LD HL,(render_new_screen_addr)                   ;
+  INC H                                            ;
+  LD (render_new_screen_addr),HL                   ;
+  LD HL,(render_old_screen_addr)                   ;
+  INC H                                            ;
+  LD (render_old_screen_addr),HL                   ;
+  POP DE                                           ; Decrement row counter, loop if more rows.
+  DEC D                                            ;
+  JP NZ,render_row_loop                            ;
+  RET
+
+; Render one row of sprite data to screen.
+;
+; XORs erasure pixels, then ORs new pixels, checking for collision.
+render_sprite_row:
+  LD A,(render_object_width)                       ; Get width, load screen addresses for new and old positions.
+  LD C,A                                           ;
+  LD HL,(render_old_screen_addr)                   ;
+  LD DE,(render_sprite_ptr)                        ;
+; First pass: erase old sprite (XOR with screen).
+render_erase_loop:
+  LD A,(DE)                                        ; Read sprite byte, XOR $FF, combine with screen.
+  LD B,A                                           ;
+  LD A,(HL)                                        ;
+  XOR $FF                                          ;
+
+; Self-modifying blending operation (erasure).
+;
+; This byte is patched to change blending mode: OR B for XOR mode, NOP for OR mode.
+sprite_erase_op:
+  OR B                                             ; Apply blend, store result, advance pointers, loop.
+  XOR $FF                                          ;
+  LD (HL),A                                        ;
+  INC DE                                           ;
+  INC HL                                           ;
+  DEC C                                            ;
+  JR NZ,render_erase_loop                          ;
+  LD A,(render_object_width)
+  LD C,A
+  LD HL,(render_new_screen_addr)
+  LD DE,(render_old_sprite_ptr)
+; Second pass: draw new sprite (OR with screen), check collision.
+sprite_draw_loop:
+  PUSH DE                                          ; Read sprite byte; collision fires when sprite AND screen share set
+  LD A,(DE)                                        ; bits (both non-zero after AND): computes (screen OR sprite) and
+  LD B,A                                           ; (screen XOR sprite), jumps to dispatcher if they differ (i.e.
+  LD A,(HL)                                        ; screen AND sprite != 0).
+  XOR B                                            ;
+  LD D,A                                           ;
+  XOR B                                            ;
+  OR B                                             ;
+  CP D                                             ;
+  JP NZ,jp_collision_dispatcher                    ; If collision detected, jump to collision dispatcher.
+; This entry point is used by the routines at collision_dispatcher and reset_gameplay_mode.
+handle_collision_mode_none:
+  LD A,(HL)
+
+; Self-modifying blending operation (drawing).
+;
+; This byte is patched to change blending mode: OR B for OR mode, XOR B for XOR mode.
+sprite_draw_op:
+  OR B                                             ; Apply blend, store result, advance pointers, loop.
+  LD (HL),A                                        ;
+  POP DE                                           ;
+  INC HL                                           ;
+  INC DE                                           ;
+  DEC C                                            ;
+  JR NZ,sprite_draw_loop                           ;
+  RET
+
+; Jump to collision dispatcher
+;
+; This routine is called during sprite rendering to invoke the collision detection dispatcher. It performs an indirect
+; jump through the collision_dispatcher_ptr to reach the collision_dispatcher routine.
+jp_collision_dispatcher:
+  PUSH HL
+  LD HL,(collision_dispatcher_ptr)
+  JP (HL)
+
+; Unused
+data_unused_8C4A:
+  DEFB $C3,$90,$EA,$0E,$8B,$E9,$C3,$90
+  DEFB $EA,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00
+
+; Tank shell explosion sprite (6 frames × 32 bytes).
+;
+sprite_tank_shell_explosion:
+  DEFB $00,$00                                     ; Frame 1
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Frame 2
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $03,$C0                                     ;
+  DEFB $03,$C0                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Frame 3
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $03,$C0                                     ;
+  DEFB $07,$E0                                     ;
+  DEFB $07,$E0                                     ;
+  DEFB $03,$C0                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Frame 4
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$00                                     ;
+  DEFB $07,$C0                                     ;
+  DEFB $0F,$E0                                     ;
+  DEFB $0F,$E0                                     ;
+  DEFB $1F,$F0                                     ;
+  DEFB $0F,$E0                                     ;
+  DEFB $0F,$E0                                     ;
+  DEFB $07,$C0                                     ;
+  DEFB $01,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Frame 5
+  DEFB $00,$00                                     ;
+  DEFB $01,$00                                     ;
+  DEFB $07,$C0                                     ;
+  DEFB $0F,$E0                                     ;
+  DEFB $1F,$F0                                     ;
+  DEFB $1F,$F0                                     ;
+  DEFB $3F,$F8                                     ;
+  DEFB $1F,$F0                                     ;
+  DEFB $1F,$F0                                     ;
+  DEFB $0F,$E0                                     ;
+  DEFB $07,$C0                                     ;
+  DEFB $01,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Frame 6
+  DEFB $01,$00                                     ;
+  DEFB $07,$C0                                     ;
+  DEFB $1F,$F0                                     ;
+  DEFB $1F,$F0                                     ;
+  DEFB $3F,$F8                                     ;
+  DEFB $3F,$F8                                     ;
+  DEFB $7F,$FC                                     ;
+  DEFB $3F,$F8                                     ;
+  DEFB $3F,$F8                                     ;
+  DEFB $1F,$F0                                     ;
+  DEFB $1F,$F0                                     ;
+  DEFB $07,$C0                                     ;
+  DEFB $01,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+
+; Player 1 score ones and tens digits (2 ASCII chars)
+;
+; Score storage as 6 ASCII digit characters. Each player's score spans 6 bytes at offsets 0-5 (leftmost to rightmost).
+; Offset is calculated as (6 - update_type) in update_score. Bonus life is awarded when digit offset 2 (update_type=4,
+; the 10,000s place) is incremented.
+state_score_player_1_low:
+  DEFM "00"
+
+; Player 1 score hundreds and thousands digits
+state_score_player_1_mid:
+  DEFM "00"
+
+; Player 1 score ten-thousands and hundred-thousands digits
+state_score_player_1_high:
+  DEFM "00"
+
+; Player 2 score ones and tens digits (2 ASCII chars)
+state_score_player_2_low:
+  DEFM "00"
+
+; Player 2 score hundreds and thousands digits
+state_score_player_2_mid:
+  DEFM "00"
+
+; Player 2 score ten-thousands and hundred-thousands digits
+state_score_player_2_high:
+  DEFM "00"
+
+; High score storage for bridge 1 (6 ASCII digits).
+high_score_bridge_1:
+  DEFM "000000"
+
+; High score storage for bridges 2-4 (18 ASCII digits, 6 per bridge).
+high_scores_extended:
+  DEFM "000000000000000000"
+
+; Add score points for a hit target
+;
+; Adds points to the current player's score. The value in A is BCD-encoded as score/10: high nibble increments the 10s
+; digit (×100 displayed points), low nibble increments the 1s digit (×10 displayed points). The trailing zero in the
+; score display provides the ×10 factor. E.g. POINTS_TANK = BCD 25 → 2×100 + 5×10 = 250 points.
+;
+; I:A Points to add in BCD/10 format (e.g. BCD 25 = 250 points).
+add_points:
+  PUSH AF                                          ; Extract high nibble (hundreds digit), skip if zero.
+  SRL A                                            ;
+  SRL A                                            ;
+  SRL A                                            ;
+  SRL A                                            ;
+  CP $00                                           ;
+  JP Z,add_points_units_entry
+add_points_tens_loop:
+  PUSH AF                                          ; Increment 10s score digit once per high-nibble unit.
+  LD A,$02                                         ;
+  CALL update_score                                ;
+  POP AF                                           ;
+  DEC A                                            ;
+  JR NZ,add_points_tens_loop
+add_points_units_entry:
+  POP AF                                           ; Extract low nibble (tens digit), return if zero.
+  AND $0F                                          ;
+  CP $00                                           ;
+  RET Z                                            ;
+add_points_units_loop:
+  PUSH AF                                          ; Increment 1s score digit once per low-nibble unit.
+  LD A,$01                                         ;
+  CALL update_score                                ;
+  POP AF                                           ;
+  DEC A                                            ;
+  JR NZ,add_points_units_loop                      ;
+  RET
+
+; Add a life to the current player.
+;
+; Increments the current player's life count, prints the updated lives display, and triggers the bonus life sound.
+; Switches to channel 2 (main screen) for printing, then restores channel 1 (upper screen) for the caller.
+add_life:
+  PUSH AF                                          ; Increment lives and print updated display on main screen.
+  CALL ld_lives                                    ;
+  INC (HL)                                         ;
+  LD A,$02                                         ;
+  CALL CHAN_OPEN                                   ;
+  CALL print_lives                                 ;
+  LD HL,(ptr_sound_flags)                          ;
+  SET SOUND_BIT_BONUS_LIFE,(HL)                    ; Trigger bonus life sound, restore upper screen channel.
+  LD A,$01                                         ;
+  CALL CHAN_OPEN                                   ;
+  POP AF                                           ;
+  RET                                              ;
+
+; Update and print score for current player.
+;
+; Increments a score digit and propagates carry if needed. The digit offset is calculated as (6 - type), where offset 0
+; is the leftmost (100,000s) and offset 5 is the rightmost (1s). When carry propagates to type=4 (offset 2, the 1,000s
+; column), add_life is called to award a bonus life. This means bonus lives are awarded every 10,000 points.
+;
+; I:A Update type: determines digit offset (1=1s, 2=10s, 3=100s, 4=1000s+bonus life, 5=10000s, 6=100000s)
+update_score:
+  PUSH AF                                          ; Save A, open upper screen channel via ROM CHAN_OPEN, restore A.
+  LD A,$01                                         ;
+  CALL CHAN_OPEN                                   ;
+  POP AF                                           ;
+  CP $04                                           ; If update type is 4, award bonus life via add_life.
+  CALL Z,add_life                                  ;
+  LD B,A                                           ; Calculate digit offset: C = 6 - update_type.
+  LD A,$06                                         ;
+  SUB B                                            ;
+  LD C,A                                           ;
+  LD A,(state_player)                              ; Load current player number.
+  CP PLAYER_2                                      ; Route to player 2 handler if current player is PLAYER_2.
+  JP Z,inc_player_2_score_digit                    ;
+
+; Increase a digit in the player 1's score.
+;
+; Increments the ASCII digit at the specified offset in the score buffer. If the digit overflows past '9', it jumps to
+; the carry routine. Otherwise prints the updated digit.
+;
+; I:C Offset of the digit to increase (0=leftmost, 5=rightmost).
+; O:D Offset of the digit (passed to print routine).
+inc_player_1_score_digit:
+  LD HL,state_score_player_1_low                   ; Point HL at the target digit in player 1's score.
+  LD B,$00                                         ;
+  LD A,C                                           ; Save offset to D, load digit, increment it.
+  ADD HL,BC                                        ;
+  LD D,A                                           ;
+  LD A,(HL)                                        ;
+  INC A                                            ;
+  CP "9"+1                                         ; If digit overflows past '9', jump to carry_player_1_score_digit for
+                                                   ; carry.
+  JP Z,carry_player_1_score_digit
+  LD (HL),A                                        ; Store incremented digit, fall through to print.
+
+; Print a digit from player 1's score.
+;
+; Prints a single score digit at the correct screen position using ROM RST $10 character output.
+;
+; I:D Digit offset (0-5, used to calculate column).
+; I:HL Pointer to the digit character.
+print_player_1_score_digit:
+  LD A,EXT_ATTR_INK                                ; INK PLAYER_1
+  RST $10                                          ;
+  LD A,COLOR_PLAYER_1                              ;
+  RST $10                                          ;
+  LD A,EXT_ATTR_PAPER                              ; PAPER BLACK
+  RST $10                                          ;
+  LD A,COLOR_BLACK                                 ;
+  RST $10                                          ;
+  LD A,EXT_ATTR_AT                                 ; AT 1,...
+  RST $10                                          ;
+  LD A,$01                                         ;
+  RST $10                                          ;
+  LD A,D                                           ; Calculate screen column (P1 score starts at column 5).
+  ADD A,$05                                        ;
+  RST $10                                          ;
+  LD A,(HL)                                        ; Load digit from score buffer and print it.
+  RST $10                                          ;
+  LD A,$02                                         ; Switch to channel 2 (main screen) and return.
+  CALL CHAN_OPEN                                   ;
+  RET                                              ;
+
+; Increase a digit in the player 2's score.
+;
+; Increments the ASCII digit at the specified offset in player 2's score buffer. If the digit overflows past '9', it
+; jumps to the carry routine. Otherwise prints the updated digit.
+;
+; I:C Offset of the digit to increase (0=leftmost, 5=rightmost).
+; O:D Offset of the digit (passed to print routine).
+inc_player_2_score_digit:
+  LD HL,state_score_player_2_low                   ; Point HL at the target digit in player 2's score.
+  LD B,$00                                         ;
+  LD A,C                                           ; Save offset to D, load digit, increment it.
+  ADD HL,BC                                        ;
+  LD D,A                                           ;
+  LD A,(HL)                                        ;
+  INC A                                            ;
+  CP "9"+1                                         ; If digit overflows past '9', jump to carry_player_2_score_digit for
+                                                   ; carry.
+  JP Z,carry_player_2_score_digit
+  LD (HL),A                                        ; Store incremented digit, fall through to print.
+
+; Print a digit from player 2's score.
+;
+; Prints a single score digit at the correct screen position using ROM RST $10 character output.
+;
+; I:D Digit offset (0-5, used to calculate column).
+; I:HL Pointer to the digit character.
+print_player_2_score_digit:
+  LD A,EXT_ATTR_INK                                ; INK PLAYER_2
+  RST $10                                          ;
+  LD A,COLOR_PLAYER_2                              ;
+  RST $10                                          ;
+  LD A,EXT_ATTR_AT                                 ; AT 1,...
+  RST $10                                          ;
+  LD A,$01                                         ;
+  RST $10                                          ;
+  LD A,D                                           ; Calculate screen column (P2 score starts at column 21).
+  ADD A,$15                                        ;
+  RST $10                                          ;
+  LD A,(HL)                                        ; Load digit from score buffer and print it.
+  RST $10                                          ;
+  LD A,$02                                         ; Switch to channel 2 (main screen) and return.
+  CALL CHAN_OPEN                                   ;
+  RET                                              ;
+
+; Handle carry for player 1's score digit.
+;
+; When a digit overflows past '9', this routine sets it to '0' and propagates the carry to the next higher digit by
+; recursively calling update_score.
+;
+; I:D Offset of the overflowed digit.
+; I:HL Pointer to the overflowed digit.
+carry_player_1_score_digit:
+  LD (HL),"0"                                      ; Write '0' to the overflowed digit.
+  LD A,SCORE_DIGIT_COUNT                           ; Check if this is the leftmost digit (offset 0): A =
+  SUB D                                            ; SCORE_DIGIT_COUNT - D + 1.
+  INC A                                            ;
+  CP SCORE_DIGIT_COUNT+1                           ;
+  RET Z                                            ; Return if leftmost digit (no more digits to carry into).
+  PUSH HL                                          ; Save HL/DE, call update_score to increment next higher digit.
+  PUSH DE                                          ;
+  CALL update_score                                ;
+  LD A,$01                                         ; Open channel 1 (upper screen) for printing.
+  CALL CHAN_OPEN                                   ;
+  POP DE                                           ; Restore HL/DE, jump to print_player_1_score_digit to print the '0'
+  POP HL                                           ; digit.
+  JP print_player_1_score_digit                    ;
+
+; Handle carry for player 2's score digit.
+;
+; When a digit overflows past '9', this routine sets it to '0' and propagates the carry to the next higher digit by
+; recursively calling update_score.
+;
+; I:D Offset of the overflowed digit.
+; I:HL Pointer to the overflowed digit.
+carry_player_2_score_digit:
+  LD (HL),"0"                                      ; Write '0' to the overflowed digit.
+  LD A,SCORE_DIGIT_COUNT                           ; Check if this is the leftmost digit (offset 0): A =
+  SUB D                                            ; SCORE_DIGIT_COUNT - D + 1.
+  INC A                                            ;
+  CP SCORE_DIGIT_COUNT+1                           ;
+  RET Z                                            ; Return if leftmost digit (no more digits to carry into).
+  PUSH HL                                          ; Save HL/DE, call update_score to increment next higher digit.
+  PUSH DE                                          ;
+  CALL update_score                                ;
+  LD A,$01                                         ; Open channel 1 (upper screen) for printing.
+  CALL CHAN_OPEN                                   ;
+  POP DE                                           ; Restore HL/DE, jump to print_player_2_score_digit to print the '0'
+  POP HL                                           ; digit.
+  JP print_player_2_score_digit                    ;
+
+; Print player 2's score on the status line.
+;
+; Displays player 2's full score area including "P2" label and leading zero.
+print_score_player_2:
+  LD A,EXT_ATTR_INK                                ; INK PLAYER_2
+  RST $10                                          ;
+  LD A,COLOR_PLAYER_2                              ;
+  RST $10                                          ;
+  LD BC,high_score_bridge_1 - state_score_player_2_low ; Print 6-digit score from state_score_player_2_low via ROM
+  LD DE,state_score_player_2_low                       ; PR_STRING.
+  CALL PR_STRING                                       ;
+  LD A,"0"                                         ; Print trailing '0' after score.
+  RST $10
+  LD A,EXT_ATTR_AT                                 ; AT 1,18
+  RST $10                                          ;
+  LD A,$01                                         ;
+  RST $10                                          ;
+  LD A,$12                                         ;
+  RST $10                                          ;
+  LD A,"P"                                         ; Print "P2" label.
+  RST $10
+  LD A,"2"
+  RST $10
+  LD A,$02                                         ; Switch to channel 2 (main screen) and return.
+  CALL CHAN_OPEN                                   ;
+  RET                                              ;
+
+; Print player 2 score area or high score on status line.
+;
+; In 2-player mode, prints player 2's score. In 1-player mode, prints the high score for the current starting bridge.
+print_player_2_score_area:
+  LD A,$01                                         ; Open channel 1 (upper screen).
+  CALL CHAN_OPEN                                   ;
+  LD A,EXT_ATTR_AT                                 ; AT 1,21
+  RST $10                                          ;
+  LD A,$01                                         ;
+  RST $10                                          ;
+  LD A,$15                                         ;
+  RST $10                                          ;
+  LD A,(state_game_mode)                           ; If 2-player mode, jump to print_score_player_2 to print player 2
+  BIT GAME_MODE_BIT_TWO_PLAYERS,A                  ; score.
+  JP NZ,print_score_player_2                       ;
+  LD A,EXT_ATTR_INK                                ; INK WHITE
+  RST $10                                          ;
+  LD A,COLOR_WHITE                                 ;
+  RST $10                                          ;
+  LD BC,$0006                                      ; Select high score for current bridge: offset = (game_mode AND $FE)
+  LD HL,high_score_bridge_1                        ; * 3 = bridge_index * 6 (6 bytes per entry). Print 6-digit score.
+  LD A,(state_game_mode)                           ;
+  AND $FE                                          ;
+  LD E,A                                           ;
+  LD A,(state_game_mode)                           ;
+  AND $FE                                          ;
+  SLA A                                            ;
+  SLA A                                            ;
+  SUB E                                            ;
+  LD D,$00                                         ;
+  LD E,A                                           ;
+  ADD HL,DE                                        ;
+  EX DE,HL                                         ;
+  CALL PR_STRING                                   ;
+  LD A,"0"                                         ; Print trailing '0' after score.
+  RST $10
+  LD A,EXT_ATTR_AT                                 ; AT 1,18
+  RST $10                                          ;
+  LD A,$01                                         ;
+  RST $10                                          ;
+  LD A,$12                                         ;
+  RST $10                                          ;
+  LD A,"H"                                         ; Print "HI" label.
+  RST $10
+  LD A,"I"
+  RST $10
+  LD A,$02                                         ; Switch to channel 2 (main screen).
+  CALL CHAN_OPEN                                   ;
+  RET                                              ;
+
+; Game mode configuration byte
+;
+; +--------+-----------------+-------------------------------------------------+
+; | Bit(s) | Meaning         | Values                                          |
+; +--------+-----------------+-------------------------------------------------+
+; | 0      | Player count    | 0=1 player, 1=2 players                         |
+; | 1-2    | Starting bridge | 0=Bridge 1, 1=Bridge 5, 2=Bridge 9, 3=Bridge 15 |
+; | 3-7    | Unused          | Always 0                                        |
+; +--------+-----------------+-------------------------------------------------+
+;
+; Set during control selection dialog. Read by various routines to determine player count and initial bridge offset.
+state_game_mode:
+  DEFB $00
+
+; Player 1 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the
+; end of the first scroll-in (play). Decremented again at the end of each subsequent scroll-in after a death. Game over
+; is triggered when 0 at the time of the player's next death.
+state_lives_player_1:
+  DEFB $00
+
+; Player 2 lives remaining (0-3). Initialized to LIVES_INITIAL (4) at new game, then immediately decremented to 3 at the
+; end of the first scroll-in (play). Decremented again at the end of each subsequent scroll-in after a death. Game over
+; is triggered when 0 at the time of the player's next death.
+state_lives_player_2:
+  DEFB $00
+
+; Current active player ($01=PLAYER_1, $02=PLAYER_2).
+;
+; Determines which player's state to use for: score (state_score_player_1_low vs state_score_player_2_low), lives
+; (state_lives_player_1 vs state_lives_player_2), bridge progress (state_bridge_player_1 vs state_bridge_player_2).
+; Players alternate turns in two-player mode, switching when one dies if the other has lives. Colors: P1=yellow ($06),
+; P2=cyan ($05).
+state_player:
+  DEFB $00
+
+; Print lives for current player.
+;
+; Displays the remaining lives as plane UDG symbols at row 20, column 18. Uses the appropriate player color (yellow for
+; player 1, cyan for player 2).
+print_lives:
+  LD A,(state_player)                              ; If current player is player 2, jump to print_lives_player_2.
+  CP PLAYER_2                                      ;
+  JP Z,print_lives_player_2
+  LD A,EXT_ATTR_INK                                ; INK PLAYER_1
+  RST $10                                          ;
+  LD A,COLOR_PLAYER_1                              ;
+  RST $10                                          ;
+  LD A,(state_lives_player_1)                      ; Load player 1 lives count and fall through.
+
+; Continue printing lives after count has been loaded.
+;
+; Positions cursor and prints plane symbols for each life. Pads with spaces to clear any previous display.
+;
+; I:A Number of lives.
+print_lives_continue:
+  LD B,A                                           ; Store lives count in B for loop counter.
+  LD A,EXT_ATTR_AT                                 ; AT 20,18
+  RST $10                                          ;
+  LD A,$14                                         ;
+  RST $10                                          ;
+  LD A,$12                                         ;
+  RST $10                                          ;
+  LD A,B                                           ; If lives count is 0, skip to padding.
+  CP $00                                           ;
+  JP Z,print_lives_padding                         ;
+print_lives_loop:
+  LD A,$9C                                         ; Print ✈ UDG symbol, loop B times.
+  RST $10                                          ;
+  DJNZ print_lives_loop                            ;
+
+; Print six spaces to clear old lives display.
+;
+; Erases previously displayed lives symbols that no longer apply.
+print_lives_padding:
+  LD A," "                                         ; Print space 1.
+  RST $10
+  LD A," "                                         ; Print space 2.
+  RST $10
+  LD A," "                                         ; Print space 3.
+  RST $10
+  LD A," "                                         ; Print space 4.
+  RST $10
+  LD A," "                                         ; Print space 5.
+  RST $10
+  LD A," "                                         ; Print space 6.
+  RST $10
+  RET
+
+; Player 2 branch of print_lives.
+;
+; Sets player 2 color and loads player 2 lives count before jumping to common display code.
+;
+; O:A Number of lives.
+print_lives_player_2:
+  LD A,EXT_ATTR_INK                                ; INK PLAYER_2
+  RST $10                                          ;
+  LD A,COLOR_PLAYER_2                              ;
+  RST $10                                          ;
+  LD A,(state_lives_player_2)                      ; Load player 2 lives count and jump to print_lives_continue.
+  JP print_lives_continue                          ;
+
+; Pointer to sound_flags at sound_flags. Allows indirect access to the sound flag bitmask.
+ptr_sound_flags:
+  DEFW $0000
+
+; Saved BC register during attribute setting. Preserved across attribute routine calls.
+attr_saved_bc:
+  DEFW $0000
+
+; Saved DE register during attribute setting. Preserved across attribute routine calls.
+attr_saved_de:
+  DEFW $0000
+
+; Saved HL register during attribute setting. Preserved across attribute routine calls.
+attr_saved_hl:
+  DEFW $0000
+
+; Sprite width in tiles for attribute routine. Determines how many attribute cells to update.
+attr_sprite_width:
+  DEFW $0000
+
+; Set screen attributes for sprite area.
+;
+; Fills rectangular regions of attribute cells for both old (erase) and new (draw) sprite positions.
+;
+; Algorithm: For each position (old then new), calculate the top-left attribute address, then fill a rectangle of B rows
+; × C columns with attribute value A. After filling each row, advance HL by stride DE to reach the next row's starting
+; column.
+;
+; I:A Sprite width in tiles (columns to fill).
+; I:DE Sprite height in pixels (D), attribute color byte (E).
+; I:BC Old position coordinates from previous_object_coordinates.
+; I:HL New position coordinates from object_coordinates.
+set_sprite_attributes:
+  PUSH HL                                          ; Save registers, store width to attr_sprite_width.
+  PUSH BC                                          ;
+  LD (attr_sprite_width),A                         ;
+  LD A,E                                           ;
+  CP ATTRIBUTES_INHERIT                            ; If ATTRIBUTES_INHERIT, leave existing screen attributes unchanged.
+  JP Z,handle_zero_attributes                      ;
+  LD (attr_saved_de),DE                            ; Save DE, BC, HL to memory at attr_saved_de, attr_saved_bc,
+  LD (attr_saved_bc),BC                            ; attr_saved_hl for later use.
+  LD (attr_saved_hl),HL                            ;
+  LD BC,(previous_object_coordinates)              ; Calculate attribute address for old position: HL =
+  LD A,B                                           ; screen_attributes + (Y AND $F8) * 4 + (X >> 3). Y coordinate is in
+  AND $F8                                          ; B of stored BC at previous_object_coordinates, X in C.
+  LD H,$00                                         ;
+  LD L,A                                           ;
+  ADD HL,HL                                        ;
+  ADD HL,HL                                        ;
+  LD DE,screen_attributes                          ;
+  ADD HL,DE                                        ;
+  LD D,$00                                         ;
+  LD E,C                                           ;
+  SRL E                                            ;
+  SRL E                                            ;
+  SRL E                                            ;
+  ADD HL,DE                                        ;
+  LD A,(attr_sprite_width)                         ; Calculate row count B = (height >> 3) + 3. This covers sprite
+  LD C,A                                           ; height plus padding. Load width into C.
+  LD DE,(attr_saved_de)                            ;
+  LD A,D                                           ;
+  SRL A                                            ;
+  SRL A                                            ;
+  SRL A                                            ;
+  INC A                                            ;
+  INC A                                            ;
+  INC A                                            ;
+  LD B,A                                           ; Calculate row stride DE = $20 - width. After filling C columns, add
+  EX DE,HL                                         ; DE to reach column 0 of next row. Check if Y is at screen top (row
+  LD HL,$0020                                      ; 0).
+  PUSH BC                                          ;
+  LD B,$00                                         ;
+  OR A                                             ;
+  SBC HL,BC                                        ;
+  EX DE,HL                                         ;
+  LD BC,(previous_object_coordinates)              ;
+  LD A,B                                           ;
+  AND $F8                                          ; If at screen top (Y AND $F8 = 0), use wrapped fill at
+  CP $00                                           ; set_attr_wrap_old to handle attribute area start.
+  LD A,$0C                                         ;
+  JP Z,set_attr_wrap_old                           ;
+  POP BC
+; This entry point is used by the routine at set_attr_wrap_old.
+set_attr_old_outer_loop:
+  PUSH BC                                          ; Outer loop start: push BC to preserve row count (B) and column
+                                                   ; count (C) for this row.
+set_attr_old_inner_loop:
+  LD (HL),A                                        ; Inner loop: write attribute byte A to address HL, increment HL,
+  INC HL                                           ; decrement column counter C, repeat until row complete.
+  DEC C                                            ;
+  JR NZ,set_attr_old_inner_loop                    ;
+  PUSH HL                                          ; Boundary check: compare HL against screen_attributes_row_16 (row 16
+  LD BC,screen_attributes_row_16                   ; of attributes). If HL >= screen_attributes_row_16, sprite has
+  OR A                                             ; scrolled off visible area, exit early via attr_old_exit_early.
+  SBC HL,BC                                        ;
+  POP HL                                           ;
+  JP P,attr_old_exit_early                         ;
+  POP BC                                           ; Row complete: restore BC, add stride DE to HL (moves to same column
+  ADD HL,DE                                        ; on next row), decrement row counter B, repeat outer loop.
+  DJNZ set_attr_old_outer_loop                     ;
+; This entry point is used by the routine at attr_old_exit_early.
+set_attr_new_position_entry:
+  LD BC,(object_coordinates)                       ; Calculate attribute address for new position: HL =
+  LD A,B                                           ; screen_attributes + (Y AND $F8) * 4 + (X >> 3) using coordinates
+  AND $F8                                          ; from object_coordinates.
+  LD H,$00                                         ;
+  LD L,A                                           ;
+  ADD HL,HL                                        ;
+  ADD HL,HL                                        ;
+  LD DE,screen_attributes                          ;
+  ADD HL,DE                                        ;
+  LD D,$00                                         ;
+  LD E,C                                           ;
+  SRL E                                            ;
+  SRL E                                            ;
+  SRL E                                            ;
+  ADD HL,DE                                        ; Calculate row count B = (height >> 3) + 2 (one less row than old
+  LD A,(attr_sprite_width)                         ; position). Load width into C.
+  LD C,A                                           ;
+  LD DE,(attr_saved_de)                            ;
+  LD A,D                                           ;
+  SRL A                                            ;
+  SRL A                                            ;
+  SRL A                                            ;
+  INC A                                            ;
+  INC A                                            ; Calculate row stride DE = $20 - width. Check if Y is at screen top.
+  LD B,A                                           ;
+  EX DE,HL                                         ;
+  LD HL,$0020                                      ;
+  PUSH BC                                          ;
+  LD B,$00                                         ;
+  OR A                                             ;
+  SBC HL,BC                                        ;
+  EX DE,HL                                         ;
+  LD BC,(object_coordinates)                       ;
+  LD A,B                                           ;
+  AND $F8                                          ; If at screen top, use wrapped fill at set_attr_wrap_new.
+  CP $00                                           ;
+  LD BC,(attr_saved_de)                            ;
+  LD A,C                                           ;
+  JP Z,set_attr_wrap_new                           ;
+  POP BC
+; This entry point is used by the routine at set_attr_wrap_new.
+set_attr_new_outer_loop:
+  PUSH BC                                          ; Outer loop start: push BC to preserve row count (B) and column
+                                                   ; count (C) for this row.
+set_attr_new_inner_loop:
+  LD (HL),A                                        ; Inner loop: write attribute byte A to address HL, increment HL,
+  INC HL                                           ; decrement column counter C, repeat until row complete.
+  DEC C                                            ;
+  JR NZ,set_attr_new_inner_loop                    ;
+  PUSH HL                                          ; Boundary check: compare HL against screen_attributes_row_16. If HL
+  LD BC,screen_attributes_row_16                   ; >= screen_attributes_row_16, exit early via attr_new_exit_early.
+  OR A                                             ;
+  SBC HL,BC                                        ;
+  POP HL                                           ;
+  JP P,attr_new_exit_early                         ;
+  POP BC                                           ; Row complete: restore BC, add stride DE to HL, decrement row
+  ADD HL,DE                                        ; counter B, repeat outer loop.
+  DJNZ set_attr_new_outer_loop                     ;
+
+; Return point when attribute color is zero.
+;
+; Restores registers and returns without filling any attributes. Called when sprite has no visible color.
+handle_zero_attributes:
+  LD A,(attr_sprite_width)                         ; Restore width from attr_sprite_width, pop BC and HL, load new
+  POP BC                                           ; coordinates from object_coordinates into DE, return.
+  POP HL                                           ;
+  LD DE,(object_coordinates)                       ;
+  RET
+
+; Early exit from old position attribute loop.
+;
+; Called when old position boundary check detects HL >= screen_attributes_row_16 (past visible attribute area).
+attr_old_exit_early:
+  POP BC                                           ; Pop BC (discard saved counter) and continue to new position
+                                                   ; processing at set_attr_new_position_entry.
+  JP set_attr_new_position_entry
+
+; Early exit from new position attribute loop.
+;
+; Called when new position boundary check detects HL >= screen_attributes_row_16.
+attr_new_exit_early:
+  POP BC                                           ; Pop BC and jump to handle_zero_attributes to restore registers and
+                                                   ; return.
+  JP handle_zero_attributes
+
+; Handle old position attributes when sprite is at screen top (row 0).
+;
+; When Y AND $F8 = 0, the sprite is in attribute row 0 (pixel rows 0-7). Instead of writing attributes to row 0, this
+; routine wraps around and writes to the bottom of the viewport. This preserves row 0 as black, creating an 8-pixel
+; blank zone where sprites are invisible. Adds $03DF (31 rows × 32 bytes - 1 = 991) to wrap the address, then subtracts
+; $03DF after each row to maintain the wrap.
+set_attr_wrap_old:
+  LD BC,$03DF                                      ; Add $03DF to HL to correct wrapped address. Restore and re-save BC.
+  ADD HL,BC                                        ;
+  POP BC                                           ;
+  PUSH BC                                          ;
+set_attr_wrap_old_loop:
+  LD (HL),A                                        ; Inner loop: write attribute A to HL, increment HL, decrement C,
+  INC HL                                           ; repeat for row width.
+  DEC C                                            ;
+  JR NZ,set_attr_wrap_old_loop                     ;
+  POP BC                                           ; After row: restore BC, add stride DE, decrement B, re-save BC.
+  ADD HL,DE                                        ; Subtract $03DF from HL to maintain wrap. Jump back to
+  DEC B                                            ; set_attr_old_outer_loop for next row.
+  PUSH BC                                          ;
+  LD BC,$03DF                                      ;
+  OR A                                             ;
+  SBC HL,BC                                        ;
+  POP BC                                           ;
+  JP set_attr_old_outer_loop                       ;
+
+; Handle new position attributes when sprite is at screen top (row 0).
+;
+; Same $03DF wrap handling as set_attr_wrap_old but for new position. Wraps attribute writes to bottom of viewport to
+; preserve row 0 as black.
+set_attr_wrap_new:
+  LD BC,$03DF                                      ; Add $03DF to HL to correct wrapped address. Restore and re-save BC.
+  ADD HL,BC                                        ;
+  POP BC                                           ;
+  PUSH BC                                          ;
+set_attr_wrap_new_loop:
+  LD (HL),A                                        ; Inner loop: write attribute A to HL, increment HL, decrement C,
+  INC HL                                           ; repeat for row width.
+  DEC C                                            ;
+  JR NZ,set_attr_wrap_new_loop                     ;
+  POP BC                                           ; After row: restore BC, add stride DE, decrement B, re-save BC.
+  ADD HL,DE                                        ; Subtract $03DF from HL to maintain wrap. Jump back to
+  DEC B                                            ; set_attr_new_outer_loop for next row.
+  PUSH BC                                          ;
+  LD BC,$03DF                                      ;
+  OR A                                             ;
+  SBC HL,BC                                        ;
+  POP BC                                           ;
+  JP set_attr_new_outer_loop                       ;
+
+; Compare two 6-digit scores.
+;
+; Compares score at HL with score at DE, digit by digit.
+;
+; I:HL Pointer to first score (6 ASCII digits)
+; I:DE Pointer to second score (6 ASCII digits)
+; O:A Result: 0 if equal, 1 if HL < DE, $FF if HL > DE
+compare_scores:
+  LD C,SCORE_DIGIT_COUNT                           ; Initialize digit counter to SCORE_DIGIT_COUNT.
+compare_scores_loop:
+  LD A,(HL)                                        ; Compare digits, return if different, advance pointers, loop.
+  LD B,A                                           ;
+  LD A,(DE)                                        ;
+  SUB B                                            ;
+  JP M,compare_scores_less                         ;
+  CP $00                                           ;
+  JP NZ,compare_scores_greater                     ;
+  INC HL                                           ;
+  INC DE                                           ;
+  DEC C                                            ;
+  JP NZ,compare_scores_loop                        ;
+  LD A,$00                                         ;
+  RET                                              ; Return 0 (scores equal).
+
+; Return 1 (first score less than second).
+;
+; Used by the routine at compare_scores.
+compare_scores_less:
+  LD A,$01
+  RET
+
+; Return $FF (first score greater than second).
+;
+; Used by the routine at compare_scores.
+compare_scores_greater:
+  LD A,$FF
+  RET
+
+; Update high score table from current player score.
+;
+; Compares player 1's score with the appropriate high score slot (based on starting bridge) and updates if higher. In
+; 2-player mode, first checks if player 2 beat player 1.
+update_high_score:
+  LD A,(state_game_mode)                           ; If 2-player mode, call check_player2_high_score to check player 2
+  BIT GAME_MODE_BIT_TWO_PLAYERS,A                  ; score first.
+  CALL NZ,check_player2_high_score                 ;
+  LD HL,high_score_bridge_1                        ; Calculate high score slot address: base (high_score_bridge_1) +
+  LD A,(state_game_mode)                           ; ((game_mode AND $FE) * 3).
+  AND $FE                                          ;
+  LD E,A                                           ;
+  LD A,(state_game_mode)                           ;
+  AND $FE                                          ;
+  SLA A                                            ;
+  SLA A                                            ;
+  SUB E                                            ;
+  LD D,$00                                         ;
+  LD E,A                                           ;
+  ADD HL,DE                                        ;
+  EX DE,HL                                         ; Compare player 1 score with high score slot. Return if not higher.
+  LD HL,state_score_player_1_low                   ;
+  PUSH DE                                          ;
+  CALL compare_scores                              ;
+  POP DE                                           ;
+  CP $01                                           ;
+  RET NZ                                           ;
+  LD HL,state_score_player_1_low                            ; Copy player 1 score (6 bytes) to high score slot.
+  LD BC,state_score_player_2_low - state_score_player_1_low ;
+  LDIR                                                      ;
+  RET
+
+; Check if player 2 score beats player 1 score.
+;
+; For 2-player games, compares scores and copies player 2 score to player 1 slot if higher. This ensures the best score
+; from either player is compared against the high score.
+check_player2_high_score:
+  LD HL,state_score_player_1_low                   ; Compare player 1 score (state_score_player_1_low) with player 2
+  LD DE,state_score_player_2_low                   ; score (state_score_player_2_low).
+  CALL compare_scores                              ;
+  CP $FF                                           ; Return if player 2 score is not greater.
+  RET NZ                                           ;
+  LD HL,state_score_player_2_low                            ; Copy player 2 score to player 1 score slot (6 bytes).
+  LD DE,state_score_player_1_low                            ;
+  LD BC,state_score_player_2_low - state_score_player_1_low ;
+  LDIR                                                      ;
+  RET
+
+; Clear the screen by setting all pixel bytes to $00 and all attributes to the value set in D.
+;
+; Clears screen memory.
+;
+; I:D Attribute value to fill the attribute area.
+clear_screen:
+  LD HL,screen_pixels                              ; Point HL to start of screen memory (screen_pixels).
+  LD C,$18                                         ; Set outer loop counter to $18 (24 blocks for pixel area).
+clear_scr_block:
+  LD B,$00                                         ; Set inner loop counter to 256 (full block).
+clear_scr_byte:
+  LD (HL),$00                                      ; Write $00 to pixel byte, advance HL, loop until block cleared.
+  INC HL                                           ;
+  DJNZ clear_scr_byte                              ;
+  DEC C                                            ; Decrement block counter, continue until all pixel blocks done.
+  JR NZ,clear_scr_block                            ;
+  LD C,$03                                         ; Set outer loop counter to $03 (3 blocks for attribute area).
+clear_scr_attr:
+  LD (HL),D                                        ; Write attribute value D to byte, advance HL, loop until block
+  INC HL                                           ; cleared.
+  DJNZ clear_scr_attr                              ;
+  DEC C                                            ; Decrement block counter, continue until all attribute blocks done.
+  JR NZ,clear_scr_attr                             ;
+  RET
+
+; Load pointer to current player's lives counter.
+;
+; Returns HL pointing to player 1's lives by default. If current player is player 2, adjusts to point to player 2's
+; lives instead.
+;
+; O:HL Pointer to the current player's lives counter.
+ld_lives:
+  LD HL,state_lives_player_1                       ; Load address of player 1 lives (state_lives_player_1) into HL.
+  LD A,(state_player)                              ; If current player is not PLAYER_2, return with player 1 address.
+  CP PLAYER_2                                      ;
+  RET NZ                                           ; Otherwise load player 2 lives address (state_lives_player_2) and
+  LD HL,state_lives_player_2                       ; return.
+  RET
+
+; Unused
+data_unused_9430:
+  DEFB $C3,$90,$EA,$30,$06,$79,$CD,$6E
+  DEFB $F7,$18,$C9,$22,$95,$FA,$7E,$FE
+  DEFB $82,$20,$3E,$23,$22,$95,$FA,$CD
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+
+; Level terrain data (48 levels × 256 bytes = 12,288 bytes).
+;
+; Defines the terrain shape for each of 48 game levels. Each level contains 64 terrain fragments × 4 bytes. Loaded by
+; render_terrain_row as terrain scrolls.
+;
+; +------+------------------------------------------------------------------------------------+
+; | Byte | Contents                                                                           |
+; +------+------------------------------------------------------------------------------------+
+; | 0    | Profile (0-14): data_terrain_profiles index. 1=pre-bridge, 2=bridge, 3=post-bridge |
+; | 1-2  | Row offset (16-bit): shifts bank position                                          |
+; | 3    | Bits 0-1: edge mode. Bits 2-7: island index (÷4 for data_islands)                  |
+; +------+------------------------------------------------------------------------------------+
+;
+; When profile is 2 (bridge), the bridge destroyed flag is cleared. When profile is 3 (post-bridge), bridge countdown
+; begins. Fragments wrap at 64, advancing to the next level.
+level_terrains:
+  DEFB $0C,$83,$4C,$01                             ; Bridge 1
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0B,$84,$40,$02                             ;
+  DEFB $01,$84,$40,$02                             ;
+  DEFB $0B,$84,$40,$02                             ;
+  DEFB $01,$84,$40,$02                             ;
+  DEFB $05,$84,$40,$02                             ;
+  DEFB $06,$84,$40,$02                             ;
+  DEFB $0B,$84,$40,$02                             ;
+  DEFB $0B,$84,$40,$02                             ;
+  DEFB $05,$84,$40,$02                             ;
+  DEFB $01,$84,$48,$02                             ;
+  DEFB $06,$84,$40,$02                             ;
+  DEFB $0E,$84,$40,$02                             ;
+  DEFB $0B,$84,$40,$02                             ;
+  DEFB $0B,$84,$40,$02                             ;
+  DEFB $08,$84,$30,$02                             ;
+  DEFB $01,$84,$30,$02                             ;
+  DEFB $05,$84,$30,$02                             ;
+  DEFB $05,$84,$38,$02                             ;
+  DEFB $0E,$84,$40,$02                             ;
+  DEFB $0E,$84,$40,$02                             ;
+  DEFB $06,$84,$38,$02                             ;
+  DEFB $05,$84,$38,$02                             ;
+  DEFB $0B,$84,$40,$02                             ;
+  DEFB $0B,$84,$40,$02                             ;
+  DEFB $0B,$84,$40,$02                             ;
+  DEFB $06,$84,$38,$02                             ;
+  DEFB $0E,$84,$38,$02                             ;
+  DEFB $01,$84,$38,$02                             ;
+  DEFB $0B,$84,$38,$02                             ;
+  DEFB $09,$84,$38,$02                             ;
+  DEFB $01,$84,$50,$02                             ;
+  DEFB $0B,$84,$50,$02                             ;
+  DEFB $0E,$84,$50,$02                             ;
+  DEFB $08,$84,$40,$02                             ;
+  DEFB $0B,$84,$40,$02                             ;
+  DEFB $0E,$84,$40,$02                             ;
+  DEFB $05,$84,$40,$02                             ;
+  DEFB $0F,$84,$48,$02                             ;
+  DEFB $0F,$84,$48,$02                             ;
+  DEFB $06,$84,$40,$02                             ;
+  DEFB $0E,$84,$40,$02                             ;
+  DEFB $05,$85,$40,$02                             ;
+  DEFB $0B,$84,$48,$02                             ;
+  DEFB $06,$84,$40,$02                             ;
+  DEFB $07,$84,$40,$02                             ;
+  DEFB $0F,$84,$50,$02                             ;
+  DEFB $0E,$84,$50,$02                             ;
+  DEFB $08,$84,$40,$02                             ;
+  DEFB $0B,$84,$40,$02                             ;
+  DEFB $0B,$84,$40,$02                             ;
+  DEFB $0E,$84,$40,$02                             ;
+  DEFB $05,$84,$40,$02                             ;
+  DEFB $01,$84,$48,$02                             ;
+  DEFB $01,$84,$48,$02                             ;
+  DEFB $06,$84,$40,$02                             ;
+  DEFB $0F,$84,$40,$02                             ;
+  DEFB $0B,$84,$40,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 2
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0A,$84,$2C,$01                             ;
+  DEFB $06,$84,$24,$01                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$0E                             ;
+  DEFB $0F,$BC,$24,$1E                             ;
+  DEFB $0E,$BC,$24,$22                             ;
+  DEFB $0B,$BC,$24,$76                             ;
+  DEFB $0F,$BC,$24,$86                             ;
+  DEFB $01,$BC,$24,$82                             ;
+  DEFB $05,$BC,$24,$8E                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $01,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0E,$84,$4C,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $05,$84,$4C,$01                             ;
+  DEFB $06,$84,$4C,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $01,$84,$4C,$01                             ;
+  DEFB $05,$84,$4C,$01                             ;
+  DEFB $06,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $0E,$BC,$2C,$02                             ;
+  DEFB $0B,$BC,$2C,$16                             ;
+  DEFB $0F,$BC,$2C,$56                             ;
+  DEFB $06,$BC,$24,$5A                             ;
+  DEFB $05,$BC,$24,$56                             ;
+  DEFB $06,$BC,$24,$4A                             ;
+  DEFB $01,$BC,$24,$2E                             ;
+  DEFB $0E,$BC,$24,$46                             ;
+  DEFB $0F,$BC,$24,$1A                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 3
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $07,$84,$3C,$02                             ;
+  DEFB $08,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $01,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $0E,$84,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $08,$84,$34,$02                             ;
+  DEFB $0B,$84,$34,$02                             ;
+  DEFB $0F,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $07,$84,$3C,$02                             ;
+  DEFB $08,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0E,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 4
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $0B,$BC,$2C,$02                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $0E,$BC,$2C,$06                             ;
+  DEFB $06,$BC,$24,$26                             ;
+  DEFB $0F,$BC,$24,$2A                             ;
+  DEFB $0B,$BC,$24,$5E                             ;
+  DEFB $0E,$BC,$24,$3E                             ;
+  DEFB $0B,$BC,$24,$2E                             ;
+  DEFB $01,$BC,$24,$32                             ;
+  DEFB $0F,$BC,$24,$46                             ;
+  DEFB $05,$BC,$24,$7E                             ;
+  DEFB $06,$BC,$24,$0A                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $09,$84,$24,$01                             ;
+  DEFB $05,$84,$3C,$01                             ;
+  DEFB $0F,$84,$44,$01                             ;
+  DEFB $0B,$84,$44,$01                             ;
+  DEFB $0A,$84,$2C,$01                             ;
+  DEFB $06,$84,$24,$01                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$06                             ;
+  DEFB $01,$BC,$24,$3E                             ;
+  DEFB $05,$BC,$24,$32                             ;
+  DEFB $0F,$BC,$2C,$2E                             ;
+  DEFB $0B,$BC,$2C,$42                             ;
+  DEFB $0E,$BC,$2C,$3A                             ;
+  DEFB $0F,$BC,$2C,$22                             ;
+  DEFB $0B,$BC,$2C,$1E                             ;
+  DEFB $0B,$BC,$2C,$36                             ;
+  DEFB $0E,$BC,$2C,$3E                             ;
+  DEFB $0F,$BC,$2C,$32                             ;
+  DEFB $0F,$BC,$2C,$32                             ;
+  DEFB $0B,$BC,$2C,$2E                             ;
+  DEFB $06,$BC,$24,$32                             ;
+  DEFB $0F,$BC,$24,$2E                             ;
+  DEFB $0E,$BC,$24,$42                             ;
+  DEFB $01,$BC,$24,$0A                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 5
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $0E,$84,$54,$02                             ;
+  DEFB $01,$84,$54,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $0E,$82,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $08,$84,$34,$02                             ;
+  DEFB $07,$84,$34,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $01,$84,$3C,$02                             ;
+  DEFB $0E,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 6
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$06                             ;
+  DEFB $06,$BC,$24,$26                             ;
+  DEFB $0E,$BC,$24,$2A                             ;
+  DEFB $0F,$BC,$24,$26                             ;
+  DEFB $05,$BC,$24,$5E                             ;
+  DEFB $0F,$BC,$2C,$26                             ;
+  DEFB $0B,$BC,$2C,$2A                             ;
+  DEFB $06,$BC,$24,$5E                             ;
+  DEFB $0E,$BC,$24,$5E                             ;
+  DEFB $0B,$BC,$24,$26                             ;
+  DEFB $05,$BC,$24,$2A                             ;
+  DEFB $06,$BC,$24,$26                             ;
+  DEFB $0F,$BC,$24,$5E                             ;
+  DEFB $0E,$BC,$24,$2A                             ;
+  DEFB $01,$BC,$24,$3A                             ;
+  DEFB $01,$BC,$24,$12                             ;
+  DEFB $0B,$BC,$24,$8A                             ;
+  DEFB $0E,$BC,$24,$8E                             ;
+  DEFB $0F,$BC,$24,$8A                             ;
+  DEFB $05,$BC,$24,$8E                             ;
+  DEFB $0F,$BC,$2C,$8A                             ;
+  DEFB $06,$BC,$24,$72                             ;
+  DEFB $0F,$BC,$24,$1E                             ;
+  DEFB $0E,$BC,$24,$22                             ;
+  DEFB $01,$BC,$24,$22                             ;
+  DEFB $0B,$BC,$24,$1E                             ;
+  DEFB $0F,$BC,$24,$1E                             ;
+  DEFB $05,$BC,$24,$22                             ;
+  DEFB $06,$BC,$24,$12                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $01,$84,$4C,$01                             ;
+  DEFB $0E,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $0F,$BC,$2C,$06                             ;
+  DEFB $06,$BC,$24,$3E                             ;
+  DEFB $0B,$BC,$24,$42                             ;
+  DEFB $01,$BC,$24,$0A                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $01,$84,$24,$01                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 7
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $01,$84,$54,$02                             ;
+  DEFB $0E,$84,$54,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $0E,$84,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $0A,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $01,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 8
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $08,$84,$34,$01                             ;
+  DEFB $08,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$0E                             ;
+  DEFB $0E,$BC,$24,$1E                             ;
+  DEFB $05,$BC,$24,$22                             ;
+  DEFB $06,$BC,$24,$36                             ;
+  DEFB $0E,$BC,$24,$3E                             ;
+  DEFB $0F,$BC,$24,$32                             ;
+  DEFB $01,$BC,$24,$2E                             ;
+  DEFB $0B,$BC,$24,$32                             ;
+  DEFB $0F,$BC,$24,$42                             ;
+  DEFB $0E,$BC,$24,$0A                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $0B,$BC,$2C,$02                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $0B,$BC,$2C,$02                             ;
+  DEFB $0E,$BC,$2C,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$16                             ;
+  DEFB $01,$BC,$24,$56                             ;
+  DEFB $05,$BC,$24,$4E                             ;
+  DEFB $06,$BC,$24,$52                             ;
+  DEFB $0B,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$1A                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $01,$84,$4C,$01                             ;
+  DEFB $05,$84,$4C,$01                             ;
+  DEFB $06,$84,$4C,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0E,$84,$4C,$01                             ;
+  DEFB $01,$84,$4C,$01                             ;
+  DEFB $0A,$84,$34,$01                             ;
+  DEFB $08,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $09,$84,$24,$01                             ;
+  DEFB $07,$84,$3C,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 9
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $08,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $01,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0A,$84,$34,$02                             ;
+  DEFB $0B,$84,$34,$02                             ;
+  DEFB $0F,$84,$34,$02                             ;
+  DEFB $0E,$84,$34,$02                             ;
+  DEFB $01,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0E,$84,$3C,$02                             ;
+  DEFB $01,$84,$3C,$02                             ;
+  DEFB $08,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $01,$84,$2C,$02                             ;
+  DEFB $0E,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $01,$84,$2C,$02                             ;
+  DEFB $0B,$84,$2C,$02                             ;
+  DEFB $05,$84,$2C,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $01,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $07,$84,$3C,$02                             ;
+  DEFB $08,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 10
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $01,$84,$4C,$01                             ;
+  DEFB $0C,$84,$4C,$01                             ;
+  DEFB $0F,$1C,$74,$02                             ;
+  DEFB $0B,$1C,$74,$02                             ;
+  DEFB $01,$1C,$74,$02                             ;
+  DEFB $0D,$84,$4C,$01                             ;
+  DEFB $0F,$74,$4C,$02                             ;
+  DEFB $01,$74,$4C,$02                             ;
+  DEFB $0E,$74,$4C,$02                             ;
+  DEFB $0C,$84,$4C,$01                             ;
+  DEFB $08,$1C,$64,$02                             ;
+  DEFB $07,$1C,$64,$02                             ;
+  DEFB $01,$1C,$74,$02                             ;
+  DEFB $0F,$1C,$74,$02                             ;
+  DEFB $0B,$1C,$74,$02                             ;
+  DEFB $05,$1C,$74,$02                             ;
+  DEFB $06,$1C,$74,$02                             ;
+  DEFB $01,$1C,$74,$02                             ;
+  DEFB $0F,$1C,$74,$02                             ;
+  DEFB $0E,$1C,$74,$02                             ;
+  DEFB $0D,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $0B,$BC,$2C,$16                             ;
+  DEFB $0E,$BC,$2C,$56                             ;
+  DEFB $06,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $0F,$BC,$24,$5A                             ;
+  DEFB $0B,$BC,$24,$1A                             ;
+  DEFB $0E,$BC,$24,$8A                             ;
+  DEFB $01,$BC,$24,$8A                             ;
+  DEFB $05,$BC,$24,$16                             ;
+  DEFB $06,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$5A                             ;
+  DEFB $0B,$BC,$24,$56                             ;
+  DEFB $0E,$BC,$24,$5A                             ;
+  DEFB $05,$BC,$24,$1A                             ;
+  DEFB $0F,$BC,$2C,$0E                             ;
+  DEFB $0B,$BC,$2C,$12                             ;
+  DEFB $0F,$BC,$2C,$16                             ;
+  DEFB $0E,$BC,$2C,$4E                             ;
+  DEFB $0B,$BC,$2C,$52                             ;
+  DEFB $06,$BC,$24,$56                             ;
+  DEFB $01,$BC,$24,$5A                             ;
+  DEFB $0B,$BC,$24,$1A                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 11
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $09,$84,$44,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $0E,$84,$64,$02                             ;
+  DEFB $0F,$84,$64,$02                             ;
+  DEFB $0B,$84,$64,$02                             ;
+  DEFB $0E,$84,$64,$02                             ;
+  DEFB $0B,$84,$64,$02                             ;
+  DEFB $0A,$84,$4C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $01,$84,$5C,$02                             ;
+  DEFB $08,$84,$4C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $09,$84,$4C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $08,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $07,$84,$3C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $0D,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $09,$84,$2C,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $01,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $08,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 12
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0E,$BC,$24,$16                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $0E,$BC,$24,$5A                             ;
+  DEFB $0B,$BC,$24,$5A                             ;
+  DEFB $05,$BC,$24,$56                             ;
+  DEFB $06,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$5A                             ;
+  DEFB $0B,$BC,$24,$56                             ;
+  DEFB $05,$BC,$24,$5A                             ;
+  DEFB $0B,$BC,$2C,$56                             ;
+  DEFB $06,$BC,$24,$4E                             ;
+  DEFB $0F,$BC,$24,$52                             ;
+  DEFB $0B,$BC,$24,$56                             ;
+  DEFB $01,$BC,$24,$1A                             ;
+  DEFB $0E,$BC,$24,$8A                             ;
+  DEFB $05,$BC,$24,$8E                             ;
+  DEFB $0B,$BC,$2C,$8A                             ;
+  DEFB $0F,$BC,$2C,$72                             ;
+  DEFB $0E,$BC,$2C,$12                             ;
+  DEFB $06,$BC,$24,$06                             ;
+  DEFB $07,$BC,$24,$26                             ;
+  DEFB $08,$BC,$24,$2A                             ;
+  DEFB $05,$BC,$24,$26                             ;
+  DEFB $06,$BC,$24,$26                             ;
+  DEFB $01,$BC,$24,$2A                             ;
+  DEFB $0B,$BC,$24,$0A                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $09,$84,$24,$01                             ;
+  DEFB $05,$84,$3C,$01                             ;
+  DEFB $0E,$84,$44,$01                             ;
+  DEFB $0B,$84,$44,$01                             ;
+  DEFB $08,$84,$34,$01                             ;
+  DEFB $08,$84,$24,$01                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$8A                             ;
+  DEFB $0F,$BC,$24,$8E                             ;
+  DEFB $0B,$BC,$24,$8A                             ;
+  DEFB $01,$BC,$24,$8E                             ;
+  DEFB $0B,$BC,$24,$06                             ;
+  DEFB $07,$BC,$24,$5E                             ;
+  DEFB $08,$BC,$24,$26                             ;
+  DEFB $0B,$BC,$24,$2A                             ;
+  DEFB $0F,$BC,$24,$26                             ;
+  DEFB $0F,$BC,$24,$5E                             ;
+  DEFB $0E,$BC,$24,$7A                             ;
+  DEFB $05,$BC,$24,$56                             ;
+  DEFB $0B,$BC,$2C,$5A                             ;
+  DEFB $06,$BC,$24,$56                             ;
+  DEFB $01,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$5A                             ;
+  DEFB $0E,$BC,$24,$1A                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 13
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0B,$80,$44,$02                             ;
+  DEFB $07,$80,$44,$02                             ;
+  DEFB $05,$80,$54,$02                             ;
+  DEFB $01,$80,$5C,$02                             ;
+  DEFB $0A,$80,$44,$02                             ;
+  DEFB $0E,$80,$44,$02                             ;
+  DEFB $0F,$80,$44,$02                             ;
+  DEFB $06,$80,$3C,$02                             ;
+  DEFB $06,$80,$34,$02                             ;
+  DEFB $07,$80,$34,$02                             ;
+  DEFB $06,$80,$3C,$02                             ;
+  DEFB $08,$80,$2C,$02                             ;
+  DEFB $01,$80,$2C,$02                             ;
+  DEFB $0B,$80,$2C,$02                             ;
+  DEFB $0F,$80,$2C,$02                             ;
+  DEFB $05,$80,$2C,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $08,$84,$2C,$02                             ;
+  DEFB $0E,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $01,$84,$2C,$02                             ;
+  DEFB $0B,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $07,$84,$24,$02                             ;
+  DEFB $06,$84,$2C,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $07,$84,$24,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $01,$84,$3C,$02                             ;
+  DEFB $07,$84,$3C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $01,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0E,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $07,$84,$54,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $01,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $0E,$84,$5C,$02                             ;
+  DEFB $08,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$01                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 14
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0A,$84,$2C,$01                             ;
+  DEFB $06,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $0B,$BC,$2C,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$2C,$16                             ;
+  DEFB $0B,$BC,$2C,$56                             ;
+  DEFB $06,$BC,$24,$5A                             ;
+  DEFB $05,$BC,$24,$56                             ;
+  DEFB $06,$BC,$24,$7E                             ;
+  DEFB $01,$BC,$24,$3A                             ;
+  DEFB $0F,$BC,$24,$1E                             ;
+  DEFB $0F,$BC,$24,$22                             ;
+  DEFB $0E,$BC,$24,$22                             ;
+  DEFB $0F,$BC,$24,$1E                             ;
+  DEFB $06,$BC,$1C,$1E                             ;
+  DEFB $07,$BC,$1C,$22                             ;
+  DEFB $08,$BC,$1C,$36                             ;
+  DEFB $05,$BC,$1C,$3E                             ;
+  DEFB $0B,$BC,$24,$62                             ;
+  DEFB $05,$BC,$24,$52                             ;
+  DEFB $06,$BC,$24,$56                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $0F,$BC,$24,$5A                             ;
+  DEFB $0B,$BC,$24,$56                             ;
+  DEFB $0E,$BC,$24,$5A                             ;
+  DEFB $0B,$BC,$24,$4E                             ;
+  DEFB $0F,$BC,$24,$52                             ;
+  DEFB $0E,$BC,$24,$1A                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 15
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $01,$84,$54,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $07,$84,$3C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $07,$84,$54,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $08,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $0A,$84,$3C,$02                             ;
+  DEFB $06,$84,$34,$02                             ;
+  DEFB $0F,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $07,$84,$3C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $08,$84,$3C,$02                             ;
+  DEFB $08,$84,$2C,$02                             ;
+  DEFB $05,$84,$2C,$02                             ;
+  DEFB $01,$84,$34,$02                             ;
+  DEFB $08,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $0E,$84,$24,$02                             ;
+  DEFB $07,$84,$24,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $08,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $01,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $09,$84,$2C,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 16
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $01,$84,$24,$01                             ;
+  DEFB $0B,$84,$24,$01                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$8A                             ;
+  DEFB $05,$BC,$24,$8E                             ;
+  DEFB $06,$BC,$24,$8A                             ;
+  DEFB $0F,$BC,$24,$8E                             ;
+  DEFB $0B,$BC,$24,$16                             ;
+  DEFB $05,$BC,$24,$56                             ;
+  DEFB $0B,$BC,$2C,$5A                             ;
+  DEFB $0B,$BC,$2C,$4E                             ;
+  DEFB $0F,$BC,$2C,$52                             ;
+  DEFB $06,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $0B,$BC,$24,$4E                             ;
+  DEFB $0F,$BC,$24,$52                             ;
+  DEFB $0B,$BC,$24,$4E                             ;
+  DEFB $0E,$BC,$24,$52                             ;
+  DEFB $07,$BC,$24,$5A                             ;
+  DEFB $08,$BC,$24,$56                             ;
+  DEFB $05,$BC,$24,$5A                             ;
+  DEFB $06,$BC,$24,$56                             ;
+  DEFB $0B,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$1A                             ;
+  DEFB $0E,$BC,$24,$8A                             ;
+  DEFB $0F,$BC,$24,$8E                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$2C,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $07,$84,$24,$01                             ;
+  DEFB $07,$84,$34,$01                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $06,$84,$3C,$01                             ;
+  DEFB $0A,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$16                             ;
+  DEFB $0E,$BC,$24,$5A                             ;
+  DEFB $01,$BC,$24,$4E                             ;
+  DEFB $05,$BC,$24,$52                             ;
+  DEFB $0B,$BC,$2C,$56                             ;
+  DEFB $06,$BC,$24,$1A                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 17
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$40,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $09,$84,$44,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $08,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $08,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $0A,$84,$24,$02                             ;
+  DEFB $07,$84,$24,$02                             ;
+  DEFB $0B,$84,$34,$02                             ;
+  DEFB $0B,$84,$34,$02                             ;
+  DEFB $06,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $0E,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $07,$84,$24,$02                             ;
+  DEFB $0B,$84,$34,$02                             ;
+  DEFB $0E,$84,$34,$02                             ;
+  DEFB $08,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $01,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $01,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $05,$84,$2C,$02                             ;
+  DEFB $0B,$84,$34,$02                             ;
+  DEFB $07,$84,$34,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $08,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 18
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$50,$01                             ;
+  DEFB $0F,$84,$74,$01                             ;
+  DEFB $0B,$84,$74,$01                             ;
+  DEFB $01,$84,$74,$01                             ;
+  DEFB $0F,$84,$74,$01                             ;
+  DEFB $0B,$84,$74,$01                             ;
+  DEFB $0F,$84,$74,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$84,$24,$01                             ;
+  DEFB $0B,$84,$24,$01                             ;
+  DEFB $07,$84,$24,$01                             ;
+  DEFB $08,$84,$24,$01                             ;
+  DEFB $05,$84,$24,$01                             ;
+  DEFB $06,$84,$24,$01                             ;
+  DEFB $0B,$84,$24,$01                             ;
+  DEFB $0F,$84,$24,$01                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $07,$74,$4C,$02                             ;
+  DEFB $08,$74,$4C,$02                             ;
+  DEFB $0A,$84,$34,$01                             ;
+  DEFB $0B,$84,$34,$01                             ;
+  DEFB $0F,$84,$34,$01                             ;
+  DEFB $01,$84,$34,$01                             ;
+  DEFB $0C,$84,$34,$01                             ;
+  DEFB $01,$54,$5C,$02                             ;
+  DEFB $08,$54,$4C,$02                             ;
+  DEFB $06,$54,$44,$02                             ;
+  DEFB $08,$54,$34,$02                             ;
+  DEFB $08,$5C,$24,$01                             ;
+  DEFB $07,$70,$24,$02                             ;
+  DEFB $08,$6C,$24,$01                             ;
+  DEFB $07,$90,$24,$02                             ;
+  DEFB $08,$7C,$24,$01                             ;
+  DEFB $07,$AE,$24,$02                             ;
+  DEFB $06,$89,$2C,$01                             ;
+  DEFB $06,$BD,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0C,$84,$4C,$01                             ;
+  DEFB $07,$1C,$74,$02                             ;
+  DEFB $0B,$94,$84,$01                             ;
+  DEFB $0B,$94,$84,$01                             ;
+  DEFB $0F,$94,$84,$01                             ;
+  DEFB $0E,$94,$84,$01                             ;
+  DEFB $08,$1C,$74,$02                             ;
+  DEFB $0D,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $01,$84,$24,$01                             ;
+  DEFB $07,$84,$24,$01                             ;
+  DEFB $08,$84,$24,$01                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$84,$4C,$01                             ;
+  DEFB $01,$84,$74,$01                             ;
+  DEFB $0B,$84,$74,$01                             ;
+  DEFB $0D,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$84,$24,$01                             ;
+  DEFB $0F,$84,$24,$01                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 19
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $0E,$84,$64,$02                             ;
+  DEFB $08,$85,$54,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $07,$84,$54,$02                             ;
+  DEFB $0B,$84,$64,$02                             ;
+  DEFB $08,$85,$54,$02                             ;
+  DEFB $01,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $06,$84,$34,$02                             ;
+  DEFB $0F,$84,$34,$02                             ;
+  DEFB $07,$84,$34,$02                             ;
+  DEFB $08,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0E,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $07,$84,$3C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $0B,$85,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0B,$85,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $08,$84,$2C,$02                             ;
+  DEFB $0B,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $07,$84,$2C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 20
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$0E                             ;
+  DEFB $0E,$BC,$24,$36                             ;
+  DEFB $0B,$BC,$24,$3A                             ;
+  DEFB $01,$BC,$24,$22                             ;
+  DEFB $0F,$BC,$24,$1E                             ;
+  DEFB $0E,$BC,$24,$1E                             ;
+  DEFB $0B,$BC,$24,$22                             ;
+  DEFB $0F,$BC,$24,$22                             ;
+  DEFB $01,$BC,$24,$36                             ;
+  DEFB $05,$BC,$24,$7A                             ;
+  DEFB $06,$BC,$24,$56                             ;
+  DEFB $01,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$1A                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $07,$84,$4C,$01                             ;
+  DEFB $07,$84,$5C,$01                             ;
+  DEFB $0F,$2C,$6C,$02                             ;
+  DEFB $05,$2C,$6C,$02                             ;
+  DEFB $05,$2C,$74,$02                             ;
+  DEFB $06,$2C,$74,$02                             ;
+  DEFB $08,$2C,$64,$02                             ;
+  DEFB $05,$2C,$64,$02                             ;
+  DEFB $0A,$84,$54,$01                             ;
+  DEFB $0F,$84,$54,$01                             ;
+  DEFB $0B,$84,$54,$01                             ;
+  DEFB $0E,$84,$54,$01                             ;
+  DEFB $0B,$84,$54,$01                             ;
+  DEFB $01,$84,$54,$01                             ;
+  DEFB $05,$84,$54,$01                             ;
+  DEFB $06,$84,$54,$01                             ;
+  DEFB $0D,$84,$2C,$01                             ;
+  DEFB $06,$84,$24,$01                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$2C,$02                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $0B,$BC,$2C,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$16                             ;
+  DEFB $0E,$BC,$24,$56                             ;
+  DEFB $05,$BC,$24,$56                             ;
+  DEFB $06,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $0B,$BC,$24,$1A                             ;
+  DEFB $07,$84,$24,$01                             ;
+  DEFB $08,$84,$24,$01                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 21
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $08,$84,$34,$02                             ;
+  DEFB $0F,$84,$34,$02                             ;
+  DEFB $0B,$84,$34,$02                             ;
+  DEFB $06,$84,$2C,$02                             ;
+  DEFB $0E,$84,$2C,$02                             ;
+  DEFB $0B,$84,$2C,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $0B,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $01,$84,$2C,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $0E,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $07,$84,$24,$02                             ;
+  DEFB $08,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $07,$84,$24,$02                             ;
+  DEFB $0B,$84,$34,$02                             ;
+  DEFB $01,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $06,$84,$34,$02                             ;
+  DEFB $0E,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $07,$84,$3C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0E,$84,$5C,$02                             ;
+  DEFB $01,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $0F,$84,$64,$02                             ;
+  DEFB $0B,$84,$64,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $0B,$84,$64,$02                             ;
+  DEFB $0F,$84,$64,$02                             ;
+  DEFB $0E,$84,$64,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $01,$84,$54,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 22
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0D,$84,$1C,$01                             ;
+  DEFB $05,$84,$1C,$01                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$16                             ;
+  DEFB $05,$BC,$24,$56                             ;
+  DEFB $06,$BC,$24,$5A                             ;
+  DEFB $01,$BC,$24,$56                             ;
+  DEFB $05,$BC,$24,$5A                             ;
+  DEFB $0E,$BC,$2C,$1A                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $0B,$BC,$2C,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $07,$84,$24,$01                             ;
+  DEFB $0F,$84,$34,$01                             ;
+  DEFB $09,$84,$34,$01                             ;
+  DEFB $01,$84,$4C,$01                             ;
+  DEFB $08,$84,$3C,$01                             ;
+  DEFB $06,$84,$34,$01                             ;
+  DEFB $08,$84,$24,$01                             ;
+  DEFB $01,$84,$24,$01                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$8A                             ;
+  DEFB $06,$BC,$24,$82                             ;
+  DEFB $05,$BC,$24,$82                             ;
+  DEFB $0F,$BC,$2C,$86                             ;
+  DEFB $0B,$BC,$2C,$8E                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$84,$4C,$01                             ;
+  DEFB $0B,$1C,$74,$02                             ;
+  DEFB $0F,$1C,$74,$02                             ;
+  DEFB $01,$1C,$74,$02                             ;
+  DEFB $0D,$84,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 23
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $08,$84,$34,$02                             ;
+  DEFB $0F,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0E,$84,$3C,$02                             ;
+  DEFB $01,$84,$3C,$02                             ;
+  DEFB $06,$84,$34,$02                             ;
+  DEFB $0E,$84,$34,$02                             ;
+  DEFB $0B,$84,$34,$02                             ;
+  DEFB $0F,$84,$34,$02                             ;
+  DEFB $06,$84,$2C,$02                             ;
+  DEFB $07,$84,$2C,$02                             ;
+  DEFB $06,$84,$34,$02                             ;
+  DEFB $0E,$84,$34,$02                             ;
+  DEFB $0B,$84,$34,$02                             ;
+  DEFB $09,$84,$34,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $08,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $06,$84,$34,$02                             ;
+  DEFB $01,$84,$34,$02                             ;
+  DEFB $08,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $01,$84,$2C,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $0B,$84,$2C,$02                             ;
+  DEFB $05,$84,$2C,$02                             ;
+  DEFB $0F,$84,$34,$02                             ;
+  DEFB $0E,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $0A,$84,$1C,$02                             ;
+  DEFB $05,$84,$1C,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $01,$84,$24,$02                             ;
+  DEFB $0E,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $0B,$84,$2C,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $0E,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $07,$84,$2C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 24
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$84,$4C,$01                             ;
+  DEFB $0E,$1C,$74,$02                             ;
+  DEFB $01,$1C,$74,$02                             ;
+  DEFB $0D,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $09,$84,$24,$01                             ;
+  DEFB $05,$84,$3C,$01                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0A,$84,$2C,$01                             ;
+  DEFB $06,$84,$24,$01                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$16                             ;
+  DEFB $0E,$BC,$24,$56                             ;
+  DEFB $01,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $0B,$BC,$24,$4A                             ;
+  DEFB $01,$BC,$24,$42                             ;
+  DEFB $0E,$BC,$24,$3E                             ;
+  DEFB $0E,$BC,$24,$46                             ;
+  DEFB $0F,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $0B,$BC,$24,$5A                             ;
+  DEFB $0E,$BC,$24,$5A                             ;
+  DEFB $01,$BC,$24,$1A                             ;
+  DEFB $05,$BC,$24,$8A                             ;
+  DEFB $0E,$BC,$2C,$8E                             ;
+  DEFB $0F,$BC,$2C,$16                             ;
+  DEFB $06,$BC,$24,$5A                             ;
+  DEFB $0B,$BC,$24,$56                             ;
+  DEFB $0E,$BC,$24,$56                             ;
+  DEFB $01,$BC,$24,$4E                             ;
+  DEFB $0F,$BC,$24,$52                             ;
+  DEFB $0E,$BC,$24,$5A                             ;
+  DEFB $05,$BC,$24,$56                             ;
+  DEFB $06,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$1A                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 25
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $08,$84,$34,$02                             ;
+  DEFB $07,$84,$34,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $08,$84,$34,$02                             ;
+  DEFB $01,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0E,$84,$3C,$02                             ;
+  DEFB $09,$84,$3C,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $01,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $0B,$84,$64,$02                             ;
+  DEFB $0F,$84,$64,$02                             ;
+  DEFB $0A,$84,$4C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $08,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $0E,$84,$64,$02                             ;
+  DEFB $0B,$84,$64,$02                             ;
+  DEFB $0F,$84,$64,$02                             ;
+  DEFB $0F,$84,$64,$02                             ;
+  DEFB $0E,$84,$64,$02                             ;
+  DEFB $0B,$84,$64,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $08,$84,$4C,$02                             ;
+  DEFB $08,$84,$3C,$02                             ;
+  DEFB $07,$84,$3C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $01,$84,$54,$02                             ;
+  DEFB $0A,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $06,$84,$34,$02                             ;
+  DEFB $0A,$84,$1C,$02                             ;
+  DEFB $0F,$84,$1C,$02                             ;
+  DEFB $0B,$84,$1C,$02                             ;
+  DEFB $07,$84,$1C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $09,$84,$2C,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 26
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0F,$BC,$24,$0E                             ;
+  DEFB $0B,$BC,$24,$1E                             ;
+  DEFB $0F,$BC,$24,$22                             ;
+  DEFB $0E,$BC,$24,$12                             ;
+  DEFB $0B,$BC,$24,$8A                             ;
+  DEFB $0E,$BC,$24,$8E                             ;
+  DEFB $0F,$BC,$24,$8A                             ;
+  DEFB $05,$BC,$24,$8E                             ;
+  DEFB $06,$BC,$24,$16                             ;
+  DEFB $01,$BC,$24,$56                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $05,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$2C,$56                             ;
+  DEFB $0E,$BC,$2C,$5A                             ;
+  DEFB $0F,$BC,$2C,$5A                             ;
+  DEFB $0B,$BC,$2C,$1A                             ;
+  DEFB $06,$BC,$24,$8A                             ;
+  DEFB $0B,$BC,$24,$82                             ;
+  DEFB $0E,$BC,$24,$8E                             ;
+  DEFB $01,$BC,$24,$16                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $05,$BC,$24,$5A                             ;
+  DEFB $06,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $07,$BC,$24,$4E                             ;
+  DEFB $08,$BC,$24,$52                             ;
+  DEFB $06,$BC,$1C,$56                             ;
+  DEFB $05,$BC,$1C,$5A                             ;
+  DEFB $0F,$BC,$24,$5A                             ;
+  DEFB $0B,$BC,$24,$4E                             ;
+  DEFB $0B,$BC,$24,$52                             ;
+  DEFB $01,$BC,$24,$5A                             ;
+  DEFB $0E,$BC,$24,$56                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $0B,$BC,$24,$5A                             ;
+  DEFB $01,$BC,$24,$56                             ;
+  DEFB $0E,$BC,$24,$4E                             ;
+  DEFB $0B,$BC,$24,$52                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $05,$BC,$24,$5A                             ;
+  DEFB $06,$BC,$24,$5A                             ;
+  DEFB $05,$BC,$24,$4E                             ;
+  DEFB $0F,$BC,$2C,$52                             ;
+  DEFB $0E,$BC,$2C,$5A                             ;
+  DEFB $0B,$BC,$2C,$1A                             ;
+  DEFB $06,$BC,$24,$8A                             ;
+  DEFB $0B,$BC,$24,$82                             ;
+  DEFB $0E,$BC,$24,$86                             ;
+  DEFB $01,$BC,$24,$82                             ;
+  DEFB $0F,$BC,$24,$72                             ;
+  DEFB $0B,$BC,$24,$36                             ;
+  DEFB $0F,$BC,$24,$5E                             ;
+  DEFB $05,$BC,$24,$26                             ;
+  DEFB $06,$BC,$24,$2A                             ;
+  DEFB $0E,$BC,$24,$0A                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 27
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$84,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0D,$84,$1C,$02                             ;
+  DEFB $05,$84,$1C,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $01,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $01,$84,$24,$02                             ;
+  DEFB $0E,$84,$24,$02                             ;
+  DEFB $07,$84,$24,$02                             ;
+  DEFB $01,$84,$34,$02                             ;
+  DEFB $0F,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $08,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $01,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $0A,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $0E,$84,$2C,$02                             ;
+  DEFB $07,$84,$2C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $09,$84,$3C,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $0B,$84,$64,$02                             ;
+  DEFB $0F,$84,$64,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $01,$84,$54,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $08,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 28
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0B,$1C,$74,$02                             ;
+  DEFB $0F,$1C,$74,$02                             ;
+  DEFB $0D,$84,$4C,$01                             ;
+  DEFB $0A,$84,$34,$01                             ;
+  DEFB $01,$84,$34,$01                             ;
+  DEFB $0B,$84,$34,$01                             ;
+  DEFB $0F,$84,$34,$01                             ;
+  DEFB $09,$84,$34,$01                             ;
+  DEFB $01,$84,$4C,$01                             ;
+  DEFB $05,$84,$4C,$01                             ;
+  DEFB $06,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0F,$84,$24,$01                             ;
+  DEFB $01,$84,$24,$01                             ;
+  DEFB $0B,$84,$24,$05                             ;
+  DEFB $0E,$84,$24,$25                             ;
+  DEFB $0B,$84,$24,$29                             ;
+  DEFB $0F,$84,$24,$5D                             ;
+  DEFB $01,$84,$24,$09                             ;
+  DEFB $0E,$84,$24,$01                             ;
+  DEFB $05,$84,$24,$01                             ;
+  DEFB $0B,$84,$2C,$01                             ;
+  DEFB $0C,$84,$2C,$01                             ;
+  DEFB $0C,$84,$54,$01                             ;
+  DEFB $0B,$0C,$7C,$02                             ;
+  DEFB $0F,$0C,$7C,$02                             ;
+  DEFB $0D,$84,$54,$01                             ;
+  DEFB $0D,$84,$2C,$01                             ;
+  DEFB $0B,$B4,$2C,$02                             ;
+  DEFB $0F,$B4,$2C,$02                             ;
+  DEFB $0F,$B4,$2C,$02                             ;
+  DEFB $0E,$B4,$2C,$02                             ;
+  DEFB $01,$B4,$2C,$02                             ;
+  DEFB $0B,$B4,$2C,$02                             ;
+  DEFB $0C,$84,$2C,$01                             ;
+  DEFB $0C,$84,$54,$01                             ;
+  DEFB $0F,$14,$7C,$02                             ;
+  DEFB $07,$14,$7C,$02                             ;
+  DEFB $0A,$14,$74,$02                             ;
+  DEFB $06,$14,$6C,$02                             ;
+  DEFB $0D,$74,$44,$01                             ;
+  DEFB $0D,$74,$1C,$01                             ;
+  DEFB $05,$B4,$1C,$02                             ;
+  DEFB $05,$B4,$24,$02                             ;
+  DEFB $0F,$B4,$2C,$02                             ;
+  DEFB $0B,$B4,$2C,$02                             ;
+  DEFB $0E,$B4,$2C,$02                             ;
+  DEFB $0B,$B4,$2C,$02                             ;
+  DEFB $01,$B4,$2C,$02                             ;
+  DEFB $0F,$B4,$2C,$02                             ;
+  DEFB $0E,$B4,$2C,$02                             ;
+  DEFB $0B,$B4,$2C,$02                             ;
+  DEFB $07,$84,$2C,$01                             ;
+  DEFB $0F,$84,$3C,$01                             ;
+  DEFB $0B,$84,$3C,$01                             ;
+  DEFB $05,$84,$3C,$01                             ;
+  DEFB $0E,$84,$44,$01                             ;
+  DEFB $01,$84,$44,$01                             ;
+  DEFB $08,$84,$34,$01                             ;
+  DEFB $09,$84,$34,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 29
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$30,$01                             ;
+  DEFB $0D,$84,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0A,$84,$2C,$02                             ;
+  DEFB $05,$84,$2C,$02                             ;
+  DEFB $08,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $01,$84,$24,$02                             ;
+  DEFB $0E,$84,$24,$02                             ;
+  DEFB $07,$84,$24,$02                             ;
+  DEFB $06,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $07,$84,$2C,$02                             ;
+  DEFB $01,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0A,$84,$2C,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $07,$84,$24,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0E,$84,$3C,$02                             ;
+  DEFB $06,$84,$34,$02                             ;
+  DEFB $07,$84,$34,$02                             ;
+  DEFB $08,$84,$34,$02                             ;
+  DEFB $09,$84,$34,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $06,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $0A,$84,$24,$02                             ;
+  DEFB $09,$84,$24,$02                             ;
+  DEFB $09,$84,$3C,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $0E,$84,$54,$02                             ;
+  DEFB $0A,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 30
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$50,$01                             ;
+  DEFB $04,$80,$50,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$16                             ;
+  DEFB $01,$BC,$24,$56                             ;
+  DEFB $0B,$BC,$24,$5A                             ;
+  DEFB $05,$BC,$24,$4E                             ;
+  DEFB $0B,$BC,$2C,$52                             ;
+  DEFB $0B,$BC,$2C,$4E                             ;
+  DEFB $0F,$BC,$2C,$52                             ;
+  DEFB $06,$BC,$24,$56                             ;
+  DEFB $0F,$BC,$24,$5A                             ;
+  DEFB $0B,$BC,$24,$7E                             ;
+  DEFB $01,$BC,$24,$26                             ;
+  DEFB $07,$BC,$24,$2A                             ;
+  DEFB $08,$BC,$24,$0A                             ;
+  DEFB $0B,$BC,$24,$0E                             ;
+  DEFB $0F,$BC,$24,$12                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $01,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$8A                             ;
+  DEFB $0F,$BC,$24,$8E                             ;
+  DEFB $01,$BC,$24,$8A                             ;
+  DEFB $0B,$BC,$24,$8E                             ;
+  DEFB $0B,$BC,$24,$06                             ;
+  DEFB $0E,$BC,$24,$26                             ;
+  DEFB $0F,$BC,$24,$2A                             ;
+  DEFB $0B,$BC,$24,$26                             ;
+  DEFB $05,$BC,$24,$0A                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 31
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$50,$01                             ;
+  DEFB $04,$80,$50,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $08,$84,$34,$02                             ;
+  DEFB $06,$84,$2C,$02                             ;
+  DEFB $0B,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $0E,$84,$2C,$02                             ;
+  DEFB $07,$84,$2C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $06,$84,$34,$02                             ;
+  DEFB $06,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $0B,$84,$2C,$02                             ;
+  DEFB $09,$84,$2C,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $08,$84,$34,$02                             ;
+  DEFB $0F,$84,$34,$02                             ;
+  DEFB $06,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $0B,$84,$2C,$02                             ;
+  DEFB $07,$84,$2C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $01,$84,$3C,$02                             ;
+  DEFB $06,$84,$34,$02                             ;
+  DEFB $0F,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $01,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $0A,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $07,$84,$24,$02                             ;
+  DEFB $0B,$84,$34,$02                             ;
+  DEFB $07,$84,$34,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 32
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$50,$01                             ;
+  DEFB $04,$80,$50,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0B,$83,$4C,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $01,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$84,$24,$01                             ;
+  DEFB $0F,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$0E                             ;
+  DEFB $0E,$BC,$24,$1E                             ;
+  DEFB $05,$BC,$24,$1E                             ;
+  DEFB $06,$BC,$24,$22                             ;
+  DEFB $05,$BC,$24,$36                             ;
+  DEFB $0F,$BC,$2C,$42                             ;
+  DEFB $06,$BC,$24,$3E                             ;
+  DEFB $01,$BC,$24,$42                             ;
+  DEFB $0F,$BC,$24,$3E                             ;
+  DEFB $0F,$BC,$24,$5E                             ;
+  DEFB $0B,$BC,$24,$3E                             ;
+  DEFB $0E,$BC,$24,$42                             ;
+  DEFB $01,$BC,$24,$42                             ;
+  DEFB $0B,$BC,$24,$5E                             ;
+  DEFB $05,$BC,$24,$3E                             ;
+  DEFB $06,$BC,$24,$42                             ;
+  DEFB $0F,$BC,$24,$3E                             ;
+  DEFB $0F,$BC,$24,$42                             ;
+  DEFB $0B,$BC,$24,$3A                             ;
+  DEFB $0E,$BC,$24,$76                             ;
+  DEFB $0F,$BC,$24,$8E                             ;
+  DEFB $0B,$BC,$24,$8A                             ;
+  DEFB $0F,$BC,$24,$8E                             ;
+  DEFB $0E,$BC,$24,$8A                             ;
+  DEFB $0B,$BC,$24,$8E                             ;
+  DEFB $01,$BC,$24,$16                             ;
+  DEFB $05,$BC,$24,$56                             ;
+  DEFB $06,$BC,$24,$5A                             ;
+  DEFB $07,$BC,$24,$56                             ;
+  DEFB $08,$BC,$24,$1A                             ;
+  DEFB $0B,$BC,$24,$8A                             ;
+  DEFB $0F,$BC,$24,$8E                             ;
+  DEFB $0B,$BC,$24,$0E                             ;
+  DEFB $0E,$BC,$24,$12                             ;
+  DEFB $01,$BC,$24,$8A                             ;
+  DEFB $05,$BC,$24,$8E                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $0E,$BC,$2C,$02                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $0B,$BC,$2C,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $07,$BC,$24,$02                             ;
+  DEFB $06,$BC,$2C,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $0C,$84,$4C,$01                             ; Bridge 33
+  DEFB $02,$80,$40,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$40,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $0B,$84,$64,$02                             ;
+  DEFB $0F,$84,$64,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $06,$85,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $09,$84,$44,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $06,$85,$54,$02                             ;
+  DEFB $05,$85,$54,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $08,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $06,$85,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $08,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $01,$84,$3C,$02                             ;
+  DEFB $06,$84,$34,$02                             ;
+  DEFB $0B,$84,$34,$02                             ;
+  DEFB $0F,$84,$34,$02                             ;
+  DEFB $06,$84,$2C,$02                             ;
+  DEFB $0B,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $0B,$84,$2C,$02                             ;
+  DEFB $01,$84,$2C,$02                             ;
+  DEFB $09,$84,$2C,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$84,$4C,$01                             ; Bridge 34
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$50,$01                             ;
+  DEFB $04,$80,$50,$01                             ;
+  DEFB $0B,$84,$74,$01                             ;
+  DEFB $0F,$84,$74,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$06                             ;
+  DEFB $05,$BC,$24,$26                             ;
+  DEFB $06,$BC,$24,$2A                             ;
+  DEFB $0F,$BC,$24,$5E                             ;
+  DEFB $0E,$BC,$24,$26                             ;
+  DEFB $0F,$BC,$24,$2A                             ;
+  DEFB $07,$BC,$24,$26                             ;
+  DEFB $08,$BC,$24,$5E                             ;
+  DEFB $05,$BC,$24,$2A                             ;
+  DEFB $0F,$BC,$2C,$0A                             ;
+  DEFB $0B,$BC,$2C,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $05,$84,$4C,$01                             ;
+  DEFB $0B,$64,$54,$02                             ;
+  DEFB $0F,$64,$54,$02                             ;
+  DEFB $05,$64,$54,$02                             ;
+  DEFB $06,$64,$54,$02                             ;
+  DEFB $0B,$64,$54,$02                             ;
+  DEFB $07,$64,$54,$02                             ;
+  DEFB $01,$64,$64,$02                             ;
+  DEFB $08,$64,$54,$02                             ;
+  DEFB $0B,$64,$54,$02                             ;
+  DEFB $0B,$64,$54,$02                             ;
+  DEFB $0F,$64,$54,$02                             ;
+  DEFB $0E,$64,$54,$02                             ;
+  DEFB $0B,$64,$54,$02                             ;
+  DEFB $06,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$16                             ;
+  DEFB $0E,$BC,$24,$56                             ;
+  DEFB $0B,$BC,$24,$5A                             ;
+  DEFB $0B,$BC,$24,$56                             ;
+  DEFB $0F,$BC,$24,$1A                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 35
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$50,$01                             ;
+  DEFB $04,$80,$50,$01                             ;
+  DEFB $0D,$84,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0A,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $0F,$85,$54,$02                             ;
+  DEFB $0B,$85,$54,$02                             ;
+  DEFB $0E,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $01,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $08,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$84,$4C,$01                             ; Bridge 36
+  DEFB $02,$80,$50,$01                             ;
+  DEFB $03,$80,$50,$01                             ;
+  DEFB $04,$80,$50,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$8A                             ;
+  DEFB $05,$BC,$24,$8E                             ;
+  DEFB $06,$BC,$24,$8A                             ;
+  DEFB $0B,$BC,$24,$8E                             ;
+  DEFB $0F,$BC,$24,$16                             ;
+  DEFB $05,$BC,$24,$56                             ;
+  DEFB $0F,$BC,$2C,$5A                             ;
+  DEFB $0B,$BC,$2C,$56                             ;
+  DEFB $0F,$BC,$2C,$1A                             ;
+  DEFB $0E,$BC,$2C,$02                             ;
+  DEFB $0B,$BC,$2C,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $07,$BC,$24,$02                             ;
+  DEFB $08,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $0B,$BC,$2C,$02                             ;
+  DEFB $0E,$BC,$2C,$02                             ;
+  DEFB $06,$BC,$24,$8A                             ;
+  DEFB $0B,$BC,$24,$8E                             ;
+  DEFB $07,$BC,$24,$8A                             ;
+  DEFB $08,$BC,$24,$8E                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$84,$4C,$01                             ; Bridge 37
+  DEFB $02,$80,$40,$01                             ;
+  DEFB $03,$80,$40,$01                             ;
+  DEFB $04,$80,$40,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $0B,$85,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $08,$84,$34,$02                             ;
+  DEFB $07,$84,$34,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $08,$84,$2C,$02                             ;
+  DEFB $0B,$84,$2C,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $01,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $06,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $05,$84,$24,$02                             ;
+  DEFB $05,$84,$2C,$02                             ;
+  DEFB $08,$84,$24,$02                             ;
+  DEFB $0B,$84,$24,$02                             ;
+  DEFB $0F,$84,$24,$02                             ;
+  DEFB $07,$84,$24,$02                             ;
+  DEFB $0B,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $07,$84,$3C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$84,$4C,$01                             ; Bridge 38
+  DEFB $02,$00,$40,$01                             ;
+  DEFB $03,$00,$40,$01                             ;
+  DEFB $04,$00,$40,$01                             ;
+  DEFB $0D,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $09,$84,$24,$01                             ;
+  DEFB $0F,$84,$3C,$01                             ;
+  DEFB $0B,$84,$3C,$01                             ;
+  DEFB $0E,$84,$3C,$01                             ;
+  DEFB $0A,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$0E                             ;
+  DEFB $0E,$BC,$24,$1E                             ;
+  DEFB $0B,$BC,$24,$22                             ;
+  DEFB $05,$BC,$24,$1E                             ;
+  DEFB $06,$BC,$24,$76                             ;
+  DEFB $01,$BC,$24,$82                             ;
+  DEFB $0B,$BC,$24,$82                             ;
+  DEFB $0F,$BC,$24,$8E                             ;
+  DEFB $0E,$BC,$24,$16                             ;
+  DEFB $0B,$BC,$24,$56                             ;
+  DEFB $0B,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $05,$BC,$24,$4E                             ;
+  DEFB $06,$BC,$24,$52                             ;
+  DEFB $0B,$BC,$24,$1A                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0E,$84,$4C,$01                             ;
+  DEFB $0E,$84,$4C,$01                             ;
+  DEFB $09,$84,$4C,$01                             ;
+  DEFB $0B,$84,$64,$01                             ;
+  DEFB $0F,$84,$64,$01                             ;
+  DEFB $0B,$84,$64,$01                             ;
+  DEFB $05,$84,$64,$01                             ;
+  DEFB $06,$84,$64,$01                             ;
+  DEFB $01,$84,$64,$01                             ;
+  DEFB $0B,$84,$64,$01                             ;
+  DEFB $0F,$84,$64,$01                             ;
+  DEFB $0F,$84,$64,$01                             ;
+  DEFB $05,$84,$64,$01                             ;
+  DEFB $06,$84,$64,$01                             ;
+  DEFB $0B,$84,$64,$01                             ;
+  DEFB $0A,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 39
+  DEFB $02,$00,$40,$01                             ;
+  DEFB $03,$00,$30,$01                             ;
+  DEFB $04,$00,$00,$01                             ;
+  DEFB $0D,$84,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0E,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $08,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $06,$85,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $0B,$85,$54,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $01,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $0B,$84,$64,$02                             ;
+  DEFB $0F,$84,$64,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $07,$85,$54,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0E,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $01,$84,$54,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 40
+  DEFB $02,$00,$40,$01                             ;
+  DEFB $03,$00,$40,$01                             ;
+  DEFB $04,$00,$40,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$0E                             ;
+  DEFB $0F,$BC,$24,$1E                             ;
+  DEFB $0B,$BC,$24,$22                             ;
+  DEFB $0F,$BC,$24,$36                             ;
+  DEFB $0E,$BC,$24,$26                             ;
+  DEFB $01,$BC,$24,$5E                             ;
+  DEFB $0B,$BC,$24,$2A                             ;
+  DEFB $0E,$BC,$24,$26                             ;
+  DEFB $0B,$BC,$24,$7A                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $05,$BC,$24,$56                             ;
+  DEFB $06,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $0B,$BC,$24,$4A                             ;
+  DEFB $07,$BC,$24,$2E                             ;
+  DEFB $08,$BC,$24,$32                             ;
+  DEFB $05,$BC,$24,$32                             ;
+  DEFB $0F,$BC,$2C,$2E                             ;
+  DEFB $0B,$BC,$2C,$2E                             ;
+  DEFB $0E,$BC,$2C,$32                             ;
+  DEFB $0B,$BC,$2C,$2E                             ;
+  DEFB $06,$BC,$24,$3E                             ;
+  DEFB $0B,$BC,$24,$26                             ;
+  DEFB $0F,$BC,$24,$5E                             ;
+  DEFB $0E,$BC,$24,$2A                             ;
+  DEFB $0B,$BC,$24,$26                             ;
+  DEFB $0B,$BC,$24,$7A                             ;
+  DEFB $05,$BC,$24,$56                             ;
+  DEFB $06,$BC,$24,$5A                             ;
+  DEFB $0F,$BC,$24,$1A                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$84,$4C,$01                             ;
+  DEFB $0E,$84,$74,$01                             ;
+  DEFB $0F,$84,$74,$01                             ;
+  DEFB $0D,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$2C,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$0E                             ;
+  DEFB $0F,$BC,$24,$1E                             ;
+  DEFB $0B,$BC,$24,$22                             ;
+  DEFB $0E,$BC,$24,$1E                             ;
+  DEFB $05,$BC,$24,$12                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 41
+  DEFB $02,$00,$40,$01                             ;
+  DEFB $03,$00,$40,$01                             ;
+  DEFB $04,$00,$40,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $07,$85,$54,$02                             ;
+  DEFB $08,$85,$54,$02                             ;
+  DEFB $0B,$85,$54,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $0F,$85,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $07,$85,$54,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $06,$85,$54,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 42
+  DEFB $02,$00,$00,$01                             ;
+  DEFB $03,$00,$00,$01                             ;
+  DEFB $04,$44,$44,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$84,$4C,$01                             ;
+  DEFB $0B,$84,$74,$01                             ;
+  DEFB $0D,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$06                             ;
+  DEFB $0E,$BC,$24,$26                             ;
+  DEFB $0B,$BC,$24,$2A                             ;
+  DEFB $0F,$BC,$24,$3A                             ;
+  DEFB $05,$BC,$24,$22                             ;
+  DEFB $06,$BC,$24,$1E                             ;
+  DEFB $05,$BC,$24,$1E                             ;
+  DEFB $0B,$BC,$2C,$22                             ;
+  DEFB $0F,$BC,$2C,$12                             ;
+  DEFB $0E,$BC,$2C,$02                             ;
+  DEFB $0F,$BC,$2C,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $09,$84,$24,$01                             ;
+  DEFB $0B,$84,$3C,$01                             ;
+  DEFB $0F,$84,$3C,$01                             ;
+  DEFB $0A,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$0E                             ;
+  DEFB $0B,$BC,$24,$22                             ;
+  DEFB $0F,$BC,$24,$1E                             ;
+  DEFB $0B,$BC,$24,$22                             ;
+  DEFB $01,$BC,$24,$1E                             ;
+  DEFB $0E,$BC,$24,$1E                             ;
+  DEFB $0F,$BC,$24,$22                             ;
+  DEFB $01,$BC,$24,$1E                             ;
+  DEFB $0B,$BC,$24,$76                             ;
+  DEFB $0F,$BC,$24,$82                             ;
+  DEFB $0F,$BC,$24,$86                             ;
+  DEFB $05,$BC,$24,$8E                             ;
+  DEFB $06,$BC,$24,$06                             ;
+  DEFB $05,$BC,$24,$26                             ;
+  DEFB $06,$BC,$24,$2A                             ;
+  DEFB $0B,$BC,$24,$26                             ;
+  DEFB $0F,$BC,$24,$26                             ;
+  DEFB $0B,$BC,$24,$2A                             ;
+  DEFB $07,$BC,$24,$5E                             ;
+  DEFB $08,$BC,$24,$26                             ;
+  DEFB $0E,$BC,$24,$2A                             ;
+  DEFB $0B,$BC,$24,$0A                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 43
+  DEFB $02,$22,$22,$01                             ;
+  DEFB $03,$33,$33,$01                             ;
+  DEFB $04,$44,$44,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $01,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $08,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $01,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0A,$84,$44,$02                             ;
+  DEFB $09,$84,$44,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0E,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $08,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $09,$84,$44,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0E,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $01,$84,$54,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0E,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $08,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0E,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0A,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 44
+  DEFB $02,$22,$22,$01                             ;
+  DEFB $03,$33,$33,$01                             ;
+  DEFB $04,$44,$44,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$06                             ;
+  DEFB $0F,$BC,$24,$26                             ;
+  DEFB $0E,$BC,$24,$2A                             ;
+  DEFB $0B,$BC,$24,$26                             ;
+  DEFB $0B,$BC,$24,$0A                             ;
+  DEFB $0F,$BC,$24,$8A                             ;
+  DEFB $01,$BC,$24,$82                             ;
+  DEFB $0F,$BC,$24,$82                             ;
+  DEFB $0B,$BC,$24,$72                             ;
+  DEFB $0F,$BC,$24,$1E                             ;
+  DEFB $0E,$BC,$24,$22                             ;
+  DEFB $05,$BC,$24,$12                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $01,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0C,$84,$4C,$01                             ;
+  DEFB $0B,$84,$74,$01                             ;
+  DEFB $0F,$84,$74,$01                             ;
+  DEFB $0F,$84,$74,$01                             ;
+  DEFB $0B,$84,$74,$01                             ;
+  DEFB $0A,$84,$5C,$01                             ;
+  DEFB $0B,$84,$5C,$01                             ;
+  DEFB $0B,$84,$5C,$01                             ;
+  DEFB $08,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$84,$24,$01                             ;
+  DEFB $0F,$84,$24,$01                             ;
+  DEFB $0B,$84,$24,$01                             ;
+  DEFB $0E,$84,$24,$01                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $09,$84,$4C,$01                             ;
+  DEFB $0B,$84,$64,$01                             ;
+  DEFB $0F,$84,$64,$01                             ;
+  DEFB $0E,$84,$64,$01                             ;
+  DEFB $0B,$84,$64,$01                             ;
+  DEFB $0D,$84,$3C,$01                             ;
+  DEFB $0A,$84,$24,$01                             ;
+  DEFB $0B,$84,$24,$01                             ;
+  DEFB $0F,$84,$24,$01                             ;
+  DEFB $0E,$84,$24,$01                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $09,$84,$4C,$01                             ;
+  DEFB $0B,$84,$64,$01                             ;
+  DEFB $0B,$84,$64,$01                             ;
+  DEFB $0A,$84,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0E,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 45
+  DEFB $02,$22,$22,$01                             ;
+  DEFB $03,$33,$33,$01                             ;
+  DEFB $04,$44,$44,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $0B,$84,$3C,$02                             ;
+  DEFB $07,$84,$3C,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $01,$84,$54,$02                             ;
+  DEFB $05,$85,$54,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $06,$84,$3C,$02                             ;
+  DEFB $08,$84,$2C,$02                             ;
+  DEFB $0B,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $01,$84,$2C,$02                             ;
+  DEFB $05,$84,$2C,$02                             ;
+  DEFB $06,$84,$2C,$02                             ;
+  DEFB $0F,$84,$2C,$02                             ;
+  DEFB $07,$84,$2C,$02                             ;
+  DEFB $08,$84,$2C,$02                             ;
+  DEFB $05,$84,$2C,$02                             ;
+  DEFB $0B,$84,$34,$02                             ;
+  DEFB $05,$84,$34,$02                             ;
+  DEFB $0F,$84,$3C,$02                             ;
+  DEFB $05,$84,$3C,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $0E,$84,$4C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $01,$84,$5C,$02                             ;
+  DEFB $06,$84,$54,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $08,$84,$3C,$02                             ;
+  DEFB $07,$84,$3C,$02                             ;
+  DEFB $07,$84,$4C,$02                             ;
+  DEFB $08,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 46
+  DEFB $02,$22,$22,$01                             ;
+  DEFB $03,$33,$33,$01                             ;
+  DEFB $04,$44,$44,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$8A                             ;
+  DEFB $0F,$BC,$24,$8E                             ;
+  DEFB $0F,$BC,$24,$8A                             ;
+  DEFB $05,$BC,$24,$8E                             ;
+  DEFB $06,$BC,$24,$16                             ;
+  DEFB $0F,$BC,$24,$56                             ;
+  DEFB $0B,$BC,$24,$5A                             ;
+  DEFB $01,$BC,$24,$5A                             ;
+  DEFB $0E,$BC,$24,$56                             ;
+  DEFB $07,$BC,$24,$56                             ;
+  DEFB $08,$BC,$24,$5A                             ;
+  DEFB $0B,$BC,$24,$1A                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $09,$84,$24,$01                             ;
+  DEFB $07,$84,$3C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $05,$84,$4C,$01                             ;
+  DEFB $06,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $0E,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $08,$84,$3C,$01                             ;
+  DEFB $08,$84,$2C,$01                             ;
+  DEFB $06,$84,$24,$01                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $05,$BC,$24,$02                             ;
+  DEFB $06,$BC,$24,$02                             ;
+  DEFB $07,$BC,$24,$02                             ;
+  DEFB $08,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $01,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$06                             ;
+  DEFB $01,$BC,$24,$26                             ;
+  DEFB $05,$BC,$24,$2A                             ;
+  DEFB $06,$BC,$24,$26                             ;
+  DEFB $0F,$BC,$24,$0A                             ;
+  DEFB $0E,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0F,$BC,$24,$02                             ;
+  DEFB $0B,$BC,$24,$02                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 47
+  DEFB $02,$22,$22,$01                             ;
+  DEFB $03,$33,$33,$01                             ;
+  DEFB $04,$44,$44,$01                             ;
+  DEFB $0D,$83,$4C,$01                             ;
+  DEFB $06,$84,$44,$01                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $0E,$85,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $07,$84,$5C,$02                             ;
+  DEFB $08,$84,$5C,$02                             ;
+  DEFB $01,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $0E,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0E,$84,$5C,$02                             ;
+  DEFB $08,$84,$4C,$02                             ;
+  DEFB $0F,$84,$4C,$02                             ;
+  DEFB $0B,$84,$4C,$02                             ;
+  DEFB $01,$84,$4C,$02                             ;
+  DEFB $05,$84,$4C,$02                             ;
+  DEFB $06,$84,$4C,$02                             ;
+  DEFB $06,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $08,$84,$34,$02                             ;
+  DEFB $07,$84,$34,$02                             ;
+  DEFB $0B,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $01,$84,$44,$02                             ;
+  DEFB $0F,$84,$44,$02                             ;
+  DEFB $07,$84,$44,$02                             ;
+  DEFB $0B,$84,$54,$02                             ;
+  DEFB $0F,$84,$54,$02                             ;
+  DEFB $05,$84,$54,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $07,$84,$5C,$02                             ;
+  DEFB $08,$84,$5C,$02                             ;
+  DEFB $01,$84,$5C,$02                             ;
+  DEFB $05,$84,$5C,$02                             ;
+  DEFB $06,$84,$5C,$02                             ;
+  DEFB $0B,$84,$5C,$02                             ;
+  DEFB $0F,$84,$5C,$02                             ;
+  DEFB $0A,$84,$44,$02                             ;
+  DEFB $05,$84,$44,$01                             ;
+  DEFB $0C,$83,$4C,$01                             ; Bridge 48
+  DEFB $02,$22,$22,$01                             ;
+  DEFB $03,$33,$33,$01                             ;
+  DEFB $04,$44,$44,$01                             ;
+  DEFB $08,$84,$64,$01                             ;
+  DEFB $0B,$84,$64,$01                             ;
+  DEFB $0F,$84,$64,$01                             ;
+  DEFB $0E,$84,$64,$01                             ;
+  DEFB $0F,$84,$64,$01                             ;
+  DEFB $0B,$84,$64,$01                             ;
+  DEFB $05,$84,$64,$01                             ;
+  DEFB $06,$84,$64,$01                             ;
+  DEFB $01,$84,$64,$01                             ;
+  DEFB $0B,$84,$64,$01                             ;
+  DEFB $0F,$84,$64,$01                             ;
+  DEFB $0F,$84,$64,$01                             ;
+  DEFB $0A,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$84,$24,$01                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0C,$84,$4C,$01                             ;
+  DEFB $01,$84,$74,$01                             ;
+  DEFB $0F,$84,$74,$01                             ;
+  DEFB $0B,$84,$74,$01                             ;
+  DEFB $0B,$84,$74,$01                             ;
+  DEFB $01,$84,$74,$01                             ;
+  DEFB $0F,$84,$74,$01                             ;
+  DEFB $0E,$84,$74,$01                             ;
+  DEFB $08,$84,$64,$01                             ;
+  DEFB $0B,$84,$64,$01                             ;
+  DEFB $0F,$84,$64,$01                             ;
+  DEFB $0A,$84,$4C,$01                             ;
+  DEFB $0D,$84,$24,$01                             ;
+  DEFB $0B,$84,$24,$01                             ;
+  DEFB $0F,$84,$24,$01                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $0F,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $0B,$84,$4C,$01                             ;
+  DEFB $07,$84,$4C,$01                             ;
+  DEFB $07,$84,$5C,$01                             ;
+  DEFB $0B,$84,$6C,$01                             ;
+  DEFB $0F,$84,$6C,$01                             ;
+  DEFB $0F,$84,$6C,$01                             ;
+  DEFB $0B,$84,$6C,$01                             ;
+  DEFB $0F,$84,$6C,$01                             ;
+  DEFB $0E,$84,$6C,$01                             ;
+  DEFB $0B,$84,$6C,$01                             ;
+  DEFB $08,$84,$5C,$01                             ;
+  DEFB $0B,$84,$5C,$01                             ;
+  DEFB $0F,$84,$5C,$01                             ;
+  DEFB $0E,$84,$5C,$01                             ;
+  DEFB $07,$84,$5C,$01                             ;
+  DEFB $0F,$84,$6C,$01                             ;
+  DEFB $0B,$84,$6C,$01                             ;
+  DEFB $0F,$84,$6C,$01                             ;
+  DEFB $0B,$84,$6C,$01                             ;
+  DEFB $0D,$84,$44,$01                             ;
+  DEFB $0A,$84,$2C,$01                             ;
+  DEFB $06,$84,$24,$01                             ;
+  DEFB $0B,$84,$24,$01                             ;
+  DEFB $0F,$84,$24,$01                             ;
+  DEFB $0B,$84,$24,$01                             ;
+  DEFB $0C,$84,$24,$01                             ;
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+
+; Island shape definitions (35 islands × 3 bytes = 105 bytes).
+;
+; Defines the shape of islands that appear in the river. Each island is 3 bytes. Referenced from terrain fragment byte 3
+; (upper 6 bits = island index × 4). Initialized by handle_island.
+;
+; +------+----------------------------------------------------------------+
+; | Byte | Contents                                                       |
+; +------+----------------------------------------------------------------+
+; | 0    | Profile index (0-14): selects shape from data_terrain_profiles |
+; | 1    | Width offset: added to profile values, shifts edge position    |
+; | 2    | Edge mode: 0=use byte directly, 1=mirror, 2=offset from left   |
+; +------+----------------------------------------------------------------+
+;
+; Edge mode controls right edge calculation in render_island_line: mode 1 creates symmetric islands (right = 120 -
+; left), mode 2 creates fixed-width channels (right = 60 + left).
+data_islands:
+  DEFB $09,$00,$01
+  DEFB $0A,$00,$01
+  DEFB $07,$00,$01
+  DEFB $08,$00,$01
+  DEFB $0C,$00,$01
+  DEFB $0D,$00,$01
+  DEFB $0E,$10,$01
+  DEFB $0F,$10,$01
+  DEFB $0B,$18,$01
+  DEFB $0E,$18,$01
+  DEFB $0F,$20,$01
+  DEFB $0B,$20,$01
+  DEFB $05,$10,$01
+  DEFB $06,$10,$01
+  DEFB $05,$18,$01
+  DEFB $06,$18,$01
+  DEFB $05,$20,$01
+  DEFB $06,$20,$01
+  DEFB $05,$28,$01
+  DEFB $06,$28,$01
+  DEFB $0E,$28,$01
+  DEFB $0F,$28,$01
+  DEFB $01,$18,$01
+  DEFB $07,$20,$01
+  DEFB $08,$20,$01
+  DEFB $09,$20,$01
+  DEFB $0A,$20,$01
+  DEFB $05,$08,$01
+  DEFB $06,$08,$01
+  DEFB $07,$18,$01
+  DEFB $08,$18,$01
+  DEFB $0B,$08,$01
+  DEFB $0F,$08,$01
+  DEFB $05,$00,$01
+  DEFB $06,$00,$01
+
+; Unused
+data_unused_C669:
+  DEFB $C3,$90,$EA,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00
+
+; Level object spawn data (48 levels × 256 bytes = 12,288 bytes total).
+;
+; Defines what objects spawn at each scroll position for all 48 game levels (bridges). Each level has 128 spawn slots
+; (256 bytes, 2 bytes per slot). Read by spawn_objects_from_level_slot during scroll.
+;
+; +-------+-------------------------------------------------------------+
+; | Byte  | Contents                                                    |
+; +-------+-------------------------------------------------------------+
+; | 0 (D) | Object definition: bits 0-2 = type, bit 3 = rock flag       |
+; | 1 (E) | X position ($00 = empty slot, $01-$FF = spawn X coordinate) |
+; +-------+-------------------------------------------------------------+
+;
+; When bit 3 (SLOT_BIT_ROCK) is set, bits 0-1 select rock variant (0-3). Otherwise bits 0-2 are OBJECT_* type. Level
+; address = level_objects + (level_number × SIZE_LEVEL_SLOTS).
+level_objects:
+  DEFB $00,$00                                     ; Level 1
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $08,$10                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$60                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $02,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$60                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$08                                     ;
+  DEFB $00,$00                                     ; Level 2
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$20                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$50                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$60                                     ;
+  DEFB $0A,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$50                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$60                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$88                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$70                                     ;
+  DEFB $00,$00                                     ; Level 3
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E8                                     ;
+  DEFB $06,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ; Level 4
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$40                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $02,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$B8                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$80                                     ;
+  DEFB $87,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $02,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$48                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$40                                     ;
+  DEFB $0A,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$80                                     ;
+  DEFB $00,$00                                     ; Level 5
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$D0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $41,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$80                                     ;
+  DEFB $09,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$60                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A0                                     ;
+  DEFB $09,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$08                                     ;
+  DEFB $06,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $41,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$80                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 6
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$68                                     ;
+  DEFB $06,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$80                                     ;
+  DEFB $87,$48                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$D0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$48                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 7
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $87,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$98                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $87,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $A4,$30                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $42,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $06,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $A4,$28                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $C5,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A8                                     ;
+  DEFB $02,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $85,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ; Level 8
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ; Level 9
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $41,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$D8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $46,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $A4,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $A4,$28                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $87,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $A4,$10                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$60                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 10
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $42,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $A4,$30                                     ;
+  DEFB $43,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$D0                                     ;
+  DEFB $42,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B0                                     ;
+  DEFB $85,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$C0                                     ;
+  DEFB $0B,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 11
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$88                                     ;
+  DEFB $09,$D8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $01,$60                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$18                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$01                                     ;
+  DEFB $E4,$D8                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $03,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $87,$A8                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $46,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$70                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 12
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $0A,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$30                                     ;
+  DEFB $42,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B0                                     ;
+  DEFB $0B,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B0                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$80                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ; Level 13
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$8C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$10                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$D0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$5C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$5C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$C0                                     ;
+  DEFB $41,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$60                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $0B,$D8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $A4,$08                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $08,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$48                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $09,$D8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$9C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$18                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$38                                     ;
+  DEFB $C5,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$10                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $00,$00                                     ; Level 14
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B0                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $41,$B4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$34                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$48                                     ;
+  DEFB $E4,$E8                                     ;
+  DEFB $C5,$BC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$34                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $01,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$34                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$BC                                     ;
+  DEFB $0B,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$48                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$30                                     ;
+  DEFB $C5,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 15
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$9C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$98                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$68                                     ;
+  DEFB $0A,$20                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $85,$88                                     ;
+  DEFB $08,$10                                     ;
+  DEFB $42,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$8C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E8                                     ;
+  DEFB $06,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$D0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$6C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$84                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $01,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $A4,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$68                                     ;
+  DEFB $0A,$C8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$58                                     ;
+  DEFB $09,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$50                                     ;
+  DEFB $0A,$C0                                     ;
+  DEFB $01,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 16
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$94                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$94                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$94                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$48                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$30                                     ;
+  DEFB $01,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $42,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$30                                     ;
+  DEFB $02,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $A4,$18                                     ;
+  DEFB $87,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $00,$00                                     ; Level 17
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$10                                     ;
+  DEFB $06,$8C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$98                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$88                                     ;
+  DEFB $09,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$20                                     ;
+  DEFB $01,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$70                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $E4,$D8                                     ;
+  DEFB $41,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $85,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $41,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$9C                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $09,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$9C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $E4,$C0                                     ;
+  DEFB $41,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$9C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$40                                     ;
+  DEFB $C5,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$E8                                     ;
+  DEFB $06,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$D0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$5C                                     ;
+  DEFB $0B,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $09,$D8                                     ;
+  DEFB $C5,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$68                                     ;
+  DEFB $00,$00                                     ; Level 18
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$94                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$70                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$28                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E8                                     ;
+  DEFB $87,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $42,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$64                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$64                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$40                                     ;
+  DEFB $41,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $A4,$28                                     ;
+  DEFB $41,$94                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$60                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$D8                                     ;
+  DEFB $87,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $41,$8C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$8C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$C8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$94                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $01,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 19
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $87,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $0B,$10                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A8                                     ;
+  DEFB $08,$18                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E8                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$88                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $0A,$D8                                     ;
+  DEFB $41,$AC                                     ;
+  DEFB $02,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $E4,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$88                                     ;
+  DEFB $09,$10                                     ;
+  DEFB $01,$A4                                     ;
+  DEFB $C5,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$5C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $A4,$30                                     ;
+  DEFB $42,$B0                                     ;
+  DEFB $01,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$9C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$64                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$9C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$70                                     ;
+  DEFB $00,$00                                     ; Level 20
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$A0                                     ;
+  DEFB $0A,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$48                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$48                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$50                                     ;
+  DEFB $02,$C8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$70                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$78                                     ;
+  DEFB $0A,$D0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$60                                     ;
+  DEFB $01,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$40                                     ;
+  DEFB $42,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$C8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $C5,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$78                                     ;
+  DEFB $42,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C3,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 21
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$60                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $C5,$90                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $06,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $C5,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$88                                     ;
+  DEFB $09,$C8                                     ;
+  DEFB $A4,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$C8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $03,$48                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$60                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $0B,$20                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$60                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $E4,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$20                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $08,$18                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C3,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 22
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$60                                     ;
+  DEFB $01,$58                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$C8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$C8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$C8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$40                                     ;
+  DEFB $A4,$08                                     ;
+  DEFB $01,$30                                     ;
+  DEFB $0B,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $87,$30                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$30                                     ;
+  DEFB $02,$38                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$E8                                     ;
+  DEFB $85,$40                                     ;
+  DEFB $41,$B0                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $A4,$20                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $01,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A0                                     ;
+  DEFB $42,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$20                                     ;
+  DEFB $87,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$D0                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 23
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $06,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $42,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$D8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $0B,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$60                                     ;
+  DEFB $85,$60                                     ;
+  DEFB $0A,$D0                                     ;
+  DEFB $02,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$70                                     ;
+  DEFB $42,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$30                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $06,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ; Level 24
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $85,$40                                     ;
+  DEFB $42,$B0                                     ;
+  DEFB $02,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $A4,$04                                     ;
+  DEFB $03,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$50                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$50                                     ;
+  DEFB $0A,$10                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B0                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $0B,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$80                                     ;
+  DEFB $87,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$98                                     ;
+  DEFB $C5,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $0A,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$80                                     ;
+  DEFB $00,$00                                     ; Level 25
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $01,$60                                     ;
+  DEFB $0A,$10                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$80                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $02,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $E4,$C0                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $01,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$68                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B8                                     ;
+  DEFB $0B,$10                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $41,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $A4,$20                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$88                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $42,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$70                                     ;
+  DEFB $0B,$10                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $85,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$55                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C6,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $81,$80                                     ;
+  DEFB $00,$00                                     ; Level 26
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $0A,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$38                                     ;
+  DEFB $01,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$80                                     ;
+  DEFB $43,$C0                                     ;
+  DEFB $01,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$30                                     ;
+  DEFB $41,$30                                     ;
+  DEFB $41,$30                                     ;
+  DEFB $0B,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$38                                     ;
+  DEFB $C5,$30                                     ;
+  DEFB $0B,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$B0                                     ;
+  DEFB $0B,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$70                                     ;
+  DEFB $00,$00                                     ; Level 27
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$70                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $85,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$A0                                     ;
+  DEFB $41,$70                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $E4,$C0                                     ;
+  DEFB $85,$70                                     ;
+  DEFB $41,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $41,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$60                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $06,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$50                                     ;
+  DEFB $41,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $C5,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$C0                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $E4,$E8                                     ;
+  DEFB $09,$10                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ; Level 28
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $0B,$18                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$A0                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $C5,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$B0                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$40                                     ;
+  DEFB $0A,$78                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$60                                     ;
+  DEFB $0B,$D0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $0B,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$30                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$38                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$70                                     ;
+  DEFB $01,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $00,$00                                     ; Level 29
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $01,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$38                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $43,$90                                     ;
+  DEFB $02,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$90                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $82,$88                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $E5,$C0                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$60                                     ;
+  DEFB $42,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$90                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$60                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $A5,$08                                     ;
+  DEFB $C5,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $41,$60                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $46,$80                                     ;
+  DEFB $00,$00                                     ; Level 30
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$50                                     ;
+  DEFB $02,$50                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $85,$30                                     ;
+  DEFB $C5,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$44                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$30                                     ;
+  DEFB $0A,$80                                     ;
+  DEFB $43,$3C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$3C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$3C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$C0                                     ;
+  DEFB $0A,$78                                     ;
+  DEFB $06,$44                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$44                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$98                                     ;
+  DEFB $41,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $41,$34                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$50                                     ;
+  DEFB $A4,$08                                     ;
+  DEFB $02,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A0                                     ;
+  DEFB $43,$A4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $41,$A4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $01,$40                                     ;
+  DEFB $01,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$BC                                     ;
+  DEFB $42,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$AC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$44                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$B0                                     ;
+  DEFB $02,$B0                                     ;
+  DEFB $02,$AC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ; Level 31
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $06,$6C                                     ;
+  DEFB $0A,$D8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$98                                     ;
+  DEFB $C5,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$88                                     ;
+  DEFB $42,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $0A,$10                                     ;
+  DEFB $43,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$50                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $42,$4C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$74                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$AC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $0B,$E8                                     ;
+  DEFB $41,$48                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$40                                     ;
+  DEFB $09,$D0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$80                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $85,$70                                     ;
+  DEFB $02,$68                                     ;
+  DEFB $0A,$D0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$4C                                     ;
+  DEFB $85,$70                                     ;
+  DEFB $0A,$E8                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $08,$C8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$60                                     ;
+  DEFB $42,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$50                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$74                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$7C                                     ;
+  DEFB $42,$68                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$AC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$9C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$74                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$9C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$D8                                     ;
+  DEFB $02,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$5C                                     ;
+  DEFB $85,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 32
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $42,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$6C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$40                                     ;
+  DEFB $C5,$30                                     ;
+  DEFB $0B,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A8                                     ;
+  DEFB $01,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$60                                     ;
+  DEFB $01,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$AC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$80                                     ;
+  DEFB $06,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A8                                     ;
+  DEFB $03,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A4                                     ;
+  DEFB $02,$A4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$50                                     ;
+  DEFB $42,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$48                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$40                                     ;
+  DEFB $C5,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $C5,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B0                                     ;
+  DEFB $C5,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 33
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$C0                                     ;
+  DEFB $0A,$20                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$88                                     ;
+  DEFB $02,$B8                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $E4,$E8                                     ;
+  DEFB $0A,$20                                     ;
+  DEFB $43,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$88                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $02,$74                                     ;
+  DEFB $02,$74                                     ;
+  DEFB $09,$10                                     ;
+  DEFB $C5,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $41,$88                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $E4,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$8C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$18                                     ;
+  DEFB $42,$BC                                     ;
+  DEFB $02,$AC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$90                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$8C                                     ;
+  DEFB $42,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $02,$40                                     ;
+  DEFB $41,$74                                     ;
+  DEFB $C5,$74                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 34
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $09,$D0                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$E8                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$B0                                     ;
+  DEFB $C5,$48                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$B4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$80                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$88                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$18                                     ;
+  DEFB $06,$80                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$94                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $41,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$80                                     ;
+  DEFB $06,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$BC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 35
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$08                                     ;
+  DEFB $C5,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$80                                     ;
+  DEFB $41,$B0                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B8                                     ;
+  DEFB $E4,$E0                                     ;
+  DEFB $41,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$C0                                     ;
+  DEFB $0A,$20                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $87,$A8                                     ;
+  DEFB $02,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $E4,$E0                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $01,$A0                                     ;
+  DEFB $02,$98                                     ;
+  DEFB $0A,$18                                     ;
+  DEFB $01,$A0                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $02,$88                                     ;
+  DEFB $09,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $42,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$B0                                     ;
+  DEFB $0B,$20                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $02,$A8                                     ;
+  DEFB $E4,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$80                                     ;
+  DEFB $01,$A8                                     ;
+  DEFB $42,$A4                                     ;
+  DEFB $0B,$10                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $01,$7C                                     ;
+  DEFB $01,$7C                                     ;
+  DEFB $00,$00                                     ; Level 36
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$98                                     ;
+  DEFB $42,$B8                                     ;
+  DEFB $42,$BC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$34                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$AC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$AC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$AC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$D8                                     ;
+  DEFB $06,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$80                                     ;
+  DEFB $0B,$10                                     ;
+  DEFB $06,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $C5,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$60                                     ;
+  DEFB $41,$B8                                     ;
+  DEFB $09,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$50                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$50                                     ;
+  DEFB $0B,$E8                                     ;
+  DEFB $A4,$08                                     ;
+  DEFB $85,$90                                     ;
+  DEFB $85,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$3C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 37
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$10                                     ;
+  DEFB $87,$7C                                     ;
+  DEFB $02,$88                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $02,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $41,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $02,$30                                     ;
+  DEFB $0A,$C8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $09,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$84                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $41,$30                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$D0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$68                                     ;
+  DEFB $09,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$58                                     ;
+  DEFB $09,$D0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $0A,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $42,$70                                     ;
+  DEFB $E4,$D8                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $01,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $06,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$7C                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $41,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$74                                     ;
+  DEFB $C5,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$64                                     ;
+  DEFB $0A,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$D0                                     ;
+  DEFB $06,$68                                     ;
+  DEFB $00,$00                                     ; Level 38
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $C5,$A8                                     ;
+  DEFB $42,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$74                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$80                                     ;
+  DEFB $01,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$70                                     ;
+  DEFB $85,$74                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E8                                     ;
+  DEFB $41,$74                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$74                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$74                                     ;
+  DEFB $0B,$D0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $0B,$10                                     ;
+  DEFB $02,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $85,$C0                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E8                                     ;
+  DEFB $02,$74                                     ;
+  DEFB $C5,$74                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$BC                                     ;
+  DEFB $41,$BC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 39
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $87,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$78                                     ;
+  DEFB $41,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$70                                     ;
+  DEFB $09,$01                                     ;
+  DEFB $42,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$9C                                     ;
+  DEFB $08,$18                                     ;
+  DEFB $42,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$78                                     ;
+  DEFB $09,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$88                                     ;
+  DEFB $41,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $E4,$E8                                     ;
+  DEFB $09,$08                                     ;
+  DEFB $C5,$78                                     ;
+  DEFB $41,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$B4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$A0                                     ;
+  DEFB $09,$10                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $42,$98                                     ;
+  DEFB $08,$20                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$88                                     ;
+  DEFB $E4,$E8                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$8C                                     ;
+  DEFB $C5,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$B0                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $E4,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$18                                     ;
+  DEFB $02,$B8                                     ;
+  DEFB $85,$C0                                     ;
+  DEFB $C5,$A8                                     ;
+  DEFB $C5,$A8                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$9C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$9C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$18                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 40
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$B0                                     ;
+  DEFB $06,$58                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$4C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$44                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$BC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$38                                     ;
+  DEFB $41,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $42,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$BC                                     ;
+  DEFB $02,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$84                                     ;
+  DEFB $01,$7C                                     ;
+  DEFB $42,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$8C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$B0                                     ;
+  DEFB $42,$B0                                     ;
+  DEFB $C5,$70                                     ;
+  DEFB $02,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$38                                     ;
+  DEFB $41,$BC                                     ;
+  DEFB $42,$BC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $42,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$58                                     ;
+  DEFB $85,$90                                     ;
+  DEFB $42,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 41
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $09,$08                                     ;
+  DEFB $41,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$8C                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$8C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $E4,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$90                                     ;
+  DEFB $C5,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $E4,$E0                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $42,$88                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $43,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $0B,$18                                     ;
+  DEFB $41,$B8                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $01,$88                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $42,$BC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$9C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$B0                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$AC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$8C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$AC                                     ;
+  DEFB $01,$AC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$78                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 42
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$48                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $C5,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B0                                     ;
+  DEFB $A4,$78                                     ;
+  DEFB $02,$B4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$BC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $02,$48                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B0                                     ;
+  DEFB $42,$B0                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B0                                     ;
+  DEFB $85,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $02,$58                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$58                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$48                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $85,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$54                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$30                                     ;
+  DEFB $01,$B8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$B4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$B4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B4                                     ;
+  DEFB $02,$B4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$30                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 43
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$98                                     ;
+  DEFB $42,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$10                                     ;
+  DEFB $41,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$9C                                     ;
+  DEFB $C5,$90                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $01,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $08,$18                                     ;
+  DEFB $06,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$01                                     ;
+  DEFB $42,$94                                     ;
+  DEFB $41,$9C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$70                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $42,$94                                     ;
+  DEFB $42,$C0                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$94                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$94                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$9C                                     ;
+  DEFB $0A,$10                                     ;
+  DEFB $02,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $A4,$30                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $03,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$94                                     ;
+  DEFB $0A,$20                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$94                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$01                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $C5,$80                                     ;
+  DEFB $09,$18                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $02,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$84                                     ;
+  DEFB $43,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$98                                     ;
+  DEFB $0B,$10                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$BC                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$BC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $41,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$7C                                     ;
+  DEFB $42,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$AC                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $02,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $C5,$80                                     ;
+  DEFB $41,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 44
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$20                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$4C                                     ;
+  DEFB $42,$BC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$4C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$4C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$40                                     ;
+  DEFB $02,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$54                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$8C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $42,$88                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $06,$C0                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$88                                     ;
+  DEFB $85,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $0B,$D8                                     ;
+  DEFB $02,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$7C                                     ;
+  DEFB $02,$7C                                     ;
+  DEFB $01,$7C                                     ;
+  DEFB $43,$8C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$38                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $0A,$10                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$88                                     ;
+  DEFB $42,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 45
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$10                                     ;
+  DEFB $42,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $42,$8C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$98                                     ;
+  DEFB $41,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$B0                                     ;
+  DEFB $C5,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$70                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $01,$98                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $42,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$A0                                     ;
+  DEFB $02,$8C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$70                                     ;
+  DEFB $02,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$98                                     ;
+  DEFB $42,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$74                                     ;
+  DEFB $09,$08                                     ;
+  DEFB $41,$8C                                     ;
+  DEFB $85,$8C                                     ;
+  DEFB $42,$78                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $42,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$10                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $87,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$70                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B0                                     ;
+  DEFB $41,$6C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$6C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $09,$E0                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$74                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $03,$A0                                     ;
+  DEFB $41,$88                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $C5,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ; Level 46
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $42,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$30                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $0B,$08                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$E0                                     ;
+  DEFB $06,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$88                                     ;
+  DEFB $01,$74                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$A0                                     ;
+  DEFB $08,$10                                     ;
+  DEFB $01,$74                                     ;
+  DEFB $02,$74                                     ;
+  DEFB $42,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $85,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A4                                     ;
+  DEFB $08,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $85,$50                                     ;
+  DEFB $41,$B8                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$98                                     ;
+  DEFB $85,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B8                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $C5,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$48                                     ;
+  DEFB $01,$48                                     ;
+  DEFB $01,$48                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$B4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$B4                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$40                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$44                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$AC                                     ;
+  DEFB $01,$B4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $85,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ; Level 47
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C4,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $87,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$80                                     ;
+  DEFB $0B,$01                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$18                                     ;
+  DEFB $41,$7C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$AC                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$98                                     ;
+  DEFB $0A,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$C0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $01,$C0                                     ;
+  DEFB $41,$90                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$88                                     ;
+  DEFB $02,$C0                                     ;
+  DEFB $01,$AC                                     ;
+  DEFB $0A,$18                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$38                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$70                                     ;
+  DEFB $0B,$20                                     ;
+  DEFB $01,$B4                                     ;
+  DEFB $01,$B4                                     ;
+  DEFB $08,$38                                     ;
+  DEFB $01,$B4                                     ;
+  DEFB $E4,$E8                                     ;
+  DEFB $41,$B4                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$10                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$50                                     ;
+  DEFB $42,$98                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$58                                     ;
+  DEFB $41,$68                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$58                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$50                                     ;
+  DEFB $85,$98                                     ;
+  DEFB $42,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$84                                     ;
+  DEFB $0B,$D8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$90                                     ;
+  DEFB $85,$B0                                     ;
+  DEFB $09,$20                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$A8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$A8                                     ;
+  DEFB $01,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$28                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $87,$B0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$B0                                     ;
+  DEFB $01,$B0                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $00,$00                                     ; Level 48
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $84,$60                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0A,$18                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $41,$70                                     ;
+  DEFB $0A,$01                                     ;
+  DEFB $02,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $0A,$18                                     ;
+  DEFB $41,$88                                     ;
+  DEFB $42,$84                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $42,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$50                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$08                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $C5,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E8                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$D0                                     ;
+  DEFB $41,$78                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $01,$80                                     ;
+  DEFB $0A,$E0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $85,$A0                                     ;
+  DEFB $41,$98                                     ;
+  DEFB $42,$94                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $08,$01                                     ;
+  DEFB $02,$38                                     ;
+  DEFB $42,$A0                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$9C                                     ;
+  DEFB $01,$70                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$88                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $02,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $06,$88                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$84                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $0B,$20                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $0B,$E0                                     ;
+  DEFB $87,$8C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$88                                     ;
+  DEFB $0A,$08                                     ;
+  DEFB $02,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $0A,$20                                     ;
+  DEFB $01,$78                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $42,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $43,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $01,$84                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$8C                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $02,$58                                     ;
+  DEFB $01,$50                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $41,$80                                     ;
+  DEFB $00,$00                                     ;
+  DEFB $00,$00                                     ;
+
