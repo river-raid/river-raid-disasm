@@ -245,6 +245,9 @@ ACTIVATION_INTERVAL_NORMAL EQU $1F
 ACTIVATION_INTERVAL_FAST   EQU $0F
 
 SCROLL_IN_ITERATIONS EQU $28
+TICK_FRAMES_GAMEPLAY EQU 4
+TICK_FRAMES_SCROLL_IN EQU 3
+TICK_FRAMES_OVERVIEW EQU 4
 
 TERRAIN_PROFILE_SIZE EQU $10
 
@@ -1102,6 +1105,8 @@ play:
   LD B,SCROLL_IN_ITERATIONS                        ; Set loop counter for scroll-in (40 iterations).
 scroll_in_loop:
   PUSH BC                                          ; Save loop counter.
+  LD B,TICK_FRAMES_SCROLL_IN                       ; Hold the original pace of one iteration per 3 frames.
+  CALL wait_for_tick                               ;
   LD HL,state_tick                                 ; Increment tick counter.
   INC (HL)                                         ;
   CALL render_plane_and_terrain
@@ -1491,6 +1496,8 @@ state_plane_missile_coords_backup:
 ; select_controls to return to control selection). The H key pause is handled entirely by the interrupt handler
 ; (int_handler) and does not exit the loop.
 main_loop:
+  LD B,TICK_FRAMES_GAMEPLAY                        ; Hold the original pace of one tick per 4 frames.
+  CALL wait_for_tick                               ;
   LD A,$BF                                         ; Check Enter key for mode transitions.
   IN A,($FE)                                       ;
   BIT 0,A                                          ;
@@ -3640,6 +3647,11 @@ int_handler:
   PUSH IX                                          ; BEEPER clobbers IX, which an interrupted scroll_screen is using.
   LD HL,int_counter                                ; Increment interrupt counter.
   INC (HL)                                         ;
+  LD HL,frames_since_tick                          ; Count frames for wait_for_tick, saturating at 255.
+  INC (HL)                                         ;
+  JR NZ,int_frames_counted                         ;
+  DEC (HL)                                         ;
+int_frames_counted:
   LD A,$BF                                         ; Check H key for pause.
   IN A,($FE)                                       ;
   BIT 4,A                                          ;
@@ -3983,6 +3995,8 @@ overview:
   LD (state_overview_start_scroll),A
 ; This entry point is used by the routine at reset_scroll_text.
 overview_loop:
+  LD B,TICK_FRAMES_OVERVIEW                        ; Hold the original pace of one iteration per 4 frames.
+  CALL wait_for_tick                               ;
   LD A,$BF                                         ; Check Enter key (row 6, bit 0). Handle Enter if pressed.
   IN A,($FE)                                       ;
   BIT 0,A                                          ;
@@ -7968,6 +7982,37 @@ scroll_row_table:
   DEFW $5BFF
   DEFW $5AFF
   DEFW $59FF
+
+; Wait for the next tick
+;
+; Paces a game loop at one iteration per #REGb frames, independent of how long the iteration takes. Returns once
+; frames_since_tick reaches #REGb and subtracts #REGb from it, so a late tick shortens the wait for the next one. If
+; still a whole period behind after that, the backlog is dropped so the game does not rush after a pause or a long
+; wait for input.
+;
+; I:B Frames per tick
+wait_for_tick:
+  LD HL,frames_since_tick                          ;
+wait_for_tick_loop:
+  LD A,(HL)                                        ;
+  CP B                                             ;
+  JR C,wait_for_tick_loop                          ;
+  LD C,B                                           ;
+wait_for_tick_consume:
+  DEC (HL)                                         ; One DEC (HL) per frame: each is atomic against the interrupt
+                                                   ; that increments the counter.
+  DEC C                                            ;
+  JR NZ,wait_for_tick_consume                      ;
+  LD A,(HL)                                        ;
+  CP B                                             ;
+  RET C                                            ;
+  LD (HL),$00                                      ;
+  RET                                              ;
+
+; Frames elapsed since the current tick was due (0-255, saturating). Incremented by int_handler, consumed by
+; wait_for_tick.
+frames_since_tick:
+  DEFB $00
 
 ; Tank shell explosion sprite (6 frames × 32 bytes).
 ;
